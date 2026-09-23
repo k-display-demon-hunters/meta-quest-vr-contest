@@ -1,0 +1,99 @@
+# ============================================================
+# Unity Client
+# ============================================================
+
+/client/[Ll]ibrary/
+/client/[Tt]emp/
+/client/[Oo]bj/
+/client/[Bb]uild/
+/client/[Bb]uilds/
+/client/[Ll]ogs/
+/client/[Uu]ser[Ss]ettings/
+/client/[Mm]emoryCaptures/
+/client/[Rr]ecordings/
+
+# Unity generated files
+/client/*.csproj
+/client/*.sln
+/client/*.suo
+/client/*.user
+/client/*.userprefs
+/client/*.pidb
+/client/*.booproj
+/client/*.svd
+/client/*.pdb
+/client/*.mdb
+/client/*.opendb
+/client/*.VC.db
+
+# Unity crash reports
+/client/sysinfo.txt
+
+# ============================================================
+# Python / Server
+# ============================================================
+
+# Python cache
+/server/**/__pycache__/
+/server/**/*.py[cod]
+
+# Virtual environments
+/server/.venv/
+/server/venv/
+/server/env/
+
+# Environment variables / secrets
+/server/.env
+/server/.env.*
+!/server/.env.example
+
+# Testing / linting / type checking
+/server/.pytest_cache/
+/server/.mypy_cache/
+/server/.ruff_cache/
+/server/.coverage
+/server/htmlcov/
+
+# Python build artifacts
+/server/build/
+/server/dist/
+/server/*.egg-info/
+
+# Jupyter
+/server/.ipynb_checkpoints/
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+
+.vs/
+.idea/
+
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code local settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ============================================================
+# OS Files
+# ============================================================
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# ============================================================
+# Logs / Temporary Files
+# ============================================================
+
+*.log
+*.tmp
+*.temp

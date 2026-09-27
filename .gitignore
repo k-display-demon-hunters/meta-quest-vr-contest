@@ -15,6 +15,7 @@
 # Unity generated files
 /client/*.csproj
 /client/*.sln
+/client/*.slnx
 /client/*.suo
 /client/*.user
 /client/*.userprefs
@@ -75,9 +76,7 @@
 *.sln.docstates
 
 # VS Code local settings
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+**/.vscode/
 
 # ============================================================
 # OS Files

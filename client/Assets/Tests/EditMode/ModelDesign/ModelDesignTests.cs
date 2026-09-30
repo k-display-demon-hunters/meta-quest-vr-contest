@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using NUnit.Framework;
 
-namespace MetaQuest.ModelDesign.Tests
+namespace ModelDesign.Tests
 {
     public sealed class ModelDesignTests
     {

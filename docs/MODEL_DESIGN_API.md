@@ -3,7 +3,7 @@
 `client/Assets/Scripts/ModelDesign/`의 순수 C# API. 씬·게임 오브젝트 참조 없이 사용한다.
 
 ```csharp
-using MetaQuest.ModelDesign;
+using ModelDesign;
 
 ModelDefinition model = new ModelDefinition();
 model.AddLayer(LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU));

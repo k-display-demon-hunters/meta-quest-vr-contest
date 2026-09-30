@@ -1,6 +1,6 @@
 using System;
 
-namespace MetaQuest.ModelDesign
+namespace ModelDesign
 {
     public enum LayerType { Conv2D, MaxPooling2D, Flatten, Dense }
     public enum ActivationType { Linear, ReLU, Sigmoid, Tanh, Softmax }

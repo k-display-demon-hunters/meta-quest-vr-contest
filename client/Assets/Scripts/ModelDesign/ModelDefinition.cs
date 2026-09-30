@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MetaQuest.ModelDesign
+namespace ModelDesign
 {
     public sealed class ModelDefinition
     {

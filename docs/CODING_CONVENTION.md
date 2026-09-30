@@ -307,12 +307,12 @@ public class ConvolutionController : MonoBehaviour
 
 # 5. Namespace
 
-프로젝트 코드는 프로젝트 전용 namespace 안에 작성하는 것을 기본으로 한다.
+프로젝트 코드는 기능 영역의 이름을 namespace로 사용하는 것을 기본으로 한다. 프로젝트 이름을 앞에 붙이지 않는다.
 
 예:
 
 ```csharp
-namespace ProjectName.CNN
+namespace NeuralNetwork
 {
     public class ConvolutionController : MonoBehaviour
     {
@@ -320,18 +320,18 @@ namespace ProjectName.CNN
 }
 ```
 
-기능에 따라 하위 namespace를 사용할 수 있다.
+기능 구분이 필요할 때만 하위 namespace를 사용할 수 있다.
 
 ```text
-ProjectName.Core
-ProjectName.Networking
-ProjectName.XR
-ProjectName.UI
-ProjectName.NeuralNetwork
-ProjectName.NeuralNetwork.MLP
-ProjectName.NeuralNetwork.CNN
-ProjectName.Mission
-ProjectName.Audio
+Core
+Networking
+XR
+UI
+NeuralNetwork
+NeuralNetwork.MLP
+NeuralNetwork.CNN
+Mission
+Audio
 ```
 
 불필요하게 너무 세분화된 namespace 구조는 만들지 않는다.

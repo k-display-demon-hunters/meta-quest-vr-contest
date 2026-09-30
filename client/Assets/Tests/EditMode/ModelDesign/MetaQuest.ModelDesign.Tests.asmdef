@@ -1,0 +1,6 @@
+{
+    "name": "MetaQuest.ModelDesign.Tests",
+    "references": ["MetaQuest.ModelDesign"],
+    "includePlatforms": ["Editor"],
+    "optionalUnityReferences": ["TestAssemblies"]
+}

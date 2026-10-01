@@ -30,6 +30,18 @@ namespace Networking
 
         public event Action<string> JsonReceived;
         public event Action<Exception> ConnectionError;
+        public event Action Disconnected;
+
+        public bool IsConnected
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _state == ConnectionState.Connected;
+                }
+            }
+        }
 
         public void DispatchPendingEvents()
         {
@@ -239,7 +251,19 @@ namespace Networking
                         while (!result.EndOfMessage);
 
                         string json = Encoding.UTF8.GetString(message.ToArray());
-                        _pendingEvents.Enqueue(() => JsonReceived?.Invoke(json));
+                        _pendingEvents.Enqueue(() =>
+                        {
+                            // 연결이 끝난 뒤 남아 있던 응답으로 삭제된 모델을 복원하지 않는다.
+                            bool isCurrent;
+                            lock (_sync)
+                            {
+                                isCurrent = _session == session && _state == ConnectionState.Connected;
+                            }
+                            if (isCurrent)
+                            {
+                                JsonReceived?.Invoke(json);
+                            }
+                        });
                     }
                 }
             }
@@ -284,6 +308,7 @@ namespace Networking
                 {
                     _session = null;
                     _state = ConnectionState.Disconnected;
+                    _pendingEvents.Enqueue(() => Disconnected?.Invoke());
                 }
             }
 

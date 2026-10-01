@@ -19,7 +19,9 @@ namespace ModelDesign
 
             // The schema contains only fixed tokens and validated integers, no user strings.
             // Writing only the relevant fields avoids polymorphic Unity serialization metadata.
-            StringBuilder builder = new StringBuilder("{\"schemaVersion\":1,\"input\":{\"shape\":[28,28,1]},\"layers\":[");
+            StringBuilder builder = new StringBuilder("{\"schemaVersion\":1,\"modelType\":\"");
+            builder.Append(DetermineModelType(model));
+            builder.Append("\",\"input\":{\"shape\":[28,28,1]},\"layers\":[");
             for (int i = 0; i < model.Layers.Count; i++)
             {
                 if (i > 0)
@@ -40,6 +42,18 @@ namespace ModelDesign
                 throw new InvalidOperationException(issues[0].Path + ": " + issues[0].Message);
             }
             return json;
+        }
+
+        private static string DetermineModelType(ModelDefinition model)
+        {
+            foreach (LayerDefinition layer in model.Layers)
+            {
+                if (layer.Type == LayerType.Conv2D || layer.Type == LayerType.MaxPooling2D)
+                {
+                    return "cnn";
+                }
+            }
+            return "mlp";
         }
 
         private static void AppendLayer(StringBuilder builder, LayerDefinition layer)

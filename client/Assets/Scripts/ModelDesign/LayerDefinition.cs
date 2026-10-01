@@ -33,10 +33,6 @@ namespace ModelDesign
             RequirePositive(kernelHeight, nameof(kernelHeight));
             RequirePositive(kernelWidth, nameof(kernelWidth));
             RequireActivation(activation);
-            if (activation == ActivationType.Softmax)
-            {
-                throw new ArgumentException("Softmax is only valid on the output Dense layer.", nameof(activation));
-            }
             return new LayerDefinition(LayerType.Conv2D, filters, kernelHeight, kernelWidth, activation: activation);
         }
 

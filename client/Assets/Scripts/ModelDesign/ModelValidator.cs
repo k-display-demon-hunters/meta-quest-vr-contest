@@ -25,40 +25,33 @@ namespace ModelDesign
             }
 
             List<ValidationIssue> issues = new List<ValidationIssue>();
-            bool hasFlatten = false;
+            // A Dense-first model uses the server's automatic input flattening.
+            bool isVector = model.Layers.Count > 0 && model.Layers[0].Type == LayerType.Dense;
             for (int i = 0; i < model.Layers.Count; i++)
             {
                 LayerDefinition layer = model.Layers[i];
                 string path = "/layers/" + i;
                 if (layer.Type == LayerType.Flatten)
                 {
-                    if (hasFlatten)
+                    if (isVector)
                     {
-                        issues.Add(new ValidationIssue(path, "Flatten must appear exactly once."));
+                        issues.Add(new ValidationIssue(path, "Flatten requires spatial input."));
                     }
-                    hasFlatten = true;
+                    isVector = true;
                 }
                 else if (layer.Type == LayerType.Dense)
                 {
-                    if (!hasFlatten)
+                    if (!isVector)
                     {
                         issues.Add(new ValidationIssue(path, "Dense requires Flatten before it."));
                     }
-                    if (i < model.Layers.Count - 1 && layer.Activation == ActivationType.Softmax)
-                    {
-                        issues.Add(new ValidationIssue(path + "/activation", "Hidden Dense cannot use softmax."));
-                    }
                 }
-                else if (hasFlatten)
+                else if (isVector)
                 {
-                    issues.Add(new ValidationIssue(path, "Only Dense may follow Flatten."));
+                    issues.Add(new ValidationIssue(path, "Only Dense may follow vector input."));
                 }
             }
 
-            if (!hasFlatten)
-            {
-                issues.Add(new ValidationIssue("/layers", "Flatten is required."));
-            }
             if (model.Layers.Count == 0)
             {
                 issues.Add(new ValidationIssue("/layers", "An output Dense layer is required."));

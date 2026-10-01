@@ -2,18 +2,20 @@ using System;
 
 namespace ModelDesign
 {
-    public enum LayerType { Conv2D, MaxPooling2D, Flatten, Dense }
+    public enum LayerType { Conv2D, MaxPooling2D, Flatten, Dense, Input, Output }
     public enum ActivationType { Linear, ReLU, Sigmoid, Tanh, Softmax }
 
-    // Immutable settings: editing replaces a layer without exposing mutable arrays.
     public sealed class LayerDefinition
     {
+        public event Action OnChanged;
+        internal ModelWorkspace Workspace { get; set; }
+
         public LayerType Type { get; }
-        public int Filters { get; }
-        public int Height { get; }
-        public int Width { get; }
-        public int Units { get; }
-        public ActivationType Activation { get; }
+        public int Filters { get; private set; }
+        public int Height { get; private set; }
+        public int Width { get; private set; }
+        public int Units { get; private set; }
+        public ActivationType Activation { get; private set; }
 
         private LayerDefinition(LayerType type, int filters = 0, int height = 0,
             int width = 0, int units = 0, ActivationType activation = ActivationType.Linear)
@@ -55,9 +57,89 @@ namespace ModelDesign
             return new LayerDefinition(LayerType.Dense, units: units, activation: activation);
         }
 
-        public static LayerDefinition Output()
+        internal static LayerDefinition Input()
         {
-            return Dense(10, ActivationType.Softmax);
+            return new LayerDefinition(LayerType.Input);
+        }
+
+        internal static LayerDefinition Output()
+        {
+            return new LayerDefinition(LayerType.Output, units: 10, activation: ActivationType.Softmax);
+        }
+
+        public void SetFilters(int filters)
+        {
+            RequireType(LayerType.Conv2D);
+            RequirePositive(filters, nameof(filters));
+            if (Filters == filters)
+            {
+                return;
+            }
+            Filters = filters;
+            OnChanged?.Invoke();
+        }
+
+        public void SetKernelSize(int height, int width)
+        {
+            RequireType(LayerType.Conv2D);
+            RequirePositive(height, nameof(height));
+            RequirePositive(width, nameof(width));
+            if (Height == height && Width == width)
+            {
+                return;
+            }
+            Height = height;
+            Width = width;
+            OnChanged?.Invoke();
+        }
+
+        public void SetPoolSize(int height, int width)
+        {
+            RequireType(LayerType.MaxPooling2D);
+            RequirePositive(height, nameof(height));
+            RequirePositive(width, nameof(width));
+            if (Height == height && Width == width)
+            {
+                return;
+            }
+            Height = height;
+            Width = width;
+            OnChanged?.Invoke();
+        }
+
+        public void SetUnits(int units)
+        {
+            RequireType(LayerType.Dense);
+            RequirePositive(units, nameof(units));
+            if (Units == units)
+            {
+                return;
+            }
+            Units = units;
+            OnChanged?.Invoke();
+        }
+
+        public void SetActivation(ActivationType activation)
+        {
+            if (Type != LayerType.Conv2D && Type != LayerType.Dense)
+            {
+                throw new InvalidOperationException("Only Conv2D and Dense have an activation setting.");
+            }
+            RequireActivation(activation);
+            if (Activation == activation)
+            {
+                return;
+            }
+            Activation = activation;
+            OnChanged?.Invoke();
+        }
+
+        private void RequireType(LayerType expectedType)
+        {
+            if (Type != expectedType)
+            {
+                throw new InvalidOperationException("This setting requires a " + expectedType + " layer.");
+            }
         }
 
         private static void RequirePositive(int value, string parameterName)

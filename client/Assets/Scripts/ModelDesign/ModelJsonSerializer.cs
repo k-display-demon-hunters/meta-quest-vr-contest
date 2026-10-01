@@ -7,24 +7,26 @@ namespace ModelDesign
 {
     public static class ModelJsonSerializer
     {
-        public static bool TrySerialize(ModelDefinition model, out string json,
+        public static bool TrySerialize(ModelWorkspace workspace, out string json,
             out IReadOnlyList<ValidationIssue> issues)
         {
-            issues = ModelValidator.Validate(model);
+            issues = ModelValidator.ValidateForTransmission(workspace);
             json = null;
             if (issues.Count != 0)
             {
                 return false;
             }
 
+            ModelDefinition model = workspace.InputModel;
+
             // The schema contains only fixed tokens and validated integers, no user strings.
             // Writing only the relevant fields avoids polymorphic Unity serialization metadata.
-            StringBuilder builder = new StringBuilder("{\"schemaVersion\":1,\"modelType\":\"");
+            StringBuilder builder = new StringBuilder("{\"modelType\":\"");
             builder.Append(DetermineModelType(model));
             builder.Append("\",\"input\":{\"shape\":[28,28,1]},\"layers\":[");
-            for (int i = 0; i < model.Layers.Count; i++)
+            for (int i = 1; i < model.Layers.Count; i++)
             {
-                if (i > 0)
+                if (i > 1)
                 {
                     builder.Append(',');
                 }
@@ -35,9 +37,9 @@ namespace ModelDesign
             return true;
         }
 
-        public static string Serialize(ModelDefinition model)
+        public static string Serialize(ModelWorkspace workspace)
         {
-            if (!TrySerialize(model, out string json, out IReadOnlyList<ValidationIssue> issues))
+            if (!TrySerialize(workspace, out string json, out IReadOnlyList<ValidationIssue> issues))
             {
                 throw new InvalidOperationException(issues[0].Path + ": " + issues[0].Message);
             }
@@ -74,6 +76,7 @@ namespace ModelDesign
                 case LayerType.Flatten:
                     builder.Append("{\"type\":\"flatten\"");
                     break;
+                case LayerType.Output:
                 case LayerType.Dense:
                     builder.Append("{\"type\":\"dense\",\"units\":");
                     AppendInteger(builder, layer.Units);

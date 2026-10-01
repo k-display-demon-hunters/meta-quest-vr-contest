@@ -1,10 +1,9 @@
-# 모델 JSON 문법 v1
+# 모델 JSON 문법
 
 ## 기본 구조
 
 ```json
 {
-  "schemaVersion": 1,
   "modelType": "mlp",
   "input": {"shape": [28, 28, 1]},
   "layers": []
@@ -12,7 +11,8 @@
 ```
 
 - `layers`: 실행 순서. 각 층은 바로 이전 층의 출력을 입력으로 받는다.
-- `modelType`: 변환기가 자동 생성한다. Conv2D 또는 Pooling이 있으면 `"cnn"`, 없으면 `"mlp"`. Flatten만으로는 CNN으로 분류하지 않는다.
+- `modelType`: 모델 종류. `"mlp"`는 다층 퍼셉트론, `"cnn"`은 합성곱 신경망을 의미한다.
+- 변환기가 전송 덩어리의 레이어를 보고 자동 생성한다. Conv2D 또는 Pooling이 있으면 `"cnn"`, 없으면 `"mlp"`. Flatten만으로는 CNN으로 분류하지 않는다.
 - 입력: `[높이, 너비, 채널] = [28, 28, 1]`. 배치 차원 제외.
 - 아래 필드는 모두 필수. `null`, 정의되지 않은 필드, 중복 키는 허용하지 않는다.
 
@@ -88,7 +88,6 @@ Pooling·Flatten에는 `activation` 필드가 없다.
 
 ```json
 {
-  "schemaVersion": 1,
   "modelType": "mlp",
   "input": {"shape": [28, 28, 1]},
   "layers": [
@@ -102,7 +101,6 @@ Pooling·Flatten에는 `activation` 필드가 없다.
 
 ```json
 {
-  "schemaVersion": 1,
   "modelType": "cnn",
   "input": {"shape": [28, 28, 1]},
   "layers": [

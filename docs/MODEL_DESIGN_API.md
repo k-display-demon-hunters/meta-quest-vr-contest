@@ -1,46 +1,79 @@
-# 모델 편집 API
+# 블록 모델 편집 API
 
-`client/Assets/Scripts/ModelDesign/`의 순수 C# API. 씬·게임 오브젝트 참조 없이 사용한다.
+`client/Assets/Scripts/ModelDesign/`, namespace `ModelDesign`.
 
 ```csharp
 using ModelDesign;
 
-ModelDefinition model = new ModelDefinition();
-model.AddLayer(LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU));
-model.AddLayer(LayerDefinition.MaxPooling2D(2, 2));
-model.AddLayer(LayerDefinition.Flatten());
-model.AddLayer(LayerDefinition.Dense(32, ActivationType.ReLU));
-model.AddLayer(LayerDefinition.Output());
+ModelWorkspace workspace = new ModelWorkspace();
+LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
+LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
+LayerDefinition flatten = LayerDefinition.Flatten();
+LayerDefinition dense = LayerDefinition.Dense(32, ActivationType.ReLU);
 
-// UI에서 뉴런 개수나 활성화 함수를 변경했을 때
-model.ReplaceLayer(3, LayerDefinition.Dense(64, ActivationType.Tanh));
+workspace.AddLayer(conv);
+workspace.AddLayer(pool);
+workspace.AddLayer(flatten);
+workspace.AddLayer(dense);
+workspace.Connect(workspace.Input, conv);
+workspace.Connect(conv, pool);
+workspace.Connect(pool, flatten);
+workspace.Connect(flatten, dense);
+workspace.Connect(dense, workspace.Output);
 
-if (ModelJsonSerializer.TrySerialize(model, out var json, out var issues))
+workspace.OnValidationChanged += issues =>
 {
-    // json을 서버 전송 코드에 전달한다.
-}
-else
+    // issues가 비어 있으면 경고를 지운다.
+    // issue.Model: 해당 덩어리, issue.Path: /blocks/인덱스, issue.Message: 설명.
+};
+
+conv.SetFilters(16); // 같은 객체에서 변경하며 자동 검증·이벤트 발생
+
+if (ModelJsonSerializer.TrySerialize(workspace, out var json, out var issues))
 {
-    // issues의 Path와 Message를 UI에 표시한다.
+    // json을 서버에 전달한다.
 }
+
+workspace.Disconnect(pool, flatten); // 덩어리 두 개로 분리
+workspace.Connect(pool, flatten);    // 다시 연결
 ```
+
+| 타입 | 역할 |
+| --- | --- |
+| `LayerDefinition` | 블록 설정과 `OnChanged` 이벤트 |
+| `ModelDefinition` | 덩어리 하나의 읽기 전용 블록 목록 `Layers` |
+| `ModelWorkspace` | 모든 덩어리와 고정 Input·Output 관리 |
+| `ModelValidator` | 편집·전송 검증 |
+| `ValidationIssue` | 오류가 속한 덩어리·블록 위치·설명 |
+| `ModelJsonSerializer` | Input 덩어리만 JSON으로 변환 |
 
 | 호출 | 동작 |
 | --- | --- |
-| `AddLayer(layer)` | 마지막에 추가 |
-| `InsertLayer(index, layer)` | 지정 위치에 추가 |
-| `ReplaceLayer(index, layer)` | 해당 층의 종류·설정 교체 |
-| `MoveLayer(fromIndex, toIndex)` | 이동 후의 인덱스로 순서 변경 |
-| `RemoveLayer(index)` | 해당 층 삭제 |
-| `Layers` | 읽기 전용 목록 |
-| `ModelValidator.Validate(model)` | 구조 오류 목록 반환 |
-| `ModelJsonSerializer.TrySerialize(...)` | 유효하면 JSON, 아니면 오류 목록 반환 |
+| `workspace.AddLayer(layer)` | 단독 블록 덩어리 추가 |
+| `workspace.Connect(from, to)` | 덩어리의 끝 → 다른 덩어리의 시작 연결 |
+| `workspace.Disconnect(from, to)` | 인접한 두 블록의 연결 해제 |
+| `workspace.RemoveLayer(layer)` | 블록 삭제. 중간 블록의 양쪽은 별도 덩어리가 됨 |
+| `workspace.ReplaceLayer(oldLayer, newLayer)` | 연결 위치를 유지하며 다른 블록으로 교체 |
+| `workspace.GetModel(layer)` | 블록이 현재 속한 덩어리 |
+| `workspace.InputModel` | Input이 현재 속한 덩어리 |
+| `workspace.Models` | 읽기 전용 덩어리 목록 |
+| `workspace.ValidationIssues` | 모든 덩어리의 최신 편집 검증 결과 |
+| `layer.SetFilters(filters)` | Conv2D 필터 수 변경 |
+| `layer.SetKernelSize(height, width)` | Conv2D 커널 크기 변경 |
+| `layer.SetPoolSize(height, width)` | Pooling 크기 변경 |
+| `layer.SetUnits(units)` | Dense 뉴런 수 변경 |
+| `layer.SetActivation(activation)` | Conv2D·Dense 활성화 함수 변경 |
+| `ModelValidator.ValidateEditing(model)` | 끝점 없는 조각도 검사. 앞부분이 없어 입력 형태를 모르면 판단 보류 |
+| `ModelValidator.ValidateForTransmission(workspace)` | Input 덩어리의 구조와 고정 Output 도달 여부 검사 |
 
-인덱스는 0부터 시작한다. 레이어 추가·삭제·이동 후에는 UI의 인덱스도 갱신한다.
-레이어 설정은 불변이며 변경할 때 새 설정으로 교체한다.
-잘못된 숫자·활성화 함수·인덱스·null은 예외를 발생시킨다.
-편집 중 불완전한 구조는 허용하되 JSON 전송 전 검증한다. 실패 시 `json`은 null이다.
-입력 형태와 버전은 직렬화 시 고정한다. 출력층은 `Output()`으로 추가한다.
-`modelType`은 직렬화 시 자동 판단한다. Conv2D·Pooling이 있으면 `cnn`, 없으면 `mlp`다. 별도로 설정하지 않는다.
-MLP는 Dense부터 시작할 수 있으며 서버가 입력을 자동으로 펼친다. CNN은 Dense 앞에 `Flatten()`을 추가한다.
-서버 통신·학습·추론은 이 API에 포함하지 않는다.
+- Input·Output은 생성 시 하나씩 생긴다. 추가·삭제·교체·설정 변경 불가, 연결·분리는 가능.
+- 연결은 분기·순환을 만들 수 없다. 같은 블록은 한 Workspace의 한 덩어리에만 속한다.
+- 레이어 순서 오류는 편집 상태로 허용하며 검증 결과로 알린다.
+- 성공한 목록·연결·설정 변경마다 편집 검증 후 `OnValidationChanged`, `OnChanged` 순서로 이벤트가 발생한다.
+- 동일한 값 설정과 거절된 작업은 이벤트를 발생시키지 않는다. 최초 결과는 `ValidationIssues`로 읽는다.
+- 미완성은 편집 오류가 아니다. 전송 가능 여부는 `ValidateForTransmission()`으로 확인한다.
+- 연결·분리·삭제·교체 시 덩어리 객체는 새 목록으로 교체된다. UI는 블록 참조를 유지하고 `GetModel()`로 현재 덩어리를 조회한다.
+- 삭제·교체된 블록은 Workspace의 이벤트 구독에서 해제한다. 화면 종료 시 `Dispose()`를 호출한다.
+- 위치·회전·크기와 연결선 표현은 오브젝트/UI 계층에서 관리한다.
+- Input은 JSON의 `input`으로, Output은 마지막 Dense 10개·Softmax로 변환한다. 화면의 블록 이름을 JSON에 추가하지 않는다.
+- 분리된 다른 덩어리는 전송하지 않는다. `modelType`은 전송 덩어리만 보고 자동 판단한다.

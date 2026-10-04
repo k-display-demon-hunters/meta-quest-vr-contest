@@ -18,6 +18,9 @@ using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Gravity;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
@@ -149,6 +152,7 @@ namespace XR.Editor
             XRInteractionManager manager = rig.AddComponent<XRInteractionManager>();
             CreateController(offset.transform, manager, "LeftHand", InteractorHandedness.Left, rayMaterial);
             CreateController(offset.transform, manager, "RightHand", InteractorHandedness.Right, rayMaterial);
+            ConfigureMovement(rig);
             PrefabUtility.SaveAsPrefabAssetAndConnect(rig, RigPath, InteractionMode.AutomatedAction);
 
             GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -161,10 +165,17 @@ namespace XR.Editor
             cube.transform.position = new Vector3(0f, 1.1f, 1.5f);
             cube.transform.localScale = Vector3.one * 0.25f;
             cube.GetComponent<Renderer>().sharedMaterial = cubeMaterial;
-            cube.AddComponent<Rigidbody>().useGravity = false;
+            Rigidbody cubeBody = cube.AddComponent<Rigidbody>();
+            cubeBody.useGravity = false;
+            cubeBody.isKinematic = true;
+            // The trigger is only a ray-selection target, not a physical obstacle.
+            cube.GetComponent<Collider>().isTrigger = true;
             XRGrabInteractable grab = cube.AddComponent<XRGrabInteractable>();
             grab.interactionManager = manager;
             grab.useDynamicAttach = true;
+            grab.movementType = XRBaseInteractable.MovementType.Instantaneous;
+            grab.throwOnDetach = false;
+            grab.forceGravityOnDetach = false;
             GameObject lightObject = new GameObject("Directional Light");
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Directional;
@@ -179,6 +190,63 @@ namespace XR.Editor
             ValidateRig();
         }
 
+        [MenuItem("Tools/Quest/Add Left Stick Movement")]
+        public static void AddLeftStickMovement()
+        {
+            GameObject rig = PrefabUtility.LoadPrefabContents(RigPath);
+            try
+            {
+                ConfigureMovement(rig);
+                PrefabUtility.SaveAsPrefabAsset(rig, RigPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(rig);
+            }
+            ValidateRig();
+        }
+
+        private static void ConfigureMovement(GameObject rig)
+        {
+            // Re-running this command preserves the user's existing movement tuning.
+            if (rig.GetComponent<ContinuousMoveProvider>() != null)
+            {
+                return;
+            }
+            XRBodyTransformer transformer = rig.GetComponent<XRBodyTransformer>();
+            if (transformer == null)
+            {
+                transformer = rig.AddComponent<XRBodyTransformer>();
+            }
+            transformer.xrOrigin = rig.GetComponent<XROrigin>();
+            transformer.useCharacterControllerIfExists = false;
+            LocomotionMediator mediator = rig.GetComponent<LocomotionMediator>();
+            if (mediator == null)
+            {
+                mediator = rig.AddComponent<LocomotionMediator>();
+            }
+            ContinuousMoveProvider movement = rig.AddComponent<ContinuousMoveProvider>();
+            movement.mediator = mediator;
+            movement.moveSpeed = 1.5f;
+            movement.enableStrafe = true;
+            movement.enableFly = false;
+            // XRI still has a legacy gravity fallback when no GravityProvider exists.
+#pragma warning disable CS0618
+            movement.useGravity = false;
+#pragma warning restore CS0618
+            movement.forwardSource = transformer.xrOrigin.Camera.transform;
+            movement.leftHandMoveInput = new XRInputValueReader<Vector2>("Left Stick Move",
+                XRInputValueReader.InputSourceMode.InputAction)
+            {
+                inputAction = new InputAction("Left Stick Move", InputActionType.Value,
+                    "<XRController>{LeftHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)",
+                    expectedControlType: "Vector2")
+            };
+            // A deadzone filters small resting-stick values from the OpenXR Vector2 control.
+            movement.rightHandMoveInput = new XRInputValueReader<Vector2>("Right Move Disabled",
+                XRInputValueReader.InputSourceMode.Unused);
+        }
+
         private static void CreateController(Transform parent, XRInteractionManager manager, string hand,
             InteractorHandedness handedness, Material rayMaterial)
         {
@@ -191,6 +259,17 @@ namespace XR.Editor
             ray.handedness = handedness;
             ray.enableUIInteraction = false;
             ray.maxRaycastDistance = 5f;
+            ray.raycastTriggerInteraction = QueryTriggerInteraction.Collide;
+            if (handedness == InteractorHandedness.Right)
+            {
+                ray.translateManipulationInput = new XRInputValueReader<Vector2>("Right Object Distance",
+                    XRInputValueReader.InputSourceMode.InputAction)
+                {
+                    inputAction = new InputAction("Right Object Distance", InputActionType.Value,
+                        "<XRController>{RightHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)",
+                        expectedControlType: "Vector2")
+                };
+            }
             ray.selectInput = CreateButton(hand + " Select", device + "/gripPressed", device + "/grip");
             ray.activateInput = CreateButton(hand + " Activate", device + "/triggerPressed", device + "/trigger");
             LineRenderer line = controller.AddComponent<LineRenderer>();

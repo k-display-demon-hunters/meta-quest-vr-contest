@@ -324,7 +324,7 @@ MonoBehaviour:
   m_RaycastMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RaycastTriggerInteraction: 1
+  m_RaycastTriggerInteraction: 2
   m_RaycastSnapVolumeInteraction: 1
   m_HitClosestOnly: 0
   m_HoverToSelect: 0
@@ -398,15 +398,23 @@ MonoBehaviour:
     m_ObjectReferenceObject: {fileID: 0}
     m_ManualValue: {x: 0, y: 0}
   m_TranslateManipulationInput:
-    m_InputSourceMode: 2
+    m_InputSourceMode: 1
     m_InputAction:
-      m_Name: Translate Manipulation
+      m_Name: Right Object Distance
       m_Type: 0
       m_ExpectedControlType: Vector2
-      m_Id: 9aa51f3d-0fc3-406b-a90c-0ce4eb636b0b
-      m_Processors: 
+      m_Id: 0d78a878-0ab5-4d99-a601-00ed87d39971
+      m_Processors: stickDeadzone(min=0.15,max=0.95)
       m_Interactions: 
-      m_SingletonActionBindings: []
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 048f66fc-e2d4-4ba9-b075-56f924a568c0
+        m_Path: <XRController>{RightHand}/primary2DAxis
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Right Object Distance
+        m_Flags: 0
       m_Flags: 0
       m_Priority: 0
     m_InputActionReference: {fileID: 0}
@@ -1097,7 +1105,7 @@ MonoBehaviour:
   m_RaycastMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RaycastTriggerInteraction: 1
+  m_RaycastTriggerInteraction: 2
   m_RaycastSnapVolumeInteraction: 1
   m_HitClosestOnly: 0
   m_HoverToSelect: 0
@@ -1827,6 +1835,9 @@ GameObject:
   - component: {fileID: 1226390629060027290}
   - component: {fileID: 6150285176387121496}
   - component: {fileID: 8990760559897019497}
+  - component: {fileID: 4884843616675673551}
+  - component: {fileID: 7329342396295765634}
+  - component: {fileID: 6589062952006240122}
   m_Layer: 0
   m_Name: QuestRig
   m_TagString: Untagged
@@ -1881,3 +1892,89 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.XRInteractionManager
   m_StartingHoverFilters: []
   m_StartingSelectFilters: []
+--- !u!114 &4884843616675673551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432992956094993694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a26c941eb8a46f7b6d00416227ab8c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Locomotion.XRBodyTransformer
+  m_XROrigin: {fileID: 6150285176387121496}
+  m_BodyPositionEvaluatorObject: {fileID: 0}
+  m_ConstrainedBodyManipulatorObject: {fileID: 0}
+  m_UseCharacterControllerIfExists: 0
+--- !u!114 &7329342396295765634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432992956094993694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fa7b4195685c3846be746c74f0ab2f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Locomotion.LocomotionMediator
+--- !u!114 &6589062952006240122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432992956094993694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 626a4d6723d6ad24b9aebb811ad5a3dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement.ContinuousMoveProvider
+  m_Mediator: {fileID: 7329342396295765634}
+  m_TransformationPriority: 0
+  m_MoveSpeed: 1.5
+  m_InAirControlModifier: 0.5
+  m_EnableStrafe: 1
+  m_EnableFly: 0
+  m_ForwardSource: {fileID: 1048353172746928965}
+  m_LeftHandMoveInput:
+    m_InputSourceMode: 1
+    m_InputAction:
+      m_Name: Left Stick Move
+      m_Type: 0
+      m_ExpectedControlType: Vector2
+      m_Id: b4a5a927-2aa9-4577-b70c-3e4538f8cb51
+      m_Processors: stickDeadzone(min=0.15,max=0.95)
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 0a510d5b-b661-403b-b202-9b6170980936
+        m_Path: <XRController>{LeftHand}/primary2DAxis
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Left Stick Move
+        m_Flags: 0
+      m_Flags: 0
+      m_Priority: 0
+    m_InputActionReference: {fileID: 0}
+    m_ObjectReferenceObject: {fileID: 0}
+    m_ManualValue: {x: 0, y: 0}
+  m_RightHandMoveInput:
+    m_InputSourceMode: 0
+    m_InputAction:
+      m_Name: Right Move Disabled
+      m_Type: 0
+      m_ExpectedControlType: Vector2
+      m_Id: 9c197790-b583-46d7-802c-72b899a4822c
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+      m_Priority: 0
+    m_InputActionReference: {fileID: 0}
+    m_ObjectReferenceObject: {fileID: 0}
+    m_ManualValue: {x: 0, y: 0}
+  m_UseGravity: 0

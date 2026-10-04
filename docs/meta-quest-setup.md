@@ -20,9 +20,12 @@ Windows Editor에서 Quest Link로 실행할 때에는 Meta Quest Link를 연결
 - 머리: Input System Tracked Pose Driver가 위치·회전·추적 상태를 읽는다. Update와 Before Render에서 갱신한다.
 - 높이: Floor 모드로 실제 바닥을 기준으로 한다. Device 모드로 변경할 경우 Camera Y Offset은 1.6m이다.
 - 컨트롤러: OpenXR aim pose(`pointerPosition`, `pointerRotation`)로 레이를 향하게 한다.
-- Grip: 레이로 가리킨 큐브를 잡고 놓는다. Trigger: XRI Activate 입력이다. 현재 큐브에는 별도의 Activate 동작이 없다.
+- 오른손 Grip: 레이로 큐브를 잡은 채 컨트롤러를 움직여 3D 공간에서 드래그한다. 오른쪽 스틱 위아래는 잡은 물체의 앞뒤 거리를 조절한다. Grip을 놓으면 그 위치에 고정된다.
+- 큐브는 중력·던지기 없이 Kinematic으로 유지한다. Collider는 레이 선택용 Trigger이므로 물리 충돌로 밀리거나 막히지 않는다. Trigger 버튼은 XRI Activate 입력이며 현재 큐브에는 별도 동작이 없다.
 - 바닥은 8m × 8m, 큐브는 시작 위치의 정면 1.5m에 있다. Unity 1 unit을 1m로 사용한다.
-- 기본 동작은 실제 몸의 이동과 회전이다. 스틱 이동·텔레포트·손 추적·UI·패스스루는 추가하지 않았다.
+- 왼쪽 스틱: 바라보는 방향을 기준으로 전후좌우 이동한다. 최대 속도는 1.5m/s이며 작은 스틱 입력은 데드존(0.15)으로 무시한다. 고개를 위아래로 움직여도 이동은 수평으로 유지된다.
+- XR Body Transformer, Locomotion Mediator, Continuous Move Provider로 수평 이동만 처리한다. 이동 리그에는 충돌과 중력이 없으며, 스틱을 놓으면 현재 위치에 멈춘다. 바닥 밖에서도 떨어지지 않는다.
+- 오른쪽 스틱 이동, 스틱 회전, 텔레포트, 손 추적, UI, 패스스루는 추가하지 않았다. 회전은 실제 고개/몸 회전으로 한다.
 
 입력은 프리팹 컴포넌트에 직렬화한 Input Action으로 연결하며, Tracked Pose Driver와 XRI가 활성화/비활성화를 관리한다. 새로운 상호작용 대상에는 Collider, 필요한 Rigidbody, XRI Interactable을 붙인다.
 
@@ -43,6 +46,7 @@ Windows Editor에서 Quest Link로 실행할 때에는 Meta Quest Link를 연결
 
 - `Tools > Quest > Configure Project`: 프로젝트 XR/Android 설정을 적용한다.
 - `Tools > Quest > Create Initial VR Scene`: 초기 프리팹과 씬을 만든다. 기존 결과물이 있으면 덮어쓰지 않고 중단한다.
+- `Tools > Quest > Add Left Stick Movement`: 기존 QuestRig 프리팹에 이동 구성을 추가한다. 이미 이동 컴포넌트가 있으면 기존 조정값을 보존한다.
 - `Tools > Quest > Validate Project`: OpenXR 공식 검증 규칙과 리그 참조를 검사한다.
 
 ## 실제 기기 확인
@@ -72,3 +76,9 @@ Windows Editor에서 Quest Link로 실행할 때에는 Meta Quest Link를 연결
 - [XR Interaction Toolkit 프로젝트 설정](https://docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@3.3/manual/general-setup.html)
 
 API의 정확한 필드와 입력 바인딩은 위 버전으로 설치된 공식 패키지 소스에서도 확인했다.
+
+- [XRI Continuous Move Provider 공식 문서](https://docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@3.3/manual/continuous-move-provider.html)
+
+빌드 실행은 사용자가 명시적으로 허가한 경우에만 한다.
+
+이동/드래그 후속 수정은 사용자 요청에 따라 테스트·컴파일 검증·빌드 없이 적용했다. 테스트 파일은 추가하지 않았다.

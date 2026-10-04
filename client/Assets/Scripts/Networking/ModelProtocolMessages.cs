@@ -7,7 +7,8 @@ namespace Networking
         Idle,
         Training,
         CancellingTraining,
-        Inferring
+        Inferring,
+        StartingTraining
     }
 
     public sealed class TrainingProgress
@@ -21,6 +22,7 @@ namespace Networking
     {
         public int Epoch { get; internal set; }
         public IReadOnlyDictionary<string, double> Logs { get; internal set; }
+        public IReadOnlyDictionary<string, double> Evaluation { get; internal set; }
     }
 
     public sealed class InferenceResult

@@ -10,6 +10,9 @@ namespace Networking
 {
     public sealed class WebSocketConnection : IDisposable
     {
+        // 실제 서버 주소는 이 계층에서만 설정한다.
+        private string _serverUrl = "";
+
         private const int ReceiveBufferSize = 8192;
         private const int MaxMessageSize = 1024 * 1024;
         private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(3);
@@ -51,9 +54,9 @@ namespace Networking
             }
         }
 
-        public async Task ConnectAsync(string serverUrl, CancellationToken cancellationToken = default)
+        public async Task ConnectAsync(CancellationToken cancellationToken = default)
         {
-            Uri uri = new Uri(serverUrl);
+            Uri uri = new Uri(_serverUrl);
 
             ConnectionSession session = new ConnectionSession();
             lock (_sync)

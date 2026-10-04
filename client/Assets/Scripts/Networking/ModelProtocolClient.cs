@@ -5,21 +5,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEngine;
 
 namespace Networking
 {
-    // 요청과 수신 이벤트는 Unity 메인 스레드에서 처리한다. 소켓의 수명은 WebSocketClient가 관리한다.
-    public sealed class ModelProtocolClient
+    // 생성·호출·해제는 Unity 메인 스레드에서 수행한다.
+    public sealed class ModelProtocolClient : IDisposable
     {
-        private readonly Func<string, CancellationToken, Task> _sendJson;
+        private static readonly string[] TrainingMetricNames = { "loss", "accuracy", "val_loss", "val_accuracy" };
+        private static readonly string[] EvaluationMetricNames = { "loss", "accuracy" };
+
+        private readonly WebSocketClient _webSocketClient;
+        private readonly GameObject _webSocketObject;
+        private bool _isDisposed;
         private string _inferenceImageId;
         private int _lastEpoch;
         private int? _requestedEpochs;
         private int? _totalEpochs;
         private int _sessionGeneration;
+        private TaskCompletionSource<bool> _trainingStarted;
 
         public ModelOperation Operation { get; private set; }
         public bool HasTrainedModel { get; private set; }
+        public bool IsConnected => !_isDisposed && _webSocketClient != null && _webSocketClient.IsConnected;
 
         public event Action<TrainingProgress> TrainingProgressReceived;
         public event Action<TrainingResult> TrainingCompleted;
@@ -27,13 +35,78 @@ namespace Networking
         public event Action<InferenceResult> InferenceCompleted;
         public event Action<ModelServerError> ServerErrorReceived;
         public event Action<Exception> ProtocolError;
+        public event Action<Exception> ConnectionError;
+        public event Action Disconnected;
 
-        public ModelProtocolClient(Func<string, CancellationToken, Task> sendJson)
+        public ModelProtocolClient()
         {
-            _sendJson = sendJson ?? throw new ArgumentNullException(nameof(sendJson));
+            _webSocketObject = new GameObject(nameof(ModelProtocolClient));
+            _webSocketClient = _webSocketObject.AddComponent<WebSocketClient>();
+            _webSocketClient.JsonReceived += HandleJson;
+            _webSocketClient.Disconnected += HandleDisconnected;
+            _webSocketClient.ConnectionError += HandleConnectionError;
         }
 
-        public Task TrainAsync(string modelJson, int? epoch = null, CancellationToken cancellationToken = default)
+        public Task ConnectAsync(CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return _webSocketClient.ConnectAsync(cancellationToken);
+        }
+
+        public Task DisconnectAsync()
+        {
+            ThrowIfDisposed();
+            ResetSession();
+            return _webSocketClient.DisconnectAsync();
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+            _isDisposed = true;
+            ResetSession();
+            if (_webSocketObject == null)
+            {
+                return;
+            }
+            _webSocketClient.JsonReceived -= HandleJson;
+            _webSocketClient.Disconnected -= HandleDisconnected;
+            _webSocketClient.ConnectionError -= HandleConnectionError;
+            // Destroy는 프레임 끝에 처리되므로 소켓은 비활성화로 즉시 정리한다.
+            _webSocketObject.SetActive(false);
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(_webSocketObject);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(_webSocketObject);
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(nameof(ModelProtocolClient));
+            }
+        }
+
+        private void HandleDisconnected()
+        {
+            ResetSession();
+            Disconnected?.Invoke();
+        }
+
+        private void HandleConnectionError(Exception exception)
+        {
+            ConnectionError?.Invoke(exception);
+        }
+
+        public async Task TrainAsync(string modelJson, int? epoch = null, CancellationToken cancellationToken = default)
         {
             RequireIdle();
             cancellationToken.ThrowIfCancellationRequested();
@@ -54,12 +127,38 @@ namespace Networking
             _lastEpoch = 0;
             _requestedEpochs = epoch;
             _totalEpochs = null;
-            Operation = ModelOperation.Training;
-            return SendRequestAsync(request, cancellationToken);
+            Operation = ModelOperation.StartingTraining;
+            int generation = _sessionGeneration;
+            TaskCompletionSource<bool> started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _trainingStarted = started;
+            using (cancellationToken.Register(() => started.TrySetCanceled()))
+            {
+                try
+                {
+                    await SendRequestAsync(request, cancellationToken);
+                    await started.Task;
+                }
+                catch
+                {
+                    // 시작 확인을 기다리다 취소·실패하면 접수 여부가 불명확하므로 연결도 폐기한다.
+                    if (generation == _sessionGeneration)
+                    {
+                        ResetSession();
+                        await _webSocketClient.DisconnectAsync();
+                    }
+                    // 송신 단계에서 실패해도 대기 Task의 오류를 관찰한다.
+                    if (started.Task.IsFaulted)
+                    {
+                        _ = started.Task.Exception;
+                    }
+                    throw;
+                }
+            }
         }
 
-        public Task CancelTrainingAsync(CancellationToken cancellationToken = default)
+        public async Task CancelTrainingAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             cancellationToken.ThrowIfCancellationRequested();
             if (Operation != ModelOperation.Training)
             {
@@ -67,10 +166,10 @@ namespace Networking
             }
 
             Operation = ModelOperation.CancellingTraining;
-            return SendRequestAsync(new JObject { ["type"] = "cancel_training" }, cancellationToken);
+            await SendRequestAsync(new JObject { ["type"] = "cancel_training" }, cancellationToken);
         }
 
-        public Task InferAsync(string imageId, CancellationToken cancellationToken = default)
+        public async Task InferAsync(string imageId, CancellationToken cancellationToken = default)
         {
             RequireIdle();
             cancellationToken.ThrowIfCancellationRequested();
@@ -85,11 +184,13 @@ namespace Networking
 
             _inferenceImageId = imageId;
             Operation = ModelOperation.Inferring;
-            return SendRequestAsync(new JObject { ["type"] = "infer", ["image_id"] = imageId }, cancellationToken);
+            await SendRequestAsync(new JObject { ["type"] = "infer", ["image_id"] = imageId }, cancellationToken);
         }
 
         public void ResetSession()
         {
+            _trainingStarted?.TrySetException(new IOException("Connection or training session ended before training started."));
+            _trainingStarted = null;
             _sessionGeneration++;
             Operation = ModelOperation.Idle;
             HasTrainedModel = false;
@@ -99,7 +200,7 @@ namespace Networking
             _totalEpochs = null;
         }
 
-        public void HandleJson(string json)
+        private void HandleJson(string json)
         {
             Action notification;
             try
@@ -110,6 +211,7 @@ namespace Networking
             catch (Exception exception) when (exception is JsonException || exception is InvalidDataException
                                               || exception is OverflowException)
             {
+                _trainingStarted?.TrySetException(exception);
                 ProtocolError?.Invoke(exception);
                 return;
             }
@@ -122,7 +224,7 @@ namespace Networking
             int generation = _sessionGeneration;
             try
             {
-                await _sendJson(request.ToString(Formatting.None), cancellationToken);
+                await _webSocketClient.SendJsonAsync(request.ToString(Formatting.None), cancellationToken);
             }
             catch
             {
@@ -136,6 +238,7 @@ namespace Networking
 
         private void RequireIdle()
         {
+            ThrowIfDisposed();
             if (Operation != ModelOperation.Idle)
             {
                 throw new InvalidOperationException("Only one model operation is allowed at a time.");
@@ -154,13 +257,33 @@ namespace Networking
         {
             switch (ReadString(message, "type"))
             {
+                case "training_started":
+                    if (Operation != ModelOperation.StartingTraining || _trainingStarted == null)
+                    {
+                        throw new InvalidDataException("Received training start without a pending training request.");
+                    }
+                    int epochs = ReadPositiveInteger(message, "epochs");
+                    if (_requestedEpochs.HasValue && epochs != _requestedEpochs.Value)
+                    {
+                        throw new InvalidDataException("Training start epoch count does not match the request.");
+                    }
+                    TaskCompletionSource<bool> pendingStart = _trainingStarted;
+                    if (pendingStart.Task.IsCompleted)
+                    {
+                        return () => { };
+                    }
+                    _totalEpochs = epochs;
+                    Operation = ModelOperation.Training;
+                    _trainingStarted = null;
+                    return () => pendingStart.TrySetResult(true);
+
                 case "training_progress":
                     RequireTraining();
                     TrainingProgress progress = new TrainingProgress
                     {
                         Epoch = ReadPositiveInteger(message, "epoch"),
                         Epochs = ReadPositiveInteger(message, "epochs"),
-                        Logs = ReadLogs(message)
+                        Logs = ReadMetrics(message, "logs", TrainingMetricNames)
                     };
                     if (progress.Epoch <= _lastEpoch || progress.Epoch >= progress.Epochs
                         || (_requestedEpochs.HasValue && progress.Epochs != _requestedEpochs.Value)
@@ -177,7 +300,8 @@ namespace Networking
                     TrainingResult result = new TrainingResult
                     {
                         Epoch = ReadPositiveInteger(message, "epoch"),
-                        Logs = ReadLogs(message)
+                        Logs = ReadMetrics(message, "logs", TrainingMetricNames),
+                        Evaluation = ReadMetrics(message, "evaluation", EvaluationMetricNames)
                     };
                     int? expectedEpochs = _totalEpochs ?? _requestedEpochs;
                     if (result.Epoch <= _lastEpoch || (expectedEpochs.HasValue && result.Epoch != expectedEpochs.Value))
@@ -234,6 +358,12 @@ namespace Networking
             if (error.RequestType != "train" && error.RequestType != "infer" && error.RequestType != "cancel_training")
             {
                 throw new InvalidDataException("Unknown request type in error response.");
+            }
+            if (error.RequestType == "train" && Operation == ModelOperation.StartingTraining)
+            {
+                _trainingStarted?.TrySetException(new InvalidOperationException($"{error.Code}: {error.Message}"));
+                ResetSession();
+                return;
             }
             // busy는 추가 요청의 거절이며 이미 실행 중인 작업을 종료하지 않는다.
             if (error.Code == "busy")
@@ -310,16 +440,21 @@ namespace Networking
             return value;
         }
 
-        private static IReadOnlyDictionary<string, double> ReadLogs(JObject message)
+        private static IReadOnlyDictionary<string, double> ReadMetrics(JObject message, string field, string[] names)
         {
-            if (!(message["logs"] is JObject logs))
+            if (!(message[field] is JObject metrics) || metrics.Count != names.Length)
             {
-                throw new InvalidDataException("'logs' must be a Keras metrics object.");
+                throw new InvalidDataException($"'{field}' must contain exactly: {string.Join(", ", names)}.");
             }
             Dictionary<string, double> values = new Dictionary<string, double>();
-            foreach (JProperty property in logs.Properties())
+            foreach (string name in names)
             {
-                values.Add(property.Name, ReadNumber(property.Value));
+                double value = ReadNumber(metrics[name]);
+                if ((name == "accuracy" || name == "val_accuracy") && (value < 0 || value > 1))
+                {
+                    throw new InvalidDataException($"'{field}.{name}' must be between 0 and 1.");
+                }
+                values.Add(name, value);
             }
             return values;
         }

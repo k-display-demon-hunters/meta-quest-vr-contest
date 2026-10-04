@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -24,7 +25,8 @@ namespace Networking.Tests
                 connection.JsonReceived += json => received++;
                 connection.Disconnected += () => disconnected++;
                 Task<WebSocket> accept = server.AcceptAsync();
-                Wait(connection.ConnectAsync(server.Url));
+                SetServerUrl(connection, server.Url);
+                Wait(connection.ConnectAsync());
                 using (WebSocket peer = Wait(accept))
                 {
                     Wait(peer.SendAsync(Bytes("{\"type\":\"training_completed\"}"), WebSocketMessageType.Text, true, server.Token));
@@ -47,7 +49,8 @@ namespace Networking.Tests
                 string received = null;
                 connection.JsonReceived += json => received = json;
                 Task<WebSocket> accept = server.AcceptAsync();
-                Wait(connection.ConnectAsync(server.Url));
+                SetServerUrl(connection, server.Url);
+                Wait(connection.ConnectAsync());
                 using (WebSocket peer = Wait(accept))
                 {
                     Wait(peer.SendAsync(Bytes("{\"type\":"), WebSocketMessageType.Text, false, server.Token));
@@ -66,6 +69,13 @@ namespace Networking.Tests
                     Assert.That(Encoding.UTF8.GetString(buffer, 0, result.Count), Is.EqualTo("{\"type\":\"cancel_training\"}"));
                 }
             }
+        }
+
+        internal static void SetServerUrl(WebSocketConnection connection, string serverUrl)
+        {
+            // 테스트에서만 내부 접속 대상을 로컬 서버로 바꾼다.
+            typeof(WebSocketConnection).GetField("_serverUrl", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(connection, serverUrl);
         }
 
         private static ArraySegment<byte> Bytes(string value)
@@ -102,7 +112,7 @@ namespace Networking.Tests
         }
 
         // 서버 학습 구현 없이 실제 WebSocket 전송과 종료 동작만 검증한다.
-        private sealed class LoopbackServer : IDisposable
+        internal sealed class LoopbackServer : IDisposable
         {
             private readonly TcpListener _listener = new TcpListener(IPAddress.Loopback, 0);
             private readonly CancellationTokenSource _timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));

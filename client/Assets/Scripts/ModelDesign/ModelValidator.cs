@@ -11,13 +11,32 @@ namespace ModelDesign
             {
                 throw new ArgumentNullException(nameof(model));
             }
+            for (int i = 0; i < model.Layers.Count; i++)
+            {
+                if (model.Layers[i].Type == LayerType.Input)
+                {
+                    return ValidateDirection(model, i != 0);
+                }
+                if (model.Layers[i].Type == LayerType.Output)
+                {
+                    return ValidateDirection(model, i == 0);
+                }
+            }
+            IReadOnlyList<ValidationIssue> forward = ValidateDirection(model, false);
+            IReadOnlyList<ValidationIssue> reverse = ValidateDirection(model, true);
+            return forward.Count <= reverse.Count ? forward : reverse;
+        }
+
+        private static IReadOnlyList<ValidationIssue> ValidateDirection(ModelDefinition model, bool reverse)
+        {
             List<ValidationIssue> issues = new List<ValidationIssue>();
             // Detached fragments have unknown input shape until their preceding chain is connected.
             bool? isVector = null;
             for (int i = 0; i < model.Layers.Count; i++)
             {
-                LayerDefinition layer = model.Layers[i];
-                string path = "/blocks/" + i;
+                int blockIndex = reverse ? model.Layers.Count - 1 - i : i;
+                LayerDefinition layer = model.Layers[blockIndex];
+                string path = "/blocks/" + blockIndex;
                 switch (layer.Type)
                 {
                     case LayerType.Input:
@@ -34,7 +53,7 @@ namespace ModelDesign
                         }
                         goto case LayerType.Dense;
                     case LayerType.Dense:
-                        bool autoFlatten = i == 1 && model.Layers[0].Type == LayerType.Input;
+                        bool autoFlatten = i == 1 && model.Layers[reverse ? model.Layers.Count - 1 : 0].Type == LayerType.Input;
                         if (isVector == false && !autoFlatten)
                         {
                             issues.Add(new ValidationIssue(model, path, "Spatial layers require Flatten before Dense or Output."));
@@ -69,11 +88,14 @@ namespace ModelDesign
             }
             ModelDefinition model = workspace.InputModel;
             List<ValidationIssue> issues = new List<ValidationIssue>(ValidateEditing(model));
-            if (!ReferenceEquals(model.Layers[0], workspace.Input))
+            bool inputAtStart = ReferenceEquals(model.Layers[0], workspace.Input);
+            bool inputAtEnd = ReferenceEquals(model.Layers[model.Layers.Count - 1], workspace.Input);
+            if (!inputAtStart && !inputAtEnd)
             {
-                issues.Add(new ValidationIssue(model, "/blocks/0", "The model must start at the fixed Input block."));
+                issues.Add(new ValidationIssue(model, "/blocks", "Input must be at a chain endpoint."));
             }
-            if (!ReferenceEquals(model.Layers[model.Layers.Count - 1], workspace.Output))
+            LayerDefinition oppositeEndpoint = model.Layers[inputAtStart ? model.Layers.Count - 1 : 0];
+            if (!ReferenceEquals(oppositeEndpoint, workspace.Output))
             {
                 issues.Add(new ValidationIssue(model, "/blocks", "Connect the Input chain to the fixed Output block before sending."));
             }

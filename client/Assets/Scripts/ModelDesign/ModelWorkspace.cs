@@ -41,6 +41,28 @@ namespace ModelDesign
             NotifyChanged();
         }
 
+        public void AddAndConnect(LayerDefinition existingLayer, LayerDefinition newLayer)
+        {
+            ModelDefinition model = GetModel(existingLayer);
+            RequireEditable(newLayer);
+            if (newLayer.Workspace != null)
+            {
+                throw new InvalidOperationException("The block already belongs to a workspace.");
+            }
+            RequireAvailableEndpoint(model, existingLayer);
+
+            List<LayerDefinition> layers = new List<LayerDefinition>(model.Layers);
+            if (!ReferenceEquals(layers[layers.Count - 1], existingLayer))
+            {
+                layers.Reverse();
+            }
+            layers.Add(newLayer);
+            ModelDefinition connectedModel = new ModelDefinition(layers);
+            Attach(newLayer);
+            _models[_models.IndexOf(model)] = connectedModel;
+            NotifyChanged();
+        }
+
         public ModelDefinition GetModel(LayerDefinition layer)
         {
             RequireActive();
@@ -61,44 +83,48 @@ namespace ModelDesign
             throw new ArgumentException("The block does not belong to this workspace.", nameof(layer));
         }
 
-        public void Connect(LayerDefinition from, LayerDefinition to)
+        public void Connect(LayerDefinition first, LayerDefinition second)
         {
-            ModelDefinition left = GetModel(from);
-            ModelDefinition right = GetModel(to);
-            if (ReferenceEquals(left, right))
+            ModelDefinition firstModel = GetModel(first);
+            ModelDefinition secondModel = GetModel(second);
+            if (ReferenceEquals(firstModel, secondModel))
             {
                 throw new InvalidOperationException("Connecting a chain to itself would create a cycle.");
             }
-            if (!ReferenceEquals(left.Layers[left.Layers.Count - 1], from) ||
-                !ReferenceEquals(right.Layers[0], to))
+            RequireAvailableEndpoint(firstModel, first);
+            RequireAvailableEndpoint(secondModel, second);
+
+            List<LayerDefinition> firstBlocks = new List<LayerDefinition>(firstModel.Layers);
+            List<LayerDefinition> secondBlocks = new List<LayerDefinition>(secondModel.Layers);
+            if (!ReferenceEquals(firstBlocks[firstBlocks.Count - 1], first))
             {
-                throw new InvalidOperationException("Connect the end of a chain to the start of another chain.");
+                firstBlocks.Reverse();
             }
-            if (from.Type == LayerType.Output || to.Type == LayerType.Input)
+            if (!ReferenceEquals(secondBlocks[0], second))
             {
-                throw new InvalidOperationException("Input has no incoming connection; Output has no outgoing connection.");
+                secondBlocks.Reverse();
             }
-            List<LayerDefinition> layers = new List<LayerDefinition>(left.Layers);
-            layers.AddRange(right.Layers);
-            int index = _models.IndexOf(left);
-            _models[index] = new ModelDefinition(layers);
-            _models.Remove(right);
+            firstBlocks.AddRange(secondBlocks);
+            _models[_models.IndexOf(firstModel)] = new ModelDefinition(firstBlocks);
+            _models.Remove(secondModel);
             NotifyChanged();
         }
 
-        public void Disconnect(LayerDefinition from, LayerDefinition to)
+        public void Disconnect(LayerDefinition first, LayerDefinition second)
         {
-            ModelDefinition model = GetModel(from);
-            if (!ReferenceEquals(model, GetModel(to)))
+            ModelDefinition model = GetModel(first);
+            if (!ReferenceEquals(model, GetModel(second)))
             {
                 throw new InvalidOperationException("The blocks are not connected.");
             }
             List<LayerDefinition> layers = new List<LayerDefinition>(model.Layers);
-            int index = layers.IndexOf(from);
-            if (index + 1 >= layers.Count || !ReferenceEquals(layers[index + 1], to))
+            int firstIndex = layers.IndexOf(first);
+            int secondIndex = layers.IndexOf(second);
+            if (Math.Abs(firstIndex - secondIndex) != 1)
             {
-                throw new InvalidOperationException("The blocks are not adjacent in this direction.");
+                throw new InvalidOperationException("The blocks are not adjacent.");
             }
+            int index = Math.Min(firstIndex, secondIndex);
             int modelIndex = _models.IndexOf(model);
             _models[modelIndex] = new ModelDefinition(layers.GetRange(0, index + 1));
             _models.Insert(modelIndex + 1, new ModelDefinition(layers.GetRange(index + 1, layers.Count - index - 1)));
@@ -188,6 +214,19 @@ namespace ModelDesign
             RefreshValidation();
             OnValidationChanged?.Invoke(ValidationIssues);
             OnChanged?.Invoke();
+        }
+
+        private static void RequireAvailableEndpoint(ModelDefinition model, LayerDefinition layer)
+        {
+            if (!ReferenceEquals(model.Layers[0], layer) &&
+                !ReferenceEquals(model.Layers[model.Layers.Count - 1], layer))
+            {
+                throw new InvalidOperationException("The block already has two connections.");
+            }
+            if ((layer.Type == LayerType.Input || layer.Type == LayerType.Output) && model.Layers.Count > 1)
+            {
+                throw new InvalidOperationException("Input and Output can have only one connection.");
+            }
         }
 
         private static void RequireEditable(LayerDefinition layer)

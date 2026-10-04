@@ -50,8 +50,9 @@ workspace.Connect(pool, flatten);    // 다시 연결
 | 호출 | 동작 |
 | --- | --- |
 | `workspace.AddLayer(layer)` | 단독 블록 덩어리 추가 |
-| `workspace.Connect(from, to)` | 덩어리의 끝 → 다른 덩어리의 시작 연결 |
-| `workspace.Disconnect(from, to)` | 인접한 두 블록의 연결 해제 |
+| `workspace.AddAndConnect(existingLayer, newLayer)` | 기존 덩어리의 비어 있는 끝점에 새 블록 추가·연결 |
+| `workspace.Connect(first, second)` | 두 덩어리의 비어 있는 끝점 연결. 인자 순서 무관 |
+| `workspace.Disconnect(first, second)` | 인접한 두 블록의 연결 해제 |
 | `workspace.RemoveLayer(layer)` | 블록 삭제. 중간 블록의 양쪽은 별도 덩어리가 됨 |
 | `workspace.ReplaceLayer(oldLayer, newLayer)` | 연결 위치를 유지하며 다른 블록으로 교체 |
 | `workspace.GetModel(layer)` | 블록이 현재 속한 덩어리 |
@@ -77,3 +78,5 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - 위치·회전·크기와 연결선 표현은 오브젝트/UI 계층에서 관리한다.
 - Input은 JSON의 `input`으로, Output은 마지막 Dense 10개·Softmax로 변환한다. 화면의 블록 이름을 JSON에 추가하지 않는다.
 - 분리된 다른 덩어리는 전송하지 않는다. `modelType`은 전송 덩어리만 보고 자동 판단한다.
+
+덩어리 목록은 양방향으로 저장할 수 있다. 검증과 JSON 변환은 Input에서 Output 방향으로 읽는다. 끝점이 없는 조각은 양방향을 검사하여 가능한 방향을 사용한다. Input·Output은 연결을 하나씩만 가질 수 있다.

@@ -212,7 +212,7 @@ namespace ModelDesign.Tests
         [TestCase(LayerType.Conv2D, LayerType.Dense, true)]
         [TestCase(LayerType.Conv2D, LayerType.Output, true)]
         [TestCase(LayerType.Dense, LayerType.Conv2D, true)]
-        [TestCase(LayerType.Dense, LayerType.Flatten, true)]
+        [TestCase(LayerType.Dense, LayerType.Flatten, false)]
         [TestCase(LayerType.Flatten, LayerType.Flatten, true)]
         [TestCase(LayerType.Flatten, LayerType.Dense, false)]
         [TestCase(LayerType.Conv2D, LayerType.Flatten, false)]
@@ -233,6 +233,81 @@ namespace ModelDesign.Tests
                     Assert.AreSame(workspace.GetModel(a), issues[0].Model);
                     Assert.AreEqual("/blocks/1", issues[0].Path);
                 }
+            }
+        }
+
+        [Test]
+        public void ReversedInputOutputChainSerializesInInputDirection()
+        {
+            LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
+            LayerDefinition flatten = LayerDefinition.Flatten();
+            using (ModelWorkspace workspace = new ModelWorkspace())
+            {
+                workspace.AddAndConnect(workspace.Output, flatten);
+                workspace.AddAndConnect(flatten, conv);
+                workspace.Connect(conv, workspace.Input);
+                Assert.AreSame(workspace.Output, workspace.InputModel.Layers[0]);
+                Assert.AreSame(workspace.Input, workspace.InputModel.Layers[3]);
+                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
+                string json = ModelJsonSerializer.Serialize(workspace);
+                Assert.Less(json.IndexOf("conv2d", StringComparison.Ordinal),
+                    json.IndexOf("flatten", StringComparison.Ordinal));
+                workspace.Disconnect(workspace.Input, conv);
+                workspace.Connect(workspace.Input, conv);
+                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
+                AssertOwnership(workspace);
+            }
+        }
+
+        [TestCase(false, false, false)]
+        [TestCase(false, false, true)]
+        [TestCase(false, true, false)]
+        [TestCase(false, true, true)]
+        [TestCase(true, false, false)]
+        [TestCase(true, false, true)]
+        [TestCase(true, true, false)]
+        [TestCase(true, true, true)]
+        public void ConnectionArgumentOrderDoesNotChangeExport(bool reverseFragment, bool reverseInput, bool reverseOutput)
+        {
+            LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
+            LayerDefinition flatten = LayerDefinition.Flatten();
+            using (ModelWorkspace workspace = new ModelWorkspace())
+            using (ModelWorkspace expected = CreateChain(
+                LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU), LayerDefinition.Flatten()))
+            {
+                workspace.AddLayer(conv);
+                workspace.AddLayer(flatten);
+                workspace.Connect(reverseFragment ? flatten : conv, reverseFragment ? conv : flatten);
+                workspace.Connect(reverseInput ? conv : workspace.Input, reverseInput ? workspace.Input : conv);
+                workspace.Connect(reverseOutput ? workspace.Output : flatten, reverseOutput ? flatten : workspace.Output);
+                Assert.AreEqual(ModelJsonSerializer.Serialize(expected), ModelJsonSerializer.Serialize(workspace));
+                Assert.IsEmpty(workspace.ValidationIssues);
+                AssertOwnership(workspace);
+            }
+        }
+
+        [Test]
+        public void AddAndConnectIsAtomicAndNotifiesOnce()
+        {
+            using (ModelWorkspace workspace = new ModelWorkspace())
+            {
+                int changed = 0;
+                int validated = 0;
+                workspace.OnChanged += () => changed++;
+                workspace.OnValidationChanged += issues => validated++;
+                LayerDefinition dense = LayerDefinition.Dense(8, ActivationType.ReLU);
+                workspace.AddAndConnect(workspace.Input, dense);
+                Assert.AreEqual(1, changed);
+                Assert.AreEqual(1, validated);
+                Assert.AreEqual(2, workspace.Models.Count);
+                LayerDefinition rejected = LayerDefinition.Dense(4, ActivationType.ReLU);
+                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(workspace.Input, rejected));
+                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(dense, dense));
+                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(dense, workspace.Output));
+                Assert.AreEqual(1, changed);
+                Assert.AreEqual(1, validated);
+                workspace.AddLayer(rejected);
+                AssertOwnership(workspace);
             }
         }
 

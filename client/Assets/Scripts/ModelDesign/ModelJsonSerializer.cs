@@ -24,13 +24,14 @@ namespace ModelDesign
             StringBuilder builder = new StringBuilder("{\"modelType\":\"");
             builder.Append(DetermineModelType(model));
             builder.Append("\",\"input\":{\"shape\":[28,28,1]},\"layers\":[");
+            bool reverse = ReferenceEquals(model.Layers[model.Layers.Count - 1], workspace.Input);
             for (int i = 1; i < model.Layers.Count; i++)
             {
                 if (i > 1)
                 {
                     builder.Append(',');
                 }
-                AppendLayer(builder, model.Layers[i]);
+                AppendLayer(builder, model.Layers[reverse ? model.Layers.Count - 1 - i : i]);
             }
             builder.Append("]}");
             json = builder.ToString();

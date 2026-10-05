@@ -1,0 +1,6 @@
+{
+    "name": "ModelDesign.Tests",
+    "references": ["ModelDesign"],
+    "includePlatforms": ["Editor"],
+    "optionalUnityReferences": ["TestAssemblies"]
+}

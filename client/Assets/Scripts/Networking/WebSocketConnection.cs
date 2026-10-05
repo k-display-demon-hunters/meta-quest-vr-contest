@@ -10,6 +10,9 @@ namespace Networking
 {
     public sealed class WebSocketConnection : IDisposable
     {
+        // 실제 서버 주소는 이 계층에서만 설정한다.
+        private string _serverUrl = "";
+
         private const int ReceiveBufferSize = 8192;
         private const int MaxMessageSize = 1024 * 1024;
         private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(3);
@@ -30,6 +33,18 @@ namespace Networking
 
         public event Action<string> JsonReceived;
         public event Action<Exception> ConnectionError;
+        public event Action Disconnected;
+
+        public bool IsConnected
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _state == ConnectionState.Connected;
+                }
+            }
+        }
 
         public void DispatchPendingEvents()
         {
@@ -39,9 +54,9 @@ namespace Networking
             }
         }
 
-        public async Task ConnectAsync(string serverUrl, CancellationToken cancellationToken = default)
+        public async Task ConnectAsync(CancellationToken cancellationToken = default)
         {
-            Uri uri = new Uri(serverUrl);
+            Uri uri = new Uri(_serverUrl);
 
             ConnectionSession session = new ConnectionSession();
             lock (_sync)
@@ -239,7 +254,19 @@ namespace Networking
                         while (!result.EndOfMessage);
 
                         string json = Encoding.UTF8.GetString(message.ToArray());
-                        _pendingEvents.Enqueue(() => JsonReceived?.Invoke(json));
+                        _pendingEvents.Enqueue(() =>
+                        {
+                            // 연결이 끝난 뒤 남아 있던 응답으로 삭제된 모델을 복원하지 않는다.
+                            bool isCurrent;
+                            lock (_sync)
+                            {
+                                isCurrent = _session == session && _state == ConnectionState.Connected;
+                            }
+                            if (isCurrent)
+                            {
+                                JsonReceived?.Invoke(json);
+                            }
+                        });
                     }
                 }
             }
@@ -284,6 +311,7 @@ namespace Networking
                 {
                     _session = null;
                     _state = ConnectionState.Disconnected;
+                    _pendingEvents.Enqueue(() => Disconnected?.Invoke());
                 }
             }
 

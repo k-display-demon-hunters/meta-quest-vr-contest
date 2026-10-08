@@ -16,8 +16,10 @@ Windows Editor에서 Quest Link로 실행할 때에는 Meta Quest Link를 연결
 
 ## 에디터 XR Interaction Simulator
 
+자세한 사용법과 전체 조작키는 [XR 에디터 시뮬레이터](xr-simulator.md)를 참고한다.
+
 - `Assets/Scripts/XR/XREditorSimulator.cs`가 XRI 3.3.2 패키지의 `XRInteractionSimulator`와 기기 관리 컴포넌트를 직접 구성한다. 키보드·마우스 Input Action을 코드에서 생성하고 활성화·비활성화·해제한다. 손 표현 시뮬레이션은 사용하지 않는다.
-- `Assets/XRI/Settings/Resources/XRDeviceSimulatorSettings.asset`에서 자동 생성과 에디터 전용 생성을 활성화하고 프로젝트의 `Assets/Prefabs/XR/XREditorSimulator.prefab`을 연결했다. `QuestMain`에서 Play하면 가상 기기와 프로젝트 코드의 간단한 조작키 안내가 생성된다. 씬에 프리팹을 별도로 배치할 필요가 없다.
+- `Assets/XRI/Settings/Resources/XRDeviceSimulatorSettings.asset`에서 자동 생성과 에디터 전용 생성을 활성화하고 프로젝트의 `Assets/Prefabs/XR/XREditorSimulator.prefab`을 연결했다. `QuestMain`에서 Play하면 가상 기기가 생성된다. 화면의 조작키 안내는 제거했으며 조작키는 아래 표를 참고한다. 씬에 프리팹을 별도로 배치할 필요가 없다.
 - 가져왔던 `Assets/Samples`의 파일 132개(메타 포함)를 삭제했다. 샘플 프리팹, 입력 에셋, UI 이미지, UI 스크립트, 손 표현, 샘플 검증 도구에 대한 의존성이 없다. 기존 XRI 패키지의 시뮬레이션 API는 계속 사용한다.
 - Game 뷰를 클릭하여 키보드 입력을 받도록 한다. 리그는 기존 Input System 추적·이동·태블릿 입력을 그대로 사용한다.
 
@@ -55,10 +57,11 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 - 컨트롤러: OpenXR aim pose(`pointerPosition`, `pointerRotation`)로 레이를 향하게 한다.
 - 오른손에는 손잡이·스틱·버튼·트리거로 구성된 임시 컨트롤러 모델이 표시된다. 오른손 레이와 Grip/Trigger 입력은 유지한다.
 - 왼손에는 28cm × 20cm, 두께 1.2cm의 직사각형 태블릿이 표시된다. 화면은 손에 쥔 컨트롤러의 뒤쪽(-Z)을 향한다. 최종 디자인은 추후 교체한다.
-- 태블릿 본체와 화면은 전용 `TabletBody`·`TabletScreen` URP Unlit 재질을 사용하여 조명 반사 없이 일정한 색으로 표시한다. 오른손 컨트롤러는 기존 Lit 재질을 유지한다.
+- 태블릿 본체는 `TabletBody` URP Unlit 재질을 사용하고 화면 배경은 Canvas의 `Background` Image로 표시한다. 둘 다 조명 반사 없이 일정한 색을 유지한다. 오른손 컨트롤러는 기존 Lit 재질을 유지한다.
 - 양손 표시용 오브젝트는 별도 Tracked Pose Driver로 grip pose(`devicePosition`, `deviceRotation`)를 추적한다. 기존 레이는 aim pose를 유지하고, 왼손 레이 및 인터랙터는 비활성화하여 태블릿 입력용으로 사용한다.
 - 태블릿 입력은 왼손 X(`primaryButton`), Y(`secondaryButton`), Trigger(`triggerPressed`) 3개다. 누른 버튼의 이름과 누적 입력 횟수를 화면에 표시한다. 스틱은 이동 전용으로 유지한다. 시스템 Menu 버튼과 Grip은 태블릿 입력으로 사용하지 않는다.
-- `Assets/Scripts/XR/LeftHandTablet.cs`는 기존 uGUI의 World Space Canvas에 문자를 출력하며 입력 활성화·비활성화·해제를 관리한다. 서버 통신이나 실제 메뉴 기능은 추가하지 않는다.
+- `Assets/Prefabs/XR/XRPlayerRig.prefab`의 `Tablet > Tablet Canvas`에 World Space Canvas와 자식 `Background` Image, `Button Message` Text를 미리 저장한다. Play 전에도 프리팹 모드에서 화면을 편집할 수 있다. Canvas 크기는 500 × 340, 배율은 0.0005이며 기존 화면 위치와 글자 스타일을 유지한다. 배경은 520 × 360으로 기존 26cm × 18cm 화면 크기를 유지한다.
+- `Assets/Scripts/XR/LeftHandTablet.cs`는 Inspector의 `Message`에 연결된 Text의 문자만 갱신하고 입력 활성화·비활성화·해제를 관리한다. 실행 중 Canvas나 Text를 생성하지 않는다. UI를 교체할 때는 새 Text를 `Message`에 연결한다. 초기 씬 생성 도구도 Canvas를 프리팹에 저장한다. 서버 통신이나 실제 메뉴 기능은 추가하지 않는다.
 - 바닥은 8m × 8m이며 Unity 1 unit을 1m로 사용한다.
 - 왼쪽 스틱: 바라보는 방향을 기준으로 전후좌우 이동한다. 최대 속도는 1.5m/s이며 작은 스틱 입력은 데드존(0.15)으로 무시한다. 고개를 위아래로 움직여도 이동은 수평으로 유지된다.
 - XR Body Transformer, Locomotion Mediator, Continuous Move Provider로 수평 이동만 처리한다. 이동 리그에는 충돌과 중력이 없으며, 스틱을 놓으면 현재 위치에 멈춘다. 바닥 밖에서도 떨어지지 않는다.
@@ -68,6 +71,8 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 
 ### 삭제 내역
 
+- `XRPlayerRig`의 `Tablet Text Anchor` GameObject와 Transform, `Tablet Screen` GameObject와 Transform·MeshRenderer·MeshFilter: Canvas를 Tablet 바로 아래로 옮기고 UI Image로 화면 배경을 대체했다.
+- `Assets/XR/Materials/TabletScreen.mat`와 `.meta`: 제거한 3D 화면 전용 재질.
 - `Assets/Scenes/SampleScene.unity`와 `.meta`: 사용하지 않는 기본 씬 전체(기본 카메라·조명 포함).
 - `QuestMain`의 `Grab Test Cube`: GameObject, Transform, MeshRenderer, MeshFilter, BoxCollider, Rigidbody, XRGrabInteractable 및 큐브 전용 씬 참조.
 - `Assets/XR/Materials/GrabCube.mat`와 `.meta`: 삭제한 큐브 전용 재질.

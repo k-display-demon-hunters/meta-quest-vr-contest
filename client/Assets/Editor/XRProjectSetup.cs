@@ -14,6 +14,7 @@ using UnityEngine.InputSystem.XR;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -314,20 +315,15 @@ namespace XR.Editor
             Material screen = CreateMaterial("DeviceScreen", new Color(0.015f, 0.025f, 0.04f));
             Material tabletBody = CreateMaterial("TabletBody", new Color(0.72f, 0.76f, 0.82f),
                 "Universal Render Pipeline/Unlit");
-            Material tabletScreen = CreateMaterial("TabletScreen", new Color(0.015f, 0.025f, 0.04f),
-                "Universal Render Pipeline/Unlit");
             GameObject left = CreateChild("LeftHand Grip Visual", parent);
             AddPoseDriver(left, "<XRController>{LeftHand}", "devicePosition", "deviceRotation");
             GameObject tablet = CreateChild("Tablet", left.transform);
             tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
             CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.28f, 0.20f, 0.012f), tabletBody);
-            CreateDevicePart("Tablet Screen", tablet.transform, new Vector3(0f, 0f, -0.0065f),
-                new Vector3(0.26f, 0.18f, 0.001f), tabletScreen);
-            GameObject anchor = CreateChild("Tablet Text Anchor", tablet.transform);
-            anchor.transform.localPosition = new Vector3(0f, 0f, -0.0075f);
+            Text message = CreateTabletCanvas(tablet.transform);
             LeftHandTablet display = tablet.AddComponent<LeftHandTablet>();
             SerializedObject serializedDisplay = new SerializedObject(display);
-            serializedDisplay.FindProperty("_screen").objectReferenceValue = anchor.transform;
+            serializedDisplay.FindProperty("_message").objectReferenceValue = message;
             serializedDisplay.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject right = CreateChild("RightHand Grip Visual", parent);
@@ -338,6 +334,45 @@ namespace XR.Editor
             CreateDevicePart("Controller A", right.transform, new Vector3(0.017f, 0.043f, 0.002f), new Vector3(0.011f, 0.007f, 0.011f), screen);
             CreateDevicePart("Controller B", right.transform, new Vector3(0.017f, 0.043f, 0.022f), new Vector3(0.011f, 0.007f, 0.011f), screen);
             CreateDevicePart("Controller Trigger", right.transform, new Vector3(0f, 0.009f, 0.054f), new Vector3(0.025f, 0.027f, 0.012f), screen);
+        }
+
+        private static Text CreateTabletCanvas(Transform parent)
+        {
+            GameObject canvasObject = new GameObject("Tablet Canvas", typeof(RectTransform), typeof(Canvas));
+            canvasObject.layer = LayerMask.NameToLayer("UI");
+            canvasObject.transform.SetParent(parent, false);
+            canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.0075f);
+            // UI pixels map to 0.5 mm in world space, matching the tablet screen.
+            canvasObject.transform.localScale = Vector3.one * 0.0005f;
+            canvasObject.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 340f);
+            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+
+            GameObject background = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            background.layer = canvasObject.layer;
+            background.transform.SetParent(canvasObject.transform, false);
+            // Preserve the old 26 x 18 cm screen, with text 0.5 mm in front.
+            background.transform.localPosition = new Vector3(0f, 0f, 1f);
+            background.GetComponent<RectTransform>().sizeDelta = new Vector2(520f, 360f);
+            Image backgroundImage = background.GetComponent<Image>();
+            backgroundImage.color = new Color(0.015f, 0.025f, 0.04f);
+            backgroundImage.raycastTarget = false;
+
+            GameObject label = new GameObject("Button Message", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            label.layer = canvasObject.layer;
+            label.transform.SetParent(canvasObject.transform, false);
+            RectTransform labelRect = label.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+            Text message = label.GetComponent<Text>();
+            message.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            message.fontSize = 32;
+            message.alignment = TextAnchor.MiddleCenter;
+            message.color = Color.white;
+            message.raycastTarget = false;
+            message.text = "TABLET READY\n\nX / Y / TRIGGER";
+            return message;
         }
 
         private static void CreateDevicePart(string name, Transform parent, Vector3 position, Vector3 scale, Material material)

@@ -6,6 +6,8 @@ using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 #endif
 
+//유니티 에디터에서만 작동하는 코드. 
+
 namespace XR
 {
     public sealed class XREditorSimulator : MonoBehaviour
@@ -35,19 +37,6 @@ namespace XR
                 action.Enable();
             }
             _devices.SetActive(true);
-        }
-
-        private void OnGUI()
-        {
-            GUI.Box(new Rect(12f, 12f, 390f, 190f), "XR Editor Simulator");
-            GUI.Label(new Rect(24f, 40f, 366f, 160f),
-                "Shift + I/K/J/L: left stick (move)\n" +
-                "Shift + 1/2/T: tablet X / Y / Trigger\n" +
-                "WASD, Q/E: move selected device or body\n" +
-                "Right mouse + move: rotate view/device\n" +
-                "[ / ]: select left / right device | Tab: FPS/device\n" +
-                "H: head only | R: reset hands | G: grip\n" +
-                "Release button keys before releasing Shift.");
         }
 
         private void ConfigureMovement()

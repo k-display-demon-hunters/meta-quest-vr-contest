@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 from dataclasses import replace
 from pathlib import Path
@@ -19,13 +20,21 @@ def test_real_keras_training_and_inference(settings, request, model_name):
     with TestClient(create_app(configured)) as client:
         with client.websocket_connect("/ws") as socket:
             socket.send_json({"type": "train", "model": model})
+            assert socket.receive_json() == {"type": "training_started", "epochs": 2}
             progress = socket.receive_json()
             assert progress["type"] == "training_progress", progress
             assert progress["epoch"] == 1 and progress["epochs"] == 2
-            assert "loss" in progress["logs"] and "accuracy" in progress["logs"]
+            assert set(progress["logs"]) == {"loss", "accuracy", "val_loss", "val_accuracy"}
             completed = socket.receive_json()
             assert completed["type"] == "training_completed", completed
             assert completed["epoch"] == 2
+            assert set(completed["logs"]) == {"loss", "accuracy", "val_loss", "val_accuracy"}
+            assert set(completed["evaluation"]) == {"loss", "accuracy"}
+            for metrics in (progress["logs"], completed["logs"], completed["evaluation"]):
+                assert all(math.isfinite(value) for value in metrics.values())
+                assert 0 <= metrics["accuracy"] <= 1
+                if "val_accuracy" in metrics:
+                    assert 0 <= metrics["val_accuracy"] <= 1
             socket.send_json({"type": "infer", "image_id": "mnist-test-42"})
             result = socket.receive_json()
             assert result["type"] == "inference_result", result
@@ -44,6 +53,7 @@ def test_real_cancellation_and_disconnect(settings, mlp):
     with TestClient(create_app(configured)) as client:
         with client.websocket_connect("/ws") as socket:
             socket.send_json({"type": "train", "model": mlp, "epoch": 100})
+            assert socket.receive_json() == {"type": "training_started", "epochs": 100}
             assert socket.receive_json()["type"] == "training_progress"
             socket.send_json({"type": "cancel_training"})
             while True:

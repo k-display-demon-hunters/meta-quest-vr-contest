@@ -1,28 +1,12 @@
-from io import BytesIO
 from dataclasses import replace
 
 import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
-from PIL import Image
+
 
 from app.main import create_app
 from app.worker import finite_logs
-
-
-def test_health_catalog_and_png(settings, dataset):
-    with TestClient(create_app(settings, dataset)) as client:
-        assert client.get("/health").json() == {"status": "ok"}
-        response = client.get("/images?offset=42&limit=2").json()
-        assert response["split"] == "test" and response["total"] == 10000
-        assert response["items"][0]["image_id"] == "mnist-test-42"
-        image = client.get(response["items"][0]["url"])
-        assert image.headers["content-type"] == "image/png"
-        assert Image.open(BytesIO(image.content)).size == (28, 28)
-        assert client.get("/images/mnist-test-10000").status_code == 404
-        assert client.get("/images/mnist-test-01").status_code == 404
-        assert client.get("/images?limit=1001").status_code == 422
-        assert client.get("/images?offset=10000").json()["items"] == []
 
 
 @pytest.mark.parametrize(

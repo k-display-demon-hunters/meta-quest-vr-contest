@@ -1,17 +1,13 @@
 services:
   server:
-    image: quest-training-server:local
+    image: mnist-training-server:local
     build: .
-    ports:
-      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8000}:8000"
+    env_file:
+      - .env
     environment:
       DATA_DIR: /data
-      DEFAULT_EPOCHS: ${DEFAULT_EPOCHS:-5}
-      MAX_EPOCHS: ${MAX_EPOCHS:-100}
-      BATCH_SIZE: ${BATCH_SIZE:-64}
-      TRAIN_SAMPLES: ${TRAIN_SAMPLES:-60000}
-      MAX_SESSIONS: ${MAX_SESSIONS:-4}
-      WORKER_THREADS: ${WORKER_THREADS:-1}
+    ports:
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8000}:8000"
     volumes:
       - mnist-data:/data
     init: true

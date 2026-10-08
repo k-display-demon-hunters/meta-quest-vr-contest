@@ -1,13 +1,12 @@
 [project]
-name = "quest-training-server"
+name = "mnist-training-server"
 version = "0.1.0"
-description = "Connection-scoped MNIST training server for the Meta Quest learning demo"
+description = "Connection-scoped MNIST training and inference server"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi==0.142.2",
     "uvicorn[standard]==0.54.0",
     "tensorflow-cpu==2.20.0",
-    "pillow==11.3.0",
 ]
 
 [dependency-groups]

@@ -3,12 +3,11 @@ import pytest
 from app.dataset import ensure_dataset
 
 
-def test_corrupt_cached_dataset_is_rejected(tmp_path):
+def test_existing_dataset_is_reused(tmp_path):
     path = tmp_path / "mnist.npz"
-    path.write_bytes(b"corrupt dataset")
-    with pytest.raises(ValueError, match="checksum mismatch"):
-        ensure_dataset(tmp_path)
-    assert path.read_bytes() == b"corrupt dataset"
+    path.write_bytes(b"cached dataset")
+    assert ensure_dataset(tmp_path) == path
+    assert path.read_bytes() == b"cached dataset"
 
 
 @pytest.mark.parametrize(

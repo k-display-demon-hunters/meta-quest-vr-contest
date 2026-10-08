@@ -12,11 +12,23 @@ from app.config import Settings
 logger = logging.getLogger(__name__)
 
 
+class TrainingCancelled(Exception):
+    pass
+
+
 def finite_logs(logs: dict) -> dict[str, float]:
     result = {name: float(value) for name, value in logs.items()}
     if not all(math.isfinite(value) for value in result.values()):
         raise ValueError("Keras returned a non-finite metric")
+    for name in ("accuracy", "val_accuracy"):
+        if name in result and not 0 <= result[name] <= 1:
+            raise ValueError(f"Keras returned an out-of-range {name}")
     return result
+
+
+def protocol_metrics(logs: dict, names: tuple[str, ...]) -> dict[str, float]:
+    # Missing metrics fail training instead of becoming fabricated zeroes.
+    return finite_logs({name: logs[name] for name in names})
 
 
 def build_model(definition: dict):
@@ -69,16 +81,30 @@ def run_worker(pipe: Connection, cancelled, definition: dict, epochs: int, setti
             x_train = data["x_train"][: settings.train_samples, ..., None].astype("float32") / 255.0
             y_train = data["y_train"][: settings.train_samples]
             x_test = data["x_test"][..., None].astype("float32") / 255.0
+            y_test = data["y_test"]
+        split = len(x_train) * 9 // 10
+        if split < 1 or split >= len(x_train):
+            raise ValueError("Training and validation splits must both be non-empty")
         options = tf.data.Options()
         options.threading.private_threadpool_size = 1
         options.threading.max_intra_op_parallelism = settings.worker_threads
-        training_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-        training_data = training_data.shuffle(len(x_train)).batch(settings.batch_size)
+        # Split before shuffling so every request uses the same validation images.
+        training_data = tf.data.Dataset.from_tensor_slices((x_train[:split], y_train[:split]))
+        training_data = training_data.shuffle(split).batch(settings.batch_size)
         training_data = training_data.with_options(options)
+        validation_data = tf.data.Dataset.from_tensor_slices((x_train[split:], y_train[split:]))
+        validation_data = validation_data.batch(settings.batch_size).with_options(options)
+        test_data = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+        test_data = test_data.batch(settings.batch_size).with_options(options)
 
         class Progress(keras.callbacks.Callback):
             final_logs = None
             completed_epoch = 0
+
+            def on_train_begin(self, logs=None):
+                if cancelled.is_set():
+                    raise TrainingCancelled
+                pipe.send({"type": "training_started", "epochs": epochs})
 
             def on_train_batch_begin(self, batch, logs=None):
                 if cancelled.is_set():
@@ -91,7 +117,12 @@ def run_worker(pipe: Connection, cancelled, definition: dict, epochs: int, setti
                     self.model.stop_training = True
 
             def on_epoch_end(self, epoch, logs=None):
-                self.final_logs = finite_logs(logs or {})
+                finite_logs(logs or {})
+                if cancelled.is_set():
+                    raise TrainingCancelled
+                self.final_logs = protocol_metrics(
+                    logs or {}, ("loss", "accuracy", "val_loss", "val_accuracy")
+                )
                 self.completed_epoch = epoch + 1
                 if cancelled.is_set():
                     self.model.stop_training = True
@@ -105,15 +136,47 @@ def run_worker(pipe: Connection, cancelled, definition: dict, epochs: int, setti
                         }
                     )
 
+            def on_test_batch_begin(self, batch, logs=None):
+                if cancelled.is_set():
+                    raise TrainingCancelled
+
+            def on_test_batch_end(self, batch, logs=None):
+                finite_logs(logs or {})
+                if cancelled.is_set():
+                    raise TrainingCancelled
+
         progress = Progress()
-        model.fit(training_data, epochs=epochs, callbacks=[progress], verbose=0)
+        model.fit(
+            training_data,
+            validation_data=validation_data,
+            epochs=epochs,
+            callbacks=[progress],
+            verbose=0,
+        )
         if cancelled.is_set():
             del model
             pipe.send({"type": "training_cancelled"})
             return
         if progress.completed_epoch != epochs or progress.final_logs is None:
             raise RuntimeError("Training ended before the final epoch")
-        pipe.send({"type": "training_completed", "epoch": epochs, "logs": progress.final_logs})
+        evaluation = protocol_metrics(
+            model.evaluate(test_data, callbacks=[progress], return_dict=True, verbose=0),
+            ("loss", "accuracy"),
+        )
+        if cancelled.is_set():
+            raise TrainingCancelled
+        pipe.send(
+            {
+                "type": "training_completed",
+                "epoch": epochs,
+                "logs": progress.final_logs,
+                "evaluation": evaluation,
+            }
+        )
+    except TrainingCancelled:
+        pipe.send({"type": "training_cancelled"})
+        pipe.close()
+        return
     except Exception:
         logger.exception("Model training failed")
         pipe.send(

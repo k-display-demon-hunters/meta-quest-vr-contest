@@ -22,7 +22,7 @@ async def run(args):
                 print(json.dumps(result, ensure_ascii=False))
                 if result["type"] == "training_completed":
                     break
-                if result["type"] != "training_progress":
+                if result["type"] not in ("training_started", "training_progress"):
                     raise RuntimeError(f"Training did not succeed: {result}")
             await socket.send(json.dumps({"type": "infer", "image_id": args.image_id}))
             result = json.loads(await socket.recv())

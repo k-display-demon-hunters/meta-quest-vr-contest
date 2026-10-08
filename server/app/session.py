@@ -146,7 +146,7 @@ class Session:
                 self.worker.cancel()
             while True:
                 result = await self.worker.receive()
-                if result["type"] == "training_progress":
+                if result["type"] in ("training_started", "training_progress"):
                     await self.send(result)
                     continue
                 if result["type"] == "training_completed" and self.cancelling:

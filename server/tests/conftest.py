@@ -20,7 +20,16 @@ def cnn():
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(data_dir=tmp_path)
+    return Settings(
+        data_dir=tmp_path,
+        default_epochs=5,
+        max_epochs=100,
+        batch_size=64,
+        train_samples=60000,
+        max_sessions=200,
+        worker_threads=1,
+        max_message_bytes=1048576,
+    )
 
 
 @pytest.fixture

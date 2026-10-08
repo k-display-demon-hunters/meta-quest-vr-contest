@@ -55,7 +55,12 @@ async def start(session, mlp, **kwargs):
 
 async def complete(session, epoch=1):
     session.worker.queue.put_nowait(
-        {"type": "training_completed", "epoch": epoch, "logs": {"loss": 0.5, "accuracy": 0.8}}
+        {
+            "type": "training_completed",
+            "epoch": epoch,
+            "logs": {"loss": 0.5, "accuracy": 0.8, "val_loss": 0.6, "val_accuracy": 0.7},
+            "evaluation": {"loss": 0.6, "accuracy": 0.7},
+        }
     )
     await asyncio.wait_for(session.task, 2)
 
@@ -64,11 +69,22 @@ def test_progress_completion_inference_and_retraining(settings, dataset, mlp):
     async def scenario():
         session, socket, workers = make_session(settings, dataset)
         worker = await start(session, mlp, epoch=2)
+        worker.queue.put_nowait({"type": "training_started", "epochs": 2})
+        await asyncio.sleep(0)
+        assert socket.messages == [{"type": "training_started", "epochs": 2}]
+        assert session.operation == "train" and not worker.closed
         worker.queue.put_nowait(
-            {"type": "training_progress", "epoch": 1, "epochs": 2, "logs": {"loss": 0.6}}
+            {
+                "type": "training_progress",
+                "epoch": 1,
+                "epochs": 2,
+                "logs": {"loss": 0.6, "accuracy": 0.7, "val_loss": 0.7, "val_accuracy": 0.6},
+            }
         )
         await complete(session, 2)
-        assert [m["type"] for m in socket.messages] == ["training_progress", "training_completed"]
+        assert [m["type"] for m in socket.messages] == [
+            "training_started", "training_progress", "training_completed"
+        ]
         assert session.has_model
         await session.handle({"type": "infer", "image_id": "mnist-test-42"})
         await asyncio.sleep(0)

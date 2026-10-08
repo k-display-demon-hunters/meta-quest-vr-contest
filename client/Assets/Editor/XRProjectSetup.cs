@@ -13,6 +13,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -30,12 +31,49 @@ using Unity.XR.CoreUtils;
 
 namespace XR.Editor
 {
-    public static class QuestProjectSetup
+    public static class XRProjectSetup
     {
         private const string ScenePath = "Assets/Scenes/QuestMain.unity";
-        private const string RigPath = "Assets/Prefabs/XR/QuestRig.prefab";
+        private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
+        private const string StartupSceneScheduledKey = "XR.QuestMainStartupSceneScheduled";
 
-        [MenuItem("Tools/Quest/Configure Project")]
+        [InitializeOnLoadMethod]
+        private static void ScheduleStartupScene()
+        {
+            if (Application.isBatchMode || SessionState.GetBool(StartupSceneScheduledKey, false))
+            {
+                return;
+            }
+
+            // SessionState survives script reloads, so this runs only once per editor session.
+            SessionState.SetBool(StartupSceneScheduledKey, true);
+            EditorApplication.delayCall += OpenStartupScene;
+        }
+
+        private static void OpenStartupScene()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall += OpenStartupScene;
+                return;
+            }
+            if (EditorApplication.isPlayingOrWillChangePlaymode || SceneManager.sceneCount != 1 ||
+                !File.Exists(ScenePath))
+            {
+                return;
+            }
+
+            Scene scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid() || !scene.isLoaded || !string.IsNullOrEmpty(scene.path) ||
+                scene.isDirty || scene.rootCount != 0)
+            {
+                return;
+            }
+
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        }
+
+        [MenuItem("Tools/XR/Configure Project")]
         public static void ConfigureProject()
         {
             Directory.CreateDirectory("Assets/XR");
@@ -109,12 +147,12 @@ namespace XR.Editor
         }
 
         // Explicit command only: opening the project never overwrites a scene or prefab.
-        [MenuItem("Tools/Quest/Create Initial VR Scene")]
+        [MenuItem("Tools/XR/Create Initial VR Scene")]
         public static void CreateInitialScene()
         {
             if (File.Exists(ScenePath) || File.Exists(RigPath))
             {
-                throw new InvalidOperationException("Quest scene or rig already exists. Edit the existing assets instead.");
+                throw new InvalidOperationException("XR scene or rig already exists. Edit the existing assets instead.");
             }
             if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
@@ -128,11 +166,11 @@ namespace XR.Editor
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Material floorMaterial = CreateMaterial("Floor", new Color(0.18f, 0.22f, 0.28f));
-            Material cubeMaterial = CreateMaterial("GrabCube", new Color(0.1f, 0.65f, 0.9f));
             Material rayMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
             AssetDatabase.CreateAsset(rayMaterial, "Assets/XR/Materials/ControllerRay.mat");
 
-            GameObject rig = new GameObject("Quest Rig");
+            GameObject rig = new GameObject("XR Player Rig");
+            rig.AddComponent<PersistentXRPlayerRig>();
             XROrigin origin = rig.AddComponent<XROrigin>();
             GameObject offset = CreateChild("Camera Offset", rig.transform);
             origin.CameraFloorOffsetObject = offset;
@@ -152,6 +190,7 @@ namespace XR.Editor
             XRInteractionManager manager = rig.AddComponent<XRInteractionManager>();
             CreateController(offset.transform, manager, "LeftHand", InteractorHandedness.Left, rayMaterial);
             CreateController(offset.transform, manager, "RightHand", InteractorHandedness.Right, rayMaterial);
+            CreateHeldDevices(offset.transform);
             ConfigureMovement(rig);
             PrefabUtility.SaveAsPrefabAssetAndConnect(rig, RigPath, InteractionMode.AutomatedAction);
 
@@ -160,22 +199,6 @@ namespace XR.Editor
             floor.transform.position = new Vector3(0f, -0.1f, 0f);
             floor.transform.localScale = new Vector3(8f, 0.2f, 8f);
             floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "Grab Test Cube";
-            cube.transform.position = new Vector3(0f, 1.1f, 1.5f);
-            cube.transform.localScale = Vector3.one * 0.25f;
-            cube.GetComponent<Renderer>().sharedMaterial = cubeMaterial;
-            Rigidbody cubeBody = cube.AddComponent<Rigidbody>();
-            cubeBody.useGravity = false;
-            cubeBody.isKinematic = true;
-            // The trigger is only a ray-selection target, not a physical obstacle.
-            cube.GetComponent<Collider>().isTrigger = true;
-            XRGrabInteractable grab = cube.AddComponent<XRGrabInteractable>();
-            grab.interactionManager = manager;
-            grab.useDynamicAttach = true;
-            grab.movementType = XRBaseInteractable.MovementType.Instantaneous;
-            grab.throwOnDetach = false;
-            grab.forceGravityOnDetach = false;
             GameObject lightObject = new GameObject("Directional Light");
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Directional;
@@ -190,7 +213,7 @@ namespace XR.Editor
             ValidateRig();
         }
 
-        [MenuItem("Tools/Quest/Add Left Stick Movement")]
+        [MenuItem("Tools/XR/Add Left Stick Movement")]
         public static void AddLeftStickMovement()
         {
             GameObject rig = PrefabUtility.LoadPrefabContents(RigPath);
@@ -277,6 +300,56 @@ namespace XR.Editor
             line.startWidth = 0.005f;
             line.endWidth = 0.005f;
             controller.AddComponent<XRInteractorLineVisual>();
+            if (handedness == InteractorHandedness.Left)
+            {
+                ray.enabled = false;
+                line.enabled = false;
+                controller.GetComponent<XRInteractorLineVisual>().enabled = false;
+            }
+        }
+
+        private static void CreateHeldDevices(Transform parent)
+        {
+            Material body = CreateMaterial("DeviceBody", new Color(0.72f, 0.76f, 0.82f));
+            Material screen = CreateMaterial("DeviceScreen", new Color(0.015f, 0.025f, 0.04f));
+            Material tabletBody = CreateMaterial("TabletBody", new Color(0.72f, 0.76f, 0.82f),
+                "Universal Render Pipeline/Unlit");
+            Material tabletScreen = CreateMaterial("TabletScreen", new Color(0.015f, 0.025f, 0.04f),
+                "Universal Render Pipeline/Unlit");
+            GameObject left = CreateChild("LeftHand Grip Visual", parent);
+            AddPoseDriver(left, "<XRController>{LeftHand}", "devicePosition", "deviceRotation");
+            GameObject tablet = CreateChild("Tablet", left.transform);
+            tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
+            CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.28f, 0.20f, 0.012f), tabletBody);
+            CreateDevicePart("Tablet Screen", tablet.transform, new Vector3(0f, 0f, -0.0065f),
+                new Vector3(0.26f, 0.18f, 0.001f), tabletScreen);
+            GameObject anchor = CreateChild("Tablet Text Anchor", tablet.transform);
+            anchor.transform.localPosition = new Vector3(0f, 0f, -0.0075f);
+            LeftHandTablet display = tablet.AddComponent<LeftHandTablet>();
+            SerializedObject serializedDisplay = new SerializedObject(display);
+            serializedDisplay.FindProperty("_screen").objectReferenceValue = anchor.transform;
+            serializedDisplay.ApplyModifiedPropertiesWithoutUndo();
+
+            GameObject right = CreateChild("RightHand Grip Visual", parent);
+            AddPoseDriver(right, "<XRController>{RightHand}", "devicePosition", "deviceRotation");
+            CreateDevicePart("Controller Handle", right.transform, new Vector3(0f, -0.035f, 0f), new Vector3(0.035f, 0.11f, 0.04f), body);
+            CreateDevicePart("Controller Head", right.transform, new Vector3(0f, 0.027f, 0.01f), new Vector3(0.072f, 0.025f, 0.075f), body);
+            CreateDevicePart("Controller Stick", right.transform, new Vector3(-0.016f, 0.046f, 0.018f), new Vector3(0.016f, 0.015f, 0.016f), screen);
+            CreateDevicePart("Controller A", right.transform, new Vector3(0.017f, 0.043f, 0.002f), new Vector3(0.011f, 0.007f, 0.011f), screen);
+            CreateDevicePart("Controller B", right.transform, new Vector3(0.017f, 0.043f, 0.022f), new Vector3(0.011f, 0.007f, 0.011f), screen);
+            CreateDevicePart("Controller Trigger", right.transform, new Vector3(0f, 0.009f, 0.054f), new Vector3(0.025f, 0.027f, 0.012f), screen);
+        }
+
+        private static void CreateDevicePart(string name, Transform parent, Vector3 position, Vector3 scale, Material material)
+        {
+            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            part.name = name;
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = position;
+            part.transform.localScale = scale;
+            UnityEngine.Object.DestroyImmediate(part.GetComponent<Collider>());
+            part.GetComponent<Renderer>().sharedMaterial = material;
+            part.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
 
         private static XRInputButtonReader CreateButton(string name, string button, string value)
@@ -307,15 +380,15 @@ namespace XR.Editor
             return child;
         }
 
-        private static Material CreateMaterial(string name, Color color)
+        private static Material CreateMaterial(string name, Color color, string shaderName = "Universal Render Pipeline/Lit")
         {
-            Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            Material material = new Material(Shader.Find(shaderName));
             material.SetColor("_BaseColor", color);
             AssetDatabase.CreateAsset(material, $"Assets/XR/Materials/{name}.mat");
             return material;
         }
 
-        [MenuItem("Tools/Quest/Validate Project")]
+        [MenuItem("Tools/XR/Validate Project")]
         public static void ValidateProject()
         {
             // Meta's rules use the active platform's OpenXRSettings.Instance internally.
@@ -347,21 +420,23 @@ namespace XR.Editor
                 {
                     throw new BuildFailedException(issue.message);
                 }
-                Debug.LogWarning("[Quest] " + issue.message);
+                Debug.LogWarning("[XR] " + issue.message);
             }
             ValidateRig();
-            Debug.Log("[Quest] Project validation passed.");
+            Debug.Log("[XR] Project validation passed.");
         }
 
         private static void ValidateRig()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPath);
-            if (prefab == null || prefab.GetComponent<XROrigin>()?.Camera == null ||
+            if (prefab == null || prefab.GetComponent<PersistentXRPlayerRig>() == null ||
+                prefab.GetComponent<XROrigin>()?.Camera == null ||
                 prefab.GetComponentsInChildren<Camera>(true).Length != 1 ||
                 prefab.GetComponentsInChildren<XRRayInteractor>(true).Length != 2 ||
-                prefab.GetComponentsInChildren<TrackedPoseDriver>(true).Length != 3)
+                prefab.GetComponentsInChildren<TrackedPoseDriver>(true).Length != 5 ||
+                prefab.GetComponentInChildren<LeftHandTablet>(true) == null)
             {
-                throw new BuildFailedException("Quest rig camera/controller references are incomplete.");
+                throw new BuildFailedException("XR rig camera/controller references are incomplete.");
             }
             foreach (XRRayInteractor ray in prefab.GetComponentsInChildren<XRRayInteractor>(true))
             {
@@ -370,17 +445,17 @@ namespace XR.Editor
                     ray.selectInput.inputActionPerformed.bindings.Count == 0 ||
                     ray.activateInput.inputActionPerformed.bindings.Count == 0)
                 {
-                    throw new BuildFailedException("Quest controller manager or input binding is missing.");
+                    throw new BuildFailedException("XR controller manager or input binding is missing.");
                 }
             }
             foreach (Transform child in prefab.GetComponentsInChildren<Transform>(true))
             {
                 if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(child.gameObject) > 0)
                 {
-                    throw new BuildFailedException("Quest rig has a missing script.");
+                    throw new BuildFailedException("XR rig has a missing script.");
                 }
             }
-            Debug.Log("[Quest] Rig validation passed.");
+            Debug.Log("[XR] Rig validation passed.");
         }
 
     }

@@ -25,7 +25,7 @@ Pull Request
   ↓
 리뷰
   ↓
-Squash Merge
+Merge Commit
   ↓
 작업 브랜치 삭제
 ```
@@ -98,7 +98,7 @@ Commit은 **의미 있는 변경 단위**로 작성한다.
 - 작은 수정 commit이 여러 개 생기는 것은 허용한다.
 - commit history를 지나치게 깔끔하게 만들기 위해 개발 흐름을 방해하지 않는다.
 
-작업 브랜치의 여러 commit은 최종적으로 Squash Merge를 통해 하나의 commit으로 `main`에 반영한다.
+작업 브랜치의 commit은 일반 Merge로 이력을 유지한 채 `main`에 반영한다.
 
 ---
 
@@ -132,136 +132,21 @@ Pull Request는 다른 팀원 한 명 이상이 확인한 후 병합한다.
 
 ---
 
-## 7. Squash Merge
+## 7. 일반 Merge
 
-Pull Request는 기본적으로 Squash Merge를 사용한다.
+Pull Request는 일반 Merge를 사용한다. GitHub에서는 **Create a merge commit**을 선택하고, Squash Merge는 사용하지 않는다.
 
-Squash Merge는 작업 브랜치의 여러 commit을 하나의 commit으로 합쳐 `main`에 반영하는 방식이다.
-
-예:
-
-```text
-feature/cnn-filter-ui
-
-A ─ UI 추가
-    ─ 위치 수정
-    ─ 상호작용 수정
-    ─ 정리
-
-        ↓ Squash Merge
-
-main
-
-A ─ CNN 필터 UI 구현
-```
-
-이를 통해 작업 과정에서 발생한 세부적인 수정 commit은 작업 브랜치에 남기고, `main`의 history는 작업 단위로 단순하게 유지한다.
-
----
-
-## 8. Branch Cleanup
-
-`main`에 정상적으로 병합된 작업 브랜치는 삭제한다.
-
-```text
-feature/cnn-filter-ui
-        ↓
-       PR
-        ↓
-  Squash Merge
-        ↓
-      main
-        ↓
-작업 브랜치 삭제
-```
-
-브랜치는 임시 작업 공간으로 사용하며, 과거 변경 내용은 Git history와 Pull Request 기록을 통해 확인한다.
-
----
-
-## 9. Stable Versions
-
-시연, 중간 완성본, 최종 제출 등 중요한 시점에는 **Git Tag**를 생성한다.
+일반 Merge는 작업 브랜치의 개별 commit을 보존하고, 병합 commit을 생성해 `main`에 반영하는 방식이다.
 
 예:
 
 ```text
-main
+main:                   A ───────────── M
+                         ╲             ╱
+feature/cnn-filter-ui:     B ─ C ─ D ─ E
 
-A ─ B ─ C ─ D ─ E
-        ↑       ↑
-   demo-ready  submission
+B~E: 작업 브랜치의 개별 commit
+M: 병합 commit
 ```
 
-```bash
-git tag demo-ready
-git push origin demo-ready
-```
-
-Tag를 통해 이후 개발이 진행되어도 중요한 시점의 상태를 다시 확인하거나 해당 시점에서 새 브랜치를 만들 수 있다.
-
----
-
-## 10. Unity Scene / Prefab
-
-Unity의 Scene과 Prefab은 여러 사람이 동시에 수정할 경우 충돌이 발생하기 쉽다.
-
-따라서 다음 원칙을 따른다.
-
-- 같은 Scene을 여러 사람이 동시에 수정하는 것을 가능한 한 피한다.
-- Scene 작업을 시작하기 전에 팀원에게 공유한다.
-- 재사용 가능한 오브젝트는 가능한 한 Prefab으로 분리한다.
-- 서로 다른 기능은 가능한 한 서로 다른 Prefab에서 작업한다.
-- Scene / Prefab을 수정하는 작업 브랜치는 오래 유지하지 않는다.
-- Scene / Prefab을 수정한 경우 Pull Request에 해당 내용을 적는다.
-
-가능하면 하나의 Scene 파일에 모든 팀원의 작업이 집중되지 않도록 구성한다.
-
----
-
-## 11. Asset Management
-
-Unity 프로젝트 실행에 필요한 Asset은 Git으로 관리한다.
-
-Git에 포함:
-
-```text
-Assets/
-Packages/
-ProjectSettings/
-*.meta
-```
-
-Git에서 제외:
-
-```text
-Library/
-Temp/
-Logs/
-obj/
-Build/
-```
-
-대용량 3D 모델, 이미지 원본, 오디오, 영상 등의 바이너리 파일은 필요에 따라 Git LFS를 사용한다.
-
-`.meta` 파일은 Unity Asset 참조에 필요하므로 반드시 함께 commit한다.
-
----
-
-## 12. Core Principle
-
-**작은 단위로 작업하고, 작업 브랜치를 짧게 유지하며, 자주 `main`에 통합한다.**
-
-```text
-작은 작업
-   ↓
-짧은 브랜치
-   ↓
-Pull Request
-   ↓
-리뷰
-   ↓
-Squash Merge
-   ↓
-main
-```
+이를 통해 작업 과정의 개별 commit과 브랜치 병합 이력을 `main`에서 확인할 수 있다.

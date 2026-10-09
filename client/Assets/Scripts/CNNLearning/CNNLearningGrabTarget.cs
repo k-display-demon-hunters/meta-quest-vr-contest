@@ -23,11 +23,10 @@ namespace CNNLearning
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
         private float _scaleFactor = 1f;
-        private bool _mouseHeld;
         private bool _isFilter;
 
         public CNNLearningGrabKind Kind => _kind;
-        public bool IsHeld => _mouseHeld || (_grab != null && _grab.isSelected);
+        public bool IsHeld => _grab != null && _grab.isSelected;
         public bool canProcess => isActiveAndEnabled;
 
         public void ConfigureFilter(CNNLearningScene scene, Collider handle)
@@ -75,44 +74,7 @@ namespace CNNLearning
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
         {
-            return !_mouseHeld && _scene.CanGrab(this);
-        }
-
-        public bool BeginMouseDrag()
-        {
-            if (IsHeld || !_scene.CanGrab(this))
-            {
-                return false;
-            }
-            _mouseHeld = true;
-            _grab.enabled = false;
-            BeginInteraction();
-            return true;
-        }
-
-        public void EndMouseDrag()
-        {
-            _mouseHeld = false;
-            _grab.enabled = true;
-            _scene.ReleaseTarget(this);
-        }
-
-        public void MoveTo(Vector3 worldPosition)
-        {
-            transform.position = worldPosition;
-            _body.position = worldPosition;
-        }
-
-        public void RotateBy(Vector2 delta, Transform cameraTransform)
-        {
-            if (_isFilter)
-            {
-                return;
-            }
-            Quaternion rotation = Quaternion.AngleAxis(-delta.x * .4f, cameraTransform.up) *
-                Quaternion.AngleAxis(delta.y * .4f, cameraTransform.right) * transform.rotation;
-            transform.rotation = rotation;
-            _body.rotation = rotation;
+            return _scene.CanGrab(this);
         }
 
         public void ScaleBy(float multiplier)

@@ -137,7 +137,7 @@ namespace CNNLearning
                 SetText(_buttonLabels[index], labels[index], .31f, .042f);
             }
             TextMesh help = CreateText("Minimal controls", _controls.transform, new Vector3(.5f, .29f, 2.72f), 2.8f, .08f);
-            SetText(help, "PC: 클릭·드래그 / Shift+휠: 확대 / Alt+드래그: 회전\nVR: Grip: 잡기 / A·B: 크기 / 층 손잡이를 잡고 Trigger: 펼치기", 2.8f, .08f);
+            SetText(help, "VR: Grip: 잡기 / A·B: 크기 / 층 손잡이를 잡고 Trigger: 펼치기", 2.8f, .08f);
             _filterCard = new GameObject("Actual convolution weights");
             _filterCard.transform.SetParent(transform, false);
             _filterName = CreateText("Filter name", _filterCard.transform, new Vector3(-1.35f, .97f, 2.75f), .68f, .045f);

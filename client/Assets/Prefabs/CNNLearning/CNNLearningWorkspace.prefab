@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 10002}
   - component: {fileID: 10003}
-  - component: {fileID: 10004}
   - component: {fileID: 10005}
   m_Layer: 0
   m_Name: CNN Learning Workspace
@@ -761,18 +760,6 @@ MonoBehaviour:
   _outputs:
   - {fileID: 107783}
   - {fileID: 107793}
---- !u!114 &10004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 10001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f3910a50f0f0457bb784a8ef3089da92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &100010
 GameObject:
   m_ObjectHideFlags: 0

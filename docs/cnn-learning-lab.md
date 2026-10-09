@@ -1,6 +1,6 @@
 # CNN 초보자 체험 씬
 
-기존 `FeatureMapLab`은 유지하고, 같은 `client` 프로젝트 안에 `CNNLearningLab`을 복제해 개발한 버전이다. 기존 씬·프리팹·FeatureMaps 스크립트는 수정하지 않았다. 새 스크립트는 `CNNLearning` 네임스페이스에 있으며 원본 기능 코드와 분리했다. 입력 이미지와 재질, 기존 XRPlayerRig는 읽기 전용으로 재사용한다.
+CNN 체험은 같은 `client` 프로젝트 안의 `CNNLearningLab` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNLearning/`의 `CNNLearning` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNLearning/CNNLearningWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/FeatureMaps/Images/`와 `Assets/FeatureMaps/Materials/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
 
 ## 열기
 
@@ -9,7 +9,7 @@
 3. Project 창에서 `Assets/Scenes/CNNLearningLab.unity`를 더블클릭한다.
 4. 사용자가 Play를 실행하면 전용 프리팹의 학습 안내와 필터 도구가 생성된다.
 
-처음에는 입력과 첫 번째 맵만 보인다. 아래쪽의 **다음** 버튼으로 단계를 진행한다. 카메라·양손·이동은 기존 XRPlayerRig와 시뮬레이터를 사용한다. 노트북에서 Game 창에 초점을 주고 기본 FPS 모드의 WASD / E·Q / 오른쪽 마우스 시선 회전을 사용할 수 있다. 이전 시뮬레이터 조작은 [xr-simulator.md](xr-simulator.md)를 따른다.
+처음에는 입력과 첫 번째 맵만 보인다. 아래쪽의 **다음** 버튼으로 단계를 진행한다. 카메라·양손·이동은 기존 XRPlayerRig를 사용하며, 콘텐츠는 VR 컨트롤러로 조작한다.
 
 ## 체험 순서
 
@@ -20,18 +20,18 @@
 
 ## 콘텐츠 조작
 
-| 동작 | 노트북 | VR 오른손 |
-|---|---|---|
-| 안내 버튼 | 왼쪽 클릭 | 레이로 가리키고 Grip |
-| 입력 픽셀 선택·칠하기 | 왼쪽 클릭 | 레이로 가리키고 Trigger 또는 Grip |
-| 필터·뉴런·맵·층 잡기 | 드래그 (입력 픽셀 자체를 옮길 때는 Alt+드래그) | Grip |
-| 크기 | 가리키거나 잡은 뒤 Shift+휠 | 잡은 뒤 A/B 유지 |
-| 회전 | Alt+드래그 | 잡은 손 회전 |
-| 드래그 깊이 | 잡은 뒤 휠 | 잡은 뒤 오른쪽 스틱 |
-| 특정 층 펼치기 | 층 손잡이를 가리키고 Space | 층 손잡이를 잡고 Trigger |
-| 배치 복원 | R | 오른쪽 스틱 클릭 |
+| 동작 | VR 오른손 |
+|---|---|
+| 안내 버튼 | 레이로 가리키고 Grip |
+| 입력 픽셀 선택·칠하기 | 레이로 가리키고 Trigger 또는 Grip |
+| 필터·뉴런·맵·층 잡기 | Grip |
+| 크기 | 잡은 뒤 A/B 유지 |
+| 회전 | 잡은 손 회전 |
+| 잡은 물체의 거리 | 잡은 뒤 오른쪽 스틱 |
+| 특정 층 펼치기 | 층 손잡이를 잡고 Trigger |
+| 배치 복원 | 오른쪽 스틱 클릭 |
 
-필터는 학습용 도구이므로 입력 격자의 평면에 맞춰 움직이고, 임의 회전·확대는 적용하지 않는다. 다른 뉴런·맵·층은 자유롭게 조작할 수 있다. 잡은 물체를 놓은 뒤 체험 단계 버튼을 사용한다. R/스틱 클릭은 배치 복원이고, **처음 상태** 버튼은 입력 수정 내용까지 복원한다.
+필터는 학습용 도구이므로 입력 격자의 평면에 맞춰 움직이고, 임의 회전·확대는 적용하지 않는다. 다른 뉴런·맵·층은 자유롭게 조작할 수 있다. 잡은 물체를 놓은 뒤 체험 단계 버튼을 사용한다. 오른쪽 스틱 클릭은 배치 복원이고, **처음 상태** 버튼은 입력 수정 내용까지 복원한다.
 
 ## 계산과 표시의 의미
 
@@ -49,8 +49,8 @@
 - `client/Assets/Scripts/CNNLearning/CNNLearningGuide.cs`: 4단계 안내, 필터 도구, 진행 표시, 버튼 처리.
 - `CNNLearningExampleData.cs`: 실제 합성곱·ReLU·수용 영역·입력 수정 계산.
 - `CNNLearningNode.cs`: 계산값과 강조색.
-- `CNNLearningGrabTarget.cs`, `CNNLearningMouseDrag.cs`, `CNNLearningLayer.cs`: VR/마우스 잡기, 이동·회전·확대, 펼치기.
-- `client/Assets/Prefabs/CNNLearning/CNNLearningWorkspace.prefab`: 복제한 CNN 배치와 새 학습 컴포넌트 참조.
+- `CNNLearningGrabTarget.cs`, `CNNLearningLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
+- `client/Assets/Prefabs/CNNLearning/CNNLearningWorkspace.prefab`: CNN 배치와 학습 컴포넌트 참조.
 
 한글 표시는 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, 같은 Fonts 폴더에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
 

@@ -60,14 +60,30 @@ MonoBehaviour:
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings:
-      - m_Name: 
+      - m_Name: Vector 3 Fallback
+        m_Id: 7c42734f-0c01-4cbb-9c12-2f8548eaf62e
+        m_Path: Vector3Fallback
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Position
+        m_Flags: 4
+      - m_Name: first
         m_Id: afc25fbe-a8c1-429d-a00a-ae5017ff2bf3
         m_Path: <XRController>{RightHand}/pointerPosition
         m_Interactions: 
         m_Processors: 
         m_Groups: 
         m_Action: Position
-        m_Flags: 0
+        m_Flags: 8
+      - m_Name: second
+        m_Id: 5276e107-bcd5-459e-980e-4b841922a12e
+        m_Path: <XRController>{RightHand}/devicePosition
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Position
+        m_Flags: 8
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
@@ -81,14 +97,30 @@ MonoBehaviour:
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings:
-      - m_Name: 
+      - m_Name: Quaternion Fallback
+        m_Id: 70054406-83e4-4ae8-9777-56e523d230e7
+        m_Path: QuaternionFallback
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Rotation
+        m_Flags: 4
+      - m_Name: first
         m_Id: 884b9768-43c0-4e85-9872-b46c74b634ca
         m_Path: <XRController>{RightHand}/pointerRotation
         m_Interactions: 
         m_Processors: 
         m_Groups: 
         m_Action: Rotation
-        m_Flags: 0
+        m_Flags: 8
+      - m_Name: second
+        m_Id: cfbbeb49-975d-4110-acdc-d2f2cb55cd55
+        m_Path: <XRController>{RightHand}/deviceRotation
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Rotation
+        m_Flags: 8
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
@@ -775,7 +807,7 @@ MonoBehaviour:
   m_StopLineAtFirstRaycastHit: 1
   m_StopLineAtSelection: 0
   m_SnapEndpointIfAvailable: 1
-  m_LineBendRatio: 0.5
+  m_LineBendRatio: 1
   m_BendingEnabledInteractionLayers:
     m_Bits: 4294967295
   m_OverrideInteractorLineOrigin: 1
@@ -841,14 +873,30 @@ MonoBehaviour:
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings:
-      - m_Name: 
+      - m_Name: Vector 3 Fallback
+        m_Id: 81ea1b88-979e-4d93-9140-439aff65f20b
+        m_Path: Vector3Fallback
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Position
+        m_Flags: 4
+      - m_Name: first
         m_Id: 0830a337-45aa-4e05-9938-04c4d3280263
         m_Path: <XRController>{LeftHand}/pointerPosition
         m_Interactions: 
         m_Processors: 
         m_Groups: 
         m_Action: Position
-        m_Flags: 0
+        m_Flags: 8
+      - m_Name: second
+        m_Id: 6e299c97-8f9f-49a0-9b9b-5381bb0c0796
+        m_Path: <XRController>{LeftHand}/devicePosition
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Position
+        m_Flags: 8
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
@@ -862,14 +910,30 @@ MonoBehaviour:
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings:
-      - m_Name: 
+      - m_Name: Quaternion Fallback
+        m_Id: 28e97f90-7d22-4041-b102-a0c1689c7daa
+        m_Path: QuaternionFallback
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Rotation
+        m_Flags: 4
+      - m_Name: first
         m_Id: cb698105-baf4-4398-b797-c1ed50b9b7bc
         m_Path: <XRController>{LeftHand}/pointerRotation
         m_Interactions: 
         m_Processors: 
         m_Groups: 
         m_Action: Rotation
-        m_Flags: 0
+        m_Flags: 8
+      - m_Name: second
+        m_Id: c00ba060-e25a-4c24-aa76-a49d4b11f770
+        m_Path: <XRController>{LeftHand}/deviceRotation
+        m_Interactions:
+        m_Processors:
+        m_Groups:
+        m_Action: Rotation
+        m_Flags: 8
       m_Flags: 0
       m_Priority: 0
     m_Reference: {fileID: 0}
@@ -1548,7 +1612,7 @@ MonoBehaviour:
   m_StopLineAtFirstRaycastHit: 1
   m_StopLineAtSelection: 0
   m_SnapEndpointIfAvailable: 1
-  m_LineBendRatio: 0.5
+  m_LineBendRatio: 1
   m_BendingEnabledInteractionLayers:
     m_Bits: 4294967295
   m_OverrideInteractorLineOrigin: 1

@@ -117,7 +117,9 @@ namespace XR.Editor
             }
 
             XRGeneralSettings general = settings.SettingsForBuildTarget(target);
-            general.InitManagerOnStart = true;
+            // Desktop development uses simulated input devices without an installed OpenXR runtime.
+            // Quest Link requires enabling Standalone initialization explicitly in Project Settings.
+            general.InitManagerOnStart = target == BuildTargetGroup.Android;
             if (!XRPackageMetadataStore.AssignLoader(general.Manager, "UnityEngine.XR.OpenXR.OpenXRLoader", target))
             {
                 throw new InvalidOperationException($"Cannot assign OpenXR loader for {target}.");
@@ -276,8 +278,8 @@ namespace XR.Editor
         {
             GameObject controller = CreateChild(hand + " Controller", parent);
             string device = "<XRController>{" + hand + "}";
-            // OpenXR's aim pose points the ray; the grip pose is for held controller models.
-            AddPoseDriver(controller, device, "pointerPosition", "pointerRotation");
+            // Prefer OpenXR's aim pose; simulated controllers only expose the device pose.
+            AddPoseDriver(controller, device, "pointerPosition", "pointerRotation", fallbackToDevicePose: true);
             XRRayInteractor ray = controller.AddComponent<XRRayInteractor>();
             ray.interactionManager = manager;
             ray.handedness = handedness;
@@ -300,12 +302,14 @@ namespace XR.Editor
             line.sharedMaterial = rayMaterial;
             line.startWidth = 0.005f;
             line.endWidth = 0.005f;
-            controller.AddComponent<XRInteractorLineVisual>();
+            XRInteractorLineVisual lineVisual = controller.AddComponent<XRInteractorLineVisual>();
+            // Keep the pointer on the raycast path instead of bending it back toward a selected port.
+            lineVisual.lineBendRatio = 1f;
             if (handedness == InteractorHandedness.Left)
             {
                 ray.enabled = false;
                 line.enabled = false;
-                controller.GetComponent<XRInteractorLineVisual>().enabled = false;
+                lineVisual.enabled = false;
             }
         }
 
@@ -396,13 +400,32 @@ namespace XR.Editor
             };
         }
 
-        private static void AddPoseDriver(GameObject target, string device, string position, string rotation)
+        private static void AddPoseDriver(GameObject target, string device, string position, string rotation,
+            bool fallbackToDevicePose = false)
         {
+            InputAction positionAction = new InputAction("Position", InputActionType.Value,
+                expectedControlType: "Vector3");
+            InputAction rotationAction = new InputAction("Rotation", InputActionType.Value,
+                expectedControlType: "Quaternion");
+            if (fallbackToDevicePose)
+            {
+                // XRI's fallback composites keep aim priority even when its value is zero.
+                positionAction.AddCompositeBinding("Vector3Fallback")
+                    .With("first", device + "/" + position)
+                    .With("second", device + "/devicePosition");
+                rotationAction.AddCompositeBinding("QuaternionFallback")
+                    .With("first", device + "/" + rotation)
+                    .With("second", device + "/deviceRotation");
+            }
+            else
+            {
+                positionAction.AddBinding(device + "/" + position);
+                rotationAction.AddBinding(device + "/" + rotation);
+            }
+
             TrackedPoseDriver driver = target.AddComponent<TrackedPoseDriver>();
-            driver.positionInput = new InputActionProperty(new InputAction("Position", InputActionType.Value,
-                device + "/" + position, expectedControlType: "Vector3"));
-            driver.rotationInput = new InputActionProperty(new InputAction("Rotation", InputActionType.Value,
-                device + "/" + rotation, expectedControlType: "Quaternion"));
+            driver.positionInput = new InputActionProperty(positionAction);
+            driver.rotationInput = new InputActionProperty(rotationAction);
             driver.trackingStateInput = new InputActionProperty(new InputAction("Tracking State", InputActionType.Value,
                 device + "/trackingState", expectedControlType: "Integer"));
             driver.updateType = TrackedPoseDriver.UpdateType.UpdateAndBeforeRender;

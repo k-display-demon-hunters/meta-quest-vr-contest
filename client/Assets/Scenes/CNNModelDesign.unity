@@ -180,7 +180,8 @@ MonoBehaviour:
     _block: {fileID: 10402}
   - _type: 3
     _block: {fileID: 10502}
-  _snapDistance: 0.14
+  _connectionMaterial: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
+  _connectionWidth: 0.008
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0

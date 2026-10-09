@@ -15,11 +15,14 @@ namespace ModelDesignScene
         [SerializeField] private Text _label;
         [SerializeField] private Renderer _leftPort;
         [SerializeField] private Renderer _rightPort;
+        [SerializeField] private XRSimpleInteractable _leftPortInteractable;
+        [SerializeField] private XRSimpleInteractable _rightPortInteractable;
 
         private ModelDesignSceneController _owner;
         private MaterialPropertyBlock _properties;
         private Rigidbody _rigidbody;
         private readonly Color[] _portColors = new Color[2];
+        private readonly bool[] _connectedPorts = new bool[2];
         private int _hoveredPort = -1;
 
         public LayerDefinition Layer { get; private set; }
@@ -41,6 +44,12 @@ namespace ModelDesignScene
             _grabInteractable.selectEntered.AddListener(HandleGrabbed);
             _grabInteractable.selectExited.AddListener(HandleReleased);
             _grabInteractable.activated.AddListener(HandleTapped);
+            _leftPortInteractable.selectEntered.AddListener(HandleLeftPortSelected);
+            _leftPortInteractable.selectExited.AddListener(HandleLeftPortReleased);
+            _rightPortInteractable.selectEntered.AddListener(HandleRightPortSelected);
+            _rightPortInteractable.selectExited.AddListener(HandleRightPortReleased);
+            _leftPortInteractable.activated.AddListener(HandleTapped);
+            _rightPortInteractable.activated.AddListener(HandleTapped);
         }
 
         public void Initialize(ModelDesignSceneController owner, LayerDefinition layer, bool isPalette)
@@ -48,6 +57,8 @@ namespace ModelDesignScene
             _owner = owner;
             Layer = layer;
             IsPalette = isPalette;
+            _leftPortInteractable.enabled = !isPalette;
+            _rightPortInteractable.enabled = !isPalette;
             Layer.OnChanged += RefreshLabel;
             SetColor(_body, GetLayerColor(layer.Type));
             _leftPort.gameObject.SetActive(layer.Type != LayerType.Input);
@@ -61,6 +72,8 @@ namespace ModelDesignScene
         {
             IsPalette = false;
             _grabInteractable.retainTransformParent = false;
+            _leftPortInteractable.enabled = true;
+            _rightPortInteractable.enabled = true;
         }
 
         public void CancelGrab()
@@ -74,6 +87,20 @@ namespace ModelDesignScene
         public Vector3 GetPortPosition(int port)
         {
             return (port == 0 ? _leftPort : _rightPort).transform.position;
+        }
+
+        internal void CancelPortSelection()
+        {
+            CancelPortSelection(_leftPortInteractable);
+            CancelPortSelection(_rightPortInteractable);
+        }
+
+        private static void CancelPortSelection(XRSimpleInteractable port)
+        {
+            if (port.isSelected && port.interactionManager != null)
+            {
+                port.interactionManager.CancelInteractableSelection((IXRSelectInteractable)port);
+            }
         }
 
         public bool HasPort(int port)
@@ -122,6 +149,7 @@ namespace ModelDesignScene
 
         public void SetPortState(int port, bool connected, bool candidate)
         {
+            _connectedPorts[port] = connected;
             _portColors[port] = candidate ? new Color(1f, 0.8f, 0.2f) :
                 connected ? new Color(0.2f, 1f, 0.7f) : new Color(0.55f, 0.65f, 0.75f);
             RefreshPortColor(port);
@@ -129,7 +157,8 @@ namespace ModelDesignScene
 
         private void RefreshPortColor(int port)
         {
-            Color color = port == _hoveredPort ? Color.red : _portColors[port];
+            Color hoverColor = _connectedPorts[port] ? Color.yellow : Color.red;
+            Color color = port == _hoveredPort ? hoverColor : _portColors[port];
             SetColor(port == 0 ? _leftPort : _rightPort, color);
         }
 
@@ -194,9 +223,42 @@ namespace ModelDesignScene
 
         private void HandleTapped(ActivateEventArgs args)
         {
-            if (_owner != null && _owner.isActiveAndEnabled && !IsPalette && !IsGrabbed)
+            if (_owner != null && _owner.isActiveAndEnabled && !IsPalette && !IsGrabbed &&
+                !_leftPortInteractable.isSelected && !_rightPortInteractable.isSelected)
             {
-                _owner.ShowSettings(this);
+                _owner.HandleBlockTapped(this);
+            }
+        }
+
+        private void HandleLeftPortSelected(SelectEnterEventArgs args)
+        {
+            if (_owner != null && _owner.isActiveAndEnabled)
+            {
+                _owner.BeginConnection(this, 0, args.interactorObject);
+            }
+        }
+
+        private void HandleRightPortSelected(SelectEnterEventArgs args)
+        {
+            if (_owner != null && _owner.isActiveAndEnabled)
+            {
+                _owner.BeginConnection(this, 1, args.interactorObject);
+            }
+        }
+
+        private void HandleLeftPortReleased(SelectExitEventArgs args)
+        {
+            if (_owner != null && _owner.isActiveAndEnabled)
+            {
+                _owner.EndConnection(this, 0, args.isCanceled);
+            }
+        }
+
+        private void HandleRightPortReleased(SelectExitEventArgs args)
+        {
+            if (_owner != null && _owner.isActiveAndEnabled)
+            {
+                _owner.EndConnection(this, 1, args.isCanceled);
             }
         }
 
@@ -209,6 +271,12 @@ namespace ModelDesignScene
             _grabInteractable.selectEntered.RemoveListener(HandleGrabbed);
             _grabInteractable.selectExited.RemoveListener(HandleReleased);
             _grabInteractable.activated.RemoveListener(HandleTapped);
+            _leftPortInteractable.selectEntered.RemoveListener(HandleLeftPortSelected);
+            _leftPortInteractable.selectExited.RemoveListener(HandleLeftPortReleased);
+            _rightPortInteractable.selectEntered.RemoveListener(HandleRightPortSelected);
+            _rightPortInteractable.selectExited.RemoveListener(HandleRightPortReleased);
+            _leftPortInteractable.activated.RemoveListener(HandleTapped);
+            _rightPortInteractable.activated.RemoveListener(HandleTapped);
         }
     }
 }

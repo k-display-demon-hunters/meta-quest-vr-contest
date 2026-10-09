@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using ModelDesign;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
@@ -12,23 +14,33 @@ namespace ModelDesignScene
 {
     public sealed class ModelDesignSceneController : MonoBehaviour
     {
+        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        private static readonly Color ConnectedColor = new Color(0.2f, 1f, 0.7f);
+        private static readonly Color CandidateColor = new Color(1f, 0.8f, 0.2f);
+
         [SerializeField] private ModelBlockView _blockPrefab;
         [SerializeField] private BlockSettingsPopup _popupPrefab;
         [SerializeField] private ModelBlockView _inputBlock;
         [SerializeField] private ModelBlockView _outputBlock;
         [SerializeField] private Transform _paletteRoot;
         [SerializeField] private PaletteBlock[] _paletteBlocks;
-        [SerializeField, Min(0.01f)] private float _snapDistance = 0.14f;
+        [SerializeField] private Material _connectionMaterial;
+        [SerializeField, Min(0.001f)] private float _connectionWidth = 0.008f;
 
         private readonly Dictionary<LayerDefinition, ModelBlockView> _blocks = new Dictionary<LayerDefinition, ModelBlockView>();
         private readonly List<Connection> _connections = new List<Connection>();
-        private readonly List<ModelBlockView> _movingBlocks = new List<ModelBlockView>();
         private readonly Dictionary<ModelBlockView, Pose> _paletteSlots = new Dictionary<ModelBlockView, Pose>();
         private ModelWorkspace _workspace;
         private BlockSettingsPopup _popup;
         private ModelBlockView _grabbedBlock;
         private ModelBlockView _settingsBlock;
         private ModelBlockView _hoveredPortBlock;
+        private Connection _hoveredConnection;
+        private ModelBlockView _connectionSource;
+        private int _connectionSourcePort = -1;
+        private float _connectionRayDistance;
+        private LineRenderer _previewLine;
+        private MaterialPropertyBlock _lineProperties;
         private Connection _candidate;
         private XRRayInteractor _rightRay;
         private bool _previousUIInteraction;
@@ -42,9 +54,13 @@ namespace ModelDesignScene
         private void Awake()
         {
             _workspace = new ModelWorkspace();
+            _lineProperties = new MaterialPropertyBlock();
+            _previewLine = CreateConnectionLine("Connection Preview");
+            _previewLine.enabled = false;
             _popup = Instantiate(_popupPrefab, transform);
             _popup.Hide();
             _popup.OnDisconnectRequested += DisconnectSelectedBlock;
+            _popup.OnDeleteRequested += DeleteSelectedBlock;
         }
 
         private void OnEnable()
@@ -67,18 +83,29 @@ namespace ModelDesignScene
         private void LateUpdate()
         {
             UpdatePortHover();
-            if (_grabbedBlock == null)
+            if (_connectionSource != null)
             {
-                return;
+                if (_rightRay == null || !_rightRay.isActiveAndEnabled)
+                {
+                    CancelConnection();
+                }
+                else
+                {
+                    UpdateConnectionPreview();
+                }
             }
-            SetCandidate(FindConnectionCandidate());
+            foreach (Connection connection in _connections)
+            {
+                UpdateConnectionLine(connection);
+            }
+            UpdateConnectionHover();
         }
 
         internal void BeginGrab(ModelBlockView block)
         {
             _popup.Hide();
             _settingsBlock = null;
-            SetCandidate(null);
+            CancelConnection();
             if (block.IsPalette)
             {
                 Pose slot = _paletteSlots[block];
@@ -90,17 +117,6 @@ namespace ModelDesignScene
             }
 
             _grabbedBlock = block;
-            _movingBlocks.Clear();
-            foreach (LayerDefinition layer in _workspace.GetModel(block.Layer).Layers)
-            {
-                ModelBlockView moving = _blocks[layer];
-                _movingBlocks.Add(moving);
-                if (moving != block)
-                {
-                    // Parenting also follows XRI's pose updates immediately before VR rendering.
-                    moving.transform.SetParent(block.transform, true);
-                }
-            }
         }
 
         internal void EndGrab(ModelBlockView block, bool cancelled)
@@ -109,34 +125,244 @@ namespace ModelDesignScene
             {
                 return;
             }
-            Connection candidate = cancelled ? null : FindConnectionCandidate();
-            SetCandidate(null);
-            RestoreBlockParents();
             // Taken blocks belong to the scene, even when the palette moves later.
             block.transform.SetParent(transform, true);
-            if (candidate != null)
-            {
-                // Ports describe presentation only; the existing workspace owns model connectivity.
-                _workspace.Connect(candidate.First.Layer, candidate.Second.Layer);
-                Vector3 offset = candidate.Second.GetPortPosition(candidate.SecondPort) -
-                    candidate.First.GetPortPosition(candidate.FirstPort);
-                foreach (ModelBlockView moving in _movingBlocks)
-                {
-                    moving.Translate(offset);
-                }
-                _connections.Add(candidate);
-                RefreshPorts(candidate);
-            }
             _grabbedBlock = null;
-            _movingBlocks.Clear();
         }
 
-        internal void ShowSettings(ModelBlockView block)
+        internal void BeginConnection(ModelBlockView block, int port, IXRSelectInteractor interactor)
         {
-            if (_grabbedBlock != null || _rightRay == null || _rightRay.hasSelection)
+            if (!ReferenceEquals(interactor, _rightRay) || _grabbedBlock != null || _connectionSource != null ||
+                !IsWorkspaceBlock(block) || !IsPortAvailable(block, port))
             {
                 return;
             }
+
+            _popup.Hide();
+            _settingsBlock = null;
+            _connectionSource = block;
+            _connectionSourcePort = port;
+            _connectionRayDistance = Vector3.Distance(_rightRay.rayOriginTransform.position, block.GetPortPosition(port));
+            _previewLine.enabled = true;
+            UpdateConnectionPreview();
+        }
+
+        internal void EndConnection(ModelBlockView block, int port, bool cancelled)
+        {
+            if (_connectionSource != block || _connectionSourcePort != port)
+            {
+                return;
+            }
+
+            Connection connection = cancelled ? null : FindConnectionCandidate();
+            ClearConnectionPreview();
+            if (connection != null)
+            {
+                // Only a released port selection connects models; moving blocks never auto-connects them.
+                _workspace.Connect(connection.First.Layer, connection.Second.Layer);
+                connection.Line = CreateConnectionLine("Block Connection");
+                SetLineColor(connection.Line, ConnectedColor);
+                PrepareConnectionInteraction(connection);
+                _connections.Add(connection);
+                UpdateConnectionLine(connection);
+                RefreshPorts(connection);
+            }
+        }
+
+        private void CancelConnection()
+        {
+            ModelBlockView source = _connectionSource;
+            ClearConnectionPreview();
+            if (source != null)
+            {
+                source.CancelPortSelection();
+            }
+        }
+
+        private void ClearConnectionPreview()
+        {
+            SetCandidate(null);
+            if (_connectionSource != null)
+            {
+                _connectionSource.SetPortState(_connectionSourcePort,
+                    !IsPortAvailable(_connectionSource, _connectionSourcePort), false);
+            }
+            _connectionSource = null;
+            _connectionSourcePort = -1;
+            if (_previewLine != null)
+            {
+                _previewLine.enabled = false;
+            }
+        }
+
+        private void UpdateConnectionPreview()
+        {
+            SetCandidate(FindConnectionCandidate());
+            _connectionSource.SetPortState(_connectionSourcePort, false, true);
+            Vector3 end = _candidate != null
+                ? _candidate.Second.GetPortPosition(_candidate.SecondPort)
+                : GetConnectionPointerPosition();
+            _previewLine.SetPosition(0, _connectionSource.GetPortPosition(_connectionSourcePort));
+            _previewLine.SetPosition(1, end);
+            SetLineColor(_previewLine, _candidate != null ? CandidateColor : Color.white);
+        }
+
+        private Vector3 GetConnectionPointerPosition()
+        {
+            if (_rightRay.TryGetCurrentRaycast(out RaycastHit? hit, out _,
+                out RaycastResult? uiHit, out _, out bool isUIHitClosest))
+            {
+                if (isUIHitClosest && uiHit.HasValue)
+                {
+                    return uiHit.Value.worldPosition;
+                }
+                if (hit.HasValue)
+                {
+                    return hit.Value.point;
+                }
+            }
+            Transform origin = _rightRay.rayOriginTransform;
+            return origin.position + origin.forward * _connectionRayDistance;
+        }
+
+        private LineRenderer CreateConnectionLine(string lineName)
+        {
+            GameObject lineObject = new GameObject(lineName);
+            lineObject.transform.SetParent(transform, false);
+            LineRenderer line = lineObject.AddComponent<LineRenderer>();
+            line.sharedMaterial = _connectionMaterial;
+            line.useWorldSpace = true;
+            line.positionCount = 2;
+            line.startWidth = _connectionWidth;
+            line.endWidth = _connectionWidth;
+            line.numCapVertices = 4;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            return line;
+        }
+
+        private void SetLineColor(LineRenderer line, Color color)
+        {
+            _lineProperties.SetColor(BaseColor, color);
+            line.SetPropertyBlock(_lineProperties);
+        }
+
+        private void UpdateConnectionLine(Connection connection)
+        {
+            Vector3 start = connection.First.GetPortPosition(connection.FirstPort);
+            Vector3 end = connection.Second.GetPortPosition(connection.SecondPort);
+            connection.Line.SetPosition(0, start);
+            connection.Line.SetPosition(1, end);
+            Vector3 direction = end - start;
+            float length = direction.magnitude;
+            // Leave the port spheres outside the wire's hit area so they remain easy to point at.
+            float portClearance = Mathf.Min(0.03f, length * 0.25f);
+            connection.Collider.enabled = length > 0.001f;
+            if (connection.Collider.enabled)
+            {
+                connection.Line.transform.SetPositionAndRotation((start + end) * 0.5f, Quaternion.LookRotation(direction));
+                float hitLength = length - portClearance * 2f;
+                connection.Collider.radius = Mathf.Min(Mathf.Max(_connectionWidth * 0.5f, 0.015f),
+                    hitLength * 0.5f);
+                connection.Collider.height = hitLength;
+            }
+        }
+
+        private void PrepareConnectionInteraction(Connection connection)
+        {
+            CapsuleCollider collider = connection.Line.gameObject.AddComponent<CapsuleCollider>();
+            collider.direction = 2;
+            collider.radius = Mathf.Max(_connectionWidth * 0.5f, 0.015f);
+            connection.Collider = collider;
+            XRSimpleInteractable interactable = connection.Line.gameObject.AddComponent<XRSimpleInteractable>();
+            connection.Interactable = interactable;
+            connection.OnActivated = args => HandleConnectionTapped(connection, args);
+            interactable.activated.AddListener(connection.OnActivated);
+        }
+
+        private void UpdateConnectionHover()
+        {
+            Connection hovered = null;
+            if (TryGetRayCollider(out Collider collider))
+            {
+                foreach (Connection connection in _connections)
+                {
+                    if (connection.Collider == collider)
+                    {
+                        hovered = connection;
+                        break;
+                    }
+                }
+            }
+            if (ReferenceEquals(_hoveredConnection, hovered))
+            {
+                return;
+            }
+            ClearConnectionHover();
+            _hoveredConnection = hovered;
+            if (hovered != null)
+            {
+                SetLineColor(hovered.Line, Color.yellow);
+            }
+        }
+
+        private void ClearConnectionHover()
+        {
+            if (_hoveredConnection != null)
+            {
+                SetLineColor(_hoveredConnection.Line, ConnectedColor);
+                _hoveredConnection = null;
+            }
+        }
+
+        private void HandleConnectionTapped(Connection connection, ActivateEventArgs args)
+        {
+            if (!isActiveAndEnabled || !ReferenceEquals(args.interactorObject, _rightRay) ||
+                _grabbedBlock != null || _connectionSource != null || _rightRay.hasSelection ||
+                !TryGetRayCollider(out Collider collider) || collider != connection.Collider)
+            {
+                return;
+            }
+            DisconnectConnection(connection);
+        }
+
+        private void DisconnectConnection(Connection connection)
+        {
+            int index = _connections.IndexOf(connection);
+            if (index < 0)
+            {
+                return;
+            }
+            _workspace.Disconnect(connection.First.Layer, connection.Second.Layer);
+            RemoveConnection(index);
+            _settingsBlock = null;
+            _popup.Hide();
+        }
+
+        internal void HandleBlockTapped(ModelBlockView block)
+        {
+            if (_grabbedBlock != null || _connectionSource != null || block.IsPalette ||
+                _rightRay == null || _rightRay.hasSelection)
+            {
+                return;
+            }
+            if (TryGetRayPort(out ModelBlockView hitBlock, out int port) && hitBlock == block)
+            {
+                foreach (Connection connection in _connections)
+                {
+                    if (connection.Uses(block, port))
+                    {
+                        // A connected port click removes only its own wire, not the block's other connection.
+                        DisconnectConnection(connection);
+                        return;
+                    }
+                }
+            }
+            ShowSettings(block);
+        }
+
+        private void ShowSettings(ModelBlockView block)
+        {
             _settingsBlock = block;
             Camera camera = Camera.main;
             Vector3 position = block.transform.position + Vector3.up * 0.42f;
@@ -173,20 +399,7 @@ namespace ModelDesignScene
 
         private void UpdatePortHover()
         {
-            ModelBlockView hoveredBlock = null;
-            int hoveredPort = -1;
-            if (_rightRay != null && _rightRay.isActiveAndEnabled &&
-                _rightRay.TryGetCurrentRaycast(out RaycastHit? hit, out _, out _, out _, out bool isUIHitClosest) &&
-                !isUIHitClosest && hit.HasValue)
-            {
-                Collider hitCollider = hit.Value.collider;
-                ModelBlockView block = hitCollider != null ? hitCollider.GetComponentInParent<ModelBlockView>() : null;
-                if (block != null && block.TryGetPort(hitCollider, out hoveredPort) &&
-                    (_paletteSlots.ContainsKey(block) || (block.Layer != null && _blocks.ContainsKey(block.Layer))))
-                {
-                    hoveredBlock = block;
-                }
-            }
+            TryGetRayPort(out ModelBlockView hoveredBlock, out int hoveredPort);
 
             if (_hoveredPortBlock != null && _hoveredPortBlock != hoveredBlock)
             {
@@ -197,6 +410,41 @@ namespace ModelDesignScene
             {
                 _hoveredPortBlock.SetHoveredPort(hoveredPort);
             }
+        }
+
+        private bool TryGetRayPort(out ModelBlockView block, out int port)
+        {
+            block = null;
+            port = -1;
+            if (TryGetRayCollider(out Collider collider))
+            {
+                ModelBlockView hitBlock = collider.GetComponentInParent<ModelBlockView>();
+                if (hitBlock != null && hitBlock.Layer != null && hitBlock.TryGetPort(collider, out port) &&
+                    (_paletteSlots.ContainsKey(hitBlock) || IsWorkspaceBlock(hitBlock)))
+                {
+                    block = hitBlock;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool TryGetRayCollider(out Collider collider)
+        {
+            collider = null;
+            if (_rightRay != null && _rightRay.isActiveAndEnabled &&
+                _rightRay.TryGetCurrentRaycast(out RaycastHit? hit, out _, out _, out _, out bool isUIHitClosest) &&
+                !isUIHitClosest && hit.HasValue)
+            {
+                collider = hit.Value.collider;
+                return collider != null;
+            }
+            return false;
+        }
+
+        private bool IsWorkspaceBlock(ModelBlockView block)
+        {
+            return block != null && !block.IsPalette && block.Layer != null && _blocks.ContainsKey(block.Layer);
         }
 
         private static LayerDefinition CreateDefaultLayer(LayerType type)
@@ -211,64 +459,26 @@ namespace ModelDesignScene
             }
         }
 
-        private void RestoreBlockParents()
-        {
-            foreach (ModelBlockView block in _movingBlocks)
-            {
-                if (block != null && block != _grabbedBlock)
-                {
-                    block.transform.SetParent(transform, true);
-                }
-            }
-        }
-
         private Connection FindConnectionCandidate()
         {
-            float closestSquared = _snapDistance * _snapDistance;
-            ModelBlockView closestMoving = null;
-            ModelBlockView closestTarget = null;
-            int closestPort = 0;
-            foreach (ModelBlockView moving in _movingBlocks)
-            {
-                for (int port = 0; port < 2; port++)
-                {
-                    if (!IsPortAvailable(moving, port))
-                    {
-                        continue;
-                    }
-                    foreach (ModelBlockView target in _blocks.Values)
-                    {
-                        int targetPort = 1 - port;
-                        if (_movingBlocks.Contains(target) || !IsPortAvailable(target, targetPort))
-                        {
-                            continue;
-                        }
-                        float squaredDistance = (moving.GetPortPosition(port) - target.GetPortPosition(targetPort)).sqrMagnitude;
-                        if (squaredDistance < closestSquared)
-                        {
-                            closestSquared = squaredDistance;
-                            closestMoving = moving;
-                            closestTarget = target;
-                            closestPort = port;
-                        }
-                    }
-                }
-            }
-            if (closestMoving == null)
+            if (!IsWorkspaceBlock(_connectionSource) || !IsPortAvailable(_connectionSource, _connectionSourcePort) ||
+                !TryGetRayPort(out ModelBlockView target, out int targetPort) || !IsWorkspaceBlock(target) ||
+                targetPort == _connectionSourcePort || !IsPortAvailable(target, targetPort) ||
+                ReferenceEquals(_workspace.GetModel(_connectionSource.Layer), _workspace.GetModel(target.Layer)))
             {
                 return null;
             }
-            if (_candidate != null && _candidate.First == closestMoving &&
-                _candidate.Second == closestTarget && _candidate.FirstPort == closestPort)
+            if (_candidate != null && _candidate.First == _connectionSource &&
+                _candidate.Second == target && _candidate.FirstPort == _connectionSourcePort)
             {
                 return _candidate;
             }
-            return new Connection(closestMoving, closestPort, closestTarget, 1 - closestPort);
+            return new Connection(_connectionSource, _connectionSourcePort, target, targetPort);
         }
 
         private bool IsPortAvailable(ModelBlockView block, int port)
         {
-            if (!block.HasPort(port))
+            if (port < 0 || port > 1 || !block.HasPort(port))
             {
                 return false;
             }
@@ -318,14 +528,56 @@ namespace ModelDesignScene
                 if (connection.First == _settingsBlock || connection.Second == _settingsBlock)
                 {
                     _workspace.Disconnect(connection.First.Layer, connection.Second.Layer);
-                    _connections.RemoveAt(index);
-                    RefreshPorts(connection);
+                    RemoveConnection(index);
                 }
             }
-            // A small separation makes the result visible and avoids reconnecting an unmoved block on release.
-            _settingsBlock.Translate(-_settingsBlock.transform.forward * (_snapDistance + 0.04f));
             _settingsBlock = null;
             _popup.Hide();
+        }
+
+        private void DeleteSelectedBlock()
+        {
+            ModelBlockView block = _settingsBlock;
+            if (!IsWorkspaceBlock(block) || block.Layer.Type == LayerType.Input || block.Layer.Type == LayerType.Output)
+            {
+                return;
+            }
+
+            _settingsBlock = null;
+            _popup.Hide();
+            CancelConnection();
+            _workspace.RemoveLayer(block.Layer);
+            for (int index = _connections.Count - 1; index >= 0; index--)
+            {
+                Connection connection = _connections[index];
+                if (connection.First == block || connection.Second == block)
+                {
+                    RemoveConnection(index);
+                }
+            }
+            if (_hoveredPortBlock == block)
+            {
+                _hoveredPortBlock.SetHoveredPort(-1);
+                _hoveredPortBlock = null;
+            }
+            _blocks.Remove(block.Layer);
+            // Remove interaction immediately; Unity destroys the object at the end of the frame.
+            block.gameObject.SetActive(false);
+            Destroy(block.gameObject);
+        }
+
+        private void RemoveConnection(int index)
+        {
+            Connection connection = _connections[index];
+            if (ReferenceEquals(_hoveredConnection, connection))
+            {
+                ClearConnectionHover();
+            }
+            _connections.RemoveAt(index);
+            connection.Interactable.activated.RemoveListener(connection.OnActivated);
+            connection.Line.gameObject.SetActive(false);
+            Destroy(connection.Line.gameObject);
+            RefreshPorts(connection);
         }
 
         private void BindRightHand()
@@ -375,6 +627,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            ClearConnectionHover();
             if (_hoveredPortBlock != null)
             {
                 _hoveredPortBlock.SetHoveredPort(-1);
@@ -384,15 +637,14 @@ namespace ModelDesignScene
             {
                 _popup.Hide();
             }
-            SetCandidate(null);
-            RestoreBlockParents();
+            CancelConnection();
             if (_grabbedBlock != null)
             {
-                _grabbedBlock.CancelGrab();
-                _grabbedBlock.transform.SetParent(transform, true);
+                ModelBlockView grabbedBlock = _grabbedBlock;
+                grabbedBlock.CancelGrab();
+                grabbedBlock.transform.SetParent(transform, true);
             }
             _grabbedBlock = null;
-            _movingBlocks.Clear();
             if (_paletteRoot != null)
             {
                 XRGrabInteractable paletteGrab = _paletteRoot.GetComponent<XRGrabInteractable>();
@@ -432,6 +684,7 @@ namespace ModelDesignScene
             if (_popup != null)
             {
                 _popup.OnDisconnectRequested -= DisconnectSelectedBlock;
+                _popup.OnDeleteRequested -= DeleteSelectedBlock;
             }
             _workspace?.Dispose();
         }
@@ -452,6 +705,10 @@ namespace ModelDesignScene
             public int FirstPort { get; }
             public ModelBlockView Second { get; }
             public int SecondPort { get; }
+            public LineRenderer Line { get; set; }
+            public CapsuleCollider Collider { get; set; }
+            public XRSimpleInteractable Interactable { get; set; }
+            public UnityAction<ActivateEventArgs> OnActivated { get; set; }
 
             public Connection(ModelBlockView first, int firstPort, ModelBlockView second, int secondPort)
             {

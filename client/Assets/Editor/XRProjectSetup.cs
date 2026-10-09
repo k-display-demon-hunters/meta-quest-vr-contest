@@ -117,7 +117,9 @@ namespace XR.Editor
             }
 
             XRGeneralSettings general = settings.SettingsForBuildTarget(target);
-            general.InitManagerOnStart = true;
+            // Desktop development uses simulated input devices without an installed OpenXR runtime.
+            // Quest Link requires enabling Standalone initialization explicitly in Project Settings.
+            general.InitManagerOnStart = target == BuildTargetGroup.Android;
             if (!XRPackageMetadataStore.AssignLoader(general.Manager, "UnityEngine.XR.OpenXR.OpenXRLoader", target))
             {
                 throw new InvalidOperationException($"Cannot assign OpenXR loader for {target}.");
@@ -300,12 +302,14 @@ namespace XR.Editor
             line.sharedMaterial = rayMaterial;
             line.startWidth = 0.005f;
             line.endWidth = 0.005f;
-            controller.AddComponent<XRInteractorLineVisual>();
+            XRInteractorLineVisual lineVisual = controller.AddComponent<XRInteractorLineVisual>();
+            // Keep the pointer on the raycast path instead of bending it back toward a selected port.
+            lineVisual.lineBendRatio = 1f;
             if (handedness == InteractorHandedness.Left)
             {
                 ray.enabled = false;
                 line.enabled = false;
-                controller.GetComponent<XRInteractorLineVisual>().enabled = false;
+                lineVisual.enabled = false;
             }
         }
 

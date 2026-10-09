@@ -17,6 +17,7 @@ namespace ModelDesignScene
         [SerializeField] private Text _summary;
         [SerializeField] private Button _closeButton;
         [SerializeField] private Button _disconnectButton;
+        [SerializeField] private Button _deleteButton;
 
         [Header("Settings")]
         [SerializeField] private NumberRow[] _numberRows = new NumberRow[NumberRowCount];
@@ -30,6 +31,7 @@ namespace ModelDesignScene
         private bool _isConfigured;
 
         public event Action OnDisconnectRequested;
+        public event Action OnDeleteRequested;
 
         private void Awake()
         {
@@ -42,6 +44,7 @@ namespace ModelDesignScene
 
             _closeButton.onClick.AddListener(Hide);
             _disconnectButton.onClick.AddListener(HandleDisconnectClicked);
+            _deleteButton.onClick.AddListener(HandleDeleteClicked);
             _previousActivation.onClick.AddListener(HandlePreviousActivationClicked);
             _nextActivation.onClick.AddListener(HandleNextActivationClicked);
             for (int index = 0; index < _numberRows.Length; index++)
@@ -83,7 +86,8 @@ namespace ModelDesignScene
         private bool HasRequiredReferences()
         {
             if (_title == null || _summary == null || _closeButton == null ||
-                _disconnectButton == null || _activationRoot == null || _activationValue == null ||
+                _disconnectButton == null || _deleteButton == null ||
+                _activationRoot == null || _activationValue == null ||
                 _previousActivation == null || _nextActivation == null ||
                 _numberRows == null || _numberRows.Length != NumberRowCount)
             {
@@ -109,6 +113,7 @@ namespace ModelDesignScene
             }
 
             _title.text = _layer.Type + " settings";
+            _deleteButton.interactable = _layer.Type != LayerType.Input && _layer.Type != LayerType.Output;
             int visibleNumberRowCount = 0;
             bool hasActivation = _layer.Type == LayerType.Conv2D || _layer.Type == LayerType.Dense;
             _activationRoot.SetActive(hasActivation);
@@ -229,6 +234,14 @@ namespace ModelDesignScene
             }
         }
 
+        private void HandleDeleteClicked()
+        {
+            if (_layer != null && _layer.Type != LayerType.Input && _layer.Type != LayerType.Output)
+            {
+                OnDeleteRequested?.Invoke();
+            }
+        }
+
         private void HandlePreviousActivationClicked()
         {
             ChangeActivation(-1);
@@ -253,6 +266,7 @@ namespace ModelDesignScene
 
             _closeButton.onClick.RemoveListener(Hide);
             _disconnectButton.onClick.RemoveListener(HandleDisconnectClicked);
+            _deleteButton.onClick.RemoveListener(HandleDeleteClicked);
             _previousActivation.onClick.RemoveListener(HandlePreviousActivationClicked);
             _nextActivation.onClick.RemoveListener(HandleNextActivationClicked);
             foreach (NumberRow row in _numberRows)

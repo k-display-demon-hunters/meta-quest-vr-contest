@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 10003}
   - component: {fileID: 10005}
   m_Layer: 0
-  m_Name: CNN Learning Workspace
+  m_Name: CNNFeatureMapWorkspace
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

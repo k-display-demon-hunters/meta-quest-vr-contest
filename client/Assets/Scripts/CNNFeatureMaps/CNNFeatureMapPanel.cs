@@ -1,18 +1,18 @@
 using UnityEngine;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
-    public sealed class CNNLearningPanel : MonoBehaviour
+    public sealed class CNNFeatureMapPanel : MonoBehaviour
     {
         [SerializeField] private Renderer _surface;
         [SerializeField] private int _layer = -1;
         [SerializeField] private int _channel;
-        [SerializeField] private CNNLearningNode[] _nodes;
+        [SerializeField] private CNNFeatureMapNode[] _nodes;
         private bool _extracted;
         public bool IsExtracted => _extracted;
         public int Layer => _layer;
         public int Channel => _channel;
-        public System.Collections.Generic.IReadOnlyList<CNNLearningNode> Nodes => _nodes;
+        public System.Collections.Generic.IReadOnlyList<CNNFeatureMapNode> Nodes => _nodes;
 
         private void Awake()
         {

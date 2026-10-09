@@ -2,22 +2,22 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
-    public enum CNNLearningAction { Previous, Next, Scan, Filter, Spread, Restore }
+    public enum CNNFeatureMapAction { Previous, Next, Scan, Filter, Spread, Restore }
 
     [RequireComponent(typeof(BoxCollider))]
-    public sealed class CNNLearningButton : MonoBehaviour
+    public sealed class CNNFeatureMapButton : MonoBehaviour
     {
-        private CNNLearningGuide _guide;
-        private CNNLearningAction _action;
+        private CNNFeatureMapGuide _guide;
+        private CNNFeatureMapAction _action;
         private XRSimpleInteractable _interactable;
         private Renderer _renderer;
         private MaterialPropertyBlock _properties;
         private bool _available = true;
         private float _lastPress = -1f;
 
-        public void Configure(CNNLearningGuide guide, CNNLearningAction action)
+        public void Configure(CNNFeatureMapGuide guide, CNNFeatureMapAction action)
         {
             _guide = guide;
             _action = action;

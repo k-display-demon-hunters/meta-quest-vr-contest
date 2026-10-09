@@ -4,35 +4,35 @@ using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
-    public enum CNNLearningGrabKind { Node, Map, Layer }
+    public enum CNNFeatureMapGrabKind { Node, Map, Layer }
 
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class CNNLearningGrabTarget : MonoBehaviour, IXRSelectFilter
+    public sealed class CNNFeatureMapGrabTarget : MonoBehaviour, IXRSelectFilter
     {
-        [SerializeField] private CNNLearningScene _scene;
-        [SerializeField] private CNNLearningGrabKind _kind;
+        [SerializeField] private CNNFeatureMapScene _scene;
+        [SerializeField] private CNNFeatureMapGrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
-        private CNNLearningNode _node;
-        private CNNLearningPanel _panel;
-        private CNNLearningLayer _layer;
+        private CNNFeatureMapNode _node;
+        private CNNFeatureMapPanel _panel;
+        private CNNFeatureMapLayer _layer;
         private Vector3 _homePosition;
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
         private float _scaleFactor = 1f;
         private bool _isFilter;
 
-        public CNNLearningGrabKind Kind => _kind;
+        public CNNFeatureMapGrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
         public bool canProcess => isActiveAndEnabled;
 
-        public void ConfigureFilter(CNNLearningScene scene, Collider handle)
+        public void ConfigureFilter(CNNFeatureMapScene scene, Collider handle)
         {
             _scene = scene;
-            _kind = CNNLearningGrabKind.Map;
+            _kind = CNNFeatureMapGrabKind.Map;
             _grabColliders = new Collider[] { handle };
             _isFilter = true;
         }
@@ -42,9 +42,9 @@ namespace CNNLearning
             _homePosition = transform.localPosition;
             _homeRotation = transform.localRotation;
             _homeScale = transform.localScale;
-            _node = GetComponent<CNNLearningNode>();
-            _panel = GetComponent<CNNLearningPanel>();
-            _layer = GetComponent<CNNLearningLayer>();
+            _node = GetComponent<CNNFeatureMapNode>();
+            _panel = GetComponent<CNNFeatureMapPanel>();
+            _layer = GetComponent<CNNFeatureMapLayer>();
             _body = GetComponent<Rigidbody>();
             _body.isKinematic = true;
             _body.useGravity = false;

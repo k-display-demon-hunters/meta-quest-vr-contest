@@ -1,11 +1,11 @@
 using UnityEngine;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
     [RequireComponent(typeof(Renderer))]
-    public sealed class CNNLearningNode : MonoBehaviour
+    public sealed class CNNFeatureMapNode : MonoBehaviour
     {
-        [SerializeField] private CNNLearningScene _scene;
+        [SerializeField] private CNNFeatureMapScene _scene;
         [SerializeField] private int _layer = -1;
         [SerializeField] private int _channel;
         [SerializeField] private int _row;
@@ -35,7 +35,7 @@ namespace CNNLearning
             _spotlight = spotlight;
         }
 
-        public void RefreshAppearance(CNNLearningExampleData data)
+        public void RefreshAppearance(CNNFeatureMapExampleData data)
         {
             float value = data.ReadValue(_layer, _channel, _row, _column);
             Color color = _layer < 0 ? new Color(value, value, value) :

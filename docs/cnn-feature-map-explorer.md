@@ -1,12 +1,12 @@
 # CNN 초보자 체험 씬
 
-CNN 체험은 같은 `client` 프로젝트 안의 `CNNLearningLab` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNLearning/`의 `CNNLearning` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNLearning/CNNLearningWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/FeatureMaps/Images/`와 `Assets/FeatureMaps/Materials/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
+CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNFeatureMaps/`의 `CNNFeatureMaps` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNFeatureMaps/CNNFeatureMapWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/CNNFeatureMaps/Images/`와 `Assets/CNNFeatureMaps/Materials/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
 
 ## 열기
 
 1. Unity Hub에서 `C:\Github_local\MetaQuest\meta-quest-vr-contest\client` 프로젝트를 사용한다.
 2. 현재 Play 중이면 먼저 정지한다.
-3. Project 창에서 `Assets/Scenes/CNNLearningLab.unity`를 더블클릭한다.
+3. Project 창에서 `Assets/Scenes/CNNFeatureMapExplorer.unity`를 더블클릭한다.
 4. 사용자가 Play를 실행하면 전용 프리팹의 학습 안내와 필터 도구가 생성된다.
 
 처음에는 입력과 첫 번째 맵만 보인다. 아래쪽의 **다음** 버튼으로 단계를 진행한다. 카메라·양손·이동은 기존 XRPlayerRig를 사용하며, 콘텐츠는 VR 컨트롤러로 조작한다.
@@ -46,11 +46,11 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNLearningLab` 씬으로 제
 
 ## 코드 위치
 
-- `client/Assets/Scripts/CNNLearning/CNNLearningGuide.cs`: 4단계 안내, 필터 도구, 진행 표시, 버튼 처리.
-- `CNNLearningExampleData.cs`: 실제 합성곱·ReLU·수용 영역·입력 수정 계산.
-- `CNNLearningNode.cs`: 계산값과 강조색.
-- `CNNLearningGrabTarget.cs`, `CNNLearningLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
-- `client/Assets/Prefabs/CNNLearning/CNNLearningWorkspace.prefab`: CNN 배치와 학습 컴포넌트 참조.
+- `client/Assets/Scripts/CNNFeatureMaps/CNNFeatureMapGuide.cs`: 4단계 안내, 필터 도구, 진행 표시, 버튼 처리.
+- `CNNFeatureMapExampleData.cs`: 실제 합성곱·ReLU·수용 영역·입력 수정 계산.
+- `CNNFeatureMapNode.cs`: 계산값과 강조색.
+- `CNNFeatureMapGrabTarget.cs`, `CNNFeatureMapLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
+- `client/Assets/Prefabs/CNNFeatureMaps/CNNFeatureMapWorkspace.prefab`: CNN 배치와 학습 컴포넌트 참조.
 
 한글 표시는 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, 같은 Fonts 폴더에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
 

@@ -3,18 +3,18 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
-    public sealed class CNNLearningScene : MonoBehaviour
+    public sealed class CNNFeatureMapScene : MonoBehaviour
     {
         [SerializeField] private Texture2D _inputImage;
-        [SerializeField] private CNNLearningNode[] _nodes;
+        [SerializeField] private CNNFeatureMapNode[] _nodes;
         [SerializeField] private Renderer[] _outputs;
-        private readonly List<CNNLearningGrabTarget> _heldTargets = new List<CNNLearningGrabTarget>();
-        private CNNLearningGrabTarget[] _targets;
-        private CNNLearningLayer[] _layers;
-        private CNNLearningExampleData _data;
-        private CNNLearningGrabTarget _hoverTarget;
+        private readonly List<CNNFeatureMapGrabTarget> _heldTargets = new List<CNNFeatureMapGrabTarget>();
+        private CNNFeatureMapGrabTarget[] _targets;
+        private CNNFeatureMapLayer[] _layers;
+        private CNNFeatureMapExampleData _data;
+        private CNNFeatureMapGrabTarget _hoverTarget;
         private InputAction _zoomIn;
         private InputAction _zoomOut;
         private InputAction _pixelClick;
@@ -22,9 +22,9 @@ namespace CNNLearning
         private Text[] _tabletTexts;
         private bool[] _tabletTextStates;
         private bool _ready;
-        private CNNLearningGuide _guide;
+        private CNNFeatureMapGuide _guide;
         public bool HasHeldTargets => _heldTargets.Count > 0;
-        public CNNLearningExampleData Data => _data;
+        public CNNFeatureMapExampleData Data => _data;
 
         private void Awake()
         {
@@ -44,16 +44,16 @@ namespace CNNLearning
 
         private void Start()
         {
-            _targets = GetComponentsInChildren<CNNLearningGrabTarget>();
-            _layers = GetComponentsInChildren<CNNLearningLayer>();
+            _targets = GetComponentsInChildren<CNNFeatureMapGrabTarget>();
+            _layers = GetComponentsInChildren<CNNFeatureMapLayer>();
             if (_inputImage == null || !_inputImage.isReadable || _inputImage.width != 8 || _inputImage.height != 8)
             {
-                Debug.LogError("CNNLearningScene requires the readable 8 x 8 sample image.", this);
+                Debug.LogError("CNNFeatureMapScene requires the readable 8 x 8 sample image.", this);
                 return;
             }
-            _data = new CNNLearningExampleData(_inputImage);
+            _data = new CNNFeatureMapExampleData(_inputImage);
             _ready = true;
-            _guide = GetComponent<CNNLearningGuide>();
+            _guide = GetComponent<CNNFeatureMapGuide>();
             RefreshAppearance(false);
             // Hide existing tablet words only while this content scene is active.
             XR.LeftHandTablet tablet = Object.FindFirstObjectByType<XR.LeftHandTablet>();
@@ -86,7 +86,7 @@ namespace CNNLearning
             }
             if (_heldTargets.Count > 0)
             {
-                CNNLearningGrabTarget target = _heldTargets[_heldTargets.Count - 1];
+                CNNFeatureMapGrabTarget target = _heldTargets[_heldTargets.Count - 1];
                 float direction = (_zoomIn.IsPressed() ? 1f : 0f) - (_zoomOut.IsPressed() ? 1f : 0f);
                 if (direction != 0f)
                 {
@@ -95,7 +95,7 @@ namespace CNNLearning
             }
             if (_pixelClick.WasPressedThisFrame() && _hoverTarget != null)
             {
-                CNNLearningNode node = _hoverTarget.GetComponent<CNNLearningNode>();
+                CNNFeatureMapNode node = _hoverTarget.GetComponent<CNNFeatureMapNode>();
                 if (node != null)
                 {
                     node.SelectPixel();
@@ -121,9 +121,9 @@ namespace CNNLearning
             RefreshAppearance(true);
         }
 
-        public bool CanGrab(CNNLearningGrabTarget candidate)
+        public bool CanGrab(CNNFeatureMapGrabTarget candidate)
         {
-            foreach (CNNLearningGrabTarget held in _heldTargets)
+            foreach (CNNFeatureMapGrabTarget held in _heldTargets)
             {
                 if (held != candidate && (held.transform.IsChildOf(candidate.transform) || candidate.transform.IsChildOf(held.transform)))
                 {
@@ -135,7 +135,7 @@ namespace CNNLearning
 
         public bool HasHeldDescendant(Transform ancestor)
         {
-            foreach (CNNLearningGrabTarget held in _heldTargets)
+            foreach (CNNFeatureMapGrabTarget held in _heldTargets)
             {
                 if (held.transform.IsChildOf(ancestor))
                 {
@@ -145,7 +145,7 @@ namespace CNNLearning
             return false;
         }
 
-        public void HoldTarget(CNNLearningGrabTarget target)
+        public void HoldTarget(CNNFeatureMapGrabTarget target)
         {
             if (!_heldTargets.Contains(target))
             {
@@ -153,9 +153,9 @@ namespace CNNLearning
             }
         }
 
-        public void ReleaseTarget(CNNLearningGrabTarget target) => _heldTargets.Remove(target);
+        public void ReleaseTarget(CNNFeatureMapGrabTarget target) => _heldTargets.Remove(target);
 
-        public void SetHoverTarget(CNNLearningGrabTarget target, bool hovering)
+        public void SetHoverTarget(CNNFeatureMapGrabTarget target, bool hovering)
         {
             if (hovering)
             {
@@ -173,11 +173,11 @@ namespace CNNLearning
             {
                 return;
             }
-            foreach (CNNLearningLayer layer in _layers)
+            foreach (CNNFeatureMapLayer layer in _layers)
             {
                 layer.Collapse();
             }
-            foreach (CNNLearningGrabTarget target in _targets)
+            foreach (CNNFeatureMapGrabTarget target in _targets)
             {
                 target.ResetPose();
             }
@@ -195,7 +195,7 @@ namespace CNNLearning
             {
                 return;
             }
-            foreach (CNNLearningNode node in _nodes)
+            foreach (CNNFeatureMapNode node in _nodes)
             {
                 node.RefreshAppearance(_data);
             }

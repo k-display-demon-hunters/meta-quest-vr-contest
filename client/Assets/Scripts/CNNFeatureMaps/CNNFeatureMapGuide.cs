@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace CNNLearning
+namespace CNNFeatureMaps
 {
     /// <summary>
     /// An isolated, four-step lesson over a fixed, fully connected 3 x 3 convolution demo.
     /// It visualizes arithmetic and structural receptive fields; it is not a trained classifier.
     /// </summary>
-    public sealed class CNNLearningGuide : MonoBehaviour
+    public sealed class CNNFeatureMapGuide : MonoBehaviour
     {
         [SerializeField] private Transform _inputRoot;
         [SerializeField] private Transform[] _layerRoots;
@@ -16,14 +16,14 @@ namespace CNNLearning
         private int _spreadLayer;
         private const float CellSpacing = .066f;
         private readonly bool[,,] _visited = new bool[2, 8, 8];
-        private readonly CNNLearningNode[,,] _firstNodes = new CNNLearningNode[2, 8, 8];
-        private readonly CNNLearningButton[] _buttons = new CNNLearningButton[6];
+        private readonly CNNFeatureMapNode[,,] _firstNodes = new CNNFeatureMapNode[2, 8, 8];
+        private readonly CNNFeatureMapButton[] _buttons = new CNNFeatureMapButton[6];
         private readonly TextMesh[] _buttonLabels = new TextMesh[6];
-        private CNNLearningScene _scene;
-        private CNNLearningNode[] _nodes;
-        private CNNLearningPanel[] _panels;
-        private CNNLearningLayer[] _layers;
-        private CNNLearningGrabTarget _filter;
+        private CNNFeatureMapScene _scene;
+        private CNNFeatureMapNode[] _nodes;
+        private CNNFeatureMapPanel[] _panels;
+        private CNNFeatureMapLayer[] _layers;
+        private CNNFeatureMapGrabTarget _filter;
         private Rigidbody _filterBody;
         private LineRenderer _connection;
         private GameObject _controls;
@@ -45,13 +45,13 @@ namespace CNNLearning
         private float _nextScan;
         private int _editCount;
 
-        public void Initialize(CNNLearningScene scene, CNNLearningNode[] nodes)
+        public void Initialize(CNNFeatureMapScene scene, CNNFeatureMapNode[] nodes)
         {
             _scene = scene;
             _nodes = nodes;
-            _panels = GetComponentsInChildren<CNNLearningPanel>(true);
-            _layers = GetComponentsInChildren<CNNLearningLayer>(true);
-            foreach (CNNLearningNode node in nodes)
+            _panels = GetComponentsInChildren<CNNFeatureMapPanel>(true);
+            _layers = GetComponentsInChildren<CNNFeatureMapLayer>(true);
+            foreach (CNNFeatureMapNode node in nodes)
             {
                 if (node.Layer == 0)
                 {
@@ -97,7 +97,7 @@ namespace CNNLearning
             GameObject handle = CreateShape("Mint filter handle", PrimitiveType.Sphere, filter.transform,
                 new Vector3(-.14f, 0f, -.018f), Vector3.one * .055f, new Color(.2f, .95f, .7f), true);
             filter.AddComponent<Rigidbody>();
-            _filter = filter.AddComponent<CNNLearningGrabTarget>();
+            _filter = filter.AddComponent<CNNFeatureMapGrabTarget>();
             _filter.ConfigureFilter(_scene, handle.GetComponent<Collider>());
             filter.SetActive(true);
             _filterBody = filter.GetComponent<Rigidbody>();
@@ -129,8 +129,8 @@ namespace CNNLearning
                 GameObject button = CreateShape(labels[index], PrimitiveType.Cube, _controls.transform,
                     new Vector3(-.6f + index * .44f, .48f, 2.72f), new Vector3(.38f, .12f, .04f), Color.white, true);
                 button.SetActive(false);
-                _buttons[index] = button.AddComponent<CNNLearningButton>();
-                _buttons[index].Configure(this, (CNNLearningAction)index);
+                _buttons[index] = button.AddComponent<CNNFeatureMapButton>();
+                _buttons[index].Configure(this, (CNNFeatureMapAction)index);
                 button.SetActive(true);
                 _buttonLabels[index] = CreateText(labels[index] + " label", _controls.transform,
                     new Vector3(-.6f + index * .44f, .48f, 2.695f), .31f, .042f);
@@ -305,7 +305,7 @@ namespace CNNLearning
 
         private void UpdateNodeStates()
         {
-            foreach (CNNLearningNode node in _nodes)
+            foreach (CNNFeatureMapNode node in _nodes)
             {
                 bool computed = _step != 0 || node.Layer != 0 || _visited[node.Channel, node.Row, node.Column];
                 bool spotlight = _step < 2 && node.Layer == 0 && node.Channel == _channel && node.Row == _row && node.Column == _column;
@@ -317,7 +317,7 @@ namespace CNNLearning
         {
             _scanning = false;
             _spreadLayer = 0;
-            foreach (CNNLearningLayer layer in _layers)
+            foreach (CNNFeatureMapLayer layer in _layers)
             {
                 if (layer.IsExpanded)
                 {
@@ -329,7 +329,7 @@ namespace CNNLearning
             {
                 _layerRoots[index].gameObject.SetActive(index == 0 || _step >= 2);
             }
-            foreach (CNNLearningPanel panel in _panels)
+            foreach (CNNFeatureMapPanel panel in _panels)
             {
                 if (panel.Layer == 0)
                 {
@@ -396,7 +396,7 @@ namespace CNNLearning
             SetText(_buttonLabels[2], _scanning ? "멈추기" : "자동 이동", .31f, .042f);
         }
 
-        public void Perform(CNNLearningAction action)
+        public void Perform(CNNFeatureMapAction action)
         {
             if (!_initialized)
             {
@@ -409,25 +409,25 @@ namespace CNNLearning
             }
             switch (action)
             {
-                case CNNLearningAction.Previous:
+                case CNNFeatureMapAction.Previous:
                     _step = Mathf.Max(0, _step - 1);
                     ApplyStep();
                     break;
-                case CNNLearningAction.Next:
+                case CNNFeatureMapAction.Next:
                     _step = Mathf.Min(3, _step + 1);
                     ApplyStep();
                     break;
-                case CNNLearningAction.Scan:
+                case CNNFeatureMapAction.Scan:
                     _scanning = !_scanning;
                     _scanIndex = 0;
                     _nextScan = Time.unscaledTime;
                     UpdateButtons();
                     break;
-                case CNNLearningAction.Filter:
+                case CNNFeatureMapAction.Filter:
                     _channel = 1 - _channel;
                     ApplyStep();
                     break;
-                case CNNLearningAction.Spread:
+                case CNNFeatureMapAction.Spread:
                     for (int index = 0; index < _layers.Length; index++)
                     {
                         bool expand = index == _spreadLayer;
@@ -439,7 +439,7 @@ namespace CNNLearning
                     _spreadLayer = (_spreadLayer + 1) % (_step == 1 ? 1 : _layers.Length);
                     UpdateButtons();
                     break;
-                case CNNLearningAction.Restore:
+                case CNNFeatureMapAction.Restore:
                     System.Array.Clear(_visited, 0, _visited.Length);
                     _editCount = 0;
                     _scene.Data.RestoreInput(_originalImage);

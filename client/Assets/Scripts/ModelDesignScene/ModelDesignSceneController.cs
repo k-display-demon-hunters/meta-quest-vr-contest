@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -26,6 +27,9 @@ namespace ModelDesignScene
         [SerializeField] private PaletteBlock[] _paletteBlocks;
         [SerializeField] private Material _connectionMaterial;
         [SerializeField, Min(0.001f)] private float _connectionWidth = 0.008f;
+        [SerializeField] private Button _trainingStartButton;
+        [SerializeField] private Button _trainingStopButton;
+        [SerializeField] private Text _trainingStatus;
 
         private readonly Dictionary<LayerDefinition, ModelBlockView> _blocks = new Dictionary<LayerDefinition, ModelBlockView>();
         private readonly List<Connection> _connections = new List<Connection>();
@@ -50,6 +54,7 @@ namespace ModelDesignScene
         private XRInputButtonReader _uiPress;
         private GameObject _ownedEventSystem;
         private XRUIInputModule _addedUIInputModule;
+        private bool _isTraining;
 
         private void Awake()
         {
@@ -61,6 +66,9 @@ namespace ModelDesignScene
             _popup.Hide();
             _popup.OnDisconnectRequested += DisconnectSelectedBlock;
             _popup.OnDeleteRequested += DeleteSelectedBlock;
+            _trainingStartButton.onClick.AddListener(StartTraining);
+            _trainingStopButton.onClick.AddListener(StopTraining);
+            SetTrainingState(false);
         }
 
         private void OnEnable()
@@ -78,6 +86,49 @@ namespace ModelDesignScene
             {
                 InitializeBlock(entry.Block, CreateDefaultLayer(entry.Type), true);
             }
+        }
+
+        private void StartTraining()
+        {
+            if (_isTraining)
+            {
+                return;
+            }
+            if (!ModelJsonSerializer.TrySerialize(_workspace, out string json,
+                out IReadOnlyList<ValidationIssue> issues))
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                foreach (ValidationIssue issue in issues)
+                {
+                    Debug.LogWarning($"[ModelDesign] 모델 JSON 변환 실패: {issue.Path}: {issue.Message}", this);
+                }
+#endif
+                return;
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Temporary preview only: replace this output with the training request when server integration is added.
+            Debug.Log($"[ModelDesign] 서버에 보낼 모델 JSON:\n{json}", this);
+#endif
+            SetTrainingState(true);
+        }
+
+        private void StopTraining()
+        {
+            SetTrainingState(false);
+        }
+
+        public void FinishTraining()
+        {
+            // A future training completion callback restores the start button through this method.
+            SetTrainingState(false);
+        }
+
+        private void SetTrainingState(bool isTraining)
+        {
+            _isTraining = isTraining;
+            _trainingStartButton.gameObject.SetActive(!isTraining);
+            _trainingStopButton.gameObject.SetActive(isTraining);
+            _trainingStatus.gameObject.SetActive(isTraining);
         }
 
         private void LateUpdate()
@@ -681,6 +732,14 @@ namespace ModelDesignScene
 
         private void OnDestroy()
         {
+            if (_trainingStartButton != null)
+            {
+                _trainingStartButton.onClick.RemoveListener(StartTraining);
+            }
+            if (_trainingStopButton != null)
+            {
+                _trainingStopButton.onClick.RemoveListener(StopTraining);
+            }
             if (_popup != null)
             {
                 _popup.OnDisconnectRequested -= DisconnectSelectedBlock;

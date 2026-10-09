@@ -11,9 +11,10 @@ namespace CNNFeatureMaps
     [RequireComponent(typeof(Rigidbody))]
     public sealed class CNNFeatureMapGrabTarget : MonoBehaviour, IXRSelectFilter
     {
-        [SerializeField] private CNNFeatureMapScene _scene;
         [SerializeField] private CNNFeatureMapGrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
+        [SerializeField] private bool _isFilter;
+        private CNNFeatureMapScene _scene;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
         private CNNFeatureMapNode _node;
@@ -23,18 +24,14 @@ namespace CNNFeatureMaps
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
         private float _scaleFactor = 1f;
-        private bool _isFilter;
 
         public CNNFeatureMapGrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
         public bool canProcess => isActiveAndEnabled;
 
-        public void ConfigureFilter(CNNFeatureMapScene scene, Collider handle)
+        public void Initialize(CNNFeatureMapScene scene)
         {
             _scene = scene;
-            _kind = CNNFeatureMapGrabKind.Map;
-            _grabColliders = new Collider[] { handle };
-            _isFilter = true;
         }
 
         private void Awake()

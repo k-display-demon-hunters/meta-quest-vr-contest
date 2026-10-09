@@ -12,28 +12,30 @@ namespace CNNFeatureMaps
         [SerializeField] private Transform[] _layerRoots;
         [SerializeField] private Transform[] _outputRoots;
         [SerializeField] private Material _toolMaterial;
-        [SerializeField] private Font _guideFont;
+        [SerializeField] private CNNFeatureMapGrabTarget _filter;
+        [SerializeField] private GameObject _filterCard;
+        [SerializeField] private TextMesh _title;
+        [SerializeField] private TextMesh _instruction;
+        [SerializeField] private TextMesh _readout;
+        [SerializeField] private TextMesh _weights;
+        [SerializeField] private TextMesh _filterName;
+        [SerializeField] private TextMesh _help;
+        [SerializeField] private TextMesh _padding;
+        [SerializeField] private TextMesh _inputCaption;
+        [SerializeField] private CNNFeatureMapButton[] _buttons;
+        [SerializeField] private TextMesh[] _buttonLabels;
+        [SerializeField] private TextMesh[] _layerCaptions;
+        [SerializeField] private TextMesh[] _outputCaptions;
         private int _spreadLayer;
         private const float CellSpacing = .066f;
         private readonly bool[,,] _visited = new bool[2, 8, 8];
         private readonly CNNFeatureMapNode[,,] _firstNodes = new CNNFeatureMapNode[2, 8, 8];
-        private readonly CNNFeatureMapButton[] _buttons = new CNNFeatureMapButton[6];
-        private readonly TextMesh[] _buttonLabels = new TextMesh[6];
         private CNNFeatureMapScene _scene;
         private CNNFeatureMapNode[] _nodes;
         private CNNFeatureMapPanel[] _panels;
         private CNNFeatureMapLayer[] _layers;
-        private CNNFeatureMapGrabTarget _filter;
         private Rigidbody _filterBody;
         private LineRenderer _connection;
-        private GameObject _controls;
-        private GameObject _filterCard;
-        private TextMesh _title;
-        private TextMesh _instruction;
-        private TextMesh _readout;
-        private TextMesh _weights;
-        private TextMesh _filterName;
-        private Font _font;
         private Texture2D _originalImage;
         private int _step;
         private int _channel;
@@ -72,35 +74,39 @@ namespace CNNFeatureMaps
             }
             _originalImage.SetPixels(pixels);
             _originalImage.Apply();
-            _font = _guideFont != null ? _guideFont : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            CreateFilter();
-            CreateControls();
+            InitializeVisuals();
+            CreateConnection();
             _initialized = true;
             ApplyStep();
         }
 
-        private void CreateFilter()
+        private void InitializeVisuals()
         {
-            GameObject filter = new GameObject("Drag this 3 x 3 filter");
-            filter.SetActive(false);
-            filter.transform.SetParent(_inputRoot, false);
-            filter.transform.localPosition = GridPosition(_row, _column, -.075f);
-            float side = CellSpacing * 3f;
-            for (int index = 0; index < 4; index++)
+            _filterBody = _filter.GetComponent<Rigidbody>();
+            foreach (TextMesh label in GetComponentsInChildren<TextMesh>(true))
             {
-                float offset = (index - 1.5f) * CellSpacing;
-                CreateShape("Filter row", PrimitiveType.Cube, filter.transform,
-                    new Vector3(0f, offset, 0f), new Vector3(side, .004f, .004f), new Color(.2f, .95f, .7f), false);
-                CreateShape("Filter column", PrimitiveType.Cube, filter.transform,
-                    new Vector3(offset, 0f, 0f), new Vector3(.004f, side, .004f), new Color(.2f, .95f, .7f), false);
+                label.GetComponent<MeshRenderer>().sharedMaterial = label.font.material;
             }
-            GameObject handle = CreateShape("Mint filter handle", PrimitiveType.Sphere, filter.transform,
-                new Vector3(-.14f, 0f, -.018f), Vector3.one * .055f, new Color(.2f, .95f, .7f), true);
-            filter.AddComponent<Rigidbody>();
-            _filter = filter.AddComponent<CNNFeatureMapGrabTarget>();
-            _filter.ConfigureFilter(_scene, handle.GetComponent<Collider>());
-            filter.SetActive(true);
-            _filterBody = filter.GetComponent<Rigidbody>();
+            for (int index = 0; index < _buttons.Length; index++)
+            {
+                _buttons[index].Configure(this, (CNNFeatureMapAction)index);
+                SetText(_buttonLabels[index], _buttonLabels[index].text, .31f, .042f);
+            }
+            SetText(_help, _help.text, 2.8f, .08f);
+            SetText(_padding, _padding.text, .68f, .07f);
+            SetText(_inputCaption, _inputCaption.text, .65f, .06f);
+            foreach (TextMesh label in _layerCaptions)
+            {
+                SetText(label, label.text, .7f, .06f);
+            }
+            foreach (TextMesh label in _outputCaptions)
+            {
+                SetText(label, label.text, .18f, .12f);
+            }
+        }
+
+        private void CreateConnection()
+        {
             GameObject connection = new GameObject("Patch to output neuron");
             connection.transform.SetParent(transform, false);
             _connection = connection.AddComponent<LineRenderer>();
@@ -114,82 +120,6 @@ namespace CNNFeatureMaps
             properties.SetColor("_BaseColor", new Color(1f, .83f, .22f));
             properties.SetColor("_EmissionColor", new Color(.4f, .3f, .02f));
             _connection.SetPropertyBlock(properties);
-        }
-
-        private void CreateControls()
-        {
-            _controls = new GameObject("Small lesson controls");
-            _controls.transform.SetParent(transform, false);
-            _title = CreateText("Lesson", _controls.transform, new Vector3(.5f, 1.02f, 2.72f), 2.8f, .07f);
-            _instruction = CreateText("One instruction", _controls.transform, new Vector3(.5f, .88f, 2.72f), 2.8f, .12f);
-            _readout = CreateText("Live result", _controls.transform, new Vector3(.5f, .71f, 2.72f), 2.8f, .11f);
-            string[] labels = { "이전", "다음", "자동 이동", "필터 바꾸기", "펼치기", "처음 상태" };
-            for (int index = 0; index < labels.Length; index++)
-            {
-                GameObject button = CreateShape(labels[index], PrimitiveType.Cube, _controls.transform,
-                    new Vector3(-.6f + index * .44f, .48f, 2.72f), new Vector3(.38f, .12f, .04f), Color.white, true);
-                button.SetActive(false);
-                _buttons[index] = button.AddComponent<CNNFeatureMapButton>();
-                _buttons[index].Configure(this, (CNNFeatureMapAction)index);
-                button.SetActive(true);
-                _buttonLabels[index] = CreateText(labels[index] + " label", _controls.transform,
-                    new Vector3(-.6f + index * .44f, .48f, 2.695f), .31f, .042f);
-                SetText(_buttonLabels[index], labels[index], .31f, .042f);
-            }
-            TextMesh help = CreateText("Minimal controls", _controls.transform, new Vector3(.5f, .29f, 2.72f), 2.8f, .08f);
-            SetText(help, "VR: Grip: 잡기 / A·B: 크기 / 층 손잡이를 잡고 Trigger: 펼치기", 2.8f, .08f);
-            _filterCard = new GameObject("Actual convolution weights");
-            _filterCard.transform.SetParent(transform, false);
-            _filterName = CreateText("Filter name", _filterCard.transform, new Vector3(-1.35f, .97f, 2.75f), .68f, .045f);
-            _weights = CreateText("3 x 3 weights", _filterCard.transform, new Vector3(-1.35f, .78f, 2.75f), .68f, .17f);
-            TextMesh padding = CreateText("Border rule", _filterCard.transform, new Vector3(-1.35f, .57f, 2.75f), .68f, .07f);
-            SetText(padding, "이미지 밖은 0\n한 픽셀씩 이동", .68f, .07f);
-            for (int layer = 0; layer < _layerRoots.Length; layer++)
-            {
-                TextMesh label = CreateText("Layer caption", _layerRoots[layer], new Vector3(0f, .36f, 0f), .7f, .06f);
-                SetText(label, "합성곱 " + (layer + 1) + " + ReLU", .7f, .06f);
-            }
-            TextMesh inputLabel = CreateText("Input caption", _inputRoot, new Vector3(0f, .36f, 0f), .65f, .06f);
-            SetText(inputLabel, "입력 / 8 × 8", .65f, .06f);
-            for (int index = 0; index < _outputRoots.Length; index++)
-            {
-                TextMesh label = CreateText("Demo response caption", _outputRoots[index], new Vector3(0f, -.7f, 0f), .18f, .12f);
-                SetText(label, "예시\n" + (index == 0 ? "A" : "B"), .18f, .12f);
-            }
-        }
-
-        private GameObject CreateShape(string name, PrimitiveType type, Transform parent, Vector3 position,
-            Vector3 scale, Color color, bool interactive)
-        {
-            GameObject shape = GameObject.CreatePrimitive(type);
-            shape.name = name;
-            shape.transform.SetParent(parent, false);
-            shape.transform.localPosition = position;
-            shape.transform.localScale = scale;
-            Renderer renderer = shape.GetComponent<Renderer>();
-            renderer.sharedMaterial = _toolMaterial;
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            properties.SetColor("_BaseColor", color);
-            properties.SetColor("_EmissionColor", color * .15f);
-            renderer.SetPropertyBlock(properties);
-            shape.GetComponent<Collider>().enabled = interactive;
-            return shape;
-        }
-
-        private TextMesh CreateText(string name, Transform parent, Vector3 position, float width, float height)
-        {
-            GameObject label = new GameObject(name);
-            label.transform.SetParent(parent, false);
-            label.transform.localPosition = position;
-            TextMesh text = label.AddComponent<TextMesh>();
-            text.font = _font;
-            text.fontSize = 64;
-            text.characterSize = .1f;
-            text.anchor = TextAnchor.MiddleCenter;
-            text.alignment = TextAlignment.Center;
-            text.color = new Color(.85f, .95f, .96f);
-            label.GetComponent<MeshRenderer>().sharedMaterial = _font.material;
-            return text;
         }
 
         private static void SetText(TextMesh label, string content, float width, float height)

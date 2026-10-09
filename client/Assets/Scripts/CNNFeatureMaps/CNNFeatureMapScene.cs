@@ -5,11 +5,12 @@ using UnityEngine.UI;
 
 namespace CNNFeatureMaps
 {
+    [DefaultExecutionOrder(-100)]
     public sealed class CNNFeatureMapScene : MonoBehaviour
     {
         [SerializeField] private Texture2D _inputImage;
-        [SerializeField] private CNNFeatureMapNode[] _nodes;
         [SerializeField] private Renderer[] _outputs;
+        private CNNFeatureMapNode[] _nodes;
         private readonly List<CNNFeatureMapGrabTarget> _heldTargets = new List<CNNFeatureMapGrabTarget>();
         private CNNFeatureMapGrabTarget[] _targets;
         private CNNFeatureMapLayer[] _layers;
@@ -32,6 +33,22 @@ namespace CNNFeatureMaps
             _zoomOut = new InputAction("Shrink held CNN item", InputActionType.Button, "<XRController>{RightHand}/secondaryButton");
             _pixelClick = new InputAction("Choose input pixel", InputActionType.Button, "<XRController>{RightHand}/triggerPressed");
             _reset = new InputAction("Restore CNN layout", InputActionType.Button, "<XRController>{RightHand}/primary2DAxisClick");
+            // Prefab parts own their local references; the workspace supplies session context.
+            _nodes = GetComponentsInChildren<CNNFeatureMapNode>(true);
+            _targets = GetComponentsInChildren<CNNFeatureMapGrabTarget>(true);
+            _layers = GetComponentsInChildren<CNNFeatureMapLayer>(true);
+            foreach (CNNFeatureMapPanel panel in GetComponentsInChildren<CNNFeatureMapPanel>(true))
+            {
+                panel.Initialize(this);
+            }
+            foreach (CNNFeatureMapGrabTarget target in _targets)
+            {
+                target.Initialize(this);
+            }
+            foreach (CNNFeatureMapLayer layer in _layers)
+            {
+                layer.Initialize(this);
+            }
         }
 
         private void OnEnable()
@@ -44,8 +61,6 @@ namespace CNNFeatureMaps
 
         private void Start()
         {
-            _targets = GetComponentsInChildren<CNNFeatureMapGrabTarget>();
-            _layers = GetComponentsInChildren<CNNFeatureMapLayer>();
             if (_inputImage == null || !_inputImage.isReadable || _inputImage.width != 8 || _inputImage.height != 8)
             {
                 Debug.LogError("CNNFeatureMapScene requires the readable 8 x 8 sample image.", this);

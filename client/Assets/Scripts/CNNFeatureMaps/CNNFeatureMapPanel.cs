@@ -5,14 +5,25 @@ namespace CNNFeatureMaps
     public sealed class CNNFeatureMapPanel : MonoBehaviour
     {
         [SerializeField] private Renderer _surface;
-        [SerializeField] private int _layer = -1;
         [SerializeField] private int _channel;
-        [SerializeField] private CNNFeatureMapNode[] _nodes;
+        private int _layer = -1;
+        private CNNFeatureMapNode[] _nodes;
         private bool _extracted;
         public bool IsExtracted => _extracted;
         public int Layer => _layer;
         public int Channel => _channel;
         public System.Collections.Generic.IReadOnlyList<CNNFeatureMapNode> Nodes => _nodes;
+
+        public void Initialize(CNNFeatureMapScene scene)
+        {
+            CNNFeatureMapLayer layer = GetComponentInParent<CNNFeatureMapLayer>();
+            _layer = layer != null ? layer.Index : -1;
+            _nodes = GetComponentsInChildren<CNNFeatureMapNode>(true);
+            foreach (CNNFeatureMapNode node in _nodes)
+            {
+                node.Initialize(scene, _layer, _channel);
+            }
+        }
 
         private void Awake()
         {

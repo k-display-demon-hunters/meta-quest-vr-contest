@@ -7,7 +7,7 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으
 1. Unity Hub에서 `C:\Github_local\MetaQuest\meta-quest-vr-contest\client` 프로젝트를 사용한다.
 2. 현재 Play 중이면 먼저 정지한다.
 3. Project 창에서 `Assets/Scenes/CNNFeatureMapExplorer.unity`를 더블클릭한다.
-4. 사용자가 Play를 실행하면 전용 프리팹의 학습 안내와 필터 도구가 생성된다.
+4. 학습 안내와 필터 도구는 Workspace의 중첩 프리팹으로 배치되어 Play 전에도 편집할 수 있다. 사용자가 Play를 실행하면 안내 내용과 계산 결과가 갱신된다.
 
 처음에는 입력과 첫 번째 맵만 보인다. 아래쪽의 **다음** 버튼으로 단계를 진행한다. 카메라·양손·이동은 기존 XRPlayerRig를 사용하며, 콘텐츠는 VR 컨트롤러로 조작한다.
 
@@ -51,6 +51,31 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으
 - `CNNFeatureMapNode.cs`: 계산값과 강조색.
 - `CNNFeatureMapGrabTarget.cs`, `CNNFeatureMapLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
 - `client/Assets/Prefabs/CNNFeatureMaps/CNNFeatureMapWorkspace.prefab`: CNN 배치와 학습 컴포넌트 참조.
+
+## 프리팹 구성
+
+`Assets/Prefabs/CNNFeatureMaps/`의 Workspace는 전체 배치와 실행 문맥을 연결하는 조립용 프리팹이다. 각 부품은 아래 원본 프리팹에서 편집한다.
+
+| 프리팹 | 역할 |
+|---|---|
+| `CNNFeatureMapWorkspace` | 입력·층·출력·안내 UI 조립, 씬 컨트롤러와 가이드 |
+| `CNNFeatureMapInput` | 입력 픽셀 64개, 입력 손잡이, 캡션과 필터 도구 |
+| `CNNFeatureMapInputPixel` | 개별 입력 픽셀의 모양·콜라이더·잡기 |
+| `CNNFeatureMapNeuron` | 개별 은닉 뉴런의 모양·콜라이더·잡기 |
+| `CNNFeatureMapPanel` | 공통 뉴런 64개와 맵 테두리 |
+| `CNNFeatureMapLayer2Channels` | 맵 2개와 첫 층 손잡이·캡션 |
+| `CNNFeatureMapLayer3Channels` | 맵 3개와 두 번째 층 손잡이·캡션 |
+| `CNNFeatureMapLayer5Channels` | 맵 5개와 세 번째 층 손잡이·캡션 |
+| `CNNFeatureMapOutput` | 출력 막대와 캡션. Workspace에서 A/B 두 개 사용 |
+| `CNNFeatureMapLessonControls` | 단계 제목·설명·결과와 6개 안내 버튼 |
+| `CNNFeatureMapFilter` | 3×3 필터 격자와 민트색 손잡이 |
+| `CNNFeatureMapFilterCard` | 필터 이름·가중치·패딩 안내 |
+
+맵은 동일한 뉴런 원본을, 각 층은 동일한 맵 원본을 중첩 사용한다. 행·열과 배치는 인스턴스에 저장하며, 채널은 맵의 `_channel`, 층 인덱스는 층의 `_layerIndex`에서 설정한다. 입력 픽셀과 은닉 뉴런 수, 계산 방식과 잡기 동작은 기존 구성을 유지한다.
+
+`CNNFeatureMapScene.Awake()`가 하위 부품에 현재 Workspace를 연결한다. 맵이 자기 노드에 층·채널 문맥을 전달하므로 재사용하는 원본 프리팹에 특정 Workspace 참조를 저장하지 않는다. 가이드의 UI·필터 참조는 Workspace에 연결되어 있고 버튼 콜백은 초기화 시 연결한다. 필터와 결과 뉴런을 잇는 연결선만 실행 중 생성한다.
+
+에셋은 Unity를 실행하지 않고 YAML로 분리했다. 파일 내부와 중첩 원본의 참조를 정적으로 확인했으며, Unity 임포트·Play·기기 동작은 실행 확인 전이다.
 
 한글 표시는 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, 같은 Fonts 폴더에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
 

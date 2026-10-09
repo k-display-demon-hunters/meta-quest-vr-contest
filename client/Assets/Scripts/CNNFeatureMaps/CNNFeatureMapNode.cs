@@ -5,9 +5,9 @@ namespace CNNFeatureMaps
     [RequireComponent(typeof(Renderer))]
     public sealed class CNNFeatureMapNode : MonoBehaviour
     {
-        [SerializeField] private CNNFeatureMapScene _scene;
-        [SerializeField] private int _layer = -1;
-        [SerializeField] private int _channel;
+        private CNNFeatureMapScene _scene;
+        private int _layer = -1;
+        private int _channel;
         [SerializeField] private int _row;
         [SerializeField] private int _column;
         private static readonly int ColorId = Shader.PropertyToID("_BaseColor");
@@ -21,6 +21,13 @@ namespace CNNFeatureMaps
         public int Channel => _channel;
         public int Row => _row;
         public int Column => _column;
+
+        public void Initialize(CNNFeatureMapScene scene, int layer, int channel)
+        {
+            _scene = scene;
+            _layer = layer;
+            _channel = channel;
+        }
 
         private void Awake()
         {

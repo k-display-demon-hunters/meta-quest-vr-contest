@@ -29,6 +29,13 @@ namespace UI
         private BoxCollider _clickCollider;
         private XRSimpleInteractable _clickTarget;
         private bool _initialized;
+        private Color32[] _sourcePixels;
+        private Image[] _fills;
+        private Text[] _numbers;
+        private GameObject _channelControls;
+        private Button[] _channelButtons;
+        private Text _instruction;
+        public event System.Action PixelsRevealed;
 
         public RevealPhase Phase { get; private set; }
         public bool IsReadyForConvolution => Phase == RevealPhase.Revealed;
@@ -57,6 +64,12 @@ namespace UI
                 _originalScale = _board.localScale;
                 _originalControlsPosition = _controls.localPosition;
                 BuildPixels(pixels, columns, rows);
+                _instruction = Rect(_controls, "Reveal instruction", 0, -70, 1200, 70).gameObject.AddComponent<Text>();
+                _instruction.font = _font;
+                _instruction.fontSize = 26;
+                _instruction.alignment = TextAnchor.MiddleCenter;
+                _instruction.color = Color.white;
+                _instruction.raycastTarget = false;
                 // The collider becomes interactive only after enlargement, so it cannot intercept filter dragging.
                 _clickCollider = _board.gameObject.AddComponent<BoxCollider>();
                 _clickCollider.size = new Vector3(_boardSize.x, _boardSize.y, 0.04f);
@@ -71,6 +84,8 @@ namespace UI
             _pixelCanvas.SetActive(true);
             foreach (CanvasGroup column in _columns) { column.alpha = 0; }
             Phase = RevealPhase.Enlarging;
+            _instruction.gameObject.SetActive(true);
+            _instruction.text = "이미지를 확대하고 있어요";
             StartCoroutine(EnlargeImage());
         }
 
@@ -78,6 +93,8 @@ namespace UI
         {
             if (Phase != RevealPhase.AwaitingClick) { return; }
             Phase = RevealPhase.Revealing;
+            _instruction.text = "이미지가 픽셀과 숫자로 바뀌고 있어요";
+            _channelControls.SetActive(true);
             StartCoroutine(RevealColumns());
         }
 
@@ -89,6 +106,8 @@ namespace UI
             _clickTarget.enabled = false;
             _clickCollider.enabled = false;
             _pixelCanvas.SetActive(false);
+            _channelControls.SetActive(false);
+            _instruction.gameObject.SetActive(false);
             _board.localScale = _originalScale;
             _controls.localPosition = _originalControlsPosition;
         }
@@ -96,7 +115,7 @@ namespace UI
         private IEnumerator EnlargeImage()
         {
             float elapsed = 0;
-            Vector3 controlsPosition = new Vector3(_originalControlsPosition.x, 0.18f, 1.05f);
+            Vector3 controlsPosition = new Vector3(_originalControlsPosition.x, 0.8f, 1.05f);
             while (elapsed < _enlargeDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
@@ -110,6 +129,7 @@ namespace UI
             _clickCollider.enabled = true;
             _clickTarget.enabled = true;
             Phase = RevealPhase.AwaitingClick;
+            _instruction.text = "확대된 이미지를 클릭하세요\n컨트롤러: 이미지를 가리키고 트리거를 누르세요";
         }
 
         private IEnumerator RevealColumns()
@@ -129,12 +149,19 @@ namespace UI
             }
             foreach (CanvasGroup column in _columns) { column.alpha = 1; }
             Phase = RevealPhase.Revealed;
+            _instruction.gameObject.SetActive(false);
+            _clickTarget.enabled = false;
+            _clickCollider.enabled = false;
             _onPixelsRevealed.Invoke();
+            PixelsRevealed?.Invoke();
         }
 
         private void BuildPixels(Color32[] pixels, int columns, int rows)
         {
             const float CellSize = 96;
+            _sourcePixels = pixels;
+            _fills = new Image[pixels.Length];
+            _numbers = new Text[pixels.Length];
             _pixelCanvas = new GameObject("Image pixels and values", typeof(RectTransform), typeof(Canvas));
             RectTransform canvasRect = (RectTransform)_pixelCanvas.transform;
             canvasRect.SetParent(_board, false);
@@ -168,8 +195,54 @@ namespace UI
                     text.text = pixel.r.ToString();
                     text.raycastTarget = false;
                     text.supportRichText = false;
+                    _fills[y * columns + x] = fill;
+                    _numbers[y * columns + x] = text;
                 }
             }
+            _channelControls = Rect(_controls, "RGB channels", 0, 120, 600, 65).gameObject;
+            _channelButtons = new Button[3];
+            Text hint = Rect(_channelControls.transform, "Channel help", 0, 75, 1100, 45).gameObject.AddComponent<Text>();
+            hint.font = _font;
+            hint.fontSize = 26;
+            hint.text = "색을 골라 보세요 · 숫자는 그 색의 세기예요 (0~255)";
+            hint.alignment = TextAnchor.MiddleCenter;
+            hint.color = Color.white;
+            hint.raycastTarget = false;
+            string[] labels = { "R · 빨강", "G · 초록", "B · 파랑" };
+            for (int c = 0; c < 3; c++)
+            {
+                int channel = c;
+                RectTransform rect = Rect(_channelControls.transform, labels[c], (c - 1) * 180, 0, 160, 65);
+                Image image = rect.gameObject.AddComponent<Image>();
+                image.color = new Color(0.65f, 0.67f, 0.7f);
+                Button button = rect.gameObject.AddComponent<Button>();
+                button.targetGraphic = image;
+                button.onClick.AddListener(() => SetChannel(channel));
+                _channelButtons[c] = button;
+                Text label = Rect(rect, "Label", 0, 0, 160, 65).gameObject.AddComponent<Text>();
+                label.font = _font;
+                label.fontSize = 28;
+                label.text = labels[c];
+                label.alignment = TextAnchor.MiddleCenter;
+                label.color = Color.black;
+                label.raycastTarget = false;
+            }
+            SetChannel(0);
+            _channelControls.SetActive(false);
+        }
+
+        private void SetChannel(int channel)
+        {
+            for (int i = 0; i < _sourcePixels.Length; i++)
+            {
+                Color32 pixel = _sourcePixels[i];
+                byte value = channel == 0 ? pixel.r : channel == 1 ? pixel.g : pixel.b;
+                _fills[i].color = channel == 0 ? new Color32(value, 0, 0, 255)
+                    : channel == 1 ? new Color32(0, value, 0, 255) : new Color32(0, 0, value, 255);
+                _numbers[i].text = value.ToString();
+                _numbers[i].color = channel == 1 && value > 175 ? Color.black : Color.white;
+            }
+            for (int c = 0; c < 3; c++) { _channelButtons[c].interactable = c != channel; }
         }
 
         private static RectTransform Rect(Transform parent, string name, float x, float y, float width, float height)

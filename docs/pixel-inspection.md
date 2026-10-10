@@ -1,43 +1,57 @@
-# CNN 픽셀 관찰
+# CNN 픽셀 관찰과 합성곱 학습
 
-## 체험 방향
+## 단계 구분
 
-Quest의 3D 공간에서 이미지판과 필터를 관찰한다. 필터에는 손잡이가 없으며 컨트롤러 레이로 가리키고 트리거를 누른 채 이동한다. 주변은 단색이고 요청하지 않은 조명선·장식·제목·설명은 추가하지 않는다. PC 마우스는 개발용 보조 입력이다.
+1. 컬러 저화질 이미지 위에 3×3 필터를 드래그한다.
+2. 더 자세히 보기: 선택한 영역의 R/G/B 값만 표시한다. 가중치·합계·계산 버튼·퀴즈는 표시하지 않는다. 옆에는 RGB와 0~255의 의미를 설명한다.
+3. 이미지로 돌아가 다음으로를 누르면 이미지가 확대된다. 확대된 이미지를 클릭하거나 컨트롤러 트리거로 선택하면 픽셀로 전환된다.
+4. R/G/B 버튼으로 전체 이미지의 채널별 픽셀 숫자를 관찰한다. 전환 완료 후에만 합성곱 학습 시작 버튼을 사용할 수 있다.
+5. 합성곱 학습 시작: R 계산 설명 → G 퀴즈 → B 퀴즈 → RGB 최종 합산. 피처 맵에 값을 저장하는 기능은 포함하지 않는다.
 
-시작 씬은 Assets/01_Scenes/CNNPixelLab.unity다. 이전 2D 메뉴와 화면 전환용 씬·스크립트는 제거했다.
+## 가중치는 고정
 
-## 이용 순서
+각 채널의 가중치는 [-1,0,1; -1,0,1; -1,0,1]로 정해져 있다.
+가중치 조절 버튼과 가중치 변경 퀴즈는 제거했다.
+선택 위치가 바뀌어도 같은 필터 가중치를 적용한다.
+픽셀 입력은 0~255, 편향은 0이다. 결과는 음수나 255 초과 값도 유지한다.
 
-1. 컬러 사진이 0.8초 동안 표시되고, 2.2초 동안 가로 조각들이 어긋나고 내려가며 색을 잃는다. 흑백 화면이 남으면 필터와 버튼이 나타난다. 그 위로 필터를 드래그한다.
-2. 필터 안에서 선택 영역의 3×3 픽셀이 확대된다.
-3. ‘더 자세히 보기’에서 같은 영역의 밝기 값 하나씩을 본다.
-4. ‘다음으로’를 누르면 이미지판이 0.65초 동안 두 배로 확대된다.
-5. 확대된 이미지를 클릭하거나 Quest 레이와 트리거로 선택하면 약 2초 동안 왼쪽에서 오른쪽으로 픽셀과 숫자가 나타난다.
-6. ‘처음부터’는 이미지와 버튼 위치를 복원하고 컬러 붕괴 도입부부터 다시 재생한다.
+## R 안내 학습
 
-## 숫자의 의미
+R만 먼저 보여준다. 같은 위치의 픽셀과 가중치를 곱하고 오른쪽 결과 칸에 채운다.
+다음 버튼을 누르며 한 줄씩 세 쌍의 곱·줄별 합·누적 합을 확인한다.
+마지막에 세 줄의 합을 더하여 9개 곱의 전체 합을 설명한다.
+줄별 합은 계산을 나눠 보여주는 중간값이며 별도의 합성곱 출력이 아니다.
+설명은 옆에 계속 표시하며 입력마다 가중치를 곱해 모두 더하는 선형결합을 설명한다.
 
-입력 사진은 Assets/Textures/CNN/ColorPhoto.png다. 런타임에 128×72로 축소하고 주변을 평균 내어 부드럽게 표시한다. 각 픽셀을 0.299R + 0.587G + 0.114B로 흑백 변환한다. 관찰과 전체 전환에 쓰는 32×18 데이터는 이 흑백 이미지에서 샘플링한다. 원본 사진의 모든 픽셀을 그대로 표시하는 것은 아니다.
+## G/B 퀴즈
 
-각 숫자는 0–255 범위의 흑백 밝기다. 0은 검정, 255는 흰색이다. 표시용 텍스처는 R=G=B로 저장하므로 코드에서는 r 값을 읽어 숫자 하나로 표시한다. 원본 컬러 이미지의 빨간색 채널만 쓰는 의미가 아니다.
+G는 첫 줄의 세 곱을 더한 값을 선택하고, 이후 9개 항의 전체 합을 선택한다.
+B는 같은 위치의 9개 픽셀과 가중치를 곱해 전체 합을 구한다.
+단순 곱셈 한 칸을 반복하거나 결과의 증가·감소를 묻는 방식이 아니다.
+답 선택지는 중복을 제거하고 위치를 섞는다. 오답에는 해당 계산 힌트를 표시한다.
+정답 후 곱한 결과를 보여주고 다음 버튼으로 진행한다.
+마지막에는 R 합 + G 합 + B 합 + 편향 0의 실제 값을 선택한다.
+완료 후 RGB 판을 함께 펼쳐 채널 합과 최종 결과를 정리한다.
 
-이 흑백 변환은 합성곱과 구분되는 전처리다. 컬러 CNN은 일반적으로 RGB 3채널을 유지한다. 이번 체험은 단일 채널 합성곱을 설명하기 위한 구성이다.
+## 공간과 구현
 
-## 다음 단계 연결
+시작 씬: Assets/01_Scenes/CNNPixelLab.unity.
+이미지 받침판·화면 테두리·벽·바닥 없이 단색 공간에 이미지와 필터, 버튼을 배치한다.
+Quest는 컨트롤러 레이와 트리거, PC는 마우스를 사용한다.
+입력 사진을 128×72로 축소하고 부드럽게 만든 뒤 32×18 RGB 데이터를 샘플링한다.
+SpatialPixelLab은 선택과 단계 진입, PixelRevealStage는 확대와 픽셀 전환,
+RgbConvolutionView는 RGB 관찰/학습 구분, ConvolutionExercise는 고정 가중치 학습과 퀴즈를 담당한다.
 
-PixelRevealStage.IsReadyForConvolution은 전환 완료 시 true다. On Pixels Revealed 이벤트에 합성곱 단계를 연결할 수 있다. 합성곱 계산은 아직 구현하지 않았다.
-기존 씬에 연결하려면 Edit Mode에서 CNNPixelLab을 열고 Tools > CNN > Install Pixel Reveal Stage를 실행한다.
-실제 Quest 기기 조작은 별도 확인이 필요하다.
+컴파일 완료. 이번 변경의 Play Mode 및 Quest 실기기 조작 확인은 수행하지 않았다.
 
 ## 이미지 제작 기록
 
-ImageGen으로 새 흑백 사진을 생성했다. 저장 위치: client/Assets/Textures/CNN/GrayscalePhoto.png.
-프롬프트: Create a single photorealistic grayscale landscape photograph used as the input image for an educational convolution exercise. Wide 16:9 composition. A simple real mountain landscape with a lake, broad recognizable light sky, mid-gray mountain slopes and dark shoreline shapes. Ordinary soft daylight, natural smooth continuous tones, slightly soft focus but recognizable photographic detail. Black and white only. This must look like a normal camera photograph, absolutely no pixel art, no blocky mosaic, no visible pixel grid, no numbers, no text, no logos, no border or interface. No extra graphic elements. It will be blurred and sampled programmatically in Unity.
-
-## 컬러 도입부 이미지
-
-Built-in ImageGen edit로 기존 흑백 사진을 컬러화했다.
+기존 흑백 사진을 Built-in ImageGen edit로 컬러화했다.
 저장: client/Assets/Textures/CNN/ColorPhoto.png
-최종 프롬프트: Colorize this grayscale lake photograph with natural blue sky and water, green forests and neutral rocky mountains. Preserve the composition and all objects. No text or added elements.
+프롬프트: Colorize this grayscale lake photograph with natural blue sky and water, green forests and neutral rocky mountains. Preserve the composition and all objects. No text or added elements.
 
-도입부 붕괴는 이야기 연출이며 RGB→흑백 전처리와 합성곱은 별개다. 최종 밝기 데이터는 같은 컬러 원본에서 계산한다. 카메라와 실제 이미지판은 고정하고 이미지 내부만 변형한다. 이번 변경은 컴파일 완료했으며 Play Mode와 Quest 실기기 동작 확인은 수행하지 않았다.
+## RGB 합치기와 학습 버튼
+
+RGB 값 관찰 화면의 RGB 합쳐 보기를 누르면 세 판이 1.5초 동안 가운데로 모이고 원본 샘플의 RGB 색으로 합쳐진다. RGB 다시 펼치기로 비교할 수 있다. 각 채널의 실제 색 세기로 표시하며 최종 컬러는 동일한 원본 픽셀에서 가져온다. 이 애니메이션은 색 채널 재구성을 설명한다.
+
+확대 후 조작 버튼은 로컬 높이 0.8m에 배치한다. 픽셀 전환이 끝나면 가운데 다음으로 버튼이 합성곱 학습 시작으로 바뀐다. 더 자세히 보기는 RGB 값 관찰로 유지한다. R 학습 화면의 첫 진행 버튼은 R 계산 시작으로 표시한다.

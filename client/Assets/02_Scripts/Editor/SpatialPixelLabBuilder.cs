@@ -76,13 +76,10 @@ namespace UI.Editor
 
             GameObject lab = new GameObject("CNN Pixel Workshop");
             SpatialPixelLab controller = lab.AddComponent<SpatialPixelLab>();
-            BuildRoom(lab.transform);
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
             board.localPosition = new Vector3(0, 1.65f, 1.8f);
-            Cube(board, "Image backing", new Vector3(0, 0, 0.045f), new Vector3(2.5f, 1.45f, 0.07f), _dark);
             MeshRenderer image = Quad(board, "Low resolution image", Vector3.zero, new Vector2(2.4f, 1.35f), _white);
-            Frame(board, "Screen frame", 2.48f, 1.43f, 0.02f, _cyan);
             Transform selection = new GameObject("Selected source pixels").transform;
             selection.SetParent(board, false);
             Frame(selection, "Selection", 0.225f, 0.225f, 0.006f, _amber);
@@ -156,14 +153,6 @@ namespace UI.Editor
 
             AssetDatabase.SaveAssets();
             Selection.activeGameObject = lab;
-        }
-
-        private static void BuildRoom(Transform parent)
-        {
-            Material floor = Material("Floor", new Color32(49, 53, 58, 255), true);
-            Material wall = Material("Wall", new Color32(64, 68, 73, 255), true);
-            Cube(parent, "Floor", new Vector3(0, -0.06f, 1), new Vector3(10, 0.1f, 10), floor);
-            Cube(parent, "Back wall", new Vector3(0, 2, 4.3f), new Vector3(10, 4, 0.12f), wall);
         }
 
         private static Material Material(string name, Color color, bool unlit)

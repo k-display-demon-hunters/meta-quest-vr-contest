@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -27,12 +26,8 @@ namespace UI
         [SerializeField] private Text[] _values;
         [SerializeField] private PixelRevealStage _revealStage;
         [SerializeField] private Button _nextButton;
-        [SerializeField] private float _introHoldDuration = 0.8f;
-        [SerializeField] private float _collapseDuration = 2.2f;
-        private Texture2D _colorTexture;
-        private Texture2D _introTexture;
-        private Coroutine _introRoutine;
-        private bool _introPlaying;
+        private RgbConvolutionView _rgbView;
+        private Text _instruction;
         private Color32[] _pixels;
         private Texture2D _smoothTexture;
         private Texture2D _pixelTexture;
@@ -84,12 +79,26 @@ namespace UI
             _lensMaterial.mainTexture = _pixelTexture;
             _filter.selectExited.AddListener(HandleReleased);
             _filter.selectEntered.AddListener(HandleGrabbed);
+            _rgbView = _detail.AddComponent<RgbConvolutionView>();
+            _rgbView.Initialize(this, _values[0].font);
+            RectTransform hint = new GameObject("Interaction hint", typeof(RectTransform)).GetComponent<RectTransform>();
+            hint.SetParent(_detailButton.transform.parent, false);
+            hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one * 0.5f;
+            hint.anchoredPosition = new Vector2(0, -70);
+            hint.sizeDelta = new Vector2(1200, 70);
+            _instruction = hint.gameObject.AddComponent<Text>();
+            _instruction.font = _values[0].font;
+            _instruction.fontSize = 26;
+            _instruction.alignment = TextAnchor.MiddleCenter;
+            _instruction.color = Color.white;
+            _instruction.raycastTarget = false;
+            if (_revealStage != null) { _revealStage.PixelsRevealed += HandlePixelsRevealed; }
             ResetLab();
         }
 
         private void Update()
         {
-            if (_introPlaying || _isRevealStage) { return; }
+            if (_isRevealStage) { return; }
             if (!XRSettings.isDeviceActive)
             {
                 UpdateMouseGrab();
@@ -98,7 +107,7 @@ namespace UI
 
         private void LateUpdate()
         {
-            if (_introPlaying || _isRevealStage) { return; }
+            if (_isRevealStage) { return; }
             if (_rayInteractor != null && _filter.isSelected)
             {
                 Ray ray = new Ray(_rayInteractor.transform.position, _rayInteractor.transform.forward);
@@ -126,26 +135,22 @@ namespace UI
                 }
                 PlaceFilter();
                 _detailButton.interactable = _hasSelection;
+                UpdateInstruction();
             }
         }
 
         public void ShowDetails()
         {
-            if (_introPlaying || _isRevealStage || !_hasSelection || _filter.isSelected || _mouseHolding) { return; }
-            for (int row = 0; row < 3; row++)
-            {
-                for (int column = 0; column < 3; column++)
-                {
-                    int x = _selected.x + column;
-                    int y = _selected.y + 2 - row;
-                    Color32 pixel = _pixels[y * Columns + x];
-                    int index = row * 3 + column;
-                    _cells[index].color = pixel;
-                    _values[index].color = ((Color)pixel).grayscale > 0.55f ? Color.black : Color.white;
-                    _values[index].text = pixel.r.ToString();
-                }
-            }
+            if (_isRevealStage || !_hasSelection || _filter.isSelected || _mouseHolding) { return; }
+            _rgbView.Show(_pixels, Columns, Rows, _selected, false);
             _detail.SetActive(true);
+        }
+
+        public void BeginConvolution()
+        {
+            if (_revealStage == null || !_revealStage.IsReadyForConvolution || !_hasSelection
+                || _filter.isSelected || _mouseHolding) { return; }
+            _rgbView.Show(_pixels, Columns, Rows, _selected, true);
         }
 
         public void CloseDetails()
@@ -158,7 +163,11 @@ namespace UI
             if (_filter.isSelected) { return; }
             _isRevealStage = false;
             if (_revealStage != null) { _revealStage.ResetStage(); }
-            if (_nextButton != null) { _nextButton.interactable = true; }
+            if (_nextButton != null)
+            {
+                _nextButton.interactable = true;
+                _nextButton.GetComponentInChildren<Text>().text = "다음으로";
+            }
             _filter.gameObject.SetActive(true);
             _mouseHolding = false;
             _snapPending = false;
@@ -166,15 +175,46 @@ namespace UI
             _previewValid = false;
             _detail.SetActive(false);
             _detailButton.interactable = false;
+            _detailButton.GetComponentInChildren<Text>().text = "더 자세히 보기";
             PlaceFilter();
-            if (_introRoutine != null) { StopCoroutine(_introRoutine); }
-            _introRoutine = StartCoroutine(PlayCollapseIntro());
+            UpdateInstruction();
         }
 
+        public void MoveSelection(int dx, int dy)
+        {
+            if (_isRevealStage || !_hasSelection || _filter.isSelected || _mouseHolding) { return; }
+            _selected = new Vector2Int(Mathf.Clamp(_selected.x + dx, 0, Columns - 3),
+                Mathf.Clamp(_selected.y + dy, 0, Rows - 3));
+            PlaceFilter();
+            _rgbView.Show(_pixels, Columns, Rows, _selected, _revealStage != null && _revealStage.IsReadyForConvolution);
+        }
+
+        private void HandlePixelsRevealed()
+        {
+            _isRevealStage = false;
+            if (!_hasSelection)
+            {
+                _selected = new Vector2Int((Columns - 3) / 2, (Rows - 3) / 2);
+                _hasSelection = true;
+            }
+            _filter.gameObject.SetActive(true);
+            PlaceFilter();
+            _detailButton.interactable = _hasSelection;
+            _nextButton.interactable = true;
+            _nextButton.GetComponentInChildren<Text>().text = "합성곱 학습 시작";
+            UpdateInstruction();
+        }
         public void NextStage()
         {
-            if (_introPlaying || _isRevealStage || _filter.isSelected || _mouseHolding || _revealStage == null) { return; }
+            if (_revealStage != null && _revealStage.IsReadyForConvolution)
+            {
+                BeginConvolution();
+                return;
+            }
+            if (_isRevealStage || _filter.isSelected || _mouseHolding || _revealStage == null
+                || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
             _isRevealStage = true;
+            _instruction.gameObject.SetActive(false);
             _snapPending = false;
             _detail.SetActive(false);
             _detailButton.interactable = false;
@@ -193,6 +233,7 @@ namespace UI
                 && hit.collider.GetComponentInParent<XRGrabInteractable>() == _filter)
             {
                 _mouseHolding = true;
+                _instruction.text = "원하는 부분에서 필터를 놓으세요";
                 _detail.SetActive(false);
                 _detailButton.interactable = false;
                 _dragPlane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
@@ -281,7 +322,7 @@ namespace UI
                 }
             }
             Color32[] colors = new Color32[source.Length];
-            Color32[] colorPixels = new Color32[source.Length];
+
             for (int y = 0; y < Height; y++)
             {
                 for (int x = 0; x < Width; x++)
@@ -295,9 +336,7 @@ namespace UI
                         }
                     }
                     Color blurred = sum / 25f;
-                    colorPixels[y * Width + x] = blurred;
-                    byte value = (byte)Mathf.RoundToInt((0.299f * blurred.r + 0.587f * blurred.g + 0.114f * blurred.b) * 255);
-                    colors[y * Width + x] = new Color32(value, value, value, 255);
+                    colors[y * Width + x] = blurred;
                 }
             }
             Texture2D texture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
@@ -305,85 +344,7 @@ namespace UI
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.SetPixels32(colors);
             texture.Apply();
-            _colorTexture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            _colorTexture.filterMode = FilterMode.Bilinear;
-            _colorTexture.wrapMode = TextureWrapMode.Clamp;
-            _colorTexture.SetPixels32(colorPixels);
-            _colorTexture.Apply();
             return texture;
-        }
-
-        private IEnumerator PlayCollapseIntro()
-        {
-            _introPlaying = true;
-            _filter.gameObject.SetActive(false);
-            _detailButton.transform.parent.gameObject.SetActive(false);
-            _boardMaterial.mainTexture = _colorTexture;
-            yield return new WaitForSecondsRealtime(Mathf.Max(0, _introHoldDuration));
-
-            int width = _colorTexture.width;
-            int height = _colorTexture.height;
-            Color32[] color = _colorTexture.GetPixels32();
-            Color32[] gray = _smoothTexture.GetPixels32();
-            Color32[] frame = new Color32[color.Length];
-            if (_introTexture == null)
-            {
-                _introTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                _introTexture.filterMode = FilterMode.Bilinear;
-                _introTexture.wrapMode = TextureWrapMode.Clamp;
-            }
-            _boardMaterial.mainTexture = _introTexture;
-            float elapsed = 0;
-            while (elapsed < Mathf.Max(0.01f, _collapseDuration))
-            {
-                float progress = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, _collapseDuration));
-                System.Array.Copy(gray, frame, gray.Length);
-                // Nine strips lose color and slip downward, revealing the final grayscale image.
-                // The camera and physical board stay still in VR.
-                for (int strip = 0; strip < 9; strip++)
-                {
-                    float delay = ((strip * 5) % 9) * 0.025f;
-                    float t = Mathf.Clamp01((progress - delay) / (1 - delay));
-                    float fade = Mathf.SmoothStep(0, 1, t);
-                    int shiftX = Mathf.RoundToInt(Mathf.Sin(strip * 2.3f) * width * 0.08f * Mathf.Sin(t * Mathf.PI));
-                    int drop = Mathf.RoundToInt(t * t * height * (0.18f + strip * 0.018f));
-                    for (int y = strip * height / 9; y < (strip + 1) * height / 9; y++)
-                    {
-                        int targetY = y - drop;
-                        if (targetY < 0) { continue; }
-                        for (int x = 0; x < width; x++)
-                        {
-                            int targetX = x + shiftX;
-                            if (targetX < 0 || targetX >= width) { continue; }
-                            int sourceIndex = y * width + x;
-                            int targetIndex = targetY * width + targetX;
-                            Color desaturated = Color.Lerp(color[sourceIndex], gray[sourceIndex], fade);
-                            frame[targetIndex] = Color.Lerp(desaturated, gray[targetIndex], fade);
-                        }
-                    }
-                }
-                _introTexture.SetPixels32(frame);
-                _introTexture.Apply(false);
-                elapsed += Time.unscaledDeltaTime;
-                yield return null;
-            }
-            FinishIntro();
-        }
-
-        private void FinishIntro()
-        {
-            _boardMaterial.mainTexture = _smoothTexture;
-            _introPlaying = false;
-            _introRoutine = null;
-            _filter.gameObject.SetActive(true);
-            _detailButton.transform.parent.gameObject.SetActive(true);
-        }
-
-        private void OnDisable()
-        {
-            if (_introRoutine == null) { return; }
-            StopCoroutine(_introRoutine);
-            FinishIntro();
         }
 
         private void HandleReleased(SelectExitEventArgs args)
@@ -396,6 +357,7 @@ namespace UI
 
         private void HandleGrabbed(SelectEnterEventArgs args)
         {
+            _instruction.text = "원하는 부분에서 트리거를 놓으세요";
             _rayInteractor = args.interactorObject as XRRayInteractor;
             _filter.trackPosition = _rayInteractor == null;
             _filter.trackRotation = _rayInteractor == null;
@@ -403,13 +365,25 @@ namespace UI
             _detailButton.interactable = false;
         }
 
+        private void UpdateInstruction()
+        {
+            _instruction.gameObject.SetActive(true);
+            if (_revealStage != null && _revealStage.IsReadyForConvolution)
+            {
+                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n관찰을 마치면 ‘합성곱 학습 시작’을 누르세요";
+                return;
+            }
+            _instruction.text = _hasSelection
+                ? "‘더 자세히 보기’를 눌러 RGB와 계산을 살펴보세요"
+                : "필터를 잡아 이미지 위에 놓으세요\n컨트롤러: 가리킨 뒤 트리거로 드래그 · PC: 마우스로 드래그";
+        }
+
         private void OnDestroy()
         {
             _filter.selectExited.RemoveListener(HandleReleased);
             _filter.selectEntered.RemoveListener(HandleGrabbed);
+            if (_revealStage != null) { _revealStage.PixelsRevealed -= HandlePixelsRevealed; }
             Destroy(_smoothTexture);
-            Destroy(_colorTexture);
-            Destroy(_introTexture);
             Destroy(_pixelTexture);
             Destroy(_boardMaterial);
             Destroy(_lensMaterial);

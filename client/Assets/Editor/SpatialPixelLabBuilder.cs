@@ -18,7 +18,7 @@ namespace UI.Editor
 {
     public static class SpatialPixelLabBuilder
     {
-        public const string ScenePath = "Assets/01_Scenes/CNNPixelLab.unity";
+        public const string ScenePath = "Assets/Scenes/CNNPixelLab.unity";
         private const string MaterialFolder = "Assets/Materials/CNNPixelLab";
         private static Font _font;
         private static Material _dark;

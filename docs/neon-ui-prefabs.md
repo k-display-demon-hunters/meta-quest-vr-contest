@@ -14,7 +14,6 @@ Open `client` with Unity **6000.3.24f1**, then open
 These are visual assets only; dragging, scanning, and graph logic are not implemented.
 The demo camera enables SMAA High. Its dedicated `NeonUIDemoProfile` enables Bloom;
 reuse equivalent URP camera/volume settings when previewing in another scene.
-The existing SampleScene and project-wide render settings are unchanged.
 
 TextMeshPro essentials and their metadata are included so font and shader references
 remain stable. Keep all `.meta` files with their assets. The bundled Liberation Sans

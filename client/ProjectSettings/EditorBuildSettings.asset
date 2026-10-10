@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/01_Scenes/CNNPixelLab.unity
+    path: Assets/Scenes/CNNPixelLab.unity
     guid: 97e877042bfd83746bf8a1d0cb32f2b0
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -40,7 +40,7 @@ namespace XR
         [SerializeField] private UnityEvent _saveRequested = new UnityEvent();
         [SerializeField] private UnityEvent _exitRequested = new UnityEvent();
 
-        private readonly string[] _itemNames = { "렌즈", "필터", "칩", "센서", "리포트" };
+        private readonly string[] _itemNames = { "아이템 #1", "아이템 #2", "아이템 #3", "아이템 #4", "아이템 #5" };
         private readonly string[] _stageNames =
         {
             "1. 튜토리얼",

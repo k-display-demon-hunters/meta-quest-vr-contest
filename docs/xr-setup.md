@@ -59,13 +59,14 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 - 높이: Floor 모드로 실제 바닥을 기준으로 한다. Device 모드로 변경할 경우 Camera Y Offset은 1.6m이다.
 - 컨트롤러: XRI 기본 `Vector3Fallback`·`QuaternionFallback` 바인딩으로 OpenXR aim pose(`pointerPosition`, `pointerRotation`)를 우선 사용한다. aim 입력이 없는 XR Interaction Simulator에서는 `devicePosition`·`deviceRotation`으로 레이의 위치·방향을 갱신한다. 양손 레이의 프리팹 설정과 초기 씬 생성 도구에 동일하게 적용한다.
 - Ray 표시는 `XRInteractorLineVisual`의 `Line Bend Ratio`를 1로 설정한다. 포트를 선택한 채 다른 포트를 가리킬 때에도 표시선이 출발 포트로 휘지 않고 컨트롤러의 직선 Ray를 따른다. 포트에서 끌어오는 연결선은 별도로 표시한다.
-- 오른손에는 손잡이·스틱·버튼·트리거로 구성된 임시 컨트롤러 모델이 표시된다. 오른손 레이와 Grip/Trigger 입력은 유지하며, 태블릿 UI가 활성화되면 오른손 Trigger로 World Space Canvas 버튼을 누를 수 있다.
+- 오른손에는 손잡이·스틱·버튼·트리거로 구성된 임시 컨트롤러 모델이 표시된다. 오른손 레이와 Grip/Trigger 입력은 다른 콘텐츠에 사용하며, 태블릿은 왼손 포커스 이동으로만 조작한다.
 - 왼손에는 약 30cm × 20.5cm, 두께 1.4cm의 직사각형 태블릿이 표시된다. 화면은 손에 쥔 컨트롤러의 뒤쪽(-Z)을 향한다.
 - 태블릿 본체는 어두운 흑연색 `TabletBody` URP Unlit 재질을 사용하고, 화면 UI는 `Tablet Canvas`를 런타임에 재구성한다. 오른손 컨트롤러는 기존 Lit 재질을 유지한다.
 - 양손 표시용 오브젝트는 별도 Tracked Pose Driver로 grip pose(`devicePosition`, `deviceRotation`)를 추적한다. 기존 레이는 aim pose를 유지하고, 왼손 레이 및 인터랙터는 비활성화하여 태블릿 입력용으로 사용한다.
-- 태블릿 입력은 왼손 X(`primaryButton`), Y(`secondaryButton`), Trigger(`triggerPressed`) 3개다. X는 인벤토리 선택을 순환하고, Y는 설정 패널을 열고 닫으며, Trigger는 현재 임무 체크리스트를 확인한다. 스틱은 이동 전용으로 유지한다. 시스템 Menu 버튼과 Grip은 태블릿 입력으로 사용하지 않는다.
-- `Assets/Prefabs/XR/XRPlayerRig.prefab`의 `Tablet > Tablet Canvas`는 World Space Canvas 기준점으로 유지한다. Canvas 크기는 500 × 340, 배율은 0.0005이며, `LeftHandTablet`이 실행 시 기존 미리보기 자식을 지우고 미니맵, 진행률, 현재 단계, 임무 체크리스트, 인벤토리, 교육/팀 정보, 개념 설명/피드백, 설정/나가기 버튼으로 구성된 UI를 생성한다.
-- `Assets/Scripts/XR/Tablet/LeftHandTablet.cs`는 태블릿 UI 전체를 구성하고, 오른손 Ray UI 입력을 활성화하며, 설정 패널의 단계 이동·저장·밝기·볼륨·진동 상태를 관리한다. 단계 이동은 Inspector의 `Stage Start Points`가 연결되어 있으면 해당 Transform으로 XR rig를 이동하고, 연결 전에는 피드백 영역에 안내만 표시한다. `Save`, `Exit`, `Stage Move` UnityEvent를 제공하므로 후속 씬 전환/저장 로직과 연결할 수 있다.
+- 태블릿 입력은 왼손 스틱(`primary2DAxis`), 검지 Trigger(`triggerPressed`), X(`primaryButton`), Y(`secondaryButton`)다. X는 조작 시작/뒤로/기본 화면에서 조작 종료, Y는 설정 열기/닫기, Trigger는 조작 시작/포커스 항목 선택이다. 스틱은 항목을 이동하고 밝기·볼륨 항목에서는 좌우로 5%씩 조절한다. 시스템 Menu 버튼과 Grip은 태블릿에 사용하지 않는다.
+- 태블릿을 조작하는 동안 현재 리그의 `ContinuousMoveProvider.leftHandMoveInput`을 0 입력으로 교체한다. 기본 화면에서 X 또는 나가기로 조작을 종료한 뒤 스틱이 중앙으로 돌아오면 원래 입력을 복원한다. 비활성화/파괴 시에도 원래 입력을 복원한다. 다른 리그와 오른손 입력은 변경하지 않는다.
+- `Assets/Prefabs/XR/XRPlayerRig.prefab`의 `Tablet > Tablet Canvas`는 World Space Canvas 기준점으로 유지한다. Canvas 크기는 500 × 340, 배율은 0.0005이며, `LeftHandTablet`이 실행 시 기존 미리보기 자식을 지우고 스케치 기준 UI를 생성한다. 상단은 전체 진행률과 오른쪽 숫자, 왼쪽 열은 현재 단계·임무·미니맵, 중앙은 교육/팀 정보·개념 설명/피드백, 오른쪽 열은 5개 정사각형 인벤토리와 설정/나가기 버튼이다. 밝은 중립색 바탕과 작은 모서리를 사용하며, 선택 아이템은 노란색, 조작 포커스는 청록색 테두리다. `CanvasScaler.dynamicPixelsPerUnit`은 4로 설정한다.
+- `Assets/Scripts/XR/Tablet/LeftHandTablet.cs`는 태블릿 UI 전체를 구성하고 왼손 방향 탐색을 처리하며, 설정 패널의 단계 이동·저장·밝기·볼륨·진동 상태를 관리한다. 태블릿 Canvas의 Raycaster는 비활성화한다. 설정창은 384 × 286 안에 컨트롤을 배치하고, 슬라이더 fill의 offset을 0으로 유지해 0~100%에서 트랙 밖으로 늘어나지 않게 한다. 단계 이동은 Inspector의 `Stage Start Points`가 연결되어 있으면 해당 Transform으로 XR rig를 이동하고, 연결 전에는 피드백 영역에 안내만 표시한다. `Save`, `Exit`, `Stage Move` UnityEvent를 제공하므로 후속 씬 전환/저장 로직과 연결할 수 있다.
 - 바닥은 8m × 8m이며 Unity 1 unit을 1m로 사용한다.
 - 왼쪽 스틱: 바라보는 방향을 기준으로 전후좌우 이동한다. 최대 속도는 1.5m/s이며 작은 스틱 입력은 데드존(0.15)으로 무시한다. 고개를 위아래로 움직여도 이동은 수평으로 유지된다.
 - XR Body Transformer, Locomotion Mediator, Continuous Move Provider로 수평 이동만 처리한다. 이동 리그에는 충돌과 중력이 없으며, 스틱을 놓으면 현재 위치에 멈춘다. 바닥 밖에서도 떨어지지 않는다.
@@ -111,8 +112,9 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 3. 바닥 높이가 실제 바닥과 일치하는지 확인한다.
 4. 왼쪽 스틱으로 전후좌우 이동하고, 고개를 위아래로 기울여도 높이가 변하지 않는지 확인한다.
 5. 왼손 태블릿과 오른손 모델이 각각 손의 위치·회전을 따라가며 태블릿 글자가 읽히는지 확인한다.
-6. X, Y, Trigger를 각각 눌러 버튼 이름과 횟수가 바뀌는지 확인한다. 누른 채 유지할 때 한 번만 출력되고, 놓았다 다시 누르면 횟수가 증가해야 한다.
-7. 헤드셋 절전·복귀와 컨트롤러 재연결 후 추적/입력이 복구되는지 확인한다.
+6. X로 태블릿 조작 시작, 스틱으로 항목 이동, Trigger로 선택, Y로 설정 열기/닫기를 확인한다. 설정의 단계 목록·저장·밝기·볼륨·진동·나가기에 왼손만으로 접근할 수 있어야 한다. 밝기/볼륨 0%, 50%, 100%에서 슬라이더와 숫자가 창 안에 있는지 확인한다.
+7. UI 조작 중 플레이어 이동이 정지하는지, X로 조작을 종료한 후 스틱을 중앙으로 놓으면 이동이 복원되는지 확인한다.
+8. 헤드셋 절전·복귀와 컨트롤러 재연결 후 추적/입력이 복구되는지 확인한다.
 
 에디터 컴파일과 APK 빌드는 실기기의 추적, 멀미, 프레임 성능 검증을 대신하지 않는다.
 
@@ -141,3 +143,5 @@ API의 정확한 필드와 입력 바인딩은 위 버전으로 설치된 공식
 이동/드래그 후속 수정은 사용자 요청에 따라 테스트·컴파일 검증·빌드 없이 적용했다. 테스트 파일은 추가하지 않았다.
 
 2026-10-08 태블릿·컨트롤러 표시 및 테스트 에셋 정리는 프로젝트 지침에 따라 테스트·Unity 컴파일·APK 빌드·실기기 검증 없이 적용했다. 위 과거 검증 결과는 이번 변경을 검증한 결과가 아니다.
+
+2026-10-10 스케치 배치 복원, 사각형 스타일, 설정창 넘침 수정 및 왼손 포커스 조작 변경은 소스와 설치된 XRI/UGUI API를 대조했다. 이번 수정에 대한 테스트·Unity Play·컴파일·빌드는 실행하지 않았다. 미니맵과 93% 진행률은 기존 예시 데이터이며, 실제 위치/교육 진행 데이터 연동은 별도 작업이다.

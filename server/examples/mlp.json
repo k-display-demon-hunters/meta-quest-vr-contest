@@ -1,0 +1,8 @@
+{
+  "modelType": "mlp",
+  "input": {"shape": [28, 28, 1]},
+  "layers": [
+    {"type": "dense", "units": 32, "activation": "relu"},
+    {"type": "dense", "units": 10, "activation": "softmax"}
+  ]
+}

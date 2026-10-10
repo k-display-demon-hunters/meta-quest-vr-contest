@@ -6,10 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/QuestMain.unity
+    guid: 2441b42144c7ab546928fa8482608f41
+  - enabled: 1
+    path: Assets/Scenes/CNNModelDesign.unity
+    guid: c8dfb16a8d054f039d83c7299b17adce
+  - enabled: 1
     path: Assets/Scenes/CNNPixelLab.unity
     guid: 97e877042bfd83746bf8a1d0cb32f2b0
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: aa18b8ae4867bbe44a95a24f585b2167, type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: fe2e21dac2e074d4caebebf96d51ca50, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 0b8482a2cde0537478b7f3e34b8f56fe, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: b7ade7708b99d4c4597248cc04dff1b7, type: 2}
   m_UseUCBPForAssetBundles: 0

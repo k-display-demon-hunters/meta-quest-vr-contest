@@ -79,6 +79,7 @@ namespace XR
         private bool _movementCaptured;
         private bool _isInteracting;
         private bool _isAdjustingSlider;
+        private bool _triggerConsumedBySlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
         private float _nextRepeatTime;
@@ -136,13 +137,21 @@ namespace XR
         {
             if (_trigger.WasPressedThisFrame())
             {
-                SetInteraction(!_isInteracting);
+                _triggerConsumedBySlider = _isAdjustingSlider;
             }
-            else if (_yButton.WasPressedThisFrame())
+            if (_trigger.WasReleasedThisFrame())
+            {
+                if (!_triggerConsumedBySlider)
+                {
+                    SetInteraction(!_isInteracting);
+                }
+                _triggerConsumedBySlider = false;
+            }
+            else if (!_trigger.IsPressed() && _yButton.WasPressedThisFrame())
             {
                 GoBackOrOpenSettings();
             }
-            else if (_xButton.WasPressedThisFrame())
+            else if (!_trigger.IsPressed() && _xButton.WasPressedThisFrame())
             {
                 if (!_isInteracting)
                 {
@@ -835,6 +844,12 @@ namespace XR
                 _lastDirection = Vector2.zero;
                 return;
             }
+            if ((_isAdjustingSlider && !_trigger.IsPressed()) ||
+                (!_isAdjustingSlider && _trigger.IsPressed()))
+            {
+                _lastDirection = Vector2.zero;
+                return;
+            }
             if (_stickMustCenter || stick.magnitude < 0.6f)
             {
                 return;
@@ -892,6 +907,7 @@ namespace XR
 
         private void OnDisable()
         {
+            _triggerConsumedBySlider = false;
             _xButton?.Disable();
             _yButton?.Disable();
             _trigger?.Disable();

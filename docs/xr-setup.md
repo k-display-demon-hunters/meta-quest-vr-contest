@@ -47,7 +47,7 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 ### 씬 전환과 리그 유지
 
 - 시작 씬 `QuestMain`의 `XRPlayerRig`에 `PersistentXRPlayerRig`를 연결한다. 리그 전체를 `DontDestroyOnLoad`로 유지하므로 씬을 교체하거나 추가 로드해도 카메라, 양손 추적, 이동 입력, 태블릿과 오른손 컨트롤러가 유지된다.
-- 태블릿의 World Space Canvas도 리그 아래에 있으므로 현재 문자와 누적 입력 횟수가 유지된다. 후속 UI 프리팹 역시 태블릿의 자식으로 연결한다.
+- 태블릿의 World Space Canvas도 리그 아래에 있으므로 현재 단계, 인벤토리, 설정 상태가 리그와 함께 유지된다. 후속 UI 프리팹 역시 태블릿의 자식으로 연결한다.
 - 콘텐츠 씬에 독자적인 XR 카메라·AudioListener·리그를 만들지 않는다. 단독 실행을 위해 공통 XRPlayerRig 프리팹을 배치할 수 있으며, 기존 리그가 있을 때는 새 복제본을 먼저 비활성화하고 제거하여 기존 리그를 유지한다.
 - 씬 전환 때 리그 위치를 자동으로 초기화하지 않는다. 씬별 시작 위치로 이동하는 기능은 별도 요구사항으로 결정한다.
 - 콘텐츠 씬을 에디터에서 단독 Play하면 시작 씬의 리그는 생성되지 않는다. 기본적으로 `QuestMain`에서 시작해 콘텐츠 씬으로 전환한다. 단독 작업에 리그가 필요하면 동일 XRPlayerRig 프리팹을 배치할 수 있으며, 앱에서 시작 씬을 거쳐 들어온 경우에는 중복 방지 처리가 적용된다.
@@ -59,13 +59,13 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 - 높이: Floor 모드로 실제 바닥을 기준으로 한다. Device 모드로 변경할 경우 Camera Y Offset은 1.6m이다.
 - 컨트롤러: XRI 기본 `Vector3Fallback`·`QuaternionFallback` 바인딩으로 OpenXR aim pose(`pointerPosition`, `pointerRotation`)를 우선 사용한다. aim 입력이 없는 XR Interaction Simulator에서는 `devicePosition`·`deviceRotation`으로 레이의 위치·방향을 갱신한다. 양손 레이의 프리팹 설정과 초기 씬 생성 도구에 동일하게 적용한다.
 - Ray 표시는 `XRInteractorLineVisual`의 `Line Bend Ratio`를 1로 설정한다. 포트를 선택한 채 다른 포트를 가리킬 때에도 표시선이 출발 포트로 휘지 않고 컨트롤러의 직선 Ray를 따른다. 포트에서 끌어오는 연결선은 별도로 표시한다.
-- 오른손에는 손잡이·스틱·버튼·트리거로 구성된 임시 컨트롤러 모델이 표시된다. 오른손 레이와 Grip/Trigger 입력은 유지한다.
-- 왼손에는 28cm × 20cm, 두께 1.2cm의 직사각형 태블릿이 표시된다. 화면은 손에 쥔 컨트롤러의 뒤쪽(-Z)을 향한다. 최종 디자인은 추후 교체한다.
-- 태블릿 본체는 `TabletBody` URP Unlit 재질을 사용하고 화면 배경은 Canvas의 `Background` Image로 표시한다. 둘 다 조명 반사 없이 일정한 색을 유지한다. 오른손 컨트롤러는 기존 Lit 재질을 유지한다.
+- 오른손에는 손잡이·스틱·버튼·트리거로 구성된 임시 컨트롤러 모델이 표시된다. 오른손 레이와 Grip/Trigger 입력은 유지하며, 태블릿 UI가 활성화되면 오른손 Trigger로 World Space Canvas 버튼을 누를 수 있다.
+- 왼손에는 약 30cm × 20.5cm, 두께 1.4cm의 직사각형 태블릿이 표시된다. 화면은 손에 쥔 컨트롤러의 뒤쪽(-Z)을 향한다.
+- 태블릿 본체는 어두운 흑연색 `TabletBody` URP Unlit 재질을 사용하고, 화면 UI는 `Tablet Canvas`를 런타임에 재구성한다. 오른손 컨트롤러는 기존 Lit 재질을 유지한다.
 - 양손 표시용 오브젝트는 별도 Tracked Pose Driver로 grip pose(`devicePosition`, `deviceRotation`)를 추적한다. 기존 레이는 aim pose를 유지하고, 왼손 레이 및 인터랙터는 비활성화하여 태블릿 입력용으로 사용한다.
-- 태블릿 입력은 왼손 X(`primaryButton`), Y(`secondaryButton`), Trigger(`triggerPressed`) 3개다. 누른 버튼의 이름과 누적 입력 횟수를 화면에 표시한다. 스틱은 이동 전용으로 유지한다. 시스템 Menu 버튼과 Grip은 태블릿 입력으로 사용하지 않는다.
-- `Assets/Prefabs/XR/XRPlayerRig.prefab`의 `Tablet > Tablet Canvas`에 World Space Canvas와 자식 `Background` Image, `Button Message` Text를 미리 저장한다. Play 전에도 프리팹 모드에서 화면을 편집할 수 있다. Canvas 크기는 500 × 340, 배율은 0.0005이며 기존 화면 위치와 글자 스타일을 유지한다. 배경은 520 × 360으로 기존 26cm × 18cm 화면 크기를 유지한다.
-- `Assets/Scripts/XR/LeftHandTablet.cs`는 Inspector의 `Message`에 연결된 Text의 문자만 갱신하고 입력 활성화·비활성화·해제를 관리한다. 실행 중 Canvas나 Text를 생성하지 않는다. UI를 교체할 때는 새 Text를 `Message`에 연결한다. 초기 씬 생성 도구도 Canvas를 프리팹에 저장한다. 서버 통신이나 실제 메뉴 기능은 추가하지 않는다.
+- 태블릿 입력은 왼손 X(`primaryButton`), Y(`secondaryButton`), Trigger(`triggerPressed`) 3개다. X는 인벤토리 선택을 순환하고, Y는 설정 패널을 열고 닫으며, Trigger는 현재 임무 체크리스트를 확인한다. 스틱은 이동 전용으로 유지한다. 시스템 Menu 버튼과 Grip은 태블릿 입력으로 사용하지 않는다.
+- `Assets/Prefabs/XR/XRPlayerRig.prefab`의 `Tablet > Tablet Canvas`는 World Space Canvas 기준점으로 유지한다. Canvas 크기는 500 × 340, 배율은 0.0005이며, `LeftHandTablet`이 실행 시 기존 미리보기 자식을 지우고 미니맵, 진행률, 현재 단계, 임무 체크리스트, 인벤토리, 교육/팀 정보, 개념 설명/피드백, 설정/나가기 버튼으로 구성된 UI를 생성한다.
+- `Assets/Scripts/XR/Tablet/LeftHandTablet.cs`는 태블릿 UI 전체를 구성하고, 오른손 Ray UI 입력을 활성화하며, 설정 패널의 단계 이동·저장·밝기·볼륨·진동 상태를 관리한다. 단계 이동은 Inspector의 `Stage Start Points`가 연결되어 있으면 해당 Transform으로 XR rig를 이동하고, 연결 전에는 피드백 영역에 안내만 표시한다. `Save`, `Exit`, `Stage Move` UnityEvent를 제공하므로 후속 씬 전환/저장 로직과 연결할 수 있다.
 - 바닥은 8m × 8m이며 Unity 1 unit을 1m로 사용한다.
 - 왼쪽 스틱: 바라보는 방향을 기준으로 전후좌우 이동한다. 최대 속도는 1.5m/s이며 작은 스틱 입력은 데드존(0.15)으로 무시한다. 고개를 위아래로 움직여도 이동은 수평으로 유지된다.
 - XR Body Transformer, Locomotion Mediator, Continuous Move Provider로 수평 이동만 처리한다. 이동 리그에는 충돌과 중력이 없으며, 스틱을 놓으면 현재 위치에 멈춘다. 바닥 밖에서도 떨어지지 않는다.

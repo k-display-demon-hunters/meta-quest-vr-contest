@@ -23,6 +23,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Gravity;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
@@ -317,17 +318,19 @@ namespace XR.Editor
         {
             Material body = CreateMaterial("DeviceBody", new Color(0.72f, 0.76f, 0.82f));
             Material screen = CreateMaterial("DeviceScreen", new Color(0.015f, 0.025f, 0.04f));
-            Material tabletBody = CreateMaterial("TabletBody", new Color(0.72f, 0.76f, 0.82f),
+            Material tabletBody = CreateMaterial("TabletBody", new Color(0.028f, 0.034f, 0.044f),
                 "Universal Render Pipeline/Unlit");
             GameObject left = CreateChild("LeftHand Grip Visual", parent);
             AddPoseDriver(left, "<XRController>{LeftHand}", "devicePosition", "deviceRotation");
             GameObject tablet = CreateChild("Tablet", left.transform);
             tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
-            CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.28f, 0.20f, 0.012f), tabletBody);
+            CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.30f, 0.205f, 0.014f), tabletBody);
             Text message = CreateTabletCanvas(tablet.transform);
             LeftHandTablet display = tablet.AddComponent<LeftHandTablet>();
             SerializedObject serializedDisplay = new SerializedObject(display);
             serializedDisplay.FindProperty("_message").objectReferenceValue = message;
+            serializedDisplay.FindProperty("_font").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
             serializedDisplay.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject right = CreateChild("RightHand Grip Visual", parent);
@@ -342,7 +345,8 @@ namespace XR.Editor
 
         private static Text CreateTabletCanvas(Transform parent)
         {
-            GameObject canvasObject = new GameObject("Tablet Canvas", typeof(RectTransform), typeof(Canvas));
+            GameObject canvasObject = new GameObject("Tablet Canvas", typeof(RectTransform), typeof(Canvas),
+                typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
             canvasObject.layer = LayerMask.NameToLayer("UI");
             canvasObject.transform.SetParent(parent, false);
             canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.0075f);
@@ -361,7 +365,7 @@ namespace XR.Editor
             backgroundImage.color = new Color(0.015f, 0.025f, 0.04f);
             backgroundImage.raycastTarget = false;
 
-            GameObject label = new GameObject("Button Message", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            GameObject label = new GameObject("Runtime UI Preview", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
             label.layer = canvasObject.layer;
             label.transform.SetParent(canvasObject.transform, false);
             RectTransform labelRect = label.GetComponent<RectTransform>();
@@ -370,12 +374,13 @@ namespace XR.Editor
             labelRect.offsetMin = Vector2.zero;
             labelRect.offsetMax = Vector2.zero;
             Text message = label.GetComponent<Text>();
-            message.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            message.fontSize = 32;
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+            message.font = font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            message.fontSize = 28;
             message.alignment = TextAnchor.MiddleCenter;
             message.color = Color.white;
             message.raycastTarget = false;
-            message.text = "TABLET READY\n\nX / Y / TRIGGER";
+            message.text = "케디헌 XR TABLET\n\nUI BUILDS AT RUNTIME";
             return message;
         }
 

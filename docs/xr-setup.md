@@ -48,10 +48,10 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 
 - 시작 씬 `QuestMain`의 `XRPlayerRig`에 `PersistentXRPlayerRig`를 연결한다. 리그 전체를 `DontDestroyOnLoad`로 유지하므로 씬을 교체하거나 추가 로드해도 카메라, 양손 추적, 이동 입력, 태블릿과 오른손 컨트롤러가 유지된다.
 - 태블릿의 World Space Canvas도 리그 아래에 있으므로 현재 문자와 누적 입력 횟수가 유지된다. 후속 UI 프리팹 역시 태블릿의 자식으로 연결한다.
-- 다른 씬은 배경과 기능 콘텐츠만 포함한다. XR 카메라, AudioListener, XRPlayerRig를 별도로 추가하지 않는다. 실수로 같은 XRPlayerRig 프리팹이 다시 로드되면 새 복제본을 먼저 비활성화하고 제거하여 기존 리그를 유지한다.
+- 콘텐츠 씬에 독자적인 XR 카메라·AudioListener·리그를 만들지 않는다. 단독 실행을 위해 공통 XRPlayerRig 프리팹을 배치할 수 있으며, 기존 리그가 있을 때는 새 복제본을 먼저 비활성화하고 제거하여 기존 리그를 유지한다.
 - 씬 전환 때 리그 위치를 자동으로 초기화하지 않는다. 씬별 시작 위치로 이동하는 기능은 별도 요구사항으로 결정한다.
 - 콘텐츠 씬을 에디터에서 단독 Play하면 시작 씬의 리그는 생성되지 않는다. 기본적으로 `QuestMain`에서 시작해 콘텐츠 씬으로 전환한다. 단독 작업에 리그가 필요하면 동일 XRPlayerRig 프리팹을 배치할 수 있으며, 앱에서 시작 씬을 거쳐 들어온 경우에는 중복 방지 처리가 적용된다.
-- 현재 `CNNModelDesign`에는 중간 스테이지 단독 실행용 `TEMP XRPlayerRig - Remove before final` 인스턴스를 배치했다. `EditorOnly` 태그로 빌드에서는 제외하며, 기존 에디터 전용 XR Interaction Simulator 자동 생성 설정을 그대로 사용한다. **최종 씬 진입 흐름 연결 후 이 임시 인스턴스는 제거한다.** XRPlayerRig 원본과 시뮬레이터 설정은 유지한다.
+- `CNNFeatureMapExplorer`, `CNNModelDesign`, `CNNPixelLab`에는 같은 `Assets/Prefabs/XR/XRPlayerRig.prefab`을 일반 씬 인스턴스로 배치한다. 단독 실행 시 해당 리그를 유지하고, 기존 리그가 있는 상태에서 씬을 로드하면 `PersistentXRPlayerRig`가 새 중복 인스턴스를 비활성화하고 제거한다. 기존 리그의 태블릿 상태와 위치는 유지한다. `CNNModelDesign`의 리그는 더 이상 `EditorOnly`가 아니다.
 - 기존 프리팹과 초기 씬 생성 도구 모두 유지 컴포넌트를 포함한다. 이번 변경은 소스·프리팹 참조를 확인했으며 테스트·Play 실행·컴파일 검증·빌드는 실행하지 않았다.
 
 - `Assets/Prefabs/XR/XRPlayerRig.prefab`: XR Origin, Camera Offset, Main Camera, 양손 컨트롤러, XR Interaction Manager.

@@ -152,9 +152,9 @@ namespace XR
                 {
                     button.onClick.Invoke();
                 }
-                else if (ActiveTargets[_focusIndex].Control is Slider)
+                else if (ActiveTargets[_focusIndex].Control is Slider && !_isAdjustingSlider)
                 {
-                    _isAdjustingSlider = !_isAdjustingSlider;
+                    _isAdjustingSlider = true;
                     _stickMustCenter = true;
                     RefreshFocus();
                 }

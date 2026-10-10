@@ -44,10 +44,11 @@ namespace XR
         private readonly string[] _stageNames =
         {
             "1. 튜토리얼",
-            "2. 오염 확인",
-            "3. 필터 관찰",
-            "4. 커널 적용",
-            "5. 마무리"
+            "2. 기본 오프닝",
+            "3. 필터 조작",
+            "4. MLP (간략)",
+            "5. CNN",
+            "6. AI 업스케일링"
         };
         private readonly TabletTask[] _tasks =
         {
@@ -98,7 +99,7 @@ namespace XR
         private float _brightness = 0.8f;
         private float _volume = 0.49f;
         private int _selectedItemIndex;
-        private int _selectedStageIndex = 1;
+        private int _selectedStageIndex;
         private bool _isVibrationEnabled = true;
         private int _completedTaskIndex = 1;
 
@@ -398,8 +399,11 @@ namespace XR
             for (int index = 0; index < _stageNames.Length; index++)
             {
                 int stageIndex = index;
-                CreateTextButton(stagePanel.rectTransform, "Stage " + index, _stageNames[index],
-                    new Vector2(0f, 76f - index * 37f), new Vector2(344f, 30f),
+                string label = index == 2
+                    ? _stageNames[index] + " (이미지 확대 및 합성곱)"
+                    : _stageNames[index];
+                CreateTextButton(stagePanel.rectTransform, "Stage " + index, label,
+                    new Vector2(0f, 78f - index * 32f), new Vector2(344f, 28f),
                     () => MoveToStage(stageIndex), ElevatedColor);
             }
             CreateTextButton(stagePanel.rectTransform, "Back to Settings", "뒤로", new Vector2(128f, -117f),

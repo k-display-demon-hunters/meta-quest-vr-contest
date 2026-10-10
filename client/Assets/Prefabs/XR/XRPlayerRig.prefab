@@ -2461,6 +2461,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::XR.LeftHandTablet
   _message: {fileID: 810603}
+  _font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+  _stageStartPoints: []
+  _stageMoveRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  _saveRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  _exitRequested:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &810500
 GameObject:
   m_ObjectHideFlags: 0
@@ -2609,7 +2620,7 @@ GameObject:
   - component: {fileID: 810602}
   - component: {fileID: 810603}
   m_Layer: 5
-  m_Name: Button Message
+  m_Name: Runtime UI Preview
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2663,8 +2674,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 32
+    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -2675,7 +2686,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "TABLET READY\n\nX / Y / TRIGGER"
+  m_Text: "\uCF00\uB514\uD5CC XR TABLET\n\nUI BUILDS AT RUNTIME"
 --- !u!1 &820100
 GameObject:
   m_ObjectHideFlags: 0

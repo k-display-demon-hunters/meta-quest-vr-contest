@@ -621,7 +621,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelDesignEntrance
   _interactable: {fileID: 9100003}
-  _sceneName: CNNModelDesign
+  _sceneName: CNNModelDesignLab
 --- !u!33 &9100102
 MeshFilter:
   m_ObjectHideFlags: 0

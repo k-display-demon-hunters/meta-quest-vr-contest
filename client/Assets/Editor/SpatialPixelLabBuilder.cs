@@ -95,7 +95,7 @@ namespace UI.Editor
             detail.gameObject.SetActive(false);
 
             SerializedObject fields = new SerializedObject(controller);
-            Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNN/ColorPhoto.png"));
+            Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/ColorPhoto.png"));
             Assign(fields, "_board", board);
             Assign(fields, "_boardRenderer", image);
             Assign(fields, "_filter", grab);

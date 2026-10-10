@@ -37,7 +37,7 @@ B는 같은 위치의 9개 픽셀과 가중치를 곱해 전체 합을 구한다
 
 시작 씬: Assets/Scenes/CNNPixelLab.unity.
 이미지 받침판·화면 테두리·벽·바닥 없이 단색 공간에 이미지와 필터, 버튼을 배치한다.
-`CNNFeatureMapExplorer`와 같은 공통 `XRPlayerRig` 프리팹을 씬에 배치한다. 기존 리그가 있으면 새 중복 리그를 제거하고 기존 카메라·컨트롤러·태블릿 상태를 유지한다. 별도 `Quest XR Origin`은 제거했다.
+`CNNFeatureMapLab`와 같은 공통 `XRPlayerRig` 프리팹을 씬에 배치한다. 기존 리그가 있으면 새 중복 리그를 제거하고 기존 카메라·컨트롤러·태블릿 상태를 유지한다. 별도 `Quest XR Origin`은 제거했다.
 Quest와 에디터 XR 시뮬레이터는 오른손 Grip으로 필터와 이미지를 선택하고, Trigger로 UI 버튼을 누른다. 실행 중 카메라는 유지된 리그의 `Camera.main`으로 연결하며, 추적이나 리그 위치를 초기화하지 않는다.
 입력 사진을 128×72로 축소하고 부드럽게 만든 뒤 32×18 RGB 데이터를 샘플링한다.
 SpatialPixelLab은 선택과 단계 진입, PixelRevealStage는 확대와 픽셀 전환,
@@ -48,7 +48,7 @@ RgbConvolutionView는 RGB 관찰/학습 구분, ConvolutionExercise는 고정 �
 ## 이미지 제작 기록
 
 기존 흑백 사진을 Built-in ImageGen edit로 컬러화했다.
-저장: client/Assets/Textures/CNN/ColorPhoto.png
+저장: client/Assets/Textures/CNNPixelLab/ColorPhoto.png
 프롬프트: Colorize this grayscale lake photograph with natural blue sky and water, green forests and neutral rocky mountains. Preserve the composition and all objects. No text or added elements.
 
 ## RGB 합치기와 학습 버튼

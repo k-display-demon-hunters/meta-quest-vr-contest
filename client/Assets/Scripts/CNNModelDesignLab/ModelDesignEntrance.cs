@@ -9,7 +9,7 @@ namespace ModelDesignScene
     public sealed class ModelDesignEntrance : MonoBehaviour
     {
         [SerializeField] private XRSimpleInteractable _interactable;
-        [SerializeField] private string _sceneName = "CNNModelDesign";
+        [SerializeField] private string _sceneName = "CNNModelDesignLab";
 
         private bool _isLoading;
 

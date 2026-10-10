@@ -3,13 +3,19 @@
 Open `client` with Unity **6000.3.24f1**, then open
 `Assets/Scenes/NeonUIDemo.unity` to preview the designs.
 
-- `Assets/Prefabs/CNNFilterPanel.prefab`: a world-space 3×3 CNN filter with
+- `Assets/Prefabs/CNNPixelLab/CNNFilterPanel.prefab`: a world-space 3×3 CNN filter with
   TextMeshPro weights, opaque pale-blue cells, a cyan border, and a shallow 3D frame.
-- `Assets/Prefabs/NeonNode.prefab`: a smooth sphere with a pale-blue body and
+- `Assets/Prefabs/CNNPixelLab/NeonNode.prefab`: a smooth sphere with a pale-blue body and
   turquoise rim. Its appearance is controlled by `NeonSphere.mat` and
   `Custom/NeonSphere`.
 - The demo contains four linked node prefab instances under `NodeLayer`, arranged
   vertically with 2.1 world units between centers. No edges are included.
+
+Visual asset locations:
+
+- Materials: `Assets/Materials/CNNPixelLab/`.
+- Meshes: `Assets/Meshes/CNNPixelLab/`.
+- Shader: `Assets/Shaders/CNNPixelLab/NeonSphere.shader`.
 
 These are visual assets only; dragging, scanning, and graph logic are not implemented.
 The demo camera enables SMAA High. Its dedicated `NeonUIDemoProfile` enables Bloom;

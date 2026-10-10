@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/Scenes/QuestMain.unity
     guid: 2441b42144c7ab546928fa8482608f41
   - enabled: 1
-    path: Assets/Scenes/CNNModelDesign.unity
+    path: Assets/Scenes/CNNModelDesignLab.unity
     guid: c8dfb16a8d054f039d83c7299b17adce
   - enabled: 1
     path: Assets/Scenes/CNNPixelLab.unity

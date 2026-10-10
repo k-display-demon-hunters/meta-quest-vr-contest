@@ -24,6 +24,7 @@ namespace CNNFeatureMaps
         private bool[] _tabletTextStates;
         private bool _ready;
         private CNNFeatureMapGuide _guide;
+        public bool IsReady => _ready;
         public bool HasHeldTargets => _heldTargets.Count > 0;
         public CNNFeatureMapExampleData Data => _data;
 

@@ -92,7 +92,7 @@ namespace CNNFeatureMaps
                 _buttons[index].Configure(this, (CNNFeatureMapAction)index);
                 SetText(_buttonLabels[index], _buttonLabels[index].text, .31f, .042f);
             }
-            SetText(_help, _help.text, 2.8f, .08f);
+            SetText(_help, _help.text, 2.8f, .12f);
             SetText(_padding, _padding.text, .68f, .07f);
             SetText(_inputCaption, _inputCaption.text, .65f, .06f);
             foreach (TextMesh label in _layerCaptions)

@@ -5,13 +5,10 @@ using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace UI.Editor
@@ -41,38 +38,8 @@ namespace UI.Editor
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             SceneManager.SetActiveScene(scene);
             GameObject player = (GameObject)PrefabUtility.InstantiatePrefab(
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNXRPlayer.prefab"), scene);
-            GameObject rig = player.transform.Find("Quest XR Origin").gameObject;
-            Camera camera = rig.GetComponentInChildren<Camera>();
-            camera.fieldOfView = 62;
-            camera.backgroundColor = new Color32(7, 14, 24, 255);
-            XRInteractionManager manager = player.GetComponentInChildren<XRInteractionManager>();
-            foreach (XRRayInteractor ray in rig.GetComponentsInChildren<XRRayInteractor>())
-            {
-                ray.interactionManager = manager;
-                string hand = ray.name.StartsWith("Left") ? "LeftHand" : "RightHand";
-                XRInputButtonReader select = new XRInputButtonReader("Drag filter", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction);
-                select.inputActionPerformed.AddBinding("<XRController>{" + hand + "}/triggerPressed");
-                select.inputActionValue.AddBinding("<XRController>{" + hand + "}/trigger");
-                ray.selectInput = select;
-                GameObject directObject = new GameObject(hand + " Grab", typeof(SphereCollider), typeof(Rigidbody));
-                directObject.SetActive(false);
-                directObject.transform.SetParent(ray.transform, false);
-                SphereCollider collider = directObject.GetComponent<SphereCollider>();
-                collider.isTrigger = true;
-                collider.radius = 0.13f;
-                Rigidbody body = directObject.GetComponent<Rigidbody>();
-                body.isKinematic = true;
-                body.useGravity = false;
-                XRDirectInteractor direct = directObject.AddComponent<XRDirectInteractor>();
-                direct.interactionManager = manager;
-                XRInputButtonReader grip = new XRInputButtonReader("Grab filter", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction);
-                grip.inputActionPerformed.AddBinding("<XRController>{" + hand + "}/gripPressed");
-                grip.inputActionValue.AddBinding("<XRController>{" + hand + "}/grip");
-                direct.selectInput = grip;
-                Cube(directObject.transform, "Controller tip", Vector3.zero, Vector3.one * 0.035f, _cyan);
-                directObject.SetActive(true);
-            }
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/XR/XRPlayerRig.prefab"), scene);
+            Camera camera = player.GetComponentInChildren<Camera>();
 
             GameObject lab = new GameObject("CNN Pixel Workshop");
             SpatialPixelLab controller = lab.AddComponent<SpatialPixelLab>();
@@ -101,7 +68,7 @@ namespace UI.Editor
             MeshRenderer lens = Quad(filter.transform, "Magnified pixels", new Vector3(0, 0, 0.005f), new Vector2(0.46f, 0.46f), _white);
             lens.gameObject.SetActive(false);
             XRGrabInteractable grab = filter.AddComponent<XRGrabInteractable>();
-            grab.interactionManager = manager;
+            // Resolve the surviving rig's manager instead of a scene-local duplicate.
             grab.movementType = XRBaseInteractable.MovementType.Kinematic;
             grab.throwOnDetach = false;
             grab.useDynamicAttach = true;

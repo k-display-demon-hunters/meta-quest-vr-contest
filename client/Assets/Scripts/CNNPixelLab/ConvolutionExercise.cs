@@ -210,7 +210,7 @@ namespace UI
             _solved = expression + " = " + answer;
             _equation.text = expression + " = [ ? ]";
             _equation.fontSize = expression.Length > 48 ? 23 : 30;
-            _feedback.text = "빈칸에 들어갈 숫자를 고르세요 · 컨트롤러 트리거 또는 마우스 클릭";
+            _feedback.text = "빈칸에 들어갈 숫자를 고르세요 · 컨트롤러 트리거";
             List<int> choices = new List<int> { answer };
             if (!choices.Contains(distractor1)) { choices.Add(distractor1); }
             if (choices.Count < 3 && !choices.Contains(distractor2)) { choices.Add(distractor2); }

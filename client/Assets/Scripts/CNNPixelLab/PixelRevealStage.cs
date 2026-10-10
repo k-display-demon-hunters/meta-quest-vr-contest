@@ -1,9 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -40,25 +38,15 @@ namespace UI
         public RevealPhase Phase { get; private set; }
         public bool IsReadyForConvolution => Phase == RevealPhase.Revealed;
 
-        private void Update()
-        {
-            if (Phase != RevealPhase.AwaitingClick || XRSettings.isDeviceActive || Mouse.current == null)
-            {
-                return;
-            }
-            if (Mouse.current.leftButton.wasPressedThisFrame)
-            {
-                Ray ray = _camera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit, 20) && hit.collider == _clickCollider)
-                {
-                    RevealPixels();
-                }
-            }
-        }
-
         public void ShowEnlargedImage(Color32[] pixels, int columns, int rows)
         {
             if (Phase != RevealPhase.Inactive) { return; }
+            _camera = Camera.main;
+            if (_camera == null)
+            {
+                Debug.LogError("[CNNPixelLab] An active XRPlayerRig camera is required.", this);
+                return;
+            }
             if (!_initialized)
             {
                 _originalScale = _board.localScale;
@@ -129,7 +117,7 @@ namespace UI
             _clickCollider.enabled = true;
             _clickTarget.enabled = true;
             Phase = RevealPhase.AwaitingClick;
-            _instruction.text = "확대된 이미지를 클릭하세요\n컨트롤러: 이미지를 가리키고 트리거를 누르세요";
+            _instruction.text = "확대된 이미지를 선택하세요\n오른손: 이미지를 가리키고 Grip을 누르세요";
         }
 
         private IEnumerator RevealColumns()

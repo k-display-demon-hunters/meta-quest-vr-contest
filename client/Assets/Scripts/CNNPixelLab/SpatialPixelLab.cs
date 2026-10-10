@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace UI
 {
@@ -35,31 +37,37 @@ namespace UI
         private Material _lensMaterial;
         private Vector3 _dockPosition;
         private Quaternion _dockRotation;
-        private bool _mouseHolding;
         private bool _snapPending;
         private bool _hasSelection;
         private bool _previewValid;
         private Vector2Int _selected;
         private Vector2Int _preview;
-        private Plane _dragPlane;
         private XRRayInteractor _rayInteractor;
         private bool _isRevealStage;
+        private XRRayInteractor _rightRay;
+        private XRInputButtonReader _previousUIPress;
+        private XRInputButtonReader _uiPress;
+        private bool _previousUIInteraction;
+        private GameObject _ownedEventSystem;
+        private XRUIInputModule _addedUIInputModule;
+        private bool _initialized;
 
         public bool HasSelection => _hasSelection;
         public Vector2Int SelectedPixel => _selected;
 
         private void Awake()
         {
-            if (!XRSettings.isDeviceActive)
+            // Resolve the surviving rig, since the scene's duplicate may have been removed.
+            _camera = Camera.main;
+            if (_camera == null)
             {
-                UnityEngine.InputSystem.XR.TrackedPoseDriver tracking = _camera.GetComponent<UnityEngine.InputSystem.XR.TrackedPoseDriver>();
-                if (tracking != null) { tracking.enabled = false; }
-                _camera.transform.localPosition = new Vector3(0, 0.08f, -0.9f);
-                _camera.transform.localRotation = Quaternion.Euler(4, 0, 0);
-                foreach (XRRayInteractor ray in _camera.transform.parent.GetComponentsInChildren<XRRayInteractor>())
-                {
-                    ray.gameObject.SetActive(false);
-                }
+                Debug.LogError("[CNNPixelLab] An active XRPlayerRig camera is required.", this);
+                enabled = false;
+                return;
+            }
+            foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true))
+            {
+                canvas.worldCamera = _camera;
             }
             _dockPosition = _filter.transform.position;
             _dockRotation = _filter.transform.rotation;
@@ -93,21 +101,47 @@ namespace UI
             _instruction.color = Color.white;
             _instruction.raycastTarget = false;
             if (_revealStage != null) { _revealStage.PixelsRevealed += HandlePixelsRevealed; }
+            _initialized = true;
             ResetLab();
         }
 
-        private void Update()
+        private void OnEnable()
         {
-            if (_isRevealStage) { return; }
-            if (!XRSettings.isDeviceActive)
+            if (!_initialized) { return; }
+            if (EventSystem.current == null)
             {
-                UpdateMouseGrab();
+                _ownedEventSystem = new GameObject("CNN Pixel Lab UI Input", typeof(EventSystem), typeof(XRUIInputModule));
+                _ownedEventSystem.transform.SetParent(transform, false);
             }
+            else if (EventSystem.current.GetComponent<XRUIInputModule>() == null)
+            {
+                _addedUIInputModule = EventSystem.current.gameObject.AddComponent<XRUIInputModule>();
+            }
+            foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsSortMode.None))
+            {
+                if (ray.handedness == InteractorHandedness.Right && ray.isActiveAndEnabled)
+                {
+                    _rightRay = ray;
+                    break;
+                }
+            }
+            if (_rightRay == null) { return; }
+            _previousUIPress = _rightRay.uiPressInput;
+            _previousUIInteraction = _rightRay.enableUIInteraction;
+            _uiPress = new XRInputButtonReader("CNN Pixel Lab UI", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
+            {
+                inputActionPerformed = new InputAction("CNN Pixel Lab UI Press", InputActionType.Button,
+                    "<XRController>{RightHand}/triggerPressed"),
+                inputActionValue = new InputAction("CNN Pixel Lab UI Value", InputActionType.Value,
+                    "<XRController>{RightHand}/trigger")
+            };
+            _rightRay.uiPressInput = _uiPress;
+            _rightRay.enableUIInteraction = true;
         }
 
         private void LateUpdate()
         {
-            if (_isRevealStage) { return; }
+            if (!_initialized || _isRevealStage) { return; }
             if (_rayInteractor != null && _filter.isSelected)
             {
                 Ray ray = new Ray(_rayInteractor.transform.position, _rayInteractor.transform.forward);
@@ -120,7 +154,7 @@ namespace UI
                     body.rotation = _filter.transform.rotation;
                 }
             }
-            if (_mouseHolding || _filter.isSelected)
+            if (_filter.isSelected)
             {
                 UpdatePreview();
             }
@@ -141,7 +175,7 @@ namespace UI
 
         public void ShowDetails()
         {
-            if (_isRevealStage || !_hasSelection || _filter.isSelected || _mouseHolding) { return; }
+            if (_isRevealStage || !_hasSelection || _filter.isSelected) { return; }
             _rgbView.Show(_pixels, Columns, Rows, _selected, false);
             _detail.SetActive(true);
         }
@@ -149,7 +183,7 @@ namespace UI
         public void BeginConvolution()
         {
             if (_revealStage == null || !_revealStage.IsReadyForConvolution || !_hasSelection
-                || _filter.isSelected || _mouseHolding) { return; }
+                || _filter.isSelected) { return; }
             _rgbView.Show(_pixels, Columns, Rows, _selected, true);
         }
 
@@ -169,7 +203,6 @@ namespace UI
                 _nextButton.GetComponentInChildren<Text>().text = "다음으로";
             }
             _filter.gameObject.SetActive(true);
-            _mouseHolding = false;
             _snapPending = false;
             _hasSelection = false;
             _previewValid = false;
@@ -182,7 +215,7 @@ namespace UI
 
         public void MoveSelection(int dx, int dy)
         {
-            if (_isRevealStage || !_hasSelection || _filter.isSelected || _mouseHolding) { return; }
+            if (_isRevealStage || !_hasSelection || _filter.isSelected) { return; }
             _selected = new Vector2Int(Mathf.Clamp(_selected.x + dx, 0, Columns - 3),
                 Mathf.Clamp(_selected.y + dy, 0, Rows - 3));
             PlaceFilter();
@@ -211,7 +244,7 @@ namespace UI
                 BeginConvolution();
                 return;
             }
-            if (_isRevealStage || _filter.isSelected || _mouseHolding || _revealStage == null
+            if (_isRevealStage || _filter.isSelected || _revealStage == null
                 || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
             _isRevealStage = true;
             _instruction.gameObject.SetActive(false);
@@ -222,31 +255,6 @@ namespace UI
             _selectionFrame.gameObject.SetActive(false);
             _nextButton.interactable = false;
             _revealStage.ShowEnlargedImage(_pixels, Columns, Rows);
-        }
-
-        private void UpdateMouseGrab()
-        {
-            Mouse mouse = Mouse.current;
-            if (mouse == null || _filter.isSelected || _detail.activeSelf) { return; }
-            Ray ray = _camera.ScreenPointToRay(mouse.position.ReadValue());
-            if (mouse.leftButton.wasPressedThisFrame && Physics.Raycast(ray, out RaycastHit hit, 15)
-                && hit.collider.GetComponentInParent<XRGrabInteractable>() == _filter)
-            {
-                _mouseHolding = true;
-                _instruction.text = "원하는 부분에서 필터를 놓으세요";
-                _detail.SetActive(false);
-                _detailButton.interactable = false;
-                _dragPlane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
-            }
-            if (_mouseHolding && _dragPlane.Raycast(ray, out float distance))
-            {
-                _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
-            }
-            if (_mouseHolding && (!mouse.leftButton.isPressed || !Application.isFocused))
-            {
-                _mouseHolding = false;
-                _snapPending = true;
-            }
         }
 
         private void UpdatePreview()
@@ -357,7 +365,7 @@ namespace UI
 
         private void HandleGrabbed(SelectEnterEventArgs args)
         {
-            _instruction.text = "원하는 부분에서 트리거를 놓으세요";
+            _instruction.text = "원하는 부분에서 Grip을 놓으세요";
             _rayInteractor = args.interactorObject as XRRayInteractor;
             _filter.trackPosition = _rayInteractor == null;
             _filter.trackRotation = _rayInteractor == null;
@@ -375,13 +383,52 @@ namespace UI
             }
             _instruction.text = _hasSelection
                 ? "‘더 자세히 보기’를 눌러 RGB와 계산을 살펴보세요"
-                : "필터를 잡아 이미지 위에 놓으세요\n컨트롤러: 가리킨 뒤 트리거로 드래그 · PC: 마우스로 드래그";
+                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip으로 드래그 · 버튼: Trigger";
+        }
+
+        private void OnDisable()
+        {
+            if (_rightRay != null)
+            {
+                _rightRay.uiPressInput = _previousUIPress;
+                _rightRay.enableUIInteraction = _previousUIInteraction;
+                _rightRay = null;
+            }
+            if (_uiPress != null)
+            {
+                _uiPress.inputActionPerformed.Dispose();
+                _uiPress.inputActionValue.Dispose();
+                _uiPress = null;
+            }
+            if (_ownedEventSystem != null)
+            {
+                _ownedEventSystem.SetActive(false);
+                Destroy(_ownedEventSystem);
+                _ownedEventSystem = null;
+            }
+            if (_addedUIInputModule != null)
+            {
+                Destroy(_addedUIInputModule);
+                _addedUIInputModule = null;
+            }
+            if (_initialized && _filter != null && _filter.isSelected)
+            {
+                // Keep a held filter in the content scene when the persistent rig survives.
+                if (_filter.interactionManager != null)
+                {
+                    _filter.interactionManager.CancelInteractableSelection((IXRSelectInteractable)_filter);
+                }
+                _filter.transform.SetParent(transform, true);
+            }
         }
 
         private void OnDestroy()
         {
-            _filter.selectExited.RemoveListener(HandleReleased);
-            _filter.selectEntered.RemoveListener(HandleGrabbed);
+            if (_filter != null)
+            {
+                _filter.selectExited.RemoveListener(HandleReleased);
+                _filter.selectEntered.RemoveListener(HandleGrabbed);
+            }
             if (_revealStage != null) { _revealStage.PixelsRevealed -= HandlePixelsRevealed; }
             Destroy(_smoothTexture);
             Destroy(_pixelTexture);

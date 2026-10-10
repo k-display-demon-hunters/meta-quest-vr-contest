@@ -52,7 +52,7 @@ namespace UI.Editor
             SerializedObject stageFields = new SerializedObject(stage);
             stageFields.FindProperty("_board").objectReferenceValue = lab.transform.Find("Floating image board");
             stageFields.FindProperty("_controls").objectReferenceValue = controls;
-            stageFields.FindProperty("_camera").objectReferenceValue = Camera.main;
+            stageFields.FindProperty("_camera").objectReferenceValue = null;
             stageFields.FindProperty("_font").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
             stageFields.ApplyModifiedPropertiesWithoutUndo();
             SerializedObject labFields = new SerializedObject(lab);

@@ -1033,11 +1033,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7432992956094993694, guid: 446ba3764dff6064b8557217cc9c94bb, type: 3}
       propertyPath: m_Name
-      value: TEMP XRPlayerRig - Remove before final
+      value: XR Player Rig
       objectReference: {fileID: 0}
     - target: {fileID: 7432992956094993694, guid: 446ba3764dff6064b8557217cc9c94bb, type: 3}
       propertyPath: m_TagString
-      value: EditorOnly
+      value: Untagged
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -1,6 +1,6 @@
 # CNN 초보자 체험 씬
 
-CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNFeatureMaps/`의 `CNNFeatureMaps` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNFeatureMaps/CNNFeatureMapWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/CNNFeatureMaps/Images/`와 `Assets/CNNFeatureMaps/Materials/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
+CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNFeatureMaps/`의 `CNNFeatureMaps` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNFeatureMaps/CNNFeatureMapWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/Textures/CNNFeatureMaps/`와 `Assets/Materials/CNNFeatureMaps/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
 
 ## 열기
 
@@ -77,7 +77,7 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapExplorer` 씬으
 
 에셋은 Unity를 실행하지 않고 YAML로 분리했다. 파일 내부와 중첩 원본의 참조를 정적으로 확인했으며, Unity 임포트·Play·기기 동작은 실행 확인 전이다.
 
-한글 표시는 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, 같은 Fonts 폴더에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
+한글 표시는 `Assets/Fonts/NotoSansCJKkr-Regular.otf`의 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, `Assets/Fonts/OFL.txt`에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
 
 ## 확인 상태
 

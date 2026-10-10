@@ -6,8 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/01_Scenes/CNNPixelLab.unity
+    guid: 97e877042bfd83746bf8a1d0cb32f2b0
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: aa18b8ae4867bbe44a95a24f585b2167, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: fe2e21dac2e074d4caebebf96d51ca50, type: 2}
   m_UseUCBPForAssetBundles: 0

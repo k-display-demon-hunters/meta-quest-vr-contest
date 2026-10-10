@@ -234,7 +234,9 @@ namespace UI
             PlaceFilter();
             _detailButton.interactable = _hasSelection;
             _nextButton.interactable = true;
-            _nextButton.GetComponentInChildren<Text>().text = "합성곱 학습 시작";
+            Text lessonLabel = _nextButton.GetComponentInChildren<Text>();
+            lessonLabel.text = "합성곱 연산\n원리 알아보기";
+            lessonLabel.fontSize = 24;
             UpdateInstruction();
         }
         public void NextStage()
@@ -378,7 +380,7 @@ namespace UI
             _instruction.gameObject.SetActive(true);
             if (_revealStage != null && _revealStage.IsReadyForConvolution)
             {
-                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n관찰을 마치면 ‘합성곱 학습 시작’을 누르세요";
+                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n관찰을 마치면 ‘합성곱 연산 원리 알아보기’를 누르세요";
                 return;
             }
             _instruction.text = _hasSelection

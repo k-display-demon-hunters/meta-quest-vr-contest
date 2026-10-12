@@ -495,7 +495,7 @@ namespace UI
             label.transform.SetParent(canvasObject.transform, false);
             label.rectTransform.sizeDelta = new Vector2(width * 1000, 100);
             label.font = _font;
-            label.fontSize = 27;
+            label.fontSize = 48;
             label.alignment = TextAnchor.MiddleCenter;
             label.color = Color.white;
             label.raycastTarget = false;
@@ -511,6 +511,7 @@ namespace UI
             body.isKinematic = true;
             XRGrabInteractable grab = target.gameObject.AddComponent<XRGrabInteractable>();
             grab.throwOnDetach = false;
+            grab.retainTransformParent = false;
             grab.trackRotation = false;
             grab.movementType = XRBaseInteractable.MovementType.Instantaneous;
             return grab;
@@ -530,11 +531,16 @@ namespace UI
         {
             if (grab == null) { return; }
             if (grab.isSelected && grab.interactionManager != null) { grab.interactionManager.CancelInteractableSelection((IXRSelectInteractable)grab); }
-            grab.transform.SetParent(transform, true);
+            if (grab.transform.parent != transform)
+            {
+                if (gameObject.activeInHierarchy) { grab.transform.SetParent(transform, true); }
+                else { grab.gameObject.SetActive(false); }
+            }
         }
 
-        private void OnDisable()
+        public void ReleaseInteractions()
         {
+            if (_volume != null) { _volume.StopInteraction(); }
             _closing = true;
             CancelGrab(_kernelGrab);
             foreach (XRGrabInteractable answer in _answers) { CancelGrab(answer); }
@@ -542,8 +548,15 @@ namespace UI
             _closing = false;
         }
 
+        private void OnDisable() { ReleaseInteractions(); }
+
         private void OnDestroy()
         {
+            if (_kernelGrab != null && !_kernelGrab.transform.IsChildOf(transform)) { Destroy(_kernelGrab.gameObject); }
+            foreach (XRGrabInteractable answer in _answers)
+            {
+                if (answer != null && !answer.transform.IsChildOf(transform)) { Destroy(answer.gameObject); }
+            }
             if (_material != null) { Destroy(_material); }
         }
     }

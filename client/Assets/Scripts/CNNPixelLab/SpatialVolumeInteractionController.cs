@@ -245,7 +245,11 @@ namespace UI
             {
                 grab.interactionManager.CancelInteractableSelection((IXRSelectInteractable)grab);
             }
-            grab.transform.SetParent(transform, true);
+            if (grab.transform.parent != transform)
+            {
+                if (gameObject.activeInHierarchy) { grab.transform.SetParent(transform, true); }
+                else { grab.gameObject.SetActive(false); }
+            }
             grab.enabled = false;
             foreach (Collider collider in grab.colliders) { collider.enabled = false; }
         }
@@ -268,6 +272,7 @@ namespace UI
             grab.colliders.Clear();
             grab.colliders.Add(collider);
             grab.throwOnDetach = false;
+            grab.retainTransformParent = false;
             grab.trackRotation = false;
             grab.movementType = XRBaseInteractable.MovementType.Instantaneous;
             return grab;
@@ -287,5 +292,17 @@ namespace UI
         }
 
         private void OnDisable() { StopInteraction(); }
+
+        private void OnDestroy()
+        {
+            DestroyDetached(_patchGrab);
+            DestroyDetached(_filterGrab);
+            foreach (XRGrabInteractable grab in _layerGrabs) { DestroyDetached(grab); }
+        }
+
+        private void DestroyDetached(XRGrabInteractable grab)
+        {
+            if (grab != null && !grab.transform.IsChildOf(transform)) { Destroy(grab.gameObject); }
+        }
     }
 }

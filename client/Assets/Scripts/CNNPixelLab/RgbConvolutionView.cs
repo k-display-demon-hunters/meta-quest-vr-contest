@@ -59,6 +59,7 @@ namespace UI
         {
             gameObject.SetActive(true);
             StopAllCoroutines();
+            foreach (SpatialConvolutionController spatial in GetComponentsInChildren<SpatialConvolutionController>(true)) { spatial.ReleaseInteractions(); }
             _exercise.gameObject.SetActive(false);
             _busy = false;
             _combined = false;
@@ -97,6 +98,7 @@ namespace UI
         private void BeginCalculation()
         {
             if (_busy) { return; }
+            _observation.ReleaseInteractions();
             _observationUi.SetActive(false);
             _exercise.SelectionSource = _lab.SelectionWorldPosition;
             _exercise.Begin(_inputs, _weights, CompleteExercise);

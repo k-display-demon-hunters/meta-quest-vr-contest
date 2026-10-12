@@ -219,6 +219,10 @@ namespace UI
 
         public void CloseDetails()
         {
+            foreach (SpatialConvolutionController spatial in _detail.GetComponentsInChildren<SpatialConvolutionController>(true))
+            {
+                spatial.ReleaseInteractions();
+            }
             _detail.SetActive(false);
             SetBackgroundHidden(false);
         }

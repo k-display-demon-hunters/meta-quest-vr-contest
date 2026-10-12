@@ -51,6 +51,7 @@ namespace UI
             _feedback.transform.SetAsLastSibling();
             _next.transform.SetAsLastSibling();
             _guide.alignment = TextAnchor.UpperLeft;
+            _spatial.ReleaseInteractions();
             gameObject.SetActive(false);
         }
 
@@ -199,6 +200,7 @@ namespace UI
             Action<int[]> completed = _finished;
             int[] sums = (int[])_sums.Clone();
 
+            _spatial.ReleaseInteractions();
             gameObject.SetActive(false);
             completed?.Invoke(sums);
         }

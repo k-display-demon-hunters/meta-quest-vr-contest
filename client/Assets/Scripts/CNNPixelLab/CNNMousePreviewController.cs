@@ -45,7 +45,6 @@ namespace UI
             cameraObject.transform.SetParent(transform, false);
             _camera = cameraObject.GetComponent<Camera>();
             _camera.CopyFrom(original);
-            _camera.stereoTargetEye = StereoTargetEyeMask.None;
             _camera.targetTexture = null;
             _camera.fieldOfView = 60;
             _camera.nearClipPlane = 0.03f;

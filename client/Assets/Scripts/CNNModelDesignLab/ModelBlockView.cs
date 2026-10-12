@@ -3,31 +3,28 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 
 namespace ModelDesignScene
 {
-    public sealed class ModelBlockView : MonoBehaviour
+    public sealed class ModelBlockView : MonoBehaviour, IXRSelectFilter
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
         [SerializeField] private XRGrabInteractable _grabInteractable;
         [SerializeField] private Renderer _body;
         [SerializeField] private Text _label;
-        [SerializeField] private Renderer _leftPort;
-        [SerializeField] private Renderer _rightPort;
-        [SerializeField] private XRSimpleInteractable _leftPortInteractable;
-        [SerializeField] private XRSimpleInteractable _rightPortInteractable;
 
         private ModelDesignSceneController _owner;
         private MaterialPropertyBlock _properties;
         private Rigidbody _rigidbody;
-        private readonly Color[] _portColors = new Color[2];
-        private readonly bool[] _connectedPorts = new bool[2];
-        private int _hoveredPort = -1;
 
         public LayerDefinition Layer { get; private set; }
         public bool IsPalette { get; private set; }
         public bool IsGrabbed => _grabInteractable.isSelected;
+        public bool IsFixed => Layer != null && (Layer.Type == LayerType.Input || Layer.Type == LayerType.Output);
+        public bool canProcess => isActiveAndEnabled;
 
         private void Awake()
         {
@@ -41,15 +38,9 @@ namespace ModelDesignScene
             _grabInteractable.trackRotation = false;
             _grabInteractable.useDynamicAttach = true;
             _grabInteractable.attachEaseInTime = 0f;
+            _grabInteractable.selectFilters.Add(this);
             _grabInteractable.selectEntered.AddListener(HandleGrabbed);
             _grabInteractable.selectExited.AddListener(HandleReleased);
-            _grabInteractable.activated.AddListener(HandleTapped);
-            _leftPortInteractable.selectEntered.AddListener(HandleLeftPortSelected);
-            _leftPortInteractable.selectExited.AddListener(HandleLeftPortReleased);
-            _rightPortInteractable.selectEntered.AddListener(HandleRightPortSelected);
-            _rightPortInteractable.selectExited.AddListener(HandleRightPortReleased);
-            _leftPortInteractable.activated.AddListener(HandleTapped);
-            _rightPortInteractable.activated.AddListener(HandleTapped);
         }
 
         public void Initialize(ModelDesignSceneController owner, LayerDefinition layer, bool isPalette)
@@ -57,23 +48,29 @@ namespace ModelDesignScene
             _owner = owner;
             Layer = layer;
             IsPalette = isPalette;
-            _leftPortInteractable.enabled = !isPalette;
-            _rightPortInteractable.enabled = !isPalette;
             Layer.OnChanged += RefreshLabel;
             SetColor(_body, GetLayerColor(layer.Type));
-            _leftPort.gameObject.SetActive(layer.Type != LayerType.Input);
-            _rightPort.gameObject.SetActive(layer.Type != LayerType.Output);
             RefreshLabel();
-            SetPortState(0, false, false);
-            SetPortState(1, false, false);
         }
 
         public void TakeFromPalette()
         {
             IsPalette = false;
             _grabInteractable.retainTransformParent = false;
-            _leftPortInteractable.enabled = true;
-            _rightPortInteractable.enabled = true;
+        }
+
+        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+        {
+            // Only movable layer blocks can be grabbed; settings belong to the slot controls.
+            return Layer != null && !IsFixed && _owner != null && _owner.isActiveAndEnabled;
+        }
+
+        public void SetPose(Vector3 position, Quaternion rotation)
+        {
+            _grabInteractable.SetTargetPose(new Pose(position, rotation));
+            transform.SetPositionAndRotation(position, rotation);
+            _rigidbody.position = position;
+            _rigidbody.rotation = rotation;
         }
 
         public void CancelGrab()
@@ -82,84 +79,6 @@ namespace ModelDesignScene
             {
                 _grabInteractable.interactionManager.CancelInteractableSelection((IXRSelectInteractable)_grabInteractable);
             }
-        }
-
-        public Vector3 GetPortPosition(int port)
-        {
-            return (port == 0 ? _leftPort : _rightPort).transform.position;
-        }
-
-        internal void CancelPortSelection()
-        {
-            CancelPortSelection(_leftPortInteractable);
-            CancelPortSelection(_rightPortInteractable);
-        }
-
-        private static void CancelPortSelection(XRSimpleInteractable port)
-        {
-            if (port.isSelected && port.interactionManager != null)
-            {
-                port.interactionManager.CancelInteractableSelection((IXRSelectInteractable)port);
-            }
-        }
-
-        public bool HasPort(int port)
-        {
-            return port == 0 ? Layer.Type != LayerType.Input : Layer.Type != LayerType.Output;
-        }
-
-        internal bool TryGetPort(Collider collider, out int port)
-        {
-            port = -1;
-            if (collider == null)
-            {
-                return false;
-            }
-
-            if (collider.gameObject == _leftPort.gameObject && HasPort(0))
-            {
-                port = 0;
-            }
-            else if (collider.gameObject == _rightPort.gameObject && HasPort(1))
-            {
-                port = 1;
-            }
-
-            return port != -1;
-        }
-
-        internal void SetHoveredPort(int port)
-        {
-            if (_hoveredPort == port)
-            {
-                return;
-            }
-
-            _hoveredPort = port;
-            RefreshPortColor(0);
-            RefreshPortColor(1);
-        }
-
-        public void Translate(Vector3 delta)
-        {
-            Vector3 position = transform.position + delta;
-            transform.position = position;
-            _rigidbody.position = position;
-        }
-
-        public void SetPortState(int port, bool connected, bool candidate)
-        {
-            _connectedPorts[port] = connected;
-            _portColors[port] = candidate ? new Color(1f, 0.8f, 0.2f) :
-                connected ? new Color(0.2f, 1f, 0.7f) : new Color(0.55f, 0.65f, 0.75f);
-            RefreshPortColor(port);
-        }
-
-        private void RefreshPortColor(int port)
-        {
-            Color hoverColor = _connectedPorts[port] ? Color.yellow : Color.red;
-            Color color = port == _hoveredPort ? hoverColor : _portColors[port];
-            SetColor(port == 0 ? _leftPort : _rightPort, color);
         }
 
         private void SetColor(Renderer target, Color color)
@@ -221,62 +140,15 @@ namespace ModelDesignScene
             }
         }
 
-        private void HandleTapped(ActivateEventArgs args)
-        {
-            if (_owner != null && _owner.isActiveAndEnabled && !IsPalette && !IsGrabbed &&
-                !_leftPortInteractable.isSelected && !_rightPortInteractable.isSelected)
-            {
-                _owner.HandleBlockTapped(this);
-            }
-        }
-
-        private void HandleLeftPortSelected(SelectEnterEventArgs args)
-        {
-            if (_owner != null && _owner.isActiveAndEnabled)
-            {
-                _owner.BeginConnection(this, 0, args.interactorObject);
-            }
-        }
-
-        private void HandleRightPortSelected(SelectEnterEventArgs args)
-        {
-            if (_owner != null && _owner.isActiveAndEnabled)
-            {
-                _owner.BeginConnection(this, 1, args.interactorObject);
-            }
-        }
-
-        private void HandleLeftPortReleased(SelectExitEventArgs args)
-        {
-            if (_owner != null && _owner.isActiveAndEnabled)
-            {
-                _owner.EndConnection(this, 0, args.isCanceled);
-            }
-        }
-
-        private void HandleRightPortReleased(SelectExitEventArgs args)
-        {
-            if (_owner != null && _owner.isActiveAndEnabled)
-            {
-                _owner.EndConnection(this, 1, args.isCanceled);
-            }
-        }
-
         private void OnDestroy()
         {
             if (Layer != null)
             {
                 Layer.OnChanged -= RefreshLabel;
             }
+            _grabInteractable.selectFilters.Remove(this);
             _grabInteractable.selectEntered.RemoveListener(HandleGrabbed);
             _grabInteractable.selectExited.RemoveListener(HandleReleased);
-            _grabInteractable.activated.RemoveListener(HandleTapped);
-            _leftPortInteractable.selectEntered.RemoveListener(HandleLeftPortSelected);
-            _leftPortInteractable.selectExited.RemoveListener(HandleLeftPortReleased);
-            _rightPortInteractable.selectEntered.RemoveListener(HandleRightPortSelected);
-            _rightPortInteractable.selectExited.RemoveListener(HandleRightPortReleased);
-            _leftPortInteractable.activated.RemoveListener(HandleTapped);
-            _rightPortInteractable.activated.RemoveListener(HandleTapped);
         }
     }
 }

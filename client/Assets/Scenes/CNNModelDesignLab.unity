@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 1004}
   - component: {fileID: 1005}
   - component: {fileID: 1006}
+  - component: {fileID: 1007}
   m_Layer: 0
   m_Name: CNN Model Design
   m_TagString: Untagged
@@ -421,7 +422,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1001, guid: 52f56c67e07444e9b2671718174ff7a7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 50001}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 52f56c67e07444e9b2671718174ff7a7, type: 3}
 --- !u!4 &10101 stripped
@@ -942,6 +946,8 @@ MonoBehaviour:
   _conveyor: {fileID: 30002}
   _settings: {fileID: 1002}
   _training: {fileID: 1005}
+  _execution: {fileID: 1007}
+  _results: {fileID: 50002}
   _xrInput: {fileID: 1006}
 --- !u!1001 &30000
 PrefabInstance:
@@ -1018,3 +1024,64 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1001, guid: 0f9c3858771342a7ae93305123e4ec49, type: 3}
   m_PrefabInstance: {fileID: 40000}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccb432a438284673bc48c1e54a365b3f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelExecutionController
+--- !u!1001 &50000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 10101}
+    m_Modifications:
+    - target: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.9
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+--- !u!224 &50001 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1001, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+  m_PrefabInstance: {fileID: 50000}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &50002 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1004, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
+  m_PrefabInstance: {fileID: 50000}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3ebae859c4faab20974f8c27edc1a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelResultsController

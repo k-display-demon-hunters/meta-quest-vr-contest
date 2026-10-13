@@ -116,8 +116,36 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - 숫자는 `-`/`+`, 활성화 함수는 `<`/`>`로 변경한다. Flatten에는 숫자 설정이 없다.
 - 팝업에는 `Delete`와 `Done`이 있다. 기존 `Disconnect` 버튼은 제거했다. 모델에서 빼고 보관하려면 블록을 잡아 벨트 밖에 놓는다.
 - `Delete`는 블록을 삭제하고 점유 슬롯을 비운 뒤 남은 슬롯 순서로 모델을 갱신한다. Input·Output의 삭제는 버튼과 코드 양쪽에서 막는다.
-- 벨트 맨 왼쪽 Input 앞의 `TrainingControls.prefab`에 학습 시작·중지 버튼과 학습중 표시를 함께 배치했다. `학습 시작` 버튼은 `ModelJsonSerializer.TrySerialize`로 현재 슬롯 순서의 모델을 검증하고 JSON으로 변환한다. 블록을 잡고 이동하는 동안에는 시작하지 않는다. 성공하면 `학습중` 문구와 `중지` 버튼으로 바뀌며, 실패하면 시작 버튼을 유지한다.
-- `UNITY_EDITOR` 또는 `DEVELOPMENT_BUILD`에서만 JSON 또는 실패 경로·메시지를 콘솔에 출력한다. 오류 표시 UI와 서버 학습·중지 요청은 아직 연결하지 않았다. `중지` 또는 `CNNModelDesignLabManager.FinishTraining()`은 시작 상태로 복원한다.
+- 벨트 맨 왼쪽 Input 앞의 `TrainingControls.prefab`에 학습 시작·중지 버튼과 상태 표시를 함께 배치했다. `학습 시작`은 현재 슬롯 순서를 검증·직렬화한 뒤 `ModelProtocolClient`로 실제 학습을 요청한다. 블록을 잡고 이동하는 동안에는 시작하지 않는다. 잘못된 모델은 결과 화면에 안내하며 서버로 보내지 않는다.
+- 연결·학습 준비·학습·취소 대기·추론 상태를 구분한다. `중지`는 시작 확인 전에는 연결을 종료하고, 학습 중에는 취소 요청을 보낸 뒤 서버의 종료 응답을 기다린다. 학습 또는 추론 중에는 추가 요청을 막는다. 완료를 가정하는 타이머나 임시 결과는 사용하지 않는다.
+
+### 학습 결과와 이미지 예측
+
+- `ModelResults.prefab`은 고정 Output 블록의 자식으로 배치된다. 사용자 시점과 무관한 위치에서 학습 진행, 최종 결과, 이미지 예측을 함께 보여준다. 위치·크기와 폰트·샘플 목록은 씬/프리팹에서 변경할 수 있다.
+- 서버 기본 epoch를 사용한다. 총 epoch 수가 포함된 첫 진행 응답이 오기 전에는 총량을 추측하지 않는다. 이후 실제 수신한 epoch와 학습·검증 정확도/손실을 표시하고 두 그래프에 누적한다. 마지막 epoch는 완료 응답에서 추가하므로 1 epoch 학습도 표시된다.
+- 학습/검증 지표와 최종 **테스트 데이터** 정확도/손실을 구분한다. 응답이 오지 않은 항목은 대기 상태로 표시한다. 오류·연결 종료·취소를 정상 완료로 표시하지 않는다.
+- 학습 완료 후 숫자 샘플을 선택하면 클라이언트의 `Texture2D.name`을 `image_id`로 전송한다. 즉 `mnist-test-3.png`의 ID는 확장자를 제외한 `mnist-test-3`이며, 이름을 인덱스로 변환하거나 이미지 픽셀을 업로드하지 않는다. 서버에도 같은 ID의 이미지가 있어야 한다.
+- 선택 이미지와 정답, 예측 숫자, 클래스 0~9의 출력을 함께 표시한다. 이 씬의 고정 Output이 Softmax이므로 출력 비율을 백분율로 표시하며, 수신값을 다시 정규화하지 않는다. 예측 중에는 새 요청을 막고 응답의 이미지 ID가 선택한 이미지와 일치하는지 확인한다.
+- 학습 중·후에도 모델을 편집할 수 있다. 현재 전송 모델 JSON이 학습 시작 시점과 달라지면 이전 구성의 결과임을 안내한다. 추론은 서버에 남은 마지막 학습 모델로 수행하며, 새 학습을 시작하면 이전 결과와 그래프를 비운다.
+- 씬 비활성화 시 연결과 대기 요청을 정리한다. 서버 모델도 연결 수명에 따라 삭제되므로 다시 진입하면 새로 학습해야 한다. 뒤늦은 비동기 완료가 종료된 씬 UI를 갱신하지 않도록 세션을 구분한다.
+- 연결 주소는 `Assets/Scripts/Networking/WebSocketConnection.cs`의 `_serverUrl` 한 곳에서 변경한다. 기본값은 `ws://localhost:8000/ws`이며 `.env`는 사용하지 않는다. Quest에서는 서버 PC의 LAN 주소로 바꾼다. 실제 서버 실행은 별도로 필요하다.
+
+기본 샘플 10개는 서버와 동일한 [공식 MNIST NPZ 배포본](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz)의 정렬을 바꾸지 않은 테스트 데이터에서 숫자별 첫 이미지를 추출했다. `Assets/Textures/CNNModelDesignLab/`에 원본 28×28 픽셀을 PNG로 보관한다. 데이터 파일 SHA-256은 `731c5ac602752760c8e48fbffcf8c3b850d9dc2a2aedcf2cc48468fc17b673d1`이다.
+
+| 정답 | 에셋 이름 / 전송 ID |
+| --- | --- |
+| 0 | `mnist-test-3` |
+| 1 | `mnist-test-2` |
+| 2 | `mnist-test-1` |
+| 3 | `mnist-test-18` |
+| 4 | `mnist-test-4` |
+| 5 | `mnist-test-8` |
+| 6 | `mnist-test-11` |
+| 7 | `mnist-test-0` |
+| 8 | `mnist-test-61` |
+| 9 | `mnist-test-7` |
+
+샘플을 교체할 때는 프리팹의 `Samples`에 이미지 에셋과 정답을 함께 지정하고 서버에도 같은 에셋 이름의 이미지를 준비한다. 임의 파일 업로드는 지원하지 않는다. 서버 코드와 통신 JSON 규격은 변경하지 않았다.
 
 ### 구성과 외형 교체
 
@@ -128,6 +156,8 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - `SlotSettingsController`: 해당 슬롯의 블록 참조, 조작기기의 비활성/활성 표시와 Trigger 입력, 팝업 기준점을 담당한다.
 - `ModelSettingsController`: 설정 팝업의 대상 블록과 고정 기준점, 열기·닫기와 삭제 요청을 담당한다. 기존 `ModelDesignSceneController`에서 공급·학습·XR 입력을 분리하고 팝업 역할만 남겼다. `BlockSettingsPopup`은 레이어별 설정 항목 표시와 값 편집을 유지한다.
 - `ModelTrainingController`: 학습 시작·중지 버튼 입력 이벤트와 학습 상태 표시를 담당한다.
+- `ModelExecutionController`: 씬의 `ModelProtocolClient` 세션, 학습·취소·추론 요청 및 비동기 응답 수명을 담당한다. 진행·결과·오류는 인스턴스 이벤트로 Manager에 알린다.
+- `ModelResultsController`: 결과 패널, 지표·그래프 표시, 샘플 이미지 선택과 예측 표시를 담당한다. `ModelMetricGraph`는 수신된 epoch별 학습·검증 지표를 그리는 UI Graphic이다.
 - `ModelXRInputController`: 오른손 레이와 UI 입력을 설정하고 조작기기 입력의 유효한 레이 적중 여부를 확인한다. 비활성화할 때 기존 오른손 설정을 복구한다.
 
 Controller는 Manager를 참조하지 않고 자신의 입력이나 요청을 인스턴스 이벤트로 알린다. Manager는 블록을 잡을 때 공급 보충·팝업 닫기·슬롯 비우기를 조율하고, 놓을 때 슬롯 배치 결과를 모델 순서에 반영한다. Singleton, 전역 이벤트 시스템, 새로운 공통 기반 클래스는 도입하지 않는다. `LayerDefinition`, `ModelWorkspace`, 검증·직렬화 클래스의 이름과 API는 그대로 유지한다.

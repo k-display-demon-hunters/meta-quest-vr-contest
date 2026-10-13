@@ -10,8 +10,6 @@ namespace ModelDesignScene
         [SerializeField] private Button _trainingStopButton;
         [SerializeField] private Text _trainingStatus;
 
-        public bool IsTraining { get; private set; }
-
         public event Action OnStartRequested;
         public event Action OnStopRequested;
 
@@ -19,15 +17,39 @@ namespace ModelDesignScene
         {
             _trainingStartButton.onClick.AddListener(HandleStartClicked);
             _trainingStopButton.onClick.AddListener(HandleStopClicked);
-            SetTrainingState(false);
+            SetBusyState(false);
         }
 
-        public void SetTrainingState(bool isTraining)
+        private void SetBusyState(bool isBusy)
         {
-            IsTraining = isTraining;
-            _trainingStartButton.gameObject.SetActive(!isTraining);
-            _trainingStopButton.gameObject.SetActive(isTraining);
-            _trainingStatus.gameObject.SetActive(isTraining);
+            _trainingStartButton.gameObject.SetActive(!isBusy);
+            _trainingStopButton.gameObject.SetActive(isBusy);
+            _trainingStatus.gameObject.SetActive(isBusy);
+        }
+
+        public void ShowState(ModelExecutionState state, bool isBusy, bool canCancel)
+        {
+            SetBusyState(isBusy);
+            _trainingStopButton.interactable = canCancel;
+            switch (state)
+            {
+                case ModelExecutionState.Connecting:
+                    _trainingStatus.text = "서버 연결 중";
+                    break;
+                case ModelExecutionState.StartingTraining:
+                    _trainingStatus.text = "학습 준비 중";
+                    break;
+                case ModelExecutionState.CancellingTraining:
+                    _trainingStatus.text = "중지 확인 중";
+                    break;
+                case ModelExecutionState.Inferring:
+                    _trainingStatus.text = "이미지 예측 중";
+                    _trainingStopButton.gameObject.SetActive(false);
+                    break;
+                default:
+                    _trainingStatus.text = "학습 중";
+                    break;
+            }
         }
 
         private void HandleStartClicked()

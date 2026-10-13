@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ModelDesign;
+using Networking;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -13,6 +14,8 @@ namespace ModelDesignScene
         [SerializeField] private ModelConveyorController _conveyor;
         [SerializeField] private ModelSettingsController _settings;
         [SerializeField] private ModelTrainingController _training;
+        [SerializeField] private ModelExecutionController _execution;
+        [SerializeField] private ModelResultsController _results;
         [SerializeField] private ModelXRInputController _xrInput;
 
         private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
@@ -40,7 +43,14 @@ namespace ModelDesignScene
             _supply.OnBlockCreated += RegisterBlock;
             _settings.OnDeleteRequested += HandleDeleteRequested;
             _training.OnStartRequested += HandleTrainingStartRequested;
-            _training.OnStopRequested += FinishTraining;
+            _training.OnStopRequested += HandleTrainingStopRequested;
+            _execution.OnStateChanged += HandleExecutionStateChanged;
+            _execution.OnTrainingProgress += HandleTrainingProgress;
+            _execution.OnTrainingCompleted += HandleTrainingCompleted;
+            _execution.OnTrainingCancelled += HandleTrainingCancelled;
+            _execution.OnInferenceCompleted += HandleInferenceCompleted;
+            _execution.OnError += HandleExecutionError;
+            _results.OnInferenceRequested += HandleInferenceRequested;
 
             // All scene blocks have completed Awake before their model data is assigned.
             _inputBlock.Initialize(_workspace.Input, false);
@@ -55,6 +65,8 @@ namespace ModelDesignScene
             }
             RefreshModelOrder();
             _initialized = true;
+            _workspace.OnChanged += HandleWorkspaceChanged;
+            HandleExecutionStateChanged();
         }
 
         private void LateUpdate()
@@ -63,12 +75,6 @@ namespace ModelDesignScene
             {
                 _conveyor.PreviewPlacement(_grabbedBlock);
             }
-        }
-
-        public void FinishTraining()
-        {
-            // A future training completion callback restores the start button through this method.
-            _training.SetTrainingState(false);
         }
 
         private void RegisterBlock(ModelBlockController block)
@@ -185,32 +191,88 @@ namespace ModelDesignScene
             Destroy(block.gameObject);
         }
 
-        private void HandleTrainingStartRequested()
+        private async void HandleTrainingStartRequested()
         {
-            if (!isActiveAndEnabled || _training.IsTraining || _grabbedBlock != null)
+            if (!isActiveAndEnabled || _execution.IsBusy || _grabbedBlock != null)
             {
                 return;
             }
             if (!ModelJsonSerializer.TrySerialize(_workspace, out string json,
                 out IReadOnlyList<ValidationIssue> issues))
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                foreach (ValidationIssue issue in issues)
-                {
-                    Debug.LogWarning($"[ModelDesign] 모델 JSON 변환 실패: {issue.Path}: {issue.Message}", this);
-                }
-#endif
+                _results.ShowError("모델 구성을 확인하세요.\n" + issues[0].Message);
                 return;
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Temporary preview only: server training requests are not connected yet.
-            Debug.Log($"[ModelDesign] 서버에 보낼 모델 JSON:\n{json}", this);
-#endif
-            _training.SetTrainingState(true);
+            _settings.Close();
+            _results.ResetTraining();
+            await _execution.StartTrainingAsync(json);
+        }
+
+        private async void HandleTrainingStopRequested()
+        {
+            if (isActiveAndEnabled && _execution.CanCancel)
+            {
+                await _execution.CancelTrainingAsync();
+            }
+        }
+
+        private async void HandleInferenceRequested(string imageId)
+        {
+            if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
+            {
+                await _execution.InferAsync(imageId);
+            }
+        }
+
+        private void HandleExecutionStateChanged()
+        {
+            _training.ShowState(_execution.State, _execution.IsBusy, _execution.CanCancel);
+            _results.ShowState(_execution.State, _execution.HasTrainedModel,
+                !_execution.IsBusy && _execution.HasTrainedModel);
+            HandleWorkspaceChanged();
+        }
+
+        private void HandleTrainingProgress(TrainingProgress progress)
+        {
+            _results.ShowProgress(progress);
+        }
+
+        private void HandleTrainingCompleted(TrainingResult result)
+        {
+            _results.ShowCompleted(result);
+        }
+
+        private void HandleTrainingCancelled()
+        {
+            _results.ShowCancelled();
+        }
+
+        private void HandleInferenceCompleted(InferenceResult result)
+        {
+            _results.ShowInference(result);
+        }
+
+        private void HandleExecutionError(string message)
+        {
+            _results.ShowError(message);
+        }
+
+        private void HandleWorkspaceChanged()
+        {
+            string submitted = _execution.SubmittedModelJson;
+            bool changed = submitted != null &&
+                (!ModelJsonSerializer.TrySerialize(_workspace, out string current, out _) ||
+                 !string.Equals(submitted, current, System.StringComparison.Ordinal));
+            _results.SetModelChanged(changed);
         }
 
         private void OnDisable()
         {
+            _execution.CloseSession();
+            if (_initialized)
+            {
+                _results.ResetSessionUI();
+            }
             _conveyor.ClearPreview();
             _settings.Close();
             foreach (ModelBlockController block in _blocks)
@@ -243,7 +305,20 @@ namespace ModelDesignScene
             if (_training != null)
             {
                 _training.OnStartRequested -= HandleTrainingStartRequested;
-                _training.OnStopRequested -= FinishTraining;
+                _training.OnStopRequested -= HandleTrainingStopRequested;
+            }
+            if (_execution != null)
+            {
+                _execution.OnStateChanged -= HandleExecutionStateChanged;
+                _execution.OnTrainingProgress -= HandleTrainingProgress;
+                _execution.OnTrainingCompleted -= HandleTrainingCompleted;
+                _execution.OnTrainingCancelled -= HandleTrainingCancelled;
+                _execution.OnInferenceCompleted -= HandleInferenceCompleted;
+                _execution.OnError -= HandleExecutionError;
+            }
+            if (_results != null)
+            {
+                _results.OnInferenceRequested -= HandleInferenceRequested;
             }
             if (_conveyor != null)
             {
@@ -263,7 +338,11 @@ namespace ModelDesignScene
                     block.OnReleased -= HandleBlockReleased;
                 }
             }
-            _workspace?.Dispose();
+            if (_workspace != null)
+            {
+                _workspace.OnChanged -= HandleWorkspaceChanged;
+                _workspace.Dispose();
+            }
         }
     }
 }

@@ -31,19 +31,20 @@ namespace ModelDesignScene
 
         private readonly List<Renderer> _slotRenderers = new List<Renderer>();
         private readonly List<SlotSettingsController> _settingsControls = new List<SlotSettingsController>();
-        private ModelBlockView[] _blocks;
+        private ModelBlockController[] _blocks;
         private MaterialPropertyBlock _properties;
         private int _previewSlot = -1;
 
         public int SlotCount => _blocks.Length;
+        public IReadOnlyList<SlotSettingsController> SettingsControls => _settingsControls;
 
-        public void Initialize(ModelBlockView input, ModelBlockView output, ModelDesignSceneController sceneController)
+        public void Initialize(ModelBlockController input, ModelBlockController output)
         {
             _slotCount = Mathf.Max(1, _slotCount);
-            _blocks = new ModelBlockView[_slotCount];
+            _blocks = new ModelBlockController[_slotCount];
             _properties = new MaterialPropertyBlock();
             ConfigureVisuals();
-            ConfigureSettingsControls(sceneController);
+            ConfigureSettingsControls();
             float endpointX = (_slotCount + 1) * _slotSpacing * 0.5f;
             input.SetPose(transform.TransformPoint(new Vector3(-endpointX, _blockCenterHeight, 0f)), transform.rotation);
             output.SetPose(transform.TransformPoint(new Vector3(endpointX, _blockCenterHeight, 0f)), transform.rotation);
@@ -52,12 +53,12 @@ namespace ModelDesignScene
             _trainingAnchor.localPosition = trainingPosition;
         }
 
-        public ModelBlockView GetBlock(int index)
+        public ModelBlockController GetBlock(int index)
         {
             return _blocks[index];
         }
 
-        public bool RemoveBlock(ModelBlockView block)
+        public bool RemoveBlock(ModelBlockController block)
         {
             for (int index = 0; index < _blocks.Length; index++)
             {
@@ -72,7 +73,7 @@ namespace ModelDesignScene
             return false;
         }
 
-        public void PreviewPlacement(ModelBlockView block)
+        public void PreviewPlacement(ModelBlockController block)
         {
             int slot = block != null ? FindSlot(block.transform.position) : -1;
             if (_previewSlot == slot)
@@ -97,7 +98,7 @@ namespace ModelDesignScene
             }
         }
 
-        public bool TryPlaceBlock(ModelBlockView block)
+        public bool TryPlaceBlock(ModelBlockController block)
         {
             if (block == null || block.IsFixed || block.IsPalette)
             {
@@ -146,7 +147,7 @@ namespace ModelDesignScene
             return new Vector3((index - (_slotCount - 1) * 0.5f) * _slotSpacing, _blockCenterHeight, 0f);
         }
 
-        private void ConfigureSettingsControls(ModelDesignSceneController sceneController)
+        private void ConfigureSettingsControls()
         {
             int existingCount = _settingsControlsRoot.childCount;
             for (int index = 0; index < Mathf.Max(existingCount, _slotCount); index++)
@@ -162,7 +163,7 @@ namespace ModelDesignScene
                 Vector3 position = _settingsControlOffset;
                 position.x += GetBlockPosition(index).x;
                 control.transform.SetPositionAndRotation(transform.TransformPoint(position), transform.rotation);
-                control.Initialize(sceneController, index);
+                control.Initialize(index);
                 _settingsControls.Add(control);
             }
         }

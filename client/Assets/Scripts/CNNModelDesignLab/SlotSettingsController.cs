@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace ModelDesignScene
 {
@@ -16,11 +18,12 @@ namespace ModelDesignScene
         [SerializeField] private Color _emptyColor = new Color(0.16f, 0.2f, 0.24f);
         [SerializeField] private Color _readyColor = new Color(0.12f, 0.42f, 0.55f);
 
-        private ModelDesignSceneController _owner;
         private MaterialPropertyBlock _properties;
         private int _slotIndex;
 
-        public ModelBlockView Block { get; private set; }
+        public event Action<SlotSettingsController, IXRActivateInteractor> OnSettingsRequested;
+
+        public ModelBlockController Block { get; private set; }
         public Transform PopupAnchor => _popupAnchor;
 
         private void Awake()
@@ -29,14 +32,13 @@ namespace ModelDesignScene
             _interactable.activated.AddListener(HandleActivated);
         }
 
-        public void Initialize(ModelDesignSceneController owner, int slotIndex)
+        public void Initialize(int slotIndex)
         {
-            _owner = owner;
             _slotIndex = slotIndex;
             SetBlock(null);
         }
 
-        public void SetBlock(ModelBlockView block)
+        public void SetBlock(ModelBlockController block)
         {
             Block = block;
             bool occupied = block != null;
@@ -49,9 +51,9 @@ namespace ModelDesignScene
 
         private void HandleActivated(ActivateEventArgs args)
         {
-            if (_owner != null && _owner.isActiveAndEnabled && Block != null)
+            if (isActiveAndEnabled && Block != null)
             {
-                _owner.OpenSlotSettings(this, args.interactorObject);
+                OnSettingsRequested?.Invoke(this, args.interactorObject);
             }
         }
 

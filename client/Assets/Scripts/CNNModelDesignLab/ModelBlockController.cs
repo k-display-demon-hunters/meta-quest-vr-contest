@@ -1,3 +1,4 @@
+using System;
 using ModelDesign;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,7 +9,7 @@ using UnityEngine.XR.Interaction.Toolkit.Filtering;
 
 namespace ModelDesignScene
 {
-    public sealed class ModelBlockView : MonoBehaviour, IXRSelectFilter
+    public sealed class ModelBlockController : MonoBehaviour, IXRSelectFilter
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
@@ -16,9 +17,12 @@ namespace ModelDesignScene
         [SerializeField] private Renderer _body;
         [SerializeField] private Text _label;
 
-        private ModelDesignSceneController _owner;
         private MaterialPropertyBlock _properties;
         private Rigidbody _rigidbody;
+        private bool _interactionEnabled;
+
+        public event Action<ModelBlockController> OnGrabbed;
+        public event Action<ModelBlockController, bool> OnReleased;
 
         public LayerDefinition Layer { get; private set; }
         public bool IsPalette { get; private set; }
@@ -43,11 +47,15 @@ namespace ModelDesignScene
             _grabInteractable.selectExited.AddListener(HandleReleased);
         }
 
-        public void Initialize(ModelDesignSceneController owner, LayerDefinition layer, bool isPalette)
+        public void Initialize(LayerDefinition layer, bool isPalette)
         {
-            _owner = owner;
+            if (Layer != null)
+            {
+                Layer.OnChanged -= RefreshLabel;
+            }
             Layer = layer;
             IsPalette = isPalette;
+            name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
             Layer.OnChanged += RefreshLabel;
             SetColor(_body, GetLayerColor(layer.Type));
             RefreshLabel();
@@ -62,7 +70,12 @@ namespace ModelDesignScene
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
         {
             // Only movable layer blocks can be grabbed; settings belong to the slot controls.
-            return Layer != null && !IsFixed && _owner != null && _owner.isActiveAndEnabled;
+            return Layer != null && !IsFixed && _interactionEnabled;
+        }
+
+        public void SetInteractionEnabled(bool interactionEnabled)
+        {
+            _interactionEnabled = interactionEnabled;
         }
 
         public void SetPose(Vector3 position, Quaternion rotation)
@@ -126,17 +139,17 @@ namespace ModelDesignScene
 
         private void HandleGrabbed(SelectEnterEventArgs args)
         {
-            if (_owner != null && _owner.isActiveAndEnabled)
+            if (_interactionEnabled)
             {
-                _owner.BeginGrab(this);
+                OnGrabbed?.Invoke(this);
             }
         }
 
         private void HandleReleased(SelectExitEventArgs args)
         {
-            if (_owner != null && _owner.isActiveAndEnabled)
+            if (_interactionEnabled)
             {
-                _owner.EndGrab(this, args.isCanceled);
+                OnReleased?.Invoke(this, args.isCanceled);
             }
         }
 

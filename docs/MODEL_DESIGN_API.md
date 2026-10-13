@@ -1,6 +1,8 @@
 # 블록 모델 편집 API
 
-`client/Assets/Scripts/ModelDesign/`, namespace `ModelDesign`.
+`client/Assets/Scripts/CNNModelDesignLab/ModelDesign/`, namespace `ModelDesign`.
+
+씬 전용 폴더 아래에 배치하지만 순수 모델 코드는 `ModelDesign.asmdef`로 Unity 컴포넌트와 분리한다. 어셈블리 이름 `ModelDesign`과 `noEngineReferences: true`를 유지하며 Unity API에 의존하지 않는다.
 
 ```csharp
 using ModelDesign;
@@ -115,15 +117,20 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - 팝업에는 `Delete`와 `Done`이 있다. 기존 `Disconnect` 버튼은 제거했다. 모델에서 빼고 보관하려면 블록을 잡아 벨트 밖에 놓는다.
 - `Delete`는 블록을 삭제하고 점유 슬롯을 비운 뒤 남은 슬롯 순서로 모델을 갱신한다. Input·Output의 삭제는 버튼과 코드 양쪽에서 막는다.
 - 벨트 맨 왼쪽 Input 앞의 `TrainingControls.prefab`에 학습 시작·중지 버튼과 학습중 표시를 함께 배치했다. `학습 시작` 버튼은 `ModelJsonSerializer.TrySerialize`로 현재 슬롯 순서의 모델을 검증하고 JSON으로 변환한다. 블록을 잡고 이동하는 동안에는 시작하지 않는다. 성공하면 `학습중` 문구와 `중지` 버튼으로 바뀌며, 실패하면 시작 버튼을 유지한다.
-- `UNITY_EDITOR` 또는 `DEVELOPMENT_BUILD`에서만 JSON 또는 실패 경로·메시지를 콘솔에 출력한다. 오류 표시 UI와 서버 학습·중지 요청은 아직 연결하지 않았다. `중지` 또는 컨트롤러의 `FinishTraining()`은 시작 상태로 복원한다.
+- `UNITY_EDITOR` 또는 `DEVELOPMENT_BUILD`에서만 JSON 또는 실패 경로·메시지를 콘솔에 출력한다. 오류 표시 UI와 서버 학습·중지 요청은 아직 연결하지 않았다. `중지` 또는 `CNNModelDesignLabManager.FinishTraining()`은 시작 상태로 복원한다.
 
 ### 구성과 외형 교체
 
-- `CNNModelDesignLabManager`: Workspace 수명, 씬 초기화 순서, 배치 변경 후 내부 모델 연결 갱신을 담당한다. 기존 `ModelWorkspace.Connect`/`Disconnect` API를 사용하며 모델 JSON 명세는 변경하지 않는다.
+- `CNNModelDesignLabManager`: Workspace 수명, 씬 초기화·종료 순서, 블록 이동·삭제에 따른 모델 갱신, 학습 시작 검증과 JSON 변환을 조율한다. Controller를 직접 참조하고 각 인스턴스 이벤트를 구독한다. 기존 `ModelWorkspace.Connect`/`Disconnect` API를 사용하며 모델 JSON 명세는 변경하지 않는다.
+- `ModelSupplyController`: 고정 공급소의 기본 블록 생성과 잡아 꺼낸 자리의 보충을 담당한다.
+- `ModelBlockController`: 개별 블록의 XRI 잡기·놓기 입력과 라벨·색상을 담당한다. XRI 선택 필터로 Input·Output의 잡기를 막으며, 본체의 Trigger 설정 이벤트는 사용하지 않는다. 기존 `ModelBlockView`의 역할을 유지하면서 이름을 바꿨다.
 - `ModelConveyorController`: 슬롯 점유, 배치 후보 표시, 위치 판정과 놓을 때의 정렬, 슬롯별 조작기기와 Input 쪽 학습 조작부의 배치를 담당한다.
 - `SlotSettingsController`: 해당 슬롯의 블록 참조, 조작기기의 비활성/활성 표시와 Trigger 입력, 팝업 기준점을 담당한다.
-- `ModelDesignSceneController`: 고정 공급소 블록 보충, 잡기 이벤트 전달, 슬롯 조작기기의 설정 팝업과 학습 UI, 오른손 UI 입력을 담당한다. 오른손 설정은 비활성화 때 복구한다.
-- `ModelBlockView`: 블록 본체의 기존 XRI 잡기 입력과 라벨·색상을 담당한다. XRI 선택 필터로 Input·Output의 잡기를 막으며, 본체의 Trigger 설정 이벤트는 사용하지 않는다.
+- `ModelSettingsController`: 설정 팝업의 대상 블록과 고정 기준점, 열기·닫기와 삭제 요청을 담당한다. 기존 `ModelDesignSceneController`에서 공급·학습·XR 입력을 분리하고 팝업 역할만 남겼다. `BlockSettingsPopup`은 레이어별 설정 항목 표시와 값 편집을 유지한다.
+- `ModelTrainingController`: 학습 시작·중지 버튼 입력 이벤트와 학습 상태 표시를 담당한다.
+- `ModelXRInputController`: 오른손 레이와 UI 입력을 설정하고 조작기기 입력의 유효한 레이 적중 여부를 확인한다. 비활성화할 때 기존 오른손 설정을 복구한다.
+
+Controller는 Manager를 참조하지 않고 자신의 입력이나 요청을 인스턴스 이벤트로 알린다. Manager는 블록을 잡을 때 공급 보충·팝업 닫기·슬롯 비우기를 조율하고, 놓을 때 슬롯 배치 결과를 모델 순서에 반영한다. Singleton, 전역 이벤트 시스템, 새로운 공통 기반 클래스는 도입하지 않는다. `LayerDefinition`, `ModelWorkspace`, 검증·직렬화 클래스의 이름과 API는 그대로 유지한다.
 
 `Assets/Prefabs/CNNModelDesignLab/ModelConveyor.prefab`에는 직사각형 벨트와 8개의 슬롯·설정 조작기기가 미리 배치되어 Play 전에도 보인다. `ModelBlock.prefab`은 포트 없는 직육면체이며, 이름·기본 색상으로 종류를 구분한다. 새 재질은 `Assets/Materials/CNNModelDesignLab/`에 있다.
 

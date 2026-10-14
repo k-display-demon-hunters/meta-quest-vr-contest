@@ -40,7 +40,7 @@ namespace XR
         [SerializeField] private UnityEvent _saveRequested = new UnityEvent();
         [SerializeField] private UnityEvent _exitRequested = new UnityEvent();
 
-        private readonly string[] _itemNames = { "렌즈", "필터", "칩", "센서", "리포트" };
+        private readonly string[] _itemNames = { "아이템 #1", "아이템 #2", "아이템 #3", "아이템 #4", "아이템 #5" };
         private readonly string[] _stageNames =
         {
             "1. 튜토리얼",
@@ -78,6 +78,8 @@ namespace XR
         private Text _saveLabel;
         private bool _movementCaptured;
         private bool _isInteracting;
+        private bool _isAdjustingSlider;
+        private bool _triggerConsumedBySlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
         private float _nextRepeatTime;
@@ -133,23 +135,37 @@ namespace XR
 
         private void Update()
         {
-            if (_xButton.WasPressedThisFrame())
+            if (_trigger.WasPressedThisFrame())
             {
-                GoBack();
+                _triggerConsumedBySlider = _isAdjustingSlider;
             }
-            else if (_yButton.WasPressedThisFrame())
+            if (_trigger.WasReleasedThisFrame())
             {
-                ToggleSettings();
+                if (!_triggerConsumedBySlider)
+                {
+                    SetInteraction(!_isInteracting);
+                }
+                _triggerConsumedBySlider = false;
             }
-            else if (_trigger.WasPressedThisFrame())
+            else if (!_trigger.IsPressed() && _yButton.WasPressedThisFrame())
+            {
+                GoBackOrOpenSettings();
+            }
+            else if (!_trigger.IsPressed() && _xButton.WasPressedThisFrame())
             {
                 if (!_isInteracting)
                 {
                     SetInteraction(true);
                 }
-                else if (ActiveTargets[_focusIndex].Control is Button button)
+                if (ActiveTargets[_focusIndex].Control is Button button)
                 {
                     button.onClick.Invoke();
+                }
+                else if (ActiveTargets[_focusIndex].Control is Slider && !_isAdjustingSlider)
+                {
+                    _isAdjustingSlider = true;
+                    _stickMustCenter = true;
+                    RefreshFocus();
                 }
             }
 
@@ -770,29 +786,29 @@ namespace XR
             _previousMoveInput = null;
         }
 
-        private void GoBack()
+        private void GoBackOrOpenSettings()
         {
-            if (!_isInteracting)
+            if (_isAdjustingSlider)
             {
-                SetInteraction(true);
+                _isAdjustingSlider = false;
+                _stickMustCenter = true;
+                _lastDirection = Vector2.zero;
+                RefreshFocus();
             }
-            else if (_stageMenu.activeSelf)
+            else if (_isInteracting && _stageMenu.activeSelf)
             {
                 ShowStageMenu(false);
             }
-            else if (_settingsOverlay.activeSelf)
-            {
-                ToggleSettings();
-            }
             else
             {
-                SetInteraction(false);
+                ToggleSettings();
             }
         }
 
         private void ResetFocus(int index)
         {
             _focusIndex = Mathf.Clamp(index, 0, ActiveTargets.Count - 1);
+            _isAdjustingSlider = false;
             _stickMustCenter = true;
             _lastDirection = Vector2.zero;
             RefreshFocus();
@@ -814,7 +830,9 @@ namespace XR
             }
             if (_isInteracting)
             {
-                ActiveTargets[_focusIndex].Outline.enabled = true;
+                Outline outline = ActiveTargets[_focusIndex].Outline;
+                outline.effectColor = _isAdjustingSlider ? WarningColor : AccentColor;
+                outline.enabled = true;
             }
         }
 
@@ -823,6 +841,12 @@ namespace XR
             if (stick.magnitude < 0.25f)
             {
                 _stickMustCenter = false;
+                _lastDirection = Vector2.zero;
+                return;
+            }
+            if ((_isAdjustingSlider && !_trigger.IsPressed()) ||
+                (!_isAdjustingSlider && _trigger.IsPressed()))
+            {
                 _lastDirection = Vector2.zero;
                 return;
             }
@@ -840,9 +864,12 @@ namespace XR
             _lastDirection = direction;
             _nextRepeatTime = Time.unscaledTime + (newDirection ? 0.4f : 0.16f);
             List<FocusTarget> targets = ActiveTargets;
-            if (targets[_focusIndex].Control is Slider slider && direction.x != 0f)
+            if (_isAdjustingSlider)
             {
-                slider.value = Mathf.Clamp01(slider.value + direction.x * 0.05f);
+                if (direction.x != 0f && targets[_focusIndex].Control is Slider slider)
+                {
+                    slider.value = Mathf.Clamp01(slider.value + direction.x * 0.05f);
+                }
                 return;
             }
 
@@ -880,6 +907,7 @@ namespace XR
 
         private void OnDisable()
         {
+            _triggerConsumedBySlider = false;
             _xButton?.Disable();
             _yButton?.Disable();
             _trigger?.Disable();

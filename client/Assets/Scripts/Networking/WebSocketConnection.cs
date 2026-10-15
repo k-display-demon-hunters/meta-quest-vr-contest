@@ -10,8 +10,8 @@ namespace Networking
 {
     public sealed class WebSocketConnection : IDisposable
     {
-        // 실제 서버 주소는 이 계층에서만 설정한다.
-        private string _serverUrl = "";
+        // 서버 주소는 이 한 곳에서 변경한다. Quest에서는 localhost 대신 서버 PC의 주소를 사용한다.
+        private string _serverUrl = "ws://localhost:8000/ws";
 
         private const int ReceiveBufferSize = 8192;
         private const int MaxMessageSize = 1024 * 1024;

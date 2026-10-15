@@ -13,9 +13,45 @@ docs 폴더에 있다.
 
 - 프로젝트의 폴더 구조와 기존 파일 배치는 최신 원격 `main`을 기준으로 동일하게 유지한다. 작업 브랜치의 다른 구조나 에이전트의 선호를 기준으로 삼지 않는다.
 - 사용자가 구조 변경 대상과 범위를 명시적으로 요청하지 않는 한 기존 폴더의 이름 변경, 이동, 번호 접두사 추가, 병렬 폴더 생성 등 구조 변경을 절대 수행하지 않는다. 기능 구현·정리·리팩터링·병합 요청만으로 구조 변경을 허가받았다고 해석하지 않는다.
-- Unity 씬은 `client/Assets/Scenes`, 런타임 스크립트는 `client/Assets/Scripts`, 에디터 도구는 `client/Assets/Editor`에 배치한다. 새 파일과 기능별 하위 폴더도 `main`의 기존 분류와 배치 방식을 따른다.
+- Unity 씬은 `client/Assets/Scenes`, 런타임 스크립트는 `client/Assets/Scripts`, 에디터 도구는 `client/Assets/Editor`에 배치한다. 새 파일은 아래 파일 배치 기준을 따르고, 기존 파일의 구조는 명시적으로 합의한 변경 범위 안에서만 수정한다.
 - 작업 브랜치의 구조가 `main`과 다르면 차이를 알리고 `main` 구조로 맞추는 방향으로 합의한다. `main` 구조에 맞추라는 요청은 경로와 배치를 맞추라는 뜻이며, `main`의 코드를 작업 브랜치의 오래된 코드로 덮어쓰라는 뜻이 아니다.
 - 허가된 파일·폴더 이동 시 Unity `.meta`와 GUID를 보존하고 코드, 씬·프리팹, 프로젝트 설정, 문서의 경로 참조를 함께 정리한다. 같은 GUID를 가진 에셋이나 폴더가 두 경로에 중복되지 않도록 확인한다.
+
+## Unity 파일 배치 기준
+
+- `client/Assets`의 상위 폴더는 에셋 종류로 구분하고, 씬 전용 파일은 그 안의 `<씬 이름>` 폴더에 둔다. 예를 들어 `CNNPixelLab.unity` 전용 스크립트는 `Scripts/CNNPixelLab/`, 프리팹은 `Prefabs/CNNPixelLab/`에 둔다.
+- 여러 씬에서 사용하는 공용 스크립트는 `Scripts/Core/`에 둔다. 공용 프리팹·재질·텍스처·메시·셰이더는 각 에셋 종류의 `Common/` 폴더에 둔다.
+- 파일을 새로 만들 때 아래 기준을 따른다. 기존 파일의 이동이나 이름 변경은 사용자가 해당 범위를 요청한 경우에만 수행한다. 한 씬의 모든 종류의 에셋을 별도의 `Assets/<씬 이름>` 폴더에 함께 모으지 않는다.
+
+| 파일·역할 | 배치 위치 (`client/Assets` 기준) |
+|---|---|
+| Unity 씬 (`.unity`) | `Scenes/` |
+| 특정 씬의 런타임 스크립트 | `Scripts/<씬 이름>/` |
+| 여러 씬에서 공유하는 런타임 스크립트 | `Scripts/Core/` |
+| Unity 에디터 전용 도구·씬 구성 도구 | `Editor/` |
+| 프리팹 (`.prefab`) | 씬 전용: `Prefabs/<씬 이름>/`, 공용: `Prefabs/Common/` |
+| 재질 (`.mat`) | 씬 전용: `Materials/<씬 이름>/`, 공용: `Materials/Common/` |
+| 이미지·텍스처 | 씬 전용: `Textures/<씬 이름>/`, 공용: `Textures/Common/` |
+| 메시 에셋·3D 모델 | 씬 전용: `Meshes/<씬 이름>/`, 공용: `Meshes/Common/` |
+| 셰이더 | 씬 전용: `Shaders/<씬 이름>/`, 공용: `Shaders/Common/` |
+| 폰트와 함께 배포해야 하는 라이선스 | `Fonts/` 및 폰트별 하위 폴더 |
+| 렌더링 등 프로젝트 설정 에셋 | `Settings/` |
+| XR·XRI 패키지 설정 에셋 | 기존 `XR/`, `XRI/` 배치 유지 |
+| 허가받아 생성하는 EditMode 테스트 | `Tests/EditMode/<대상 씬 이름>/` 또는 공용 코드 대상의 `Tests/EditMode/Core/` |
+| 외부 제공 에셋 | `TextMesh Pro` 등 기존 제공 폴더 구조 유지 |
+
+- UI도 사용 범위에 따라 배치한다. 특정 씬 전용 UI는 해당 씬 이름 폴더에 두고, 여러 씬에서 쓰는 공용 UI는 스크립트를 `Scripts/Core/`, 프리팹·재질 등은 각 종류의 `Common/`에 둔다.
+- 공용 에셋은 한 원본을 참조한다. 동일한 에셋을 씬별 폴더에 복사해 중복 보관하지 않는다. 현재 한 씬에서만 사용하는 파일은 씬 전용 폴더에 두며, 미래에 재사용할 가능성만으로 공용으로 분류하지 않는다.
+
+## 스크립트의 Manager / Controller 역할
+
+- 씬의 실행 구조는 Manager와 Controller의 역할을 구분하여 구성한다.
+- Manager는 씬 전체의 진행 단계, 시작·종료, 여러 Controller 사이의 동작 순서와 조율을 담당한다. 이름은 관리 대상을 드러내는 `<대상>Manager` 형식으로 작성한다. 예: `CNNPixelLabManager`.
+- Controller는 개별 기능이나 오브젝트의 입력 처리, 동작, 표시 갱신을 담당한다. 이름은 제어 대상을 드러내는 `<대상>Controller` 형식으로 작성한다. 예: `PixelSelectionController`.
+- 씬 전용 Manager와 Controller는 모두 `Scripts/<씬 이름>/`에 둔다. 여러 씬에서 공유하는 Manager와 Controller는 `Scripts/Core/`에 둔다.
+- Manager에 모든 입력·계산·UI 구현을 몰아넣지 않는다. Controller가 담당할 구체적인 동작은 해당 Controller에 두고, 씬 전체 조율은 Manager가 담당한다.
+- 데이터 형식, 계산, 검증, 직렬화처럼 명확한 별도 역할이 있는 클래스는 그 역할에 맞게 이름을 짓는다. 모든 클래스를 Manager나 Controller로 만들거나 빈 역할 클래스를 추가할 필요는 없다.
+- Manager라는 이름이 Singleton이나 전역 상태 사용을 의미하지 않는다. 새로운 전역 상태 관리나 이벤트 시스템 등의 도입은 아래 설계 합의 규칙을 따른다.
 
 ## 작업 범위와 설계 합의
 

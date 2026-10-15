@@ -17,12 +17,16 @@ namespace FactoryIntro
 
         private IntroStage _stage;
         private XROrigin _rig;
+        private FactoryIntroInputController _input;
 
         private void OnEnable()
         {
             _tutorial.OnStepChanged += HandleTutorialStep;
             _tutorial.OnInstructionChanged += HandleInstruction;
             _tutorial.OnCompleted += HandleTutorialCompleted;
+            _presentation.OnSkipRequested += PauseTutorialForSkip;
+            _presentation.OnSkipCancelled += ResumeTutorialAfterSkip;
+            _presentation.OnSkipConfirmed += SkipTutorial;
         }
 
         private void Start()
@@ -35,10 +39,17 @@ namespace FactoryIntro
                 return;
             }
             PlacePlayer(_exteriorStart);
+            _input = GetComponent<FactoryIntroInputController>();
+            if (_input == null)
+            {
+                _input = gameObject.AddComponent<FactoryIntroInputController>();
+            }
+            _input.Bind(_rig);
             _presentation.BindPlayer(_rig);
             _presentation.ResetFactory();
+            _presentation.ShowTutorialChrome(false);
             _stage = IntroStage.Title;
-            _presentation.Show("뭉개진 세상을 구해라!", "세상의 해상도 높이기\n\n오른손 레이로 버튼을 가리키고 Trigger를 눌러 시작하세요.", "Game Start", true);
+            _presentation.Show("뭉개진 세상을 구해라!", "세상의 해상도 높이기\n\n오른손 레이로 버튼을 가리키고 Trigger를 눌러 시작하세요.", "시작하기", true);
         }
 
         public void Continue()
@@ -97,7 +108,10 @@ namespace FactoryIntro
             _stage = IntroStage.Tutorial;
             _presentation.EnterInterior();
             PlacePlayer(_interiorStart);
+            _presentation.ShowTutorialChrome(true);
             _tutorial.BeginTutorial(_rig);
+            XR.LeftHandTablet tablet = _rig.GetComponentInChildren<XR.LeftHandTablet>(true);
+            _presentation.PlayHologramReveal(tablet != null ? tablet.transform : null);
         }
 
         private void PlacePlayer(Transform destination)
@@ -110,6 +124,8 @@ namespace FactoryIntro
 
         private void HandleTutorialStep(TutorialStep step)
         {
+            _input.SetTutorialStep(step);
+            _presentation.SetTutorialProgress(step);
             if (step == TutorialStep.Complete)
             {
                 return;
@@ -128,8 +144,40 @@ namespace FactoryIntro
         private void HandleTutorialCompleted()
         {
             _stage = IntroStage.Ready;
+            _input.SetTutorialStep(TutorialStep.Complete);
+            _presentation.ShowTutorialChrome(false);
             _presentation.HidePractice();
             _presentation.Show("조작 준비 완료", "왼손 스틱으로 이동하고, 오른손 Trigger로 선택하세요.\n물체를 잡을 때는 오른손 Grip을 사용합니다.\n\n이제 공장 탐색을 시작해 보세요.", "공장 탐색 시작", true);
+        }
+
+        private void SkipTutorial()
+        {
+            if (_stage != IntroStage.Tutorial)
+            {
+                return;
+            }
+            _tutorial.StopTutorial();
+            HandleTutorialCompleted();
+        }
+
+        private void PauseTutorialForSkip()
+        {
+            if (_stage != IntroStage.Tutorial)
+            {
+                return;
+            }
+            _tutorial.SetPaused(true);
+            _input.SetTutorialStep(TutorialStep.Selection);
+        }
+
+        private void ResumeTutorialAfterSkip()
+        {
+            if (_stage != IntroStage.Tutorial)
+            {
+                return;
+            }
+            _input.SetTutorialStep(_tutorial.CurrentStep);
+            _tutorial.SetPaused(false);
         }
 
         private IEnumerator EnterFactory()
@@ -146,6 +194,7 @@ namespace FactoryIntro
             }
             // Restore persistent rig input before the next scene configures its controls.
             _presentation.ReleasePlayer();
+            _input.Release();
             AsyncOperation loading = SceneManager.LoadSceneAsync(_nextSceneName, LoadSceneMode.Single);
             if (loading != null)
             {
@@ -153,6 +202,8 @@ namespace FactoryIntro
             }
             else
             {
+                _input.Bind(_rig);
+                _input.SetTutorialStep(TutorialStep.Complete);
                 _presentation.BindPlayer(_rig);
                 _stage = IntroStage.Ready;
                 _presentation.Show("다음 씬을 열지 못했습니다", "다시 시도해 주세요.", "다시 시도", true);
@@ -165,8 +216,12 @@ namespace FactoryIntro
             _tutorial.OnStepChanged -= HandleTutorialStep;
             _tutorial.OnInstructionChanged -= HandleInstruction;
             _tutorial.OnCompleted -= HandleTutorialCompleted;
+            _presentation.OnSkipRequested -= PauseTutorialForSkip;
+            _presentation.OnSkipCancelled -= ResumeTutorialAfterSkip;
+            _presentation.OnSkipConfirmed -= SkipTutorial;
             _tutorial.StopTutorial();
             _presentation.ReleasePlayer();
+            _input?.Release();
         }
     }
 }

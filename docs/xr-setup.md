@@ -8,9 +8,9 @@ OpenXR 1.16.1, XR Plug-in Management 4.5.3, XR Interaction Toolkit 3.3.2를 고�
 
 1. Unity Hub에서 Android Build Support, SDK/NDK Tools, OpenJDK를 설치한다.
 2. `client` 프로젝트를 열고 패키지 설치와 컴파일이 끝날 때까지 기다린다.
-3. 시작 시 저장되지 않은 빈 `Untitled` 씬이면 `Assets/Scenes/QuestMain.unity`가 자동으로 열린다. 기존에 열어 둔 씬이나 저장되지 않은 작업이 있으면 유지한다. 필요할 때 Project 창에서 `QuestMain`을 직접 연다.
+3. 시작 시 저장되지 않은 빈 `Untitled` 씬이면 `Assets/Scenes/FactoryIntro.unity`가 자동으로 열린다. 기존에 열어 둔 씬이나 저장되지 않은 작업이 있으면 유지한다. 콘텐츠를 직접 작업할 때는 Project 창에서 `QuestMain`을 열 수 있다.
 4. Build Profiles에서 Android 기반 Meta Quest 플랫폼으로 전환한다. `Tools > XR > Validate Project`와 `Project Settings > XR Plug-in Management > Project Validation`을 확인한다.
-5. 개발자 모드의 Quest를 USB로 연결하여 Build And Run한다. 빌드 씬은 `QuestMain`이다.
+5. 개발자 모드의 Quest를 USB로 연결하여 Build And Run한다. 빌드의 첫 씬은 `FactoryIntro`이며, 튜토리얼 후 `QuestMain`으로 이동한다.
 
 기본 에디터 Play에는 아래 XR Interaction Simulator가 자동 생성되므로 헤드셋 없이 키보드·마우스로 조작할 수 있다. Standalone의 `Initialize XR on Startup`은 꺼 두어 PC에 OpenXR 런타임이 없어도 초기화를 시도하지 않는다. Android의 자동 초기화는 켜져 있다.
 
@@ -47,11 +47,11 @@ Shift는 왼손의 버튼·스틱 입력을 선택한다. 대괄호는 손의 �
 
 ### 씬 전환과 리그 유지
 
-- 시작 씬 `QuestMain`의 `XRPlayerRig`에 `PersistentXRPlayerRig`를 연결한다. 리그 전체를 `DontDestroyOnLoad`로 유지하므로 씬을 교체하거나 추가 로드해도 카메라, 양손 추적, 이동 입력, 태블릿과 오른손 컨트롤러가 유지된다.
+- 첫 씬 `FactoryIntro`와 탐색 씬 `QuestMain`의 `XRPlayerRig`에는 `PersistentXRPlayerRig`가 연결된다. 리그 전체를 `DontDestroyOnLoad`로 유지하므로 씬을 교체하거나 추가 로드해도 카메라, 양손 추적, 이동 입력, 태블릿과 오른손 컨트롤러가 유지된다.
 - 태블릿의 World Space Canvas도 리그 아래에 있으므로 현재 단계, 인벤토리, 설정 상태가 리그와 함께 유지된다. 후속 UI 프리팹 역시 태블릿의 자식으로 연결한다.
 - 콘텐츠 씬에 독자적인 XR 카메라·AudioListener·리그를 만들지 않는다. 단독 실행을 위해 공통 XRPlayerRig 프리팹을 배치할 수 있으며, 기존 리그가 있을 때는 새 복제본을 먼저 비활성화하고 제거하여 기존 리그를 유지한다.
 - 씬 전환 때 리그 위치를 자동으로 초기화하지 않는다. 씬별 시작 위치로 이동하는 기능은 별도 요구사항으로 결정한다.
-- 콘텐츠 씬을 에디터에서 단독 Play하면 시작 씬의 리그는 생성되지 않는다. 기본적으로 `QuestMain`에서 시작해 콘텐츠 씬으로 전환한다. 단독 작업에 리그가 필요하면 동일 XRPlayerRig 프리팹을 배치할 수 있으며, 앱에서 시작 씬을 거쳐 들어온 경우에는 중복 방지 처리가 적용된다.
+- 콘텐츠 씬을 에디터에서 단독 Play하면 시작 씬의 리그는 생성되지 않는다. 게임은 `FactoryIntro`에서 시작하고 튜토리얼 후 `QuestMain`으로 전환한다. 단독 작업에 리그가 필요하면 동일 XRPlayerRig 프리팹을 배치할 수 있으며, 앱에서 시작 씬을 거쳐 들어온 경우에는 중복 방지 처리가 적용된다.
 - `CNNFeatureMapLab`, `CNNModelDesignLab`, `CNNPixelLab`, `FactoryEnvironment`에는 같은 `Assets/Prefabs/XR/XRPlayerRig.prefab`을 일반 씬 인스턴스로 배치한다. 단독 실행 시 해당 리그를 유지하고, 기존 리그가 있는 상태에서 씬을 로드하면 `PersistentXRPlayerRig`가 새 중복 인스턴스를 비활성화하고 제거한다. 기존 리그의 태블릿 상태와 위치는 유지한다. `CNNModelDesignLab`의 리그는 더 이상 `EditorOnly`가 아니다.
 - 기존 프리팹과 초기 씬 생성 도구 모두 유지 컴포넌트를 포함한다. 리그 유지 기능을 추가한 당시에는 소스·프리팹 참조만 확인했다. 아래 양피지 통합의 컴파일·Play 확인은 2026-10-16에 별도로 수행한 결과다.
 

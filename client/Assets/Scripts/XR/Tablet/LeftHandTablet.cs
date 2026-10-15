@@ -129,6 +129,7 @@ namespace XR
         private Text _detailTitle;
         private Text _detailBody;
         private Image _detailImage;
+        private GameObject _factoryMapView;
         private int _detailReturnFocusIndex;
         private bool _movementCaptured;
         private bool _isInteracting;
@@ -477,15 +478,42 @@ namespace XR
 
         private void BuildMinimap()
         {
-            Image map = CreateGlassPanel(_surfaceRect, "Minimap", 85f, 792f, 317f, 137f);
-            PlaceText(map.transform, "Map Caption", "현재 위치", 112f, 810f, 200f, 34f, 21, FontStyle.Bold, TextColor);
-            PlaceText(map.transform, "North", "N", 354f, 810f, 24f, 34f, 21, FontStyle.Normal, MutedTextColor);
-            PlaceImage(map.transform, "Location Track", 111f, 861f, 267f, 12f, ElevatedColor);
-            PlaceImage(map.transform, "Route", 197f, 861f, 118f, 12f, new Color(0.69f, 0.76f, 0.85f));
-            PlaceImage(map.transform, "User Position", 185f, 855f, 24f, 24f, Color.white).sprite = _blueCircleSprite;
-            PlaceImage(map.transform, "Destination", 304f, 856f, 22f, 22f, new Color(1f, 0.58f, 0.62f)).sprite = _circleSprite;
-            PlaceText(map.transform, "Map Destination", "픽셀 관찰 구역", 164f, 889f, 210f, 29f,
-                18, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleCenter);
+            Button map = PlaceButton(_surfaceRect, "Factory Minimap", "", 85f, 792f, 317f, 137f,
+                ShowFactoryMap, CardColor);
+            map.GetComponent<Image>().sprite = _panelSprite;
+            PlaceText(map.transform, "Map Caption", "현재 위치", 102f, 796f, 230f, 29f, 18, FontStyle.Bold, TextColor);
+            PlaceSymbol(map.transform, "Expand Map", TabletSymbol.Expand, 369f, 802f, 17f, AccentColor);
+            Text status = PlaceText(map.transform, "Current Factory Room", "", 102f, 900f, 230f, 25f,
+                16, FontStyle.Normal, MutedTextColor);
+            PlaceText(map.transform, "North", "N ↑", 342f, 900f, 42f, 25f, 15, FontStyle.Bold, AccentColor,
+                TextAnchor.MiddleRight);
+            Image viewport = PlaceImage(map.transform, "Nearby Factory Map", 99f, 829f, 289f, 70f, CardColor);
+            AddMinimapGraphic(viewport, status, false);
+        }
+
+        private void AddMinimapGraphic(Image viewport, Text status, bool overview)
+        {
+            viewport.gameObject.AddComponent<RectMask2D>();
+            GameObject geometry = new GameObject("Factory Map Geometry", typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(TabletMinimapController));
+            geometry.layer = _canvas.gameObject.layer;
+            geometry.transform.SetParent(viewport.transform, false);
+            RectTransform rect = geometry.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            XROrigin origin = GetComponentInParent<XROrigin>();
+            Transform player = origin != null && origin.Camera != null ? origin.Camera.transform :
+                _canvas.worldCamera != null ? _canvas.worldCamera.transform : null;
+            geometry.GetComponent<TabletMinimapController>().Initialize(this, player, _resolvedFont, status, overview);
+        }
+
+        private void ShowFactoryMap()
+        {
+            ShowDetail("공장 안내도", "", false);
+            _detailBody.gameObject.SetActive(false);
+            _factoryMapView.SetActive(true);
         }
 
         private void BuildInventory()
@@ -789,6 +817,15 @@ namespace XR
             _detailImage = CreateImage(modal.transform, "Detail Image", new Vector2(0f, -8f), new Vector2(700f, 388f), CardColor);
             _detailImage.sprite = _pixelSprites[0];
             _detailImage.type = Image.Type.Simple;
+            Image mapView = CreateImage(modal.transform, "Factory Overview", new Vector2(0f, -5f),
+                new Vector2(700f, 480f), CardColor);
+            _factoryMapView = mapView.gameObject;
+            Text mapStatus = CreateText(mapView.transform, "Factory Map Status", "", new Vector2(0f, 214f),
+                new Vector2(680f, 34f), 20, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleCenter);
+            Image mapViewport = CreateImage(mapView.transform, "Full Factory Map", new Vector2(0f, -18f),
+                new Vector2(700f, 425f), CardColor);
+            AddMinimapGraphic(mapViewport, mapStatus, true);
+            _factoryMapView.SetActive(false);
             Button close = CreateTextButton(modal.transform, "Close Detail", "완료", new Vector2(0f, -280f),
                 new Vector2(700f, 64f), CloseDetail, AccentColor);
             close.GetComponentInChildren<Text>().fontSize = 26;
@@ -1665,6 +1702,8 @@ namespace XR
 
         private void ShowDetail(string title, string body, bool showImage)
         {
+            _factoryMapView.SetActive(false);
+            _detailBody.gameObject.SetActive(true);
             _detailReturnFocusIndex = _focusIndex;
             _detailTitle.text = title;
             _detailBody.text = body;

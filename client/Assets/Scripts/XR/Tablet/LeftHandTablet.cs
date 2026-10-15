@@ -12,7 +12,7 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace XR
 {
-    [DefaultExecutionOrder(-50)]
+    [DefaultExecutionOrder(-400)]
     public sealed class LeftHandTablet : MonoBehaviour
     {
         private const float CanvasWidth = 1554f;
@@ -103,6 +103,7 @@ namespace XR
         private InputAction _xButton;
         private InputAction _yButton;
         private InputAction _trigger;
+        private InputAction _menuButton;
         private InputAction _stick;
         private ContinuousMoveProvider _moveProvider;
         private XRInputValueReader<Vector2> _previousMoveInput;
@@ -128,7 +129,6 @@ namespace XR
         private bool _movementCaptured;
         private bool _isInteracting;
         private bool _isAdjustingSlider;
-        private bool _triggerConsumedBySlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
         private float _nextRepeatTime;
@@ -173,6 +173,8 @@ namespace XR
                 "<XRController>{LeftHand}/secondaryButton");
             _trigger = new InputAction("Tablet Trigger", InputActionType.Button,
                 "<XRController>{LeftHand}/triggerPressed");
+            _menuButton = new InputAction("Tablet Settings", InputActionType.Button,
+                "<XRController>{LeftHand}/menuButton");
             _stick = new InputAction("Tablet Navigation", InputActionType.Value,
                 "<XRController>{LeftHand}/primary2DAxis");
             _moveProvider = GetComponentInParent<ContinuousMoveProvider>();
@@ -187,56 +189,58 @@ namespace XR
             _xButton.Enable();
             _yButton.Enable();
             _trigger.Enable();
+            _menuButton.Enable();
             _stick.Enable();
         }
 
         private void Update()
         {
-            if (_trigger.WasPressedThisFrame())
-            {
-                _triggerConsumedBySlider = _isAdjustingSlider;
-            }
-            if (_trigger.WasReleasedThisFrame())
-            {
-                if (!_triggerConsumedBySlider)
-                {
-                    SetInteraction(!_isInteracting);
-                }
-                _triggerConsumedBySlider = false;
-            }
-            else if (!_trigger.IsPressed() && _yButton.WasPressedThisFrame())
-            {
-                GoBackOrOpenSettings();
-            }
-            else if (!_trigger.IsPressed() && _xButton.WasPressedThisFrame())
+            bool navigating = _trigger.IsPressed();
+            Vector2 stick = _stick.ReadValue<Vector2>();
+            if (navigating)
             {
                 if (!_isInteracting)
                 {
                     SetInteraction(true);
                 }
-                if (ActiveTargets[_focusIndex].Control is Button button)
+                CaptureMovement();
+            }
+            else if (stick.magnitude < 0.25f)
+            {
+                // Do not turn a tablet gesture into walking until the stick returns to neutral.
+                ReleaseMovement();
+            }
+
+            if (_menuButton.WasPressedThisFrame())
+            {
+                ToggleSettings();
+            }
+            else if (_yButton.WasPressedThisFrame())
+            {
+                GoBack();
+            }
+            else if (_xButton.WasPressedThisFrame())
+            {
+                if (!_isInteracting)
+                {
+                    SetInteraction(true);
+                }
+                if (ActiveTargets[_focusIndex].Control is Button button && button.IsInteractable())
                 {
                     button.onClick.Invoke();
                 }
-                else if (ActiveTargets[_focusIndex].Control is Slider && !_isAdjustingSlider)
+                else if (ActiveTargets[_focusIndex].Control is Slider slider && slider.IsInteractable())
                 {
-                    _isAdjustingSlider = true;
+                    _isAdjustingSlider = !_isAdjustingSlider;
                     _stickMustCenter = true;
                     RefreshFocus();
                 }
             }
 
-            Vector2 stick = _stick.ReadValue<Vector2>();
-            if (!_isInteracting)
+            if (navigating && _isInteracting)
             {
-                // Wait for neutral so a navigation gesture cannot turn into walking.
-                if (stick.magnitude < 0.25f)
-                {
-                    ReleaseMovement();
-                }
-                return;
+                Navigate(stick);
             }
-            Navigate(stick);
         }
 
         private void ResolveFont()
@@ -1387,6 +1391,7 @@ namespace XR
                 SetInteraction(true);
             }
             bool open = !_settingsOverlay.activeSelf;
+            _detailOverlay.SetActive(false);
             _stageMenu.SetActive(false);
             SetSettingsVisible(open);
             ResetFocus(open ? 0 : SettingsFocusIndex());
@@ -1544,13 +1549,6 @@ namespace XR
         private void SetInteraction(bool active)
         {
             _isInteracting = active;
-            // Swap only this rig's left movement reader; other interactions keep their inputs.
-            if (active && !_movementCaptured && _moveProvider != null)
-            {
-                _previousMoveInput = _moveProvider.leftHandMoveInput;
-                _moveProvider.leftHandMoveInput = _blockedMoveInput;
-                _movementCaptured = true;
-            }
             if (!active)
             {
                 SetSettingsVisible(false);
@@ -1563,6 +1561,16 @@ namespace XR
             ResetFocus(_selectedItemIndex);
         }
 
+        private void CaptureMovement()
+        {
+            if (!_movementCaptured && _moveProvider != null)
+            {
+                _previousMoveInput = _moveProvider.leftHandMoveInput;
+                _moveProvider.leftHandMoveInput = _blockedMoveInput;
+                _movementCaptured = true;
+            }
+        }
+
         private void ReleaseMovement()
         {
             if (_movementCaptured && _moveProvider != null && _moveProvider.leftHandMoveInput == _blockedMoveInput)
@@ -1573,7 +1581,7 @@ namespace XR
             _previousMoveInput = null;
         }
 
-        private void GoBackOrOpenSettings()
+        private void GoBack()
         {
             if (_detailOverlay.activeSelf)
             {
@@ -1590,9 +1598,13 @@ namespace XR
             {
                 ShowStageMenu(false);
             }
-            else
+            else if (_settingsOverlay.activeSelf)
             {
                 ToggleSettings();
+            }
+            else
+            {
+                SetInteraction(false);
             }
         }
 
@@ -1643,12 +1655,6 @@ namespace XR
             if (stick.magnitude < 0.25f)
             {
                 _stickMustCenter = false;
-                _lastDirection = Vector2.zero;
-                return;
-            }
-            if ((_isAdjustingSlider && !_trigger.IsPressed()) ||
-                (!_isAdjustingSlider && _trigger.IsPressed()))
-            {
                 _lastDirection = Vector2.zero;
                 return;
             }
@@ -1709,10 +1715,10 @@ namespace XR
 
         private void OnDisable()
         {
-            _triggerConsumedBySlider = false;
             _xButton?.Disable();
             _yButton?.Disable();
             _trigger?.Disable();
+            _menuButton?.Disable();
             _stick?.Disable();
             if (_settingsOverlay != null && _stageMenu != null)
             {
@@ -1726,6 +1732,7 @@ namespace XR
             _xButton?.Dispose();
             _yButton?.Dispose();
             _trigger?.Dispose();
+            _menuButton?.Dispose();
             _stick?.Dispose();
             DestroyRuntimeSprite(_roundedSprite);
             DestroyRuntimeSprite(_circleSprite);

@@ -3,10 +3,8 @@ using ModelDesign;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.UI;
@@ -47,11 +45,6 @@ namespace ModelDesignScene
         private MaterialPropertyBlock _lineProperties;
         private Connection _candidate;
         private XRRayInteractor _rightRay;
-        private bool _previousUIInteraction;
-        private bool _previousHoveredActivate;
-        private bool _previousHitClosestOnly;
-        private XRInputButtonReader _previousUIPress;
-        private XRInputButtonReader _uiPress;
         private GameObject _ownedEventSystem;
         private XRUIInputModule _addedUIInputModule;
         private bool _isTraining;
@@ -635,7 +628,7 @@ namespace ModelDesignScene
         {
             foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsSortMode.None))
             {
-                if (ray.handedness == InteractorHandedness.Right && ray.isActiveAndEnabled)
+                if (ray.handedness == InteractorHandedness.Right && ray.gameObject.activeInHierarchy)
                 {
                     _rightRay = ray;
                     break;
@@ -646,21 +639,6 @@ namespace ModelDesignScene
                 Debug.LogWarning("[ModelDesign] Enter this content scene from QuestMain to use its XR player rig.", this);
                 return;
             }
-            _previousUIInteraction = _rightRay.enableUIInteraction;
-            _previousHoveredActivate = _rightRay.allowHoveredActivate;
-            _previousHitClosestOnly = _rightRay.hitClosestOnly;
-            _previousUIPress = _rightRay.uiPressInput;
-            _uiPress = new XRInputButtonReader("Model Design UI", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
-            {
-                inputActionPerformed = new InputAction("Model Design UI Press", InputActionType.Button,
-                    "<XRController>{RightHand}/triggerPressed"),
-                inputActionValue = new InputAction("Model Design UI Value", InputActionType.Value,
-                    "<XRController>{RightHand}/trigger")
-            };
-            _rightRay.uiPressInput = _uiPress;
-            _rightRay.enableUIInteraction = true;
-            _rightRay.allowHoveredActivate = true;
-            _rightRay.hitClosestOnly = true;
         }
 
         private void PrepareUIInput()
@@ -706,20 +684,7 @@ namespace ModelDesignScene
                 // XRI unparents the palette while grabbed; restore scene ownership on shutdown.
                 _paletteRoot.SetParent(transform, true);
             }
-            if (_rightRay != null)
-            {
-                _rightRay.uiPressInput = _previousUIPress;
-                _rightRay.enableUIInteraction = _previousUIInteraction;
-                _rightRay.allowHoveredActivate = _previousHoveredActivate;
-                _rightRay.hitClosestOnly = _previousHitClosestOnly;
-                _rightRay = null;
-            }
-            if (_uiPress != null)
-            {
-                _uiPress.inputActionPerformed.Dispose();
-                _uiPress.inputActionValue.Dispose();
-                _uiPress = null;
-            }
+            _rightRay = null;
             if (_ownedEventSystem != null)
             {
                 Destroy(_ownedEventSystem);

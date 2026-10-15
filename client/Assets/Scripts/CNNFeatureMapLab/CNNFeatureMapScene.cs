@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 namespace CNNFeatureMaps
 {
@@ -15,13 +13,7 @@ namespace CNNFeatureMaps
         private CNNFeatureMapGrabTarget[] _targets;
         private CNNFeatureMapLayer[] _layers;
         private CNNFeatureMapExampleData _data;
-        private CNNFeatureMapGrabTarget _hoverTarget;
-        private InputAction _zoomIn;
-        private InputAction _zoomOut;
-        private InputAction _pixelClick;
-        private InputAction _reset;
-        private Text[] _tabletTexts;
-        private bool[] _tabletTextStates;
+        private CNNFeatureMapGrabTarget _scaleTarget;
         private bool _ready;
         private CNNFeatureMapGuide _guide;
         public bool HasHeldTargets => _heldTargets.Count > 0;
@@ -29,10 +21,6 @@ namespace CNNFeatureMaps
 
         private void Awake()
         {
-            _zoomIn = new InputAction("Enlarge held CNN item", InputActionType.Button, "<XRController>{RightHand}/primaryButton");
-            _zoomOut = new InputAction("Shrink held CNN item", InputActionType.Button, "<XRController>{RightHand}/secondaryButton");
-            _pixelClick = new InputAction("Choose input pixel", InputActionType.Button, "<XRController>{RightHand}/triggerPressed");
-            _reset = new InputAction("Restore CNN layout", InputActionType.Button, "<XRController>{RightHand}/primary2DAxisClick");
             // Prefab parts own their local references; the workspace supplies session context.
             _nodes = GetComponentsInChildren<CNNFeatureMapNode>(true);
             _targets = GetComponentsInChildren<CNNFeatureMapGrabTarget>(true);
@@ -51,14 +39,6 @@ namespace CNNFeatureMaps
             }
         }
 
-        private void OnEnable()
-        {
-            _zoomIn.Enable();
-            _zoomOut.Enable();
-            _pixelClick.Enable();
-            _reset.Enable();
-        }
-
         private void Start()
         {
             if (_inputImage == null || !_inputImage.isReadable || _inputImage.width != 8 || _inputImage.height != 8)
@@ -70,18 +50,6 @@ namespace CNNFeatureMaps
             _ready = true;
             _guide = GetComponent<CNNFeatureMapGuide>();
             RefreshAppearance(false);
-            // Hide existing tablet words only while this content scene is active.
-            XR.LeftHandTablet tablet = Object.FindFirstObjectByType<XR.LeftHandTablet>();
-            if (tablet != null)
-            {
-                _tabletTexts = tablet.GetComponentsInChildren<Text>(true);
-                _tabletTextStates = new bool[_tabletTexts.Length];
-                for (int index = 0; index < _tabletTexts.Length; index++)
-                {
-                    _tabletTextStates[index] = _tabletTexts[index].enabled;
-                    _tabletTexts[index].enabled = false;
-                }
-            }
             if (_guide != null)
             {
                 _guide.Initialize(this, _nodes);
@@ -91,35 +59,6 @@ namespace CNNFeatureMaps
         public void RefreshLearningAppearance()
         {
             RefreshAppearance(false);
-        }
-
-        private void Update()
-        {
-            if (!_ready)
-            {
-                return;
-            }
-            if (_heldTargets.Count > 0)
-            {
-                CNNFeatureMapGrabTarget target = _heldTargets[_heldTargets.Count - 1];
-                float direction = (_zoomIn.IsPressed() ? 1f : 0f) - (_zoomOut.IsPressed() ? 1f : 0f);
-                if (direction != 0f)
-                {
-                    target.ScaleBy(Mathf.Exp(direction * Time.deltaTime));
-                }
-            }
-            if (_pixelClick.WasPressedThisFrame() && _hoverTarget != null)
-            {
-                CNNFeatureMapNode node = _hoverTarget.GetComponent<CNNFeatureMapNode>();
-                if (node != null)
-                {
-                    node.SelectPixel();
-                }
-            }
-            if (_reset.WasPressedThisFrame())
-            {
-                ResetLayout();
-            }
         }
 
         public void SelectPixel(int row, int column)
@@ -168,18 +107,30 @@ namespace CNNFeatureMaps
             }
         }
 
-        public void ReleaseTarget(CNNFeatureMapGrabTarget target) => _heldTargets.Remove(target);
-
-        public void SetHoverTarget(CNNFeatureMapGrabTarget target, bool hovering)
+        public void ReleaseTarget(CNNFeatureMapGrabTarget target)
         {
-            if (hovering)
+            if (_heldTargets.Remove(target))
             {
-                _hoverTarget = target;
+                SelectScaleTarget(target);
             }
-            else if (_hoverTarget == target)
+        }
+
+        public void SelectScaleTarget(CNNFeatureMapGrabTarget target)
+        {
+            if (target.CanScale)
             {
-                _hoverTarget = null;
+                _scaleTarget = target;
             }
+        }
+
+        public bool ScaleSelectedTarget(float multiplier)
+        {
+            if (_scaleTarget == null || !_scaleTarget.isActiveAndEnabled || HasHeldTargets)
+            {
+                return false;
+            }
+            _scaleTarget.ScaleBy(multiplier);
+            return true;
         }
 
         public void ResetLayout()
@@ -228,32 +179,5 @@ namespace CNNFeatureMaps
                 _outputs[index].SetPropertyBlock(properties);
             }
         }
-
-        private void OnDisable()
-        {
-            _zoomIn.Disable();
-            _zoomOut.Disable();
-            _pixelClick.Disable();
-            _reset.Disable();
-        }
-
-        private void OnDestroy()
-        {
-            if (_tabletTexts != null)
-            {
-                for (int index = 0; index < _tabletTexts.Length; index++)
-                {
-                    if (_tabletTexts[index] != null)
-                    {
-                        _tabletTexts[index].enabled = _tabletTextStates[index];
-                    }
-                }
-            }
-            _zoomIn.Dispose();
-            _zoomOut.Dispose();
-            _pixelClick.Dispose();
-            _reset.Dispose();
-        }
     }
 }
-

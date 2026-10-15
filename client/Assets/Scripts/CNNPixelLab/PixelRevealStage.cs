@@ -65,7 +65,7 @@ namespace UI
                 _clickTarget = _board.gameObject.AddComponent<XRSimpleInteractable>();
                 _clickTarget.colliders.Clear();
                 _clickTarget.colliders.Add(_clickCollider);
-                _clickTarget.selectEntered.AddListener(HandleImageSelected);
+                _clickTarget.activated.AddListener(HandleImageSelected);
                 _clickTarget.enabled = false;
                 _initialized = true;
             }
@@ -117,7 +117,7 @@ namespace UI
             _clickCollider.enabled = true;
             _clickTarget.enabled = true;
             Phase = RevealPhase.AwaitingClick;
-            _instruction.text = "확대된 이미지를 선택하세요\n오른손: 이미지를 가리키고 Grip을 누르세요";
+            _instruction.text = "확대된 이미지를 선택하세요\n오른손: 이미지를 가리키고 Trigger를 누르세요";
         }
 
         private IEnumerator RevealColumns()
@@ -243,7 +243,7 @@ namespace UI
             return rect;
         }
 
-        private void HandleImageSelected(SelectEnterEventArgs args)
+        private void HandleImageSelected(ActivateEventArgs args)
         {
             RevealPixels();
         }

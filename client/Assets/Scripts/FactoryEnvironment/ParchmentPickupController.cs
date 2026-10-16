@@ -1,9 +1,9 @@
+using Tablet;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using XR;
 
 namespace Education
 {
@@ -20,7 +20,7 @@ namespace Education
         [SerializeField] private Light _glowLight;
 
         private XRSimpleInteractable _interactable;
-        private LeftHandTablet _tablet;
+        private TabletManager _tablet;
         private Vector3 _restPosition;
         private Color _paperColor;
         private bool _hasSearchedForTablet;
@@ -80,7 +80,7 @@ namespace Education
                 XROrigin rig = interactor.GetComponentInParent<XROrigin>();
                 if (rig != null)
                 {
-                    LeftHandTablet rigTablet = rig.GetComponentInChildren<LeftHandTablet>(true);
+                    TabletManager rigTablet = rig.GetComponentInChildren<TabletManager>(true);
                     if (rigTablet != null)
                     {
                         _tablet = rigTablet;
@@ -92,7 +92,7 @@ namespace Education
             if (_tablet == null && !_hasSearchedForTablet)
             {
                 _hasSearchedForTablet = true;
-                _tablet = FindFirstObjectByType<LeftHandTablet>();
+                _tablet = FindFirstObjectByType<TabletManager>();
             }
         }
 

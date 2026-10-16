@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace XR
+namespace Tablet
 {
     [DisallowMultipleComponent]
     public sealed class TabletMinimapController : MaskableGraphic
@@ -24,7 +24,7 @@ namespace XR
         private readonly List<ParchmentPickupController> _parchments = new List<ParchmentPickupController>();
         private readonly List<Text> _parchmentLabels = new List<Text>();
         private readonly List<Text> _roomLabels = new List<Text>();
-        private LeftHandTablet _tablet;
+        private TabletManager _tablet;
         private Transform _player;
         private Font _font;
         private Text _status;
@@ -49,7 +49,7 @@ namespace XR
             }
         }
 
-        public void Initialize(LeftHandTablet tablet, Transform player, Font font, Text status, bool overview)
+        public void Initialize(TabletManager tablet, Transform player, Font font, Text status, bool overview)
         {
             _tablet = tablet;
             _player = player;

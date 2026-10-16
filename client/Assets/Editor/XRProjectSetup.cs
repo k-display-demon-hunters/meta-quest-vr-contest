@@ -1,3 +1,4 @@
+using Tablet;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -322,7 +323,7 @@ namespace XR.Editor
             tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
             CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.30f, 0.205f, 0.014f), tabletBody);
             Text message = CreateTabletCanvas(tablet.transform);
-            LeftHandTablet display = tablet.AddComponent<LeftHandTablet>();
+            TabletManager display = tablet.AddComponent<TabletManager>();
             SerializedObject serializedDisplay = new SerializedObject(display);
             serializedDisplay.FindProperty("_message").objectReferenceValue = message;
             serializedDisplay.FindProperty("_font").objectReferenceValue =
@@ -493,7 +494,7 @@ namespace XR.Editor
                 prefab.GetComponentsInChildren<Camera>(true).Length != 1 ||
                 prefab.GetComponentsInChildren<XRRayInteractor>(true).Length != 2 ||
                 prefab.GetComponentsInChildren<TrackedPoseDriver>(true).Length != 5 ||
-                prefab.GetComponentInChildren<LeftHandTablet>(true) == null)
+                prefab.GetComponentInChildren<TabletManager>(true) == null)
             {
                 throw new BuildFailedException("XR rig camera/controller references are incomplete.");
             }

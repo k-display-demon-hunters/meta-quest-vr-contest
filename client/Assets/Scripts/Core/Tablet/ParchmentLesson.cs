@@ -1,4 +1,4 @@
-namespace Education
+namespace Tablet
 {
     /// <summary>
     /// The five employee training documents collected in the factory.

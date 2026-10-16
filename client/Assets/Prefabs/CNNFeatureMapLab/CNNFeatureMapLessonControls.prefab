@@ -1725,7 +1725,7 @@ TextMesh:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 800000277}
   serializedVersion: 3
-  m_Text: "VR: Grip: 잡기 / A·B: 크기 / 층 손잡이를 잡고 Trigger: 펼치기"
+  m_Text: "Trigger: 클릭 / Grip: 잡고 시선으로 이동 / 크기: 확대·축소 버튼 / A: 정면 / B: 레이저"
   m_OffsetZ: 0
   m_CharacterSize: 0.1
   m_LineSpacing: 1

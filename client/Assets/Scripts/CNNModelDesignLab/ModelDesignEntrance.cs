@@ -15,10 +15,10 @@ namespace ModelDesignScene
 
         private void OnEnable()
         {
-            _interactable.selectEntered.AddListener(HandleSelected);
+            _interactable.activated.AddListener(HandleSelected);
         }
 
-        private void HandleSelected(SelectEnterEventArgs args)
+        private void HandleSelected(ActivateEventArgs args)
         {
             if (!_isLoading)
             {
@@ -46,7 +46,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
-            _interactable.selectEntered.RemoveListener(HandleSelected);
+            _interactable.activated.RemoveListener(HandleSelected);
             _isLoading = false;
         }
     }

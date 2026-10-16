@@ -28,6 +28,10 @@ namespace XR
             _instance = this;
             transform.SetParent(null, true);
             DontDestroyOnLoad(gameObject);
+            if (GetComponent<XRPlayerInputController>() == null)
+            {
+                gameObject.AddComponent<XRPlayerInputController>();
+            }
         }
 
         private void OnDestroy()

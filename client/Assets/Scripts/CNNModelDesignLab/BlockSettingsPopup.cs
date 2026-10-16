@@ -16,7 +16,6 @@ namespace ModelDesignScene
         [SerializeField] private Text _title;
         [SerializeField] private Text _summary;
         [SerializeField] private Button _closeButton;
-        [SerializeField] private Button _disconnectButton;
         [SerializeField] private Button _deleteButton;
 
         [Header("Settings")]
@@ -30,7 +29,6 @@ namespace ModelDesignScene
         private LayerDefinition _layer;
         private bool _isConfigured;
 
-        public event Action OnDisconnectRequested;
         public event Action OnDeleteRequested;
 
         private void Awake()
@@ -43,7 +41,6 @@ namespace ModelDesignScene
             }
 
             _closeButton.onClick.AddListener(Hide);
-            _disconnectButton.onClick.AddListener(HandleDisconnectClicked);
             _deleteButton.onClick.AddListener(HandleDeleteClicked);
             _previousActivation.onClick.AddListener(HandlePreviousActivationClicked);
             _nextActivation.onClick.AddListener(HandleNextActivationClicked);
@@ -53,7 +50,7 @@ namespace ModelDesignScene
             }
         }
 
-        public void Show(LayerDefinition layer, Vector3 position, Quaternion rotation, bool canDisconnect)
+        public void Show(LayerDefinition layer, Vector3 position, Quaternion rotation)
         {
             if (layer == null)
             {
@@ -73,7 +70,6 @@ namespace ModelDesignScene
             _layer = layer;
             _layer.OnChanged += Refresh;
             transform.SetPositionAndRotation(position, rotation);
-            _disconnectButton.interactable = canDisconnect;
             Refresh();
         }
 
@@ -86,7 +82,7 @@ namespace ModelDesignScene
         private bool HasRequiredReferences()
         {
             if (_title == null || _summary == null || _closeButton == null ||
-                _disconnectButton == null || _deleteButton == null ||
+                _deleteButton == null ||
                 _activationRoot == null || _activationValue == null ||
                 _previousActivation == null || _nextActivation == null ||
                 _numberRows == null || _numberRows.Length != NumberRowCount)
@@ -226,14 +222,6 @@ namespace ModelDesignScene
             }
         }
 
-        private void HandleDisconnectClicked()
-        {
-            if (_layer != null && _disconnectButton.interactable)
-            {
-                OnDisconnectRequested?.Invoke();
-            }
-        }
-
         private void HandleDeleteClicked()
         {
             if (_layer != null && _layer.Type != LayerType.Input && _layer.Type != LayerType.Output)
@@ -265,7 +253,6 @@ namespace ModelDesignScene
             }
 
             _closeButton.onClick.RemoveListener(Hide);
-            _disconnectButton.onClick.RemoveListener(HandleDisconnectClicked);
             _deleteButton.onClick.RemoveListener(HandleDeleteClicked);
             _previousActivation.onClick.RemoveListener(HandlePreviousActivationClicked);
             _nextActivation.onClick.RemoveListener(HandleNextActivationClicked);

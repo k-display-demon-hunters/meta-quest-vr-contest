@@ -4,7 +4,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace CNNFeatureMaps
 {
-    public enum CNNFeatureMapAction { Previous, Next, Scan, Filter, Spread, Restore }
+    public enum CNNFeatureMapAction { Previous, Next, Scan, Filter, Spread, Restore, Enlarge, Shrink }
 
     [RequireComponent(typeof(BoxCollider))]
     public sealed class CNNFeatureMapButton : MonoBehaviour
@@ -32,7 +32,6 @@ namespace CNNFeatureMaps
 
         private void OnEnable()
         {
-            _interactable.selectEntered.AddListener(HandleSelect);
             _interactable.activated.AddListener(HandleActivate);
         }
 
@@ -46,7 +45,6 @@ namespace CNNFeatureMaps
 
         public void Press()
         {
-            // Grip selection and trigger activation can arrive together from the same hand.
             if (!_available || Time.unscaledTime - _lastPress < .35f || _guide == null)
             {
                 return;
@@ -55,12 +53,10 @@ namespace CNNFeatureMaps
             _guide.Perform(_action);
         }
 
-        private void HandleSelect(SelectEnterEventArgs args) => Press();
         private void HandleActivate(ActivateEventArgs args) => Press();
 
         private void OnDisable()
         {
-            _interactable.selectEntered.RemoveListener(HandleSelect);
             _interactable.activated.RemoveListener(HandleActivate);
         }
     }

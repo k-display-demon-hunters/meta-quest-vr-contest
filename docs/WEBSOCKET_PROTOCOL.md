@@ -217,7 +217,7 @@ Unity 메인 스레드에서 `new ModelProtocolClient()`로 생성한다. 외부
 생성자 내부에서 GameObject와 `WebSocketClient` 컴포넌트를 만들고, 수신·연결 종료·연결 오류 이벤트를 구독한다.
 연결은 `ConnectAsync()`로 명시적으로 시작한다. 요청마다 같은 객체를 사용한다.
 서버 주소는 `WebSocketConnection`의 `_serverUrl`에서만 설정한다. `WebSocketClient`, `ModelProtocolClient`와 그 호출자는 주소를 전달하지 않는다.
-현재 주소는 미설정 상태이며, 실제 연결 전에 `_serverUrl`에 서버 주소를 지정해야 한다.
+개발 기본 주소는 `ws://localhost:8000/ws`다. 주소를 바꿀 때는 `WebSocketConnection.cs` 맨 위의 `_serverUrl` 한 곳을 수정한다. 환경 변수나 `.env` 파일을 읽지 않는다. Quest 등 다른 기기에서는 `localhost` 대신 서버 PC의 LAN 주소를 사용한다.
 내부 `WebSocketClient.Update()`에서 수신 이벤트를 메인 스레드로 전달한다.
 사용하는 쪽은 내부 컴포넌트를 직접 다루지 않고 `ModelProtocolClient`의 메서드와 이벤트를 사용한다.
 사용이 끝나면 소유한 코드의 `OnDestroy()` 등에서 `Dispose()`를 호출해 내부 GameObject와 소켓을 정리한다.

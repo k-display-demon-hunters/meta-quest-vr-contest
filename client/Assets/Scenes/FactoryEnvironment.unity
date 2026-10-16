@@ -444,6 +444,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 200000001}
+  - component: {fileID: 210000002}
   m_Layer: 0
   m_Name: Factory Environment
   m_TagString: Untagged
@@ -111761,3 +111762,20 @@ SceneRoots:
   m_Roots:
   - {fileID: 200000001}
   - {fileID: 1261928859}
+--- !u!114 &210000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e641be625f549848b043e02e42be9eb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _contentAnchors:
+  - {fileID: 200006301}
+  - {fileID: 200008031}
+  - {fileID: 200010111}
+  _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}

@@ -122,6 +122,7 @@ namespace UI
 
         private void CompleteExercise(int[] sums)
         {
+            _lab.MarkConvolutionCompleted();
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(true);
             _combine.gameObject.SetActive(false);

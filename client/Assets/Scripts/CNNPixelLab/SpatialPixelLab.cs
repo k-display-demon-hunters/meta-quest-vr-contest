@@ -50,6 +50,9 @@ namespace UI
 
         public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
         public bool HasSelection => _hasSelection;
+        public bool ConvolutionCompleted { get; private set; }
+        public void MarkConvolutionCompleted() { ConvolutionCompleted = true; }
+        public void RebaseDock(Vector3 offset) { _dockPosition += offset; }
         public Vector2Int SelectedPixel => _selected;
 
 #if UNITY_EDITOR
@@ -217,6 +220,7 @@ namespace UI
         public void ResetLab()
         {
             if (_filter.isSelected) { return; }
+            ConvolutionCompleted = false;
             CloseDetails();
             _isRevealStage = false;
             if (_revealStage != null) { _revealStage.ResetStage(); }

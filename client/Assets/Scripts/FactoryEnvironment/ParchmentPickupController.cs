@@ -26,6 +26,8 @@ namespace Education
         private bool _hasSearchedForTablet;
         private bool _isCollected;
 
+        public int LessonIndex => _lessonIndex;
+
         private void Awake()
         {
             _interactable = GetComponent<XRSimpleInteractable>();

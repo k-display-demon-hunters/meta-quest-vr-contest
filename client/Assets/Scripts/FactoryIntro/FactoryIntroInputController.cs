@@ -1,3 +1,4 @@
+using Tablet;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -16,7 +17,7 @@ namespace FactoryIntro
             "Factory Intro Grip Lock", inputSourceMode: XRInputButtonReader.InputSourceMode.Unused);
 
         private ContinuousMoveProvider _moveProvider;
-        private LeftHandTablet _tablet;
+        private TabletManager _tablet;
         private XRPlayerInputController _playerInput;
         private XRRayInteractor _rightRay;
         private XRInteractorLineVisual _lineVisual;
@@ -41,7 +42,7 @@ namespace FactoryIntro
             }
 
             _moveProvider = rig.GetComponentInChildren<ContinuousMoveProvider>(true);
-            _tablet = rig.GetComponentInChildren<LeftHandTablet>(true);
+            _tablet = rig.GetComponentInChildren<TabletManager>(true);
             _playerInput = rig.GetComponentInChildren<XRPlayerInputController>(true);
             _playerInput?.EnsureRayReady();
             foreach (XRRayInteractor ray in rig.GetComponentsInChildren<XRRayInteractor>(true))

@@ -1,3 +1,4 @@
+using Tablet;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,8 +37,9 @@ namespace XR.Editor
     public static class XRProjectSetup
     {
         private const string ScenePath = "Assets/Scenes/QuestMain.unity";
+        private const string StartupScenePath = "Assets/Scenes/FactoryIntro.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string StartupSceneScheduledKey = "XR.QuestMainStartupSceneScheduled";
+        private const string StartupSceneScheduledKey = "XR.FactoryIntroStartupSceneScheduled";
 
         [InitializeOnLoadMethod]
         private static void ScheduleStartupScene()
@@ -60,7 +62,7 @@ namespace XR.Editor
                 return;
             }
             if (EditorApplication.isPlayingOrWillChangePlaymode || SceneManager.sceneCount != 1 ||
-                !File.Exists(ScenePath))
+                !File.Exists(StartupScenePath))
             {
                 return;
             }
@@ -72,7 +74,7 @@ namespace XR.Editor
                 return;
             }
 
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(StartupScenePath, OpenSceneMode.Single);
         }
 
         [MenuItem("Tools/XR/Configure Project")]
@@ -289,13 +291,8 @@ namespace XR.Editor
             ray.raycastTriggerInteraction = QueryTriggerInteraction.Collide;
             if (handedness == InteractorHandedness.Right)
             {
-                ray.translateManipulationInput = new XRInputValueReader<Vector2>("Right Object Distance",
-                    XRInputValueReader.InputSourceMode.InputAction)
-                {
-                    inputAction = new InputAction("Right Object Distance", InputActionType.Value,
-                        "<XRController>{RightHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)",
-                        expectedControlType: "Vector2")
-                };
+                ray.manipulateAttachTransform = false;
+                ray.allowHoveredActivate = true;
             }
             ray.selectInput = CreateButton(hand + " Select", device + "/gripPressed", device + "/grip");
             ray.activateInput = CreateButton(hand + " Activate", device + "/triggerPressed", device + "/trigger");
@@ -326,7 +323,7 @@ namespace XR.Editor
             tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
             CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.30f, 0.205f, 0.014f), tabletBody);
             Text message = CreateTabletCanvas(tablet.transform);
-            LeftHandTablet display = tablet.AddComponent<LeftHandTablet>();
+            TabletManager display = tablet.AddComponent<TabletManager>();
             SerializedObject serializedDisplay = new SerializedObject(display);
             serializedDisplay.FindProperty("_message").objectReferenceValue = message;
             serializedDisplay.FindProperty("_font").objectReferenceValue =
@@ -497,7 +494,7 @@ namespace XR.Editor
                 prefab.GetComponentsInChildren<Camera>(true).Length != 1 ||
                 prefab.GetComponentsInChildren<XRRayInteractor>(true).Length != 2 ||
                 prefab.GetComponentsInChildren<TrackedPoseDriver>(true).Length != 5 ||
-                prefab.GetComponentInChildren<LeftHandTablet>(true) == null)
+                prefab.GetComponentInChildren<TabletManager>(true) == null)
             {
                 throw new BuildFailedException("XR rig camera/controller references are incomplete.");
             }

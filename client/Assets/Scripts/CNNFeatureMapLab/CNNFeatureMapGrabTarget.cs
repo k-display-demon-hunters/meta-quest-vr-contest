@@ -27,6 +27,7 @@ namespace CNNFeatureMaps
 
         public CNNFeatureMapGrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
+        public bool CanScale => !_isFilter;
         public bool canProcess => isActiveAndEnabled;
 
         public void Initialize(CNNFeatureMapScene scene)
@@ -64,8 +65,6 @@ namespace CNNFeatureMaps
         {
             _grab.selectEntered.AddListener(HandleSelect);
             _grab.selectExited.AddListener(HandleRelease);
-            _grab.hoverEntered.AddListener(HandleHover);
-            _grab.hoverExited.AddListener(HandleHoverExit);
             _grab.activated.AddListener(HandleActivate);
         }
 
@@ -124,25 +123,27 @@ namespace CNNFeatureMaps
             if (_node != null)
             {
                 _node.Extract();
-                _node.SelectPixel();
             }
         }
 
         private void HandleSelect(SelectEnterEventArgs args) => BeginInteraction();
         private void HandleRelease(SelectExitEventArgs args) => _scene.ReleaseTarget(this);
-        private void HandleHover(HoverEnterEventArgs args) => _scene.SetHoverTarget(this, true);
-        private void HandleHoverExit(HoverExitEventArgs args) => _scene.SetHoverTarget(this, false);
-        private void HandleActivate(ActivateEventArgs args) => ToggleSpread();
+        private void HandleActivate(ActivateEventArgs args)
+        {
+            _scene.SelectScaleTarget(this);
+            if (_node != null)
+            {
+                _node.SelectPixel();
+            }
+            ToggleSpread();
+        }
 
         private void OnDisable()
         {
             _grab.selectEntered.RemoveListener(HandleSelect);
             _grab.selectExited.RemoveListener(HandleRelease);
-            _grab.hoverEntered.RemoveListener(HandleHover);
-            _grab.hoverExited.RemoveListener(HandleHoverExit);
             _grab.activated.RemoveListener(HandleActivate);
             _scene.ReleaseTarget(this);
-            _scene.SetHoverTarget(this, false);
         }
     }
 }

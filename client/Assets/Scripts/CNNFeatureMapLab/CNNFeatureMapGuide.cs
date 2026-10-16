@@ -90,8 +90,17 @@ namespace CNNFeatureMaps
             for (int index = 0; index < _buttons.Length; index++)
             {
                 _buttons[index].Configure(this, (CNNFeatureMapAction)index);
-                SetText(_buttonLabels[index], _buttonLabels[index].text, .31f, .042f);
+                Vector3 position = _buttons[index].transform.localPosition;
+                position.x = -.69f + index * .34f;
+                _buttons[index].transform.localPosition = position;
+                _buttons[index].transform.localScale = new Vector3(.3f, .12f, .04f);
+                Vector3 labelPosition = _buttonLabels[index].transform.localPosition;
+                labelPosition.x = position.x;
+                _buttonLabels[index].transform.localPosition = labelPosition;
+                SetText(_buttonLabels[index], _buttonLabels[index].text, .27f, .042f);
             }
+            CreateSizeButton("확대", CNNFeatureMapAction.Enlarge, 6);
+            CreateSizeButton("축소", CNNFeatureMapAction.Shrink, 7);
             SetText(_help, _help.text, 2.8f, .08f);
             SetText(_padding, _padding.text, .68f, .07f);
             SetText(_inputCaption, _inputCaption.text, .65f, .06f);
@@ -103,6 +112,29 @@ namespace CNNFeatureMaps
             {
                 SetText(label, label.text, .18f, .12f);
             }
+        }
+
+        private void CreateSizeButton(string label, CNNFeatureMapAction action, int index)
+        {
+            Transform parent = _buttons[0].transform.parent;
+            Vector3 position = _buttons[0].transform.localPosition;
+            position.x = -.69f + index * .34f;
+            GameObject buttonObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            buttonObject.name = label;
+            buttonObject.transform.SetParent(parent, false);
+            buttonObject.transform.localPosition = position;
+            buttonObject.transform.localRotation = _buttons[0].transform.localRotation;
+            buttonObject.transform.localScale = _buttons[0].transform.localScale;
+            buttonObject.GetComponent<Renderer>().sharedMaterial = _buttons[0].GetComponent<Renderer>().sharedMaterial;
+            CNNFeatureMapButton button = buttonObject.AddComponent<CNNFeatureMapButton>();
+            button.Configure(this, action);
+            button.SetAvailable(true);
+
+            TextMesh text = Instantiate(_buttonLabels[0], parent);
+            text.name = label + " label";
+            position.z = _buttonLabels[0].transform.localPosition.z;
+            text.transform.localPosition = position;
+            SetText(text, label, .27f, .042f);
         }
 
         private void CreateConnection()
@@ -322,8 +354,8 @@ namespace CNNFeatureMaps
             _buttons[3].SetAvailable(_step < 2);
             _buttons[4].SetAvailable(_step > 0);
             _buttons[5].SetAvailable(true);
-            SetText(_buttonLabels[4], "펼치기 " + (_spreadLayer + 1), .31f, .042f);
-            SetText(_buttonLabels[2], _scanning ? "멈추기" : "자동 이동", .31f, .042f);
+            SetText(_buttonLabels[4], "펼치기 " + (_spreadLayer + 1), .27f, .042f);
+            SetText(_buttonLabels[2], _scanning ? "멈추기" : "자동 이동", .27f, .042f);
         }
 
         public void Perform(CNNFeatureMapAction action)
@@ -374,6 +406,14 @@ namespace CNNFeatureMaps
                     _editCount = 0;
                     _scene.Data.RestoreInput(_originalImage);
                     _scene.ResetLayout();
+                    break;
+                case CNNFeatureMapAction.Enlarge:
+                case CNNFeatureMapAction.Shrink:
+                    float multiplier = action == CNNFeatureMapAction.Enlarge ? 1.2f : 1f / 1.2f;
+                    if (!_scene.ScaleSelectedTarget(multiplier))
+                    {
+                        SetText(_readout, "뉴런·맵·층을 Trigger로 선택하거나 잡았다 놓은 뒤 확대·축소를 누르세요.", 2.8f, .11f);
+                    }
                     break;
             }
         }

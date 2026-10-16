@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.UI;
@@ -44,16 +42,41 @@ namespace UI
         private Vector2Int _preview;
         private XRRayInteractor _rayInteractor;
         private bool _isRevealStage;
-        private XRRayInteractor _rightRay;
-        private XRInputButtonReader _previousUIPress;
-        private XRInputButtonReader _uiPress;
-        private bool _previousUIInteraction;
         private GameObject _ownedEventSystem;
         private XRUIInputModule _addedUIInputModule;
         private bool _initialized;
+        private bool _backgroundHidden;
+        private readonly bool[] _backgroundStates = new bool[3];
 
+        public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
         public bool HasSelection => _hasSelection;
         public Vector2Int SelectedPixel => _selected;
+
+#if UNITY_EDITOR
+        public bool EditorDetailsVisible => _detail.activeSelf;
+        public Vector3 EditorPreviewFocus => _detail.activeSelf ? _detail.transform.position + Vector3.right * 0.35f : _board.position;
+
+        public bool EditorCanDragFilter(XRGrabInteractable target)
+        {
+            return target == _filter && !_isRevealStage && !_detail.activeSelf;
+        }
+
+        public void EditorDragFilter(Ray ray)
+        {
+            Plane plane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
+            if (!plane.Raycast(ray, out float distance)) { return; }
+            _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
+            Rigidbody body = _filter.GetComponent<Rigidbody>();
+            body.position = _filter.transform.position;
+            body.rotation = _filter.transform.rotation;
+            UpdatePreview();
+        }
+
+        public void EditorReleaseFilter()
+        {
+            _snapPending = true;
+        }
+#endif
 
         private void Awake()
         {
@@ -117,26 +140,6 @@ namespace UI
             {
                 _addedUIInputModule = EventSystem.current.gameObject.AddComponent<XRUIInputModule>();
             }
-            foreach (XRRayInteractor ray in FindObjectsByType<XRRayInteractor>(FindObjectsSortMode.None))
-            {
-                if (ray.handedness == InteractorHandedness.Right && ray.isActiveAndEnabled)
-                {
-                    _rightRay = ray;
-                    break;
-                }
-            }
-            if (_rightRay == null) { return; }
-            _previousUIPress = _rightRay.uiPressInput;
-            _previousUIInteraction = _rightRay.enableUIInteraction;
-            _uiPress = new XRInputButtonReader("CNN Pixel Lab UI", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
-            {
-                inputActionPerformed = new InputAction("CNN Pixel Lab UI Press", InputActionType.Button,
-                    "<XRController>{RightHand}/triggerPressed"),
-                inputActionValue = new InputAction("CNN Pixel Lab UI Value", InputActionType.Value,
-                    "<XRController>{RightHand}/trigger")
-            };
-            _rightRay.uiPressInput = _uiPress;
-            _rightRay.enableUIInteraction = true;
         }
 
         private void LateUpdate()
@@ -144,7 +147,8 @@ namespace UI
             if (!_initialized || _isRevealStage) { return; }
             if (_rayInteractor != null && _filter.isSelected)
             {
-                Ray ray = new Ray(_rayInteractor.transform.position, _rayInteractor.transform.forward);
+                Transform origin = _rayInteractor.rayOriginTransform;
+                Ray ray = new Ray(origin.position, origin.forward);
                 Plane plane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
                 if (plane.Raycast(ray, out float distance) && distance < 5)
                 {
@@ -185,16 +189,35 @@ namespace UI
             if (_revealStage == null || !_revealStage.IsReadyForConvolution || !_hasSelection
                 || _filter.isSelected) { return; }
             _rgbView.Show(_pixels, Columns, Rows, _selected, true);
+            SetBackgroundHidden(true);
         }
 
         public void CloseDetails()
         {
+            foreach (SpatialConvolutionController spatial in _detail.GetComponentsInChildren<SpatialConvolutionController>(true))
+            {
+                spatial.ReleaseInteractions();
+            }
             _detail.SetActive(false);
+            SetBackgroundHidden(false);
+        }
+
+        public void SetBackgroundHidden(bool hidden)
+        {
+            if (_backgroundHidden == hidden) { return; }
+            GameObject[] background = { _board.gameObject, _filter.gameObject, _detailButton.transform.parent.gameObject };
+            for (int i = 0; i < background.Length; i++)
+            {
+                if (hidden) { _backgroundStates[i] = background[i].activeSelf; }
+                background[i].SetActive(hidden ? false : _backgroundStates[i]);
+            }
+            _backgroundHidden = hidden;
         }
 
         public void ResetLab()
         {
             if (_filter.isSelected) { return; }
+            CloseDetails();
             _isRevealStage = false;
             if (_revealStage != null) { _revealStage.ResetStage(); }
             if (_nextButton != null)
@@ -248,6 +271,7 @@ namespace UI
             }
             if (_isRevealStage || _filter.isSelected || _revealStage == null
                 || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
+            CloseDetails();
             _isRevealStage = true;
             _instruction.gameObject.SetActive(false);
             _snapPending = false;
@@ -367,7 +391,7 @@ namespace UI
 
         private void HandleGrabbed(SelectEnterEventArgs args)
         {
-            _instruction.text = "원하는 부분에서 Grip을 놓으세요";
+            _instruction.text = "시선으로 필터를 옮기고 원하는 부분에서 Grip을 놓으세요";
             _rayInteractor = args.interactorObject as XRRayInteractor;
             _filter.trackPosition = _rayInteractor == null;
             _filter.trackRotation = _rayInteractor == null;
@@ -384,24 +408,12 @@ namespace UI
                 return;
             }
             _instruction.text = _hasSelection
-                ? "‘더 자세히 보기’를 눌러 RGB와 계산을 살펴보세요"
-                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip으로 드래그 · 버튼: Trigger";
+                ? "‘더 자세히 보기’를 눌러 RGB 값을 살펴보세요"
+                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip을 누른 채 시선으로 이동 · 클릭: Trigger";
         }
 
         private void OnDisable()
         {
-            if (_rightRay != null)
-            {
-                _rightRay.uiPressInput = _previousUIPress;
-                _rightRay.enableUIInteraction = _previousUIInteraction;
-                _rightRay = null;
-            }
-            if (_uiPress != null)
-            {
-                _uiPress.inputActionPerformed.Dispose();
-                _uiPress.inputActionValue.Dispose();
-                _uiPress = null;
-            }
             if (_ownedEventSystem != null)
             {
                 _ownedEventSystem.SetActive(false);

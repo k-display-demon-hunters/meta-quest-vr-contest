@@ -8,8 +8,8 @@ namespace UI
 {
     public sealed class ConvolutionExercise : MonoBehaviour
     {
-        private readonly Text[,] _labels = new Text[3, 9];
-        private readonly Image[,] _cells = new Image[3, 9];
+        private SpatialConvolutionController _spatial;
+        public Vector3 SelectionSource { get; set; }
         private readonly Button[] _answers = new Button[3];
         private readonly int[] _options = new int[3];
         private readonly int[] _sums = new int[3];
@@ -29,36 +29,29 @@ namespace UI
         public void Initialize(Font font)
         {
             _font = font;
-            Image background = Box(transform, "Exercise background", 0, 0, 1260, 840, new Color(0.08f, 0.09f, 0.11f));
-            background.raycastTarget = true;
             _title = Label(transform, "Step", "", 0, 365, 1180, 45, 30);
-            _explanation = Label(transform, "Explanation", "", 0, 305, 1180, 65, 25);
-            string[] headings = { "픽셀 값", "곱할 수 (가중치)", "곱한 결과" };
-            for (int g = 0; g < 3; g++)
-            {
-                float center = (g - 1) * 395;
-                Label(transform, headings[g], headings[g], center, 245, 370, 38, 27);
-                for (int i = 0; i < 9; i++)
-                {
-                    _cells[g, i] = Box(transform, "Cell " + g + "/" + i,
-                        center + (i % 3 - 1) * 105, 190 - (i / 3) * 70, 98, 64, CellColor);
-                    _labels[g, i] = Label(_cells[g, i].transform, "Value", "", 0, 0, 98, 64, 28);
-                }
-            }
-            _channelSums = Label(transform, "Channel sums", "", 0, -10, 1180, 42, 26);
-            _equation = Label(transform, "Equation", "", 0, -65, 1180, 50, 30);
-            _feedback = Label(transform, "Feedback", "", 0, -130, 1180, 75, 25);
+            _explanation = Label(transform, "Explanation", "", 0, 310, 1180, 65, 25);
+            GameObject spatial = new GameObject("Spatial calculation");
+            spatial.transform.SetParent(transform, false);
+            _spatial = spatial.AddComponent<SpatialConvolutionController>();
+            _spatial.Initialize(font);
+            _channelSums = Label(transform, "Channel sums", "", 0, -340, 1180, 42, 26);
+            _equation = Label(transform, "Equation", "", 0, -390, 1180, 50, 30);
+            _feedback = Label(transform, "Feedback", "", 900, -170, 420, 140, 24);
             for (int i = 0; i < 3; i++)
             {
                 int option = i;
-                _answers[i] = MakeButton(transform, "Answer " + i, (i - 1) * 320, -210, 270,
+                _answers[i] = MakeButton(transform, "Answer " + i, (i - 1) * 320, -445, 270,
                     () => Choose(option));
             }
-            _next = MakeButton(transform, "다음", 0, -285, 330, () => _advance = true);
+            _next = MakeButton(transform, "다음", 900, -300, 420, () => _advance = true);
             Image side = Box(transform, "Side explanation", 900, 20, 480, 770, new Color(0.1f, 0.12f, 0.15f));
             Label(side.transform, "Heading", "계산 원리", 0, 325, 440, 50, 30);
-            _guide = Label(side.transform, "Guide", "", 0, -10, 420, 590, 27);
+            _guide = Label(side.transform, "Guide", "", 0, 100, 420, 350, 23);
+            _feedback.transform.SetAsLastSibling();
+            _next.transform.SetAsLastSibling();
             _guide.alignment = TextAnchor.UpperLeft;
+            _spatial.ReleaseInteractions();
             gameObject.SetActive(false);
         }
 
@@ -69,9 +62,14 @@ namespace UI
             _inputs = (int[,])inputs.Clone();
             _weights = (int[,])weights.Clone();
             _finished = finished;
+            _spatial.SetData(_inputs, _weights);
 
             _waiting = false;
             Array.Clear(_sums, 0, _sums.Length);
+            _title.text = "선택한 픽셀을 공간으로 꺼내는 중";
+            _explanation.text = "R·G·B 층과 같은 색의 고정 가중치를 관찰하세요.";
+            _equation.text = _feedback.text = _guide.text = _channelSums.text = "";
+            _spatial.HideAnswers();
             ShowAnswers(false);
             _next.gameObject.SetActive(false);
 
@@ -80,14 +78,29 @@ namespace UI
 
         private IEnumerator Run()
         {
-            DisplayChannel(0, false);
+            _title.text = "필터 하나의 입체 구조 맞추기";
+            _explanation.text = "필터 하나는 R·G·B에 대응하는 고정 가중치 27개로 이루어져 있어요.";
+            _guide.text = "정면에서는 가로·세로 위치를, 옆면에서는 색 성분의 순서를 확인하세요.\n\n같은 칸을 가리키면 RGB의 대응 위치와 입력–가중치 연결이 표시돼요.\n\n세 층 전체를 잡아 입력에 맞추세요.";
+            yield return _spatial.PrepareVolume();
+            yield return WaitForNext("RGB 대응 관계 확인 완료");
+            yield return _spatial.PullColour(0);
+            yield return _spatial.Focus(0, SelectionSource);
             Highlight(-1);
             _title.text = "R 학습 · 정해진 가중치로 계산하기";
-            _explanation.text = "왼쪽은 픽셀 값, 가운데는 고정된 가중치예요. 같은 위치끼리 곱한 결과를 오른쪽에 채워요.";
-            _guide.text = "먼저 R(빨강) 채널만 살펴봐요.\n\n가중치는 이미 정해져 있어요.\n\n각 픽셀에 같은 위치의 가중치를 곱하고, 9개의 곱을 모두 더해요.\n\n이처럼 입력을 정해진 가중치로 곱해 합치는 계산을 선형결합이라고 해요.";
+            _explanation.text = "앞의 R 픽셀과 왼쪽 가중치를 관찰하세요. 가중치를 Grip으로 잡아 R 픽셀 앞에 놓으세요.";
+            _guide.text = "앞으로 나온 R(빨강)부터 살펴봐요.\n\n뒤의 G·B 층도 같은 필터의 일부예요. 가중치는 고정이에요.\n\n각 픽셀에 같은 위치의 가중치를 곱하고, 9개의 곱을 모두 더해요.\n\n이처럼 입력을 정해진 가중치로 곱해 합치는 계산을 선형결합이라고 해요.";
             _channelSums.text = ChannelSummary(0);
             _equation.text = "R 합 = x₁w₁ + x₂w₂ + … + x₉w₉";
-            _feedback.text = "‘R 계산 시작’을 누르면 한 줄씩 계산 과정을 보여줘요.";
+            _feedback.text = "가중치를 R 앞에 놓고 계속을 누르세요. 버튼으로 자동 정렬할 수도 있어요.";
+            yield return WaitForNext("가중치 맞추기 / 계속");
+            _spatial.AlignKernel();
+            while (!_spatial.IsAligned)
+            {
+                _feedback.text = "잡고 있는 가중치를 R 픽셀 앞에 놓거나 Grip을 놓은 후 계속을 누르세요.";
+                yield return WaitForNext("가중치 맞추기 / 계속");
+                _spatial.AlignKernel();
+            }
+            _feedback.text = "앞뒤로 놓인 같은 위치의 두 값을 곱해요. 숫자 사본이 이동하며 계산을 보여줘요.";
             yield return WaitForNext("R 계산 시작");
             int[] rowSums = new int[3];
             int accumulated = 0;
@@ -99,7 +112,7 @@ namespace UI
                     int i = row * 3 + column;
                     int product = _inputs[0, i] * _weights[0, i];
                     rowSums[row] += product;
-                    _labels[2, i].text = product.ToString();
+                    yield return _spatial.MultiplyAndAccumulate(0, i, accumulated + rowSums[row]);
                     terms[column] = $"{_inputs[0, i]}×({_weights[0, i]})";
                 }
                 HighlightRow(row);
@@ -121,7 +134,9 @@ namespace UI
             _feedback.text = "이제 같은 방법으로 G와 B의 계산값을 직접 구해 보세요.";
             yield return WaitForNext("G 퀴즈로");
 
-            DisplayChannel(1, false);
+            yield return _spatial.PullColour(1);
+            yield return _spatial.Focus(1, SelectionSource);
+            _spatial.AlignKernel();
             HighlightRow(0);
             _title.text = "G 퀴즈 · 첫 줄의 가중합을 구하세요";
             _explanation.text = "강조된 첫 줄의 픽셀 3개와 고정 가중치를 같은 위치끼리 곱해 더하면 얼마일까요?";
@@ -136,7 +151,7 @@ namespace UI
             }
             yield return Ask("G 첫 줄의 (픽셀 × 가중치) 3개 합", firstRow,
                 "같은 위치의 두 숫자를 곱한 다음 세 결과를 더하세요. 음수 부호도 유지하세요.", firstRaw, firstAbsolute);
-            for (int i = 0; i < 3; i++) { _labels[2, i].text = (_inputs[1, i] * _weights[1, i]).ToString(); }
+            _spatial.ShowProducts(1, 3);
             yield return WaitForNext("G 전체 합 구하기");
             Highlight(-1);
             _title.text = "G 퀴즈 · 9개 곱의 전체 합은?";
@@ -148,11 +163,13 @@ namespace UI
             _channelSums.text = ChannelSummary(2);
             yield return WaitForNext("B 퀴즈로");
 
-            DisplayChannel(2, false);
+            yield return _spatial.PullColour(2);
+            yield return _spatial.Focus(2, SelectionSource);
+            _spatial.AlignKernel();
             Highlight(-1);
             _title.text = "B 퀴즈 · 9개 항의 선형결합을 완성하세요";
             _explanation.text = "같은 위치의 픽셀과 가중치를 곱한 뒤, 9개 결과를 모두 더하면 B 합은 얼마일까요?";
-            _guide.text = "이번에는 B 채널 전체를 계산해 보세요.\n\n각 위치의 입력과 가중치를 짝지어 곱하세요.\n\nB 합 = x₁w₁ + x₂w₂ + … + x₉w₉\n\n픽셀 값만 더하거나 가중치만 더하는 것이 아니에요.\n\n음수 항도 부호를 유지해서 더하세요.";
+            _guide.text = "이번에는 B 색 성분 전체를 계산해 보세요.\n\n각 위치의 입력과 가중치를 짝지어 곱하세요.\n\nB 합 = x₁w₁ + x₂w₂ + … + x₉w₉\n\n픽셀 값만 더하거나 가중치만 더하는 것이 아니에요.\n\n음수 항도 부호를 유지해서 더하세요.";
             int rawSum = 0;
             int absoluteSum = 0;
             for (int i = 0; i < 9; i++)
@@ -168,20 +185,22 @@ namespace UI
             _channelSums.text = ChannelSummary(3);
             yield return WaitForNext("RGB 결과 합치기");
 
-            _title.text = "마지막 퀴즈 · 세 채널의 계산을 합치세요";
+            _title.text = "마지막 퀴즈 · 세 색 성분의 계산을 합치세요";
             _explanation.text = "R·G·B 합은 아래에 있어요. 세 합과 편향 0을 더한 최종 결과를 고르세요.";
             _guide.text = "R·G·B 가중치 세 묶음이 합쳐져 필터 하나를 이뤄요.\n\n필터 하나는 27개 입력의 가중합을 구하고, 마지막에 편향을 한 번 더해요.\n\n출력 = R 합 + G 합 + B 합 + 편향\n\n이번 편향은 0이에요. 결과는 음수나 255보다 큰 값도 가능해요.";
             int total = _sums[0] + _sums[1] + _sums[2];
             yield return Ask($"({_sums[0]}) + ({_sums[1]}) + ({_sums[2]}) + 0", total,
-                "세 채널의 합을 모두 더하세요. 평균을 내거나 한 채널만 고르는 것이 아니에요.",
+                "세 색 성분의 합을 모두 더하세요. 평균을 내거나 한 색 성분만 고르는 것이 아니에요.",
                 total / 3, _sums[0] + _sums[1]);
+            yield return _spatial.CombineSums(_sums);
             _title.text = "이번 위치의 합성곱 계산 완료";
-            _explanation.text = "입력마다 가중치를 곱해 합치고, 세 채널의 합과 편향을 더했어요.";
+            _explanation.text = "입력마다 가중치를 곱해 합치고, 세 색 성분의 합과 편향을 더했어요.";
             _feedback.text = "정해진 가중치로 각 입력을 곱하고 모두 더해 이번 위치의 계산을 완성했어요.";
-            yield return WaitForNext("RGB 판으로 돌아가기");
+            yield return WaitForNext("결과 정리 보기");
             Action<int[]> completed = _finished;
             int[] sums = (int[])_sums.Clone();
 
+            _spatial.ReleaseInteractions();
             gameObject.SetActive(false);
             completed?.Invoke(sums);
         }
@@ -195,12 +214,7 @@ namespace UI
 
         private void DisplayChannel(int channel, bool showProducts)
         {
-            for (int i = 0; i < 9; i++)
-            {
-                _labels[0, i].text = _inputs[channel, i].ToString();
-                _labels[1, i].text = _weights[channel, i].ToString();
-                _labels[2, i].text = showProducts ? (_inputs[channel, i] * _weights[channel, i]).ToString() : "?";
-            }
+            if (showProducts) { _spatial.ShowProducts(channel, 9); }
         }
 
         private IEnumerator Ask(string expression, int answer, string hint, int distractor1, int distractor2)
@@ -210,7 +224,7 @@ namespace UI
             _solved = expression + " = " + answer;
             _equation.text = expression + " = [ ? ]";
             _equation.fontSize = expression.Length > 48 ? 23 : 30;
-            _feedback.text = "빈칸에 들어갈 숫자를 고르세요 · 컨트롤러 트리거";
+            _feedback.text = "숫자 블록을 Grip으로 잡아 ‘여기에 답 놓기’에 놓으세요. 아래 숫자 버튼으로도 답할 수 있어요.";
             List<int> choices = new List<int> { answer };
             if (!choices.Contains(distractor1)) { choices.Add(distractor1); }
             if (choices.Count < 3 && !choices.Contains(distractor2)) { choices.Add(distractor2); }
@@ -230,8 +244,10 @@ namespace UI
             _answered = false;
             _waiting = true;
             ShowAnswers(true);
+            _spatial.ShowAnswers(_options, Choose);
             yield return new WaitUntil(() => _answered);
             _waiting = false;
+            _spatial.HideAnswers();
             ShowAnswers(false);
         }
 
@@ -247,6 +263,7 @@ namespace UI
             _waiting = false;
             _equation.text = _solved;
             _feedback.text = "맞아요! 빈칸을 채웠어요.";
+            _spatial.ShowAnswer(_correct);
             foreach (Button button in _answers) { button.interactable = false; }
         }
 
@@ -267,26 +284,8 @@ namespace UI
                 "     B 합: " + (completed > 2 ? _sums[2].ToString() : "?");
         }
 
-        private static Color CellColor => new Color(0.2f, 0.22f, 0.25f);
-        private void HighlightRow(int row)
-        {
-            for (int g = 0; g < 3; g++)
-                for (int i = 0; i < 9; i++)
-                {
-                    bool active = i / 3 == row;
-                    _cells[g, i].color = active ? new Color(0.85f, 0.72f, 0.32f) : CellColor;
-                    _labels[g, i].color = active ? Color.black : Color.white;
-                }
-        }
-        private void Highlight(int index)
-        {
-            for (int g = 0; g < 3; g++)
-                for (int i = 0; i < 9; i++)
-                {
-                    _cells[g, i].color = i == index ? new Color(0.85f, 0.72f, 0.32f) : CellColor;
-                    _labels[g, i].color = i == index ? Color.black : Color.white;
-                }
-        }
+        private void HighlightRow(int row) { _spatial.HighlightRow(row); }
+        private void Highlight(int index) { _spatial.HighlightRow(-1); }
         private void ShowAnswers(bool visible) { foreach (Button answer in _answers) { answer.gameObject.SetActive(visible); } }
         private void OnDisable() { StopAllCoroutines(); _waiting = false; _finished = null; }
 

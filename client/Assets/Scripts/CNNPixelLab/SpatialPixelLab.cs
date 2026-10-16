@@ -45,9 +45,38 @@ namespace UI
         private GameObject _ownedEventSystem;
         private XRUIInputModule _addedUIInputModule;
         private bool _initialized;
+        private bool _backgroundHidden;
+        private readonly bool[] _backgroundStates = new bool[3];
 
+        public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
         public bool HasSelection => _hasSelection;
         public Vector2Int SelectedPixel => _selected;
+
+#if UNITY_EDITOR
+        public bool EditorDetailsVisible => _detail.activeSelf;
+        public Vector3 EditorPreviewFocus => _detail.activeSelf ? _detail.transform.position + Vector3.right * 0.35f : _board.position;
+
+        public bool EditorCanDragFilter(XRGrabInteractable target)
+        {
+            return target == _filter && !_isRevealStage && !_detail.activeSelf;
+        }
+
+        public void EditorDragFilter(Ray ray)
+        {
+            Plane plane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
+            if (!plane.Raycast(ray, out float distance)) { return; }
+            _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
+            Rigidbody body = _filter.GetComponent<Rigidbody>();
+            body.position = _filter.transform.position;
+            body.rotation = _filter.transform.rotation;
+            UpdatePreview();
+        }
+
+        public void EditorReleaseFilter()
+        {
+            _snapPending = true;
+        }
+#endif
 
         private void Awake()
         {
@@ -160,16 +189,35 @@ namespace UI
             if (_revealStage == null || !_revealStage.IsReadyForConvolution || !_hasSelection
                 || _filter.isSelected) { return; }
             _rgbView.Show(_pixels, Columns, Rows, _selected, true);
+            SetBackgroundHidden(true);
         }
 
         public void CloseDetails()
         {
+            foreach (SpatialConvolutionController spatial in _detail.GetComponentsInChildren<SpatialConvolutionController>(true))
+            {
+                spatial.ReleaseInteractions();
+            }
             _detail.SetActive(false);
+            SetBackgroundHidden(false);
+        }
+
+        public void SetBackgroundHidden(bool hidden)
+        {
+            if (_backgroundHidden == hidden) { return; }
+            GameObject[] background = { _board.gameObject, _filter.gameObject, _detailButton.transform.parent.gameObject };
+            for (int i = 0; i < background.Length; i++)
+            {
+                if (hidden) { _backgroundStates[i] = background[i].activeSelf; }
+                background[i].SetActive(hidden ? false : _backgroundStates[i]);
+            }
+            _backgroundHidden = hidden;
         }
 
         public void ResetLab()
         {
             if (_filter.isSelected) { return; }
+            CloseDetails();
             _isRevealStage = false;
             if (_revealStage != null) { _revealStage.ResetStage(); }
             if (_nextButton != null)
@@ -223,6 +271,7 @@ namespace UI
             }
             if (_isRevealStage || _filter.isSelected || _revealStage == null
                 || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
+            CloseDetails();
             _isRevealStage = true;
             _instruction.gameObject.SetActive(false);
             _snapPending = false;
@@ -359,7 +408,7 @@ namespace UI
                 return;
             }
             _instruction.text = _hasSelection
-                ? "‘더 자세히 보기’를 눌러 RGB와 계산을 살펴보세요"
+                ? "‘더 자세히 보기’를 눌러 RGB 값을 살펴보세요"
                 : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip을 누른 채 시선으로 이동 · 클릭: Trigger";
         }
 

@@ -289,13 +289,8 @@ namespace XR.Editor
             ray.raycastTriggerInteraction = QueryTriggerInteraction.Collide;
             if (handedness == InteractorHandedness.Right)
             {
-                ray.translateManipulationInput = new XRInputValueReader<Vector2>("Right Object Distance",
-                    XRInputValueReader.InputSourceMode.InputAction)
-                {
-                    inputAction = new InputAction("Right Object Distance", InputActionType.Value,
-                        "<XRController>{RightHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)",
-                        expectedControlType: "Vector2")
-                };
+                ray.manipulateAttachTransform = false;
+                ray.allowHoveredActivate = true;
             }
             ray.selectInput = CreateButton(hand + " Select", device + "/gripPressed", device + "/grip");
             ray.activateInput = CreateButton(hand + " Activate", device + "/triggerPressed", device + "/trigger");

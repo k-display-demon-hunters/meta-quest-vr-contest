@@ -2462,6 +2462,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::XR.LeftHandTablet
   _message: {fileID: 810603}
   _font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+  _parchmentFont: {fileID: 12800000, guid: e7d1a399ec684c3ca0b5e5d41e799c68, type: 3}
+  _parchmentSprite: {fileID: 21300000, guid: 7c4c6190a49e4e0786bf9b3ec6ef2bf7, type: 3}
   _stageStartPoints: []
   _stageMoveRequested:
     m_PersistentCalls:

@@ -89,7 +89,7 @@ workspace.Connect(pool, flatten);    // 다시 연결
 
 ### 진입과 기본 조작
 
-- `QuestMain`에서 오른손 레이로 `CNN MODEL DESIGN / Grip to enter` 표지를 가리키고 Grip을 누르면 제작 씬을 추가 로드한다. 기존 바닥·XR 리그를 사용한다.
+- `QuestMain`에서 오른손 레이로 `CNN MODEL DESIGN / Trigger to enter` 표지를 가리키고 Trigger를 누르면 제작 씬을 추가 로드한다. 기존 바닥·XR 리그를 사용한다.
 - 단독 개발용으로 씬에 기존 `XRPlayerRig.prefab` 인스턴스가 배치되어 있다. 현재 리그는 `EditorOnly`가 아니며, 기존 리그가 있는 상태에서 진입하면 `PersistentXRPlayerRig`가 새 중복 리그를 제거한다. 리그와 시뮬레이터 설정은 이번 변경에서 수정하지 않았다.
 - 시뮬레이터에서 `G`는 오른손 Grip(잡기·놓기), `T`는 Trigger(설정·UI 클릭)다. `]`로 오른손 위치 조작을 선택하고 WASD/QE와 마우스 우클릭으로 움직인다. 전체 조작법은 [XR 시뮬레이터 조작법](xr-simulator.md)을 참고한다.
 - 오른쪽 `Parts Supply`는 직육면체 벽·선반으로 만든 고정 부품 공급소다. 각 선반에 Conv2D, MaxPooling2D, Flatten, Dense 블록이 있다. 본체를 Grip으로 잡아 꺼내면 같은 기본 설정의 새 블록이 해당 자리에 보충된다.
@@ -158,7 +158,7 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - `ModelTrainingController`: 학습 시작·중지 버튼 입력 이벤트와 학습 상태 표시를 담당한다.
 - `ModelExecutionController`: 씬의 `ModelProtocolClient` 세션, 학습·취소·추론 요청 및 비동기 응답 수명을 담당한다. 진행·결과·오류는 인스턴스 이벤트로 Manager에 알린다.
 - `ModelResultsController`: 결과 패널, 지표·그래프 표시, 샘플 이미지 선택과 예측 표시를 담당한다. `ModelMetricGraph`는 수신된 epoch별 학습·검증 지표를 그리는 UI Graphic이다.
-- `ModelXRInputController`: 오른손 레이와 UI 입력을 설정하고 조작기기 입력의 유효한 레이 적중 여부를 확인한다. 비활성화할 때 기존 오른손 설정을 복구한다.
+- `ModelXRInputController`: 공용 리그의 오른손 레이를 참조하고 조작기기 입력의 유효한 레이 적중 여부를 확인한다. 오른손 입력 설정은 공용 `XRPlayerInputController`가 관리한다.
 
 Controller는 Manager를 참조하지 않고 자신의 입력이나 요청을 인스턴스 이벤트로 알린다. Manager는 블록을 잡을 때 공급 보충·팝업 닫기·슬롯 비우기를 조율하고, 놓을 때 슬롯 배치 결과를 모델 순서에 반영한다. Singleton, 전역 이벤트 시스템, 새로운 공통 기반 클래스는 도입하지 않는다. `LayerDefinition`, `ModelWorkspace`, 검증·직렬화 클래스의 이름과 API는 그대로 유지한다.
 

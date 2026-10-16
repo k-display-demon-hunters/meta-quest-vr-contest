@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Education;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.Events;
@@ -12,7 +13,7 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace XR
 {
-    [DefaultExecutionOrder(-50)]
+    [DefaultExecutionOrder(-400)]
     public sealed class LeftHandTablet : MonoBehaviour
     {
         private const float CanvasWidth = 1554f;
@@ -45,6 +46,8 @@ namespace XR
 
         [SerializeField, HideInInspector] private Text _message;
         [SerializeField] private Font _font;
+        [SerializeField] private Font _parchmentFont;
+        [SerializeField] private Sprite _parchmentSprite;
         [SerializeField] private Transform[] _stageStartPoints;
         [SerializeField] private StageMoveEvent _stageMoveRequested = new StageMoveEvent();
         [SerializeField] private UnityEvent _saveRequested = new UnityEvent();
@@ -53,7 +56,7 @@ namespace XR
         private readonly string[] _itemNames = { "양피지 #1", "양피지 #2", "양피지 #3", "양피지 #4", "양피지 #5" };
         private readonly string[] _itemDescriptions =
         {
-            "기본 필터 렌즈", "엣지 강화 렌즈", "블러 제거 렌즈", "노이즈 억제 렌즈", "고주파 필터 렌즈"
+            "이미지와 픽셀", "합성곱과 패딩", "필터와 특징 추출", "특징 맵", "활성화 함수와 ReLU"
         };
         private readonly string[] _phaseNames = { "튜토리얼", "실습하기", "응용하기", "정리하기", "퀴즈" };
         private readonly int[] _phaseStageIndices = { 0, 2, 3, 4, 5 };
@@ -89,6 +92,7 @@ namespace XR
         private Sprite _underlineSprite;
         private readonly List<Sprite> _generatedSprites = new List<Sprite>();
         private readonly List<Sprite> _pixelSprites = new List<Sprite>();
+        private readonly List<Sprite> _lessonMapSprites = new List<Sprite>();
         private readonly List<Image> _phaseSurfaces = new List<Image>();
         private readonly List<Image> _phaseCircles = new List<Image>();
         private readonly List<Text> _phaseLabels = new List<Text>();
@@ -103,6 +107,7 @@ namespace XR
         private InputAction _xButton;
         private InputAction _yButton;
         private InputAction _trigger;
+        private InputAction _menuButton;
         private InputAction _stick;
         private ContinuousMoveProvider _moveProvider;
         private XRInputValueReader<Vector2> _previousMoveInput;
@@ -128,7 +133,6 @@ namespace XR
         private bool _movementCaptured;
         private bool _isInteracting;
         private bool _isAdjustingSlider;
-        private bool _triggerConsumedBySlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
         private float _nextRepeatTime;
@@ -141,6 +145,24 @@ namespace XR
         private readonly List<Image> _inventoryGlows = new List<Image>();
         private readonly List<Image> _inventorySurfaces = new List<Image>();
         private readonly List<Text> _inventoryLabels = new List<Text>();
+        private readonly List<Text> _inventoryDescriptions = new List<Text>();
+        private readonly List<Button> _inventoryButtons = new List<Button>();
+        private readonly bool[] _collectedParchments = new bool[5];
+        private GameObject _parchmentReader;
+        private GameObject _feedbackRoot;
+        private Text _parchmentTitle;
+        private Text _parchmentSource;
+        private Text _parchmentBody;
+        private Text _parchmentPageLabel;
+        private Button _previousParchmentPage;
+        private Button _nextParchmentPage;
+        private readonly List<Button> _featureMapButtons = new List<Button>();
+        private readonly List<Image> _featureMapImages = new List<Image>();
+        private readonly List<Text> _featureMapLabels = new List<Text>();
+        private readonly bool[] _featureMapVisible = { true, true, true };
+        private GameObject _parchmentExample;
+        private string[] _parchmentPages;
+        private int _parchmentPageIndex;
         private readonly List<Text> _taskTexts = new List<Text>();
         private readonly List<Image> _taskChecks = new List<Image>();
         private readonly List<Image> _taskCheckmarks = new List<Image>();
@@ -173,6 +195,8 @@ namespace XR
                 "<XRController>{LeftHand}/secondaryButton");
             _trigger = new InputAction("Tablet Trigger", InputActionType.Button,
                 "<XRController>{LeftHand}/triggerPressed");
+            _menuButton = new InputAction("Tablet Settings", InputActionType.Button,
+                "<XRController>{LeftHand}/menuButton");
             _stick = new InputAction("Tablet Navigation", InputActionType.Value,
                 "<XRController>{LeftHand}/primary2DAxis");
             _moveProvider = GetComponentInParent<ContinuousMoveProvider>();
@@ -187,56 +211,58 @@ namespace XR
             _xButton.Enable();
             _yButton.Enable();
             _trigger.Enable();
+            _menuButton.Enable();
             _stick.Enable();
         }
 
         private void Update()
         {
-            if (_trigger.WasPressedThisFrame())
-            {
-                _triggerConsumedBySlider = _isAdjustingSlider;
-            }
-            if (_trigger.WasReleasedThisFrame())
-            {
-                if (!_triggerConsumedBySlider)
-                {
-                    SetInteraction(!_isInteracting);
-                }
-                _triggerConsumedBySlider = false;
-            }
-            else if (!_trigger.IsPressed() && _yButton.WasPressedThisFrame())
-            {
-                GoBackOrOpenSettings();
-            }
-            else if (!_trigger.IsPressed() && _xButton.WasPressedThisFrame())
+            bool navigating = _trigger.IsPressed();
+            Vector2 stick = _stick.ReadValue<Vector2>();
+            if (navigating)
             {
                 if (!_isInteracting)
                 {
                     SetInteraction(true);
                 }
-                if (ActiveTargets[_focusIndex].Control is Button button)
+                CaptureMovement();
+            }
+            else if (stick.magnitude < 0.25f)
+            {
+                // Do not turn a tablet gesture into walking until the stick returns to neutral.
+                ReleaseMovement();
+            }
+
+            if (_menuButton.WasPressedThisFrame())
+            {
+                ToggleSettings();
+            }
+            else if (_yButton.WasPressedThisFrame())
+            {
+                GoBack();
+            }
+            else if (_xButton.WasPressedThisFrame())
+            {
+                if (!_isInteracting)
+                {
+                    SetInteraction(true);
+                }
+                if (ActiveTargets[_focusIndex].Control is Button button && button.IsInteractable())
                 {
                     button.onClick.Invoke();
                 }
-                else if (ActiveTargets[_focusIndex].Control is Slider && !_isAdjustingSlider)
+                else if (ActiveTargets[_focusIndex].Control is Slider slider && slider.IsInteractable())
                 {
-                    _isAdjustingSlider = true;
+                    _isAdjustingSlider = !_isAdjustingSlider;
                     _stickMustCenter = true;
                     RefreshFocus();
                 }
             }
 
-            Vector2 stick = _stick.ReadValue<Vector2>();
-            if (!_isInteracting)
+            if (navigating && _isInteracting)
             {
-                // Wait for neutral so a navigation gesture cannot turn into walking.
-                if (stick.magnitude < 0.25f)
-                {
-                    ReleaseMovement();
-                }
-                return;
+                Navigate(stick);
             }
-            Navigate(stick);
         }
 
         private void ResolveFont()
@@ -308,6 +334,7 @@ namespace XR
             // Keep the five inventory targets first so saved selection still restores focus.
             BuildInventory();
             BuildMainFeedback();
+            BuildParchmentReader();
             BuildDashboardActions();
             BuildHeader();
             BuildLeftStatus();
@@ -333,6 +360,10 @@ namespace XR
             {
                 _pixelSprites.Add(CreatePixelSprite(channel));
             }
+            for (int index = 0; index < 4; index++)
+            {
+                _lessonMapSprites.Add(CreateLessonMapSprite(index));
+            }
         }
 
         private void ClearCanvas()
@@ -345,6 +376,8 @@ namespace XR
             _inventoryGlows.Clear();
             _inventorySurfaces.Clear();
             _inventoryLabels.Clear();
+            _inventoryDescriptions.Clear();
+            _inventoryButtons.Clear();
             _taskTexts.Clear();
             _taskChecks.Clear();
             _taskCheckmarks.Clear();
@@ -470,31 +503,205 @@ namespace XR
                 _inventoryGlows.Add(glow);
                 Button item = PlaceButton(_surfaceRect, "Inventory " + index, "", 1166f, top, 302f, 90f,
                     () => SelectItem(itemIndex), CardColor);
+                _inventoryButtons.Add(item);
                 Image surface = item.GetComponent<Image>();
                 surface.sprite = _panelSprite;
                 _inventorySurfaces.Add(surface);
                 _inventoryLabels.Add(PlaceText(item.transform, "Parchment Name", _itemNames[index], 1259f, top + 14f, 164f, 34f,
                     21, FontStyle.Bold, TextColor));
-                PlaceText(item.transform, "Parchment Description", _itemDescriptions[index], 1259f, top + 48f, 182f, 29f,
-                    18, FontStyle.Normal, MutedTextColor);
-                PlaceSymbol(item.transform, "Item Symbol", TabletSymbol.Box, 1188f, top + 23f, 46f, ItemColors[index]);
+                _inventoryDescriptions.Add(PlaceText(item.transform, "Parchment Description", "", 1259f, top + 48f, 182f, 29f,
+                    18, FontStyle.Normal, MutedTextColor));
+                Image icon = PlaceImage(item.transform, "Parchment Icon", 1188f, top + 17f, 46f, 56f, Color.white);
+                icon.sprite = _parchmentSprite;
+                icon.type = Image.Type.Simple;
+                icon.preserveAspect = true;
                 PlaceSymbol(item.transform, "Disclosure", TabletSymbol.ChevronRight, 1434f, top + 36f, 18f, AccentColor);
             }
         }
 
+        private void BuildParchmentReader()
+        {
+            Color ink = new Color(0.13f, 0.17f, 0.24f);
+            Image paper = PlaceImage(_surfaceRect, "Parchment Reader", 450f, 280f, 660f, 656f, Color.white);
+            paper.sprite = _parchmentSprite;
+            paper.type = Image.Type.Simple;
+            _parchmentReader = paper.gameObject;
+            _parchmentSource = PlaceText(paper.transform, "Document Source", "", 524f, 322f, 512f, 35f,
+                21, FontStyle.Normal, ink);
+            _parchmentTitle = PlaceText(paper.transform, "Document Title", "", 524f, 365f, 512f, 62f,
+                36, FontStyle.Normal, ink);
+            PlaceImage(paper.transform, "Ink Rule", 525f, 426f, 510f, 1.2f, new Color(0.15f, 0.2f, 0.3f, 0.3f)).sprite = null;
+            _parchmentBody = PlaceText(paper.transform, "Document Body", "", 525f, 444f, 510f, 386f,
+                29, FontStyle.Normal, ink, TextAnchor.UpperLeft);
+            _parchmentBody.lineSpacing = 1.03f;
+            _parchmentBody.resizeTextForBestFit = true;
+            _parchmentBody.resizeTextMinSize = 26;
+            _parchmentBody.resizeTextMaxSize = 29;
+            Font handwriting = _parchmentFont != null ? _parchmentFont : _resolvedFont;
+            _parchmentTitle.font = handwriting;
+            _parchmentSource.font = handwriting;
+            _parchmentBody.font = handwriting;
+
+            _parchmentExample = new GameObject("Lesson Illustration", typeof(RectTransform));
+            _parchmentExample.transform.SetParent(paper.transform, false);
+            RectTransform exampleRect = (RectTransform)_parchmentExample.transform;
+            exampleRect.sizeDelta = paper.rectTransform.sizeDelta;
+
+            _previousParchmentPage = PlaceButton(paper.transform, "Previous Document Page", "이전", 524f, 858f, 104f, 49f,
+                () => ChangeParchmentPage(-1), new Color(0.96f, 0.9f, 0.75f));
+            _parchmentPageLabel = PlaceText(paper.transform, "Document Page Count", "", 635f, 858f, 154f, 49f,
+                22, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
+            _nextParchmentPage = PlaceButton(paper.transform, "Next Document Page", "다음", 797f, 858f, 104f, 49f,
+                () => ChangeParchmentPage(1), new Color(0.96f, 0.9f, 0.75f));
+            PlaceButton(paper.transform, "Close Document", "닫기", 918f, 858f, 116f, 49f,
+                CloseParchment, new Color(0.9f, 0.85f, 0.74f));
+            paper.gameObject.SetActive(false);
+        }
+
+        private void RefreshParchmentPage()
+        {
+            ParchmentLesson lesson = ParchmentLesson.All[_selectedItemIndex];
+            _parchmentSource.text = "사내 교육 자료 " + (_selectedItemIndex + 1).ToString("00") + "  /  " + lesson.Department;
+            _parchmentTitle.text = lesson.Title;
+            _parchmentBody.text = _parchmentPages[_parchmentPageIndex];
+            _parchmentPageLabel.text = (_parchmentPageIndex + 1) + " / " + _parchmentPages.Length;
+            _previousParchmentPage.interactable = _parchmentPageIndex > 0;
+            _nextParchmentPage.interactable = _parchmentPageIndex < _parchmentPages.Length - 1;
+            bool illustrated = _parchmentPageIndex == _parchmentPages.Length - 1;
+            _parchmentBody.rectTransform.sizeDelta = new Vector2(510f, illustrated ? 278f : 386f);
+            // ReferencePosition uses the centre of the old rectangle; keep the top edge fixed when its height changes.
+            _parchmentBody.rectTransform.anchoredPosition = ReferencePosition(_parchmentReader.transform,
+                780f, 444f + (illustrated ? 278f : 386f) * 0.5f);
+            RebuildParchmentIllustration(illustrated);
+        }
+
+        private void ChangeParchmentPage(int delta)
+        {
+            if (_parchmentPages == null)
+            {
+                return;
+            }
+            _parchmentPageIndex = Mathf.Clamp(_parchmentPageIndex + delta, 0, _parchmentPages.Length - 1);
+            RefreshParchmentPage();
+        }
+
+        private void CloseParchment()
+        {
+            _parchmentReader.SetActive(false);
+            _feedbackRoot.SetActive(true);
+            ResetFocus(_selectedItemIndex);
+        }
+
+        private void RebuildParchmentIllustration(bool visible)
+        {
+            // Remove old controls from navigation before destroying their visuals at the end of this frame.
+            _mainTargets.RemoveAll(target => _featureMapButtons.Contains(target.Control as Button));
+            _featureMapButtons.Clear();
+            _featureMapImages.Clear();
+            _featureMapLabels.Clear();
+            for (int index = _parchmentExample.transform.childCount - 1; index >= 0; index--)
+            {
+                GameObject child = _parchmentExample.transform.GetChild(index).gameObject;
+                child.SetActive(false);
+                Destroy(child);
+            }
+            _parchmentExample.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            Transform parent = _parchmentExample.transform;
+            Color ink = new Color(0.13f, 0.17f, 0.24f);
+            if (_selectedItemIndex == 0)
+            {
+                string[] labels = { "R 채널", "G 채널", "B 채널" };
+                for (int index = 0; index < 3; index++)
+                {
+                    float x = 568f + index * 156f;
+                    Image grid = PlaceImage(parent, labels[index], x, 742f, 110f, 76f, Color.white);
+                    grid.sprite = _pixelSprites[index + 1];
+                    grid.type = Image.Type.Simple;
+                    PlaceText(parent, "Channel Caption " + index, labels[index], x, 819f, 110f, 27f,
+                        19, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
+                }
+            }
+            else if (_selectedItemIndex == 1)
+            {
+                PlaceText(parent, "Padding Example", "입력 5×5  ·  필터 3×3  ·  이동 1칸\n\n패딩 없음 → 출력 3×3\n사방에 1칸 패딩 → 출력 5×5", 538f, 729f, 487f, 117f,
+                    23, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
+            }
+            else if (_selectedItemIndex == 2 || _selectedItemIndex == 3)
+            {
+                BuildFeatureMapExample(parent);
+            }
+            else
+            {
+                PlaceText(parent, "ReLU Example", "입력     −3     −1      0      2      5\n\nReLU      0       0      0      2      5", 538f, 735f, 487f, 108f,
+                    24, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
+            }
+        }
+
+        private void BuildFeatureMapExample(Transform parent)
+        {
+            PlaceText(parent, "Example Display Note", "필터 반응의 절댓값을 밝기로 표시한 예시", 548f, 723f, 460f, 23f,
+                16, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleCenter);
+            string[] captions = _selectedItemIndex == 3
+                ? new[] { "세로 경계", "가로 경계", "주변 경계" }
+                : new[] { "원본", "세로 경계", "가로 경계" };
+            List<FocusTarget> previousTargets = _buildingTargets;
+            _buildingTargets = _mainTargets;
+            for (int index = 0; index < 3; index++)
+            {
+                int mapIndex = index;
+                float x = 548f + index * 161f;
+                Image map = PlaceImage(parent, "Example Map " + index, x + 34f, 748f, 70f, 70f, Color.white);
+                map.sprite = _lessonMapSprites[_selectedItemIndex == 3 ? index + 1 : index];
+                map.type = Image.Type.Simple;
+                if (_selectedItemIndex == 3)
+                {
+                    _featureMapImages.Add(map);
+                    map.enabled = _featureMapVisible[index];
+                    Button toggle = PlaceButton(parent, "Toggle Example Map " + index, "", x, 819f, 138f, 30f,
+                        () => ToggleFeatureMap(mapIndex), AccentSoftColor);
+                    Text label = toggle.GetComponentInChildren<Text>();
+                    label.fontSize = 17;
+                    label.text = captions[index] + (_featureMapVisible[index] ? " · 켜짐" : " · 꺼짐");
+                    _featureMapLabels.Add(label);
+                    _featureMapButtons.Add(toggle);
+                }
+                else
+                {
+                    PlaceText(parent, "Example Caption " + index, captions[index], x, 819f, 138f, 30f,
+                        20, FontStyle.Normal, TextColor, TextAnchor.MiddleCenter);
+                }
+            }
+            _buildingTargets = previousTargets;
+        }
+
+        private void ToggleFeatureMap(int index)
+        {
+            _featureMapVisible[index] = !_featureMapVisible[index];
+            _featureMapImages[index].enabled = _featureMapVisible[index];
+            string[] captions = { "세로 경계", "가로 경계", "주변 경계" };
+            _featureMapLabels[index].text = captions[index] + (_featureMapVisible[index] ? " · 켜짐" : " · 꺼짐");
+        }
+
         private void BuildMainFeedback()
         {
-            Image guideTile = CreateGlassPanel(_surfaceRect, "Guide Symbol Tile", 472f, 214f, 58f, 56f);
+            _feedbackRoot = new GameObject("Concept Feedback", typeof(RectTransform));
+            _feedbackRoot.transform.SetParent(_surfaceRect, false);
+            Image guideTile = CreateGlassPanel(_feedbackRoot.transform, "Guide Symbol Tile", 472f, 214f, 58f, 56f);
             guideTile.sprite = _selectedSprite;
-            PlaceSymbol(_surfaceRect, "Guide Symbol", TabletSymbol.Book, 485f, 227f, 32f, AccentColor);
-            PlaceText(_surfaceRect, "Concept Caption", "개념 설명 · 힌트톡", 552f, 224f, 350f, 39f,
+            PlaceSymbol(_feedbackRoot.transform, "Guide Symbol", TabletSymbol.Book, 485f, 227f, 32f, AccentColor);
+            PlaceText(_feedbackRoot.transform, "Concept Caption", "개념 설명 · 힌트톡", 552f, 224f, 350f, 39f,
                 24, FontStyle.Bold, new Color(0.13f, 0.29f, 0.64f));
-            _feedbackTitle = PlaceText(_surfaceRect, "Feedback Title", "", 485f, 301f, 605f, 67f,
+            _feedbackTitle = PlaceText(_feedbackRoot.transform, "Feedback Title", "", 485f, 301f, 605f, 67f,
                 46, FontStyle.Bold, TextColor);
-            Image underline = PlaceImage(_surfaceRect, "Title Underline", 485f, 350f, 296f, 36f, new Color(0.66f, 0.79f, 0.95f));
+            Image underline = PlaceImage(_feedbackRoot.transform, "Title Underline", 485f, 350f, 296f, 36f, new Color(0.66f, 0.79f, 0.95f));
             underline.sprite = _underlineSprite;
             underline.type = Image.Type.Simple;
-            _feedbackBody = PlaceText(_surfaceRect, "Feedback Body", "", 485f, 405f, 600f, 180f,
+            _feedbackBody = PlaceText(_feedbackRoot.transform, "Feedback Body", "", 485f, 405f, 600f, 180f,
                 26, FontStyle.Normal, MutedTextColor, TextAnchor.UpperLeft);
             _feedbackBody.lineSpacing = 0.91f;
             _feedbackBody.resizeTextForBestFit = true;
@@ -502,10 +709,10 @@ namespace XR
             _feedbackBody.resizeTextMaxSize = 26;
             BuildPixelPreviews();
 
-            Image actionShadow = PlaceImage(_surfaceRect, "Confirm Shadow", 452f, 823f, 658f, 115f,
+            Image actionShadow = PlaceImage(_feedbackRoot.transform, "Confirm Shadow", 452f, 823f, 658f, 115f,
                 new Color(0.18f, 0.36f, 0.59f, 0.28f));
             actionShadow.sprite = _shadowSprite;
-            Button confirm = PlaceButton(_surfaceRect, "Confirm Task", "작업 확인하기", 465f, 827f, 632f, 95f,
+            Button confirm = PlaceButton(_feedbackRoot.transform, "Confirm Task", "작업 확인하기", 465f, 827f, 632f, 95f,
                 ConfirmCurrentTask, CardColor);
             confirm.GetComponent<Image>().sprite = _primarySprite;
             AddOutline(confirm.GetComponent<Image>(), new Color(0.53f, 0.69f, 0.91f, 0.85f), new Vector2(2f, 2f));
@@ -517,24 +724,24 @@ namespace XR
             confirmLabel.rectTransform.sizeDelta = new Vector2(430f, 80f);
             PlaceSymbol(confirm.transform, "Confirm Check", TabletSymbol.Check, 683f, 859f, 29f, Color.white);
             PlaceSymbol(confirm.transform, "Confirm Disclosure", TabletSymbol.ChevronRight, 1035f, 862f, 24f, Color.white);
-            Button hint = PlaceButton(_surfaceRect, "Hint", "", 943f, 213f, 154f, 58f, ShowHint, CardColor);
+            Button hint = PlaceButton(_feedbackRoot.transform, "Hint", "", 943f, 213f, 154f, 58f, ShowHint, CardColor);
             PlaceSymbol(hint.transform, "Hint Bulb", TabletSymbol.Bulb, 963f, 226f, 32f, new Color(1f, 0.70f, 0.20f));
             PlaceText(hint.transform, "Hint Label", "힌트 보기", 1005f, 225f, 88f, 34f, 20, FontStyle.Normal, MutedTextColor);
-            Button expand = PlaceButton(_surfaceRect, "Expand Image", "", 657f, 659f, 51f, 49f,
+            Button expand = PlaceButton(_feedbackRoot.transform, "Expand Image", "", 657f, 659f, 51f, 49f,
                 () => ShowDetail("원본 이미지", "오염 픽셀과 주변 픽셀의 밝기·색을 비교하세요.", true), new Color(0.31f, 0.35f, 0.41f, 0.8f));
             PlaceSymbol(expand.transform, "Expand Symbol", TabletSymbol.Expand, 670f, 672f, 25f, Color.white);
         }
 
         private void BuildPixelPreviews()
         {
-            Image original = CreateGlassPanel(_surfaceRect, "Original Image Panel", 465f, 597f, 267f, 205f);
+            Image original = CreateGlassPanel(_feedbackRoot.transform, "Original Image Panel", 465f, 597f, 267f, 205f);
             PlaceText(original.transform, "Original Image Caption", "원본 이미지", 487f, 616f, 220f, 32f,
                 21, FontStyle.Bold, TextColor);
             Image pixels = PlaceImage(original.transform, "Original Pixels", 488f, 658f, 220f, 122f, CardColor);
             pixels.sprite = _pixelSprites[0];
             pixels.type = Image.Type.Simple;
 
-            Image channels = CreateGlassPanel(_surfaceRect, "RGB Channels Panel", 745f, 597f, 352f, 205f);
+            Image channels = CreateGlassPanel(_feedbackRoot.transform, "RGB Channels Panel", 745f, 597f, 352f, 205f);
             PlaceText(channels.transform, "RGB Caption", "RGB 채널 분해", 767f, 616f, 308f, 32f,
                 21, FontStyle.Bold, TextColor);
             Color[] colors = { new Color(1f, 0.13f, 0.18f), new Color(0.05f, 0.76f, 0.27f), new Color(0.05f, 0.33f, 1f) };
@@ -803,6 +1010,69 @@ namespace XR
             Sprite sprite = CreateRoundedSprite(256, radius, 0f, top, bottom);
             _generatedSprites.Add(sprite);
             return sprite;
+        }
+
+        private Sprite CreateLessonMapSprite(int kind)
+        {
+            // These small examples use actual 3x3 correlations. Absolute responses are mapped to brightness.
+            float[,] input = new float[7, 7];
+            for (int y = 0; y < 7; y++)
+            {
+                for (int x = 0; x < 7; x++)
+                {
+                    input[y, x] = x >= 3 && y >= 3 ? 1f : x >= 3 || y >= 3 ? 0.4f : 0f;
+                }
+            }
+            int[][,] kernels =
+            {
+                new int[,] { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } },
+                new int[,] { { -1, -1, -1 }, { 0, 0, 0 }, { 1, 1, 1 } },
+                new int[,] { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } }
+            };
+            int size = kind == 0 ? 7 : 5;
+            float[,] values = new float[size, size];
+            float maximum = 1f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float value = input[y, x];
+                    if (kind != 0)
+                    {
+                        value = 0f;
+                        for (int ky = 0; ky < 3; ky++)
+                        {
+                            for (int kx = 0; kx < 3; kx++)
+                            {
+                                value += input[y + ky, x + kx] * kernels[kind - 1][ky, kx];
+                            }
+                        }
+                        value = Mathf.Abs(value);
+                    }
+                    values[y, x] = value;
+                    maximum = Mathf.Max(maximum, value);
+                }
+            }
+            const int cell = 16;
+            Texture2D texture = new Texture2D(size * cell, size * cell, TextureFormat.RGBA32, false)
+            {
+                name = "Parchment Example " + kind,
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            Color[] pixels = new Color[texture.width * texture.height];
+            for (int y = 0; y < texture.height; y++)
+            {
+                for (int x = 0; x < texture.width; x++)
+                {
+                    float brightness = values[y / cell, x / cell] / maximum;
+                    Color color = Color.Lerp(new Color(0.08f, 0.12f, 0.18f), new Color(0.94f, 0.86f, 0.62f), brightness);
+                    pixels[y * texture.width + x] = x % cell == 0 || y % cell == 0 ? new Color(0.27f, 0.29f, 0.3f) : color;
+                }
+            }
+            texture.SetPixels(pixels);
+            texture.Apply(false, true);
+            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f, 100f);
         }
 
         private Sprite CreatePixelSprite(int channel)
@@ -1227,18 +1497,25 @@ namespace XR
             RefreshStage();
             RefreshProgress();
             RefreshSettingsValues();
-            UpdateFeedback("필터 렌즈 준비 완료",
-                "선택한 양피지로 오염된 픽셀을\n관찰하세요.\n\nRGB 채널의 값을 비교하고, 필터가 주변\n픽셀에 미치는 영향을 확인해보세요.");
+            UpdateFeedback("교육 문서 수집",
+                "방 안에서 은은하게 빛나는 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
         }
 
         private void RefreshInventory()
         {
             for (int index = 0; index < _inventoryGlows.Count; index++)
             {
-                _inventoryGlows[index].gameObject.SetActive(index == _selectedItemIndex);
-                _inventorySurfaces[index].sprite = index == _selectedItemIndex ? _selectedSprite : _panelSprite;
-                _inventorySurfaces[index].color = CardColor;
-                _inventoryLabels[index].fontStyle = FontStyle.Bold;
+                bool owned = HasParchment(index);
+                bool selected = owned && index == _selectedItemIndex;
+                _inventoryGlows[index].gameObject.SetActive(selected);
+                _inventorySurfaces[index].sprite = selected ? _selectedSprite : _panelSprite;
+                _inventorySurfaces[index].color = owned ? CardColor : new Color(0.9f, 0.92f, 0.94f);
+                _inventoryButtons[index].interactable = owned;
+                _inventoryLabels[index].text = _itemNames[index] + (owned ? "" : " · 미발견");
+                _inventoryLabels[index].fontSize = owned ? 21 : 18;
+                _inventoryLabels[index].color = owned ? TextColor : MutedTextColor;
+                _inventoryDescriptions[index].text = owned ? _itemDescriptions[index] : ParchmentLesson.All[index].Room;
+                _inventoryDescriptions[index].fontSize = owned ? 18 : 16;
             }
         }
 
@@ -1322,10 +1599,35 @@ namespace XR
 
         private void SelectItem(int index)
         {
+            if (!HasParchment(index))
+            {
+                return;
+            }
             _selectedItemIndex = index;
+            _parchmentPages = ParchmentLesson.All[index].Pages;
+            _parchmentPageIndex = 0;
             RefreshInventory();
-            UpdateFeedback(_itemNames[index] + " 선택됨",
-                "관찰할 픽셀과 RGB 채널을 확인하세요.\n\n주변 픽셀의 값이 바뀌면 필터의 출력도 달라집니다.");
+            _parchmentReader.SetActive(true);
+            _feedbackRoot.SetActive(false);
+            RefreshParchmentPage();
+        }
+
+        public bool HasParchment(int index)
+        {
+            return index >= 0 && index < _collectedParchments.Length && _collectedParchments[index];
+        }
+
+        public bool CollectParchment(int index)
+        {
+            if (index < 0 || index >= _collectedParchments.Length || HasParchment(index))
+            {
+                return false;
+            }
+            _collectedParchments[index] = true;
+            RefreshInventory();
+            UpdateFeedback(_itemNames[index] + " 획득",
+                ParchmentLesson.All[index].Title + "\n\n오른쪽 아이템함에서 선택하면\n교육 문서를 읽을 수 있습니다.");
+            return true;
         }
 
         private int SettingsFocusIndex()
@@ -1387,6 +1689,7 @@ namespace XR
                 SetInteraction(true);
             }
             bool open = !_settingsOverlay.activeSelf;
+            _detailOverlay.SetActive(false);
             _stageMenu.SetActive(false);
             SetSettingsVisible(open);
             ResetFocus(open ? 0 : SettingsFocusIndex());
@@ -1544,13 +1847,6 @@ namespace XR
         private void SetInteraction(bool active)
         {
             _isInteracting = active;
-            // Swap only this rig's left movement reader; other interactions keep their inputs.
-            if (active && !_movementCaptured && _moveProvider != null)
-            {
-                _previousMoveInput = _moveProvider.leftHandMoveInput;
-                _moveProvider.leftHandMoveInput = _blockedMoveInput;
-                _movementCaptured = true;
-            }
             if (!active)
             {
                 SetSettingsVisible(false);
@@ -1563,6 +1859,16 @@ namespace XR
             ResetFocus(_selectedItemIndex);
         }
 
+        private void CaptureMovement()
+        {
+            if (!_movementCaptured && _moveProvider != null)
+            {
+                _previousMoveInput = _moveProvider.leftHandMoveInput;
+                _moveProvider.leftHandMoveInput = _blockedMoveInput;
+                _movementCaptured = true;
+            }
+        }
+
         private void ReleaseMovement()
         {
             if (_movementCaptured && _moveProvider != null && _moveProvider.leftHandMoveInput == _blockedMoveInput)
@@ -1573,7 +1879,7 @@ namespace XR
             _previousMoveInput = null;
         }
 
-        private void GoBackOrOpenSettings()
+        private void GoBack()
         {
             if (_detailOverlay.activeSelf)
             {
@@ -1590,15 +1896,34 @@ namespace XR
             {
                 ShowStageMenu(false);
             }
-            else
+            else if (_settingsOverlay.activeSelf)
             {
                 ToggleSettings();
+            }
+            else if (_parchmentReader.activeSelf)
+            {
+                CloseParchment();
+            }
+            else
+            {
+                SetInteraction(false);
             }
         }
 
         private void ResetFocus(int index)
         {
             _focusIndex = Mathf.Clamp(index, 0, ActiveTargets.Count - 1);
+            if (!ActiveTargets[_focusIndex].Control.IsActive() || !ActiveTargets[_focusIndex].Control.IsInteractable())
+            {
+                for (int candidate = 0; candidate < ActiveTargets.Count; candidate++)
+                {
+                    if (ActiveTargets[candidate].Control.IsActive() && ActiveTargets[candidate].Control.IsInteractable())
+                    {
+                        _focusIndex = candidate;
+                        break;
+                    }
+                }
+            }
             _isAdjustingSlider = false;
             _stickMustCenter = true;
             _lastDirection = Vector2.zero;
@@ -1646,12 +1971,6 @@ namespace XR
                 _lastDirection = Vector2.zero;
                 return;
             }
-            if ((_isAdjustingSlider && !_trigger.IsPressed()) ||
-                (!_isAdjustingSlider && _trigger.IsPressed()))
-            {
-                _lastDirection = Vector2.zero;
-                return;
-            }
             if (_stickMustCenter || stick.magnitude < 0.6f)
             {
                 return;
@@ -1680,7 +1999,7 @@ namespace XR
             int nextIndex = _focusIndex;
             for (int index = 0; index < targets.Count; index++)
             {
-                if (index == _focusIndex)
+                if (index == _focusIndex || !targets[index].Control.IsActive() || !targets[index].Control.IsInteractable())
                 {
                     continue;
                 }
@@ -1709,10 +2028,10 @@ namespace XR
 
         private void OnDisable()
         {
-            _triggerConsumedBySlider = false;
             _xButton?.Disable();
             _yButton?.Disable();
             _trigger?.Disable();
+            _menuButton?.Disable();
             _stick?.Disable();
             if (_settingsOverlay != null && _stageMenu != null)
             {
@@ -1726,6 +2045,7 @@ namespace XR
             _xButton?.Dispose();
             _yButton?.Dispose();
             _trigger?.Dispose();
+            _menuButton?.Dispose();
             _stick?.Dispose();
             DestroyRuntimeSprite(_roundedSprite);
             DestroyRuntimeSprite(_circleSprite);
@@ -1737,6 +2057,10 @@ namespace XR
                 DestroyRuntimeSprite(sprite);
             }
             foreach (Sprite sprite in _pixelSprites)
+            {
+                DestroyRuntimeSprite(sprite);
+            }
+            foreach (Sprite sprite in _lessonMapSprites)
             {
                 DestroyRuntimeSprite(sprite);
             }

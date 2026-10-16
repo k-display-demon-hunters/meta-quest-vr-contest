@@ -36,8 +36,9 @@ namespace XR.Editor
     public static class XRProjectSetup
     {
         private const string ScenePath = "Assets/Scenes/QuestMain.unity";
+        private const string StartupScenePath = "Assets/Scenes/FactoryIntro.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string StartupSceneScheduledKey = "XR.QuestMainStartupSceneScheduled";
+        private const string StartupSceneScheduledKey = "XR.FactoryIntroStartupSceneScheduled";
 
         [InitializeOnLoadMethod]
         private static void ScheduleStartupScene()
@@ -60,7 +61,7 @@ namespace XR.Editor
                 return;
             }
             if (EditorApplication.isPlayingOrWillChangePlaymode || SceneManager.sceneCount != 1 ||
-                !File.Exists(ScenePath))
+                !File.Exists(StartupScenePath))
             {
                 return;
             }
@@ -72,7 +73,7 @@ namespace XR.Editor
                 return;
             }
 
-            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorSceneManager.OpenScene(StartupScenePath, OpenSceneMode.Single);
         }
 
         [MenuItem("Tools/XR/Configure Project")]

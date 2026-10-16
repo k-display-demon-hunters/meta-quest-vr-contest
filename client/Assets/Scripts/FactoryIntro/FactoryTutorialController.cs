@@ -25,6 +25,7 @@ namespace FactoryIntro
         private ButtonControl _trigger;
         private ButtonControl _xButton;
         private ButtonControl _yButton;
+        private ButtonControl _menuButton;
         private Vector2Control _stick;
         private bool _hasMovedWithStick;
         private bool _hasGrabbed;
@@ -35,6 +36,7 @@ namespace FactoryIntro
 
         public TutorialStep CurrentStep { get; private set; }
         public bool IsRunning { get; private set; }
+        public bool IsPaused { get; private set; }
         public string CurrentInstruction { get; private set; }
         public event Action<TutorialStep> OnStepChanged;
         public event Action<string> OnInstructionChanged;
@@ -42,7 +44,7 @@ namespace FactoryIntro
 
         private void Update()
         {
-            if (!IsRunning || _rig == null || _rig.Camera == null)
+            if (!IsRunning || IsPaused || _rig == null || _rig.Camera == null)
             {
                 return;
             }
@@ -93,7 +95,26 @@ namespace FactoryIntro
             _grabTarget.selectEntered.AddListener(HandleGrab);
             _grabTarget.selectExited.AddListener(HandleRelease);
             IsRunning = true;
+            IsPaused = false;
             ChangeStep(TutorialStep.Movement);
+        }
+
+        public void SetPaused(bool paused)
+        {
+            if (!IsRunning)
+            {
+                return;
+            }
+            bool wasPaused = IsPaused;
+            IsPaused = paused;
+            _tabletInputArmed = false;
+            if (wasPaused && !paused && CurrentStep == TutorialStep.Tablet)
+            {
+                // The tablet closes its active menu when the confirmation pauses input.
+                // Restart its short exercise so the instructions match the visible UI.
+                _tabletStep = 0;
+                SetInstruction(GetStepInstruction());
+            }
         }
 
         public void StopTutorial()
@@ -101,6 +122,7 @@ namespace FactoryIntro
             _runVersion++;
             StopAllCoroutines();
             IsRunning = false;
+            IsPaused = false;
             if (_grabTarget != null)
             {
                 _grabTarget.selectEntered.RemoveListener(HandleGrab);
@@ -114,7 +136,7 @@ namespace FactoryIntro
 
         public void ConfirmSelection()
         {
-            if (IsRunning && CurrentStep == TutorialStep.Selection)
+            if (IsRunning && !IsPaused && CurrentStep == TutorialStep.Selection)
             {
                 ChangeStep(TutorialStep.Grab);
             }
@@ -122,7 +144,7 @@ namespace FactoryIntro
 
         public void ReturnToStart()
         {
-            if (!IsRunning || CurrentStep != TutorialStep.Return || _rig == null || _rig.Camera == null)
+            if (!IsRunning || IsPaused || CurrentStep != TutorialStep.Return || _rig == null || _rig.Camera == null)
             {
                 return;
             }
@@ -150,11 +172,12 @@ namespace FactoryIntro
                 _trigger = controller?.TryGetChildControl("triggerPressed") as ButtonControl;
                 _xButton = controller?.TryGetChildControl("primaryButton") as ButtonControl;
                 _yButton = controller?.TryGetChildControl("secondaryButton") as ButtonControl;
+                _menuButton = controller?.TryGetChildControl("menuButton") as ButtonControl;
                 _stick = controller?.TryGetChildControl("primary2DAxis") as Vector2Control;
                 _tabletInputArmed = false;
             }
             if (controller == null || !controller.added || !controller.enabled || !controller.isTracked.isPressed ||
-                _trigger == null || _xButton == null || _yButton == null || _stick == null)
+                _trigger == null || _xButton == null || _yButton == null || _menuButton == null || _stick == null)
             {
                 _tabletInputArmed = false;
                 return false;
@@ -165,12 +188,12 @@ namespace FactoryIntro
         private void UpdateTabletPractice()
         {
             Vector2 stick = _stick.ReadValue();
-            bool neutral = !_trigger.isPressed && !_xButton.isPressed && !_yButton.isPressed &&
+            bool neutral = !_trigger.isPressed && !_xButton.isPressed && !_yButton.isPressed && !_menuButton.isPressed &&
                 stick.sqrMagnitude < 0.0625f;
             if (!_tabletInputArmed)
             {
                 _tabletInputArmed = neutral;
-                if (neutral && _tabletStep == 5)
+                if (neutral && _tabletStep == 6)
                 {
                     ChangeStep(TutorialStep.Complete);
                 }
@@ -179,10 +202,11 @@ namespace FactoryIntro
             bool performed = _tabletStep switch
             {
                 0 => _trigger.isPressed,
-                1 => stick.sqrMagnitude > 0.36f,
-                2 => _yButton.isPressed,
-                3 => _yButton.isPressed,
+                1 => _trigger.isPressed && stick.sqrMagnitude > 0.36f,
+                2 => _menuButton.isPressed,
+                3 => _menuButton.isPressed,
                 4 => _xButton.isPressed,
+                5 => _yButton.isPressed,
                 _ => false
             };
             if (performed)
@@ -232,10 +256,11 @@ namespace FactoryIntro
             string instruction = _tabletStep switch
             {
                 0 => "왼손 태블릿을 보세요. 버튼과 스틱을 놓은 뒤 왼손 Trigger를 한 번 누르세요.",
-                1 => "Trigger를 놓은 뒤 왼쪽 스틱을 밀어 보세요. 태블릿의 포커스 이동을 살펴보세요.",
-                2 => "스틱을 중앙으로 놓은 뒤 왼손 Y를 한 번 누르세요. 설정 화면의 변화를 살펴보세요.",
-                3 => "Y를 놓았다가 다시 누르세요. 설정 열기/닫기 조작을 연습합니다.",
-                4 => "Y를 놓고 왼손 X를 누르세요. X는 뒤로 가기이며 기본 화면에서는 조작을 종료합니다.",
+                1 => "Trigger를 놓았다가 다시 누른 채 왼쪽 스틱을 밀어 태블릿 포커스를 이동하세요.",
+                2 => "Trigger와 스틱을 놓은 뒤 왼손 세 줄 Menu를 눌러 설정을 여세요.",
+                3 => "Menu를 놓았다가 다시 눌러 설정을 닫으세요.",
+                4 => "Menu를 놓고 왼손 X를 눌러 포커스된 항목을 선택하세요.",
+                5 => "X를 놓고 왼손 Y를 눌러 이전 화면으로 돌아가세요.",
                 _ => "모든 버튼을 놓고 스틱을 중앙으로 돌려놓으세요."
             };
             return "태블릿 입력 연습 · " + instruction;
@@ -253,7 +278,7 @@ namespace FactoryIntro
 
         private void HandleGrab(SelectEnterEventArgs args)
         {
-            if (IsRunning && CurrentStep == TutorialStep.Grab &&
+            if (IsRunning && !IsPaused && CurrentStep == TutorialStep.Grab &&
                 args.interactorObject.transform.IsChildOf(_rig.transform))
             {
                 _hasGrabbed = true;
@@ -262,7 +287,7 @@ namespace FactoryIntro
 
         private void HandleRelease(SelectExitEventArgs args)
         {
-            if (!IsRunning || CurrentStep != TutorialStep.Grab || !_hasGrabbed)
+            if (!IsRunning || IsPaused || CurrentStep != TutorialStep.Grab || !_hasGrabbed)
             {
                 return;
             }
@@ -278,6 +303,10 @@ namespace FactoryIntro
         {
             // The next step hides this interactable. Let XRI finish its select-exit dispatch first.
             yield return null;
+            while (IsRunning && IsPaused)
+            {
+                yield return null;
+            }
             if (IsRunning && CurrentStep == TutorialStep.Grab && !_grabTarget.isSelected)
             {
                 ChangeStep(TutorialStep.Return);

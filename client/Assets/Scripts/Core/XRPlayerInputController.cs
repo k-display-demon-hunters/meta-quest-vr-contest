@@ -37,12 +37,50 @@ namespace XR
         private bool _previousManipulation;
         private XRBaseInputInteractor.InputTriggerType _previousSelectTrigger;
         private bool _laserEnabled = true;
+        private bool _tutorialInputSuppressed;
+        private bool _tutorialRayForcedOn;
+        private bool _laserStateBeforeTutorial;
         private Transform _handRayOrigin;
         private Transform _handAttach;
         private Pose _handAttachPose;
         private Transform _gazeAttach;
         private bool _followingGaze;
         private bool _bound;
+
+        public bool TutorialInputSuppressed
+        {
+            get => _tutorialInputSuppressed;
+            set => _tutorialInputSuppressed = value;
+        }
+
+        public bool TutorialRayForcedOn
+        {
+            get => _tutorialRayForcedOn;
+            set
+            {
+                if (_tutorialRayForcedOn == value)
+                {
+                    return;
+                }
+                _tutorialRayForcedOn = value;
+                if (value)
+                {
+                    _laserStateBeforeTutorial = _laserEnabled;
+                    if (_rightRay != null)
+                    {
+                        SetLaserEnabled(true);
+                    }
+                }
+                else if (_rightRay != null)
+                {
+                    SetLaserEnabled(_laserStateBeforeTutorial);
+                }
+                else
+                {
+                    _laserEnabled = _laserStateBeforeTutorial;
+                }
+            }
+        }
 
         private void Awake()
         {
@@ -74,6 +112,15 @@ namespace XR
 
         private void Start()
         {
+            EnsureRayReady();
+        }
+
+        public void EnsureRayReady()
+        {
+            if (_bound)
+            {
+                return;
+            }
             foreach (XRRayInteractor ray in GetComponentsInChildren<XRRayInteractor>(true))
             {
                 if (ray.handedness == InteractorHandedness.Right)
@@ -90,21 +137,31 @@ namespace XR
             }
             _lineVisual = _rightRay.GetComponent<XRInteractorLineVisual>();
             _line = _rightRay.GetComponent<LineRenderer>();
-            _gazeAttach = new GameObject("Gaze Grab Anchor").transform;
-            _gazeAttach.SetParent(_rig.Camera.transform, false);
-            _uiPress = new XRInputButtonReader("Right Trigger UI",
-                inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
+            if (_gazeAttach == null)
             {
-                inputActionPerformed = new InputAction("Right UI Click", InputActionType.Button,
-                    "<XRController>{RightHand}/triggerPressed"),
-                inputActionValue = new InputAction("Right UI Click Value", InputActionType.Value,
-                    "<XRController>{RightHand}/trigger")
-            };
+                _gazeAttach = new GameObject("Gaze Grab Anchor").transform;
+                _gazeAttach.SetParent(_rig.Camera.transform, false);
+            }
+            if (_uiPress == null)
+            {
+                _uiPress = new XRInputButtonReader("Right Trigger UI",
+                    inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
+                {
+                    inputActionPerformed = new InputAction("Right UI Click", InputActionType.Button,
+                        "<XRController>{RightHand}/triggerPressed"),
+                    inputActionValue = new InputAction("Right UI Click Value", InputActionType.Value,
+                        "<XRController>{RightHand}/trigger")
+                };
+            }
             BindRay();
         }
 
         private void Update()
         {
+            if (_tutorialInputSuppressed)
+            {
+                return;
+            }
             if (_quit.WasPressedThisFrame())
             {
 #if UNITY_EDITOR
@@ -126,7 +183,7 @@ namespace XR
             {
                 RotateView(_look.ReadValue<Vector2>());
             }
-            if (_laser.WasPressedThisFrame() && _rightRay != null)
+            if (!_tutorialRayForcedOn && _laser.WasPressedThisFrame() && _rightRay != null)
             {
                 SetLaserEnabled(!_laserEnabled);
             }
@@ -154,7 +211,7 @@ namespace XR
             _rightRay.selectEntered.AddListener(HandleGrabbed);
             _rightRay.selectExited.AddListener(HandleReleased);
             _bound = true;
-            SetLaserEnabled(_laserEnabled);
+            SetLaserEnabled(_tutorialRayForcedOn || _laserEnabled);
         }
 
         private void RotateView(Vector2 stick)

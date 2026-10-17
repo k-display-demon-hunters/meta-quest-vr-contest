@@ -28,6 +28,7 @@ namespace CNNFeatureMaps
         public CNNFeatureMapGrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
         public bool CanScale => !_isFilter;
+        internal Collider[] GrabColliders => _grabColliders;
         public bool canProcess => isActiveAndEnabled;
 
         public void Initialize(CNNFeatureMapScene scene)
@@ -47,7 +48,7 @@ namespace CNNFeatureMaps
             _body.isKinematic = true;
             _body.useGravity = false;
             // Explicit colliders prevent layer/map handles from also claiming child cells.
-            _grab = gameObject.AddComponent<XRGrabInteractable>();
+            _grab = gameObject.AddComponent<CNNFeatureMapGrabInteractable>();
             _grab.enabled = false;
             _grab.colliders.Clear();
             _grab.colliders.AddRange(_grabColliders);

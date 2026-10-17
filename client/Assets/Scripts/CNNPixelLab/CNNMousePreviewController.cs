@@ -16,7 +16,7 @@ namespace UI
         private readonly Dictionary<GameObject, bool> _hiddenObjects = new Dictionary<GameObject, bool>();
         private readonly List<SpatialVolumeInteractionController> _volumes = new List<SpatialVolumeInteractionController>();
         private readonly List<BaseInputModule> _disabledModules = new List<BaseInputModule>();
-        private SpatialPixelLab _lab;
+        private CNNPixelLabManager _lab;
         private Camera _camera;
         private XRGrabInteractable _drag;
         private SpatialConvolutionController _calculation;
@@ -33,7 +33,7 @@ namespace UI
 
         private void Start()
         {
-            _lab = GetComponent<SpatialPixelLab>();
+            _lab = GetComponent<CNNPixelLabManager>();
             Camera original = Camera.main;
             if (original == null || UnityEngine.XR.XRSettings.isDeviceActive)
             {

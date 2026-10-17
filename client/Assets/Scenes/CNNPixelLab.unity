@@ -177,7 +177,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
@@ -272,7 +272,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -478,7 +478,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
@@ -986,7 +986,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -1173,7 +1173,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448782}
-        m_TargetAssemblyTypeName: UI.SpatialPixelLab, Assembly-CSharp
+        m_TargetAssemblyTypeName: UI.CNNPixelLabManager, Assembly-CSharp
         m_MethodName: NextStage
         m_Mode: 0
         m_Arguments:
@@ -1378,7 +1378,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -1525,7 +1525,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
@@ -1612,7 +1612,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -1799,7 +1799,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448782}
-        m_TargetAssemblyTypeName: UI.SpatialPixelLab, Assembly-CSharp
+        m_TargetAssemblyTypeName: UI.CNNPixelLabManager, Assembly-CSharp
         m_MethodName: ResetLab
         m_Mode: 0
         m_Arguments:
@@ -2006,7 +2006,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
@@ -2111,7 +2111,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448782}
-        m_TargetAssemblyTypeName: UI.SpatialPixelLab, Assembly-CSharp
+        m_TargetAssemblyTypeName: UI.CNNPixelLabManager, Assembly-CSharp
         m_MethodName: CloseDetails
         m_Mode: 0
         m_Arguments:
@@ -2447,7 +2447,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -2692,7 +2692,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -2937,7 +2937,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -3092,7 +3092,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -3501,7 +3501,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448782}
-        m_TargetAssemblyTypeName: UI.SpatialPixelLab, Assembly-CSharp
+        m_TargetAssemblyTypeName: UI.CNNPixelLabManager, Assembly-CSharp
         m_MethodName: ShowDetails
         m_Mode: 0
         m_Arguments:
@@ -3939,7 +3939,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
     m_FontSize: 21
     m_FontStyle: 0
     m_BestFit: 0
@@ -3981,7 +3981,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7ba0b356c691854e93b96608ad06758, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.SpatialPixelLab
+  m_EditorClassIdentifier: Assembly-CSharp::UI.CNNPixelLabManager
   _sourceImage: {fileID: 2800000, guid: 5747fbb933e9f95428b858610b09a826, type: 3}
   _board: {fileID: 1902821098}
   _boardRenderer: {fileID: 712224470}
@@ -4048,7 +4048,7 @@ MonoBehaviour:
   _board: {fileID: 1902821098}
   _controls: {fileID: 990015727}
   _camera: {fileID: 0}
-  _font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+  _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   _boardSize: {x: 2.4, y: 1.35}
   _enlargement: 2
   _enlargeDuration: 0.65

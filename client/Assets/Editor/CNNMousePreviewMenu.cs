@@ -33,7 +33,7 @@ public static class CNNMousePreviewMenu
         if (!EditorApplication.isPlaying || EditorApplication.isCompiling ||
             EditorApplication.timeSinceStartup < _nextCheck) { return; }
         _nextCheck = EditorApplication.timeSinceStartup + 0.5;
-        SpatialPixelLab lab = Object.FindFirstObjectByType<SpatialPixelLab>();
+        CNNPixelLabManager lab = Object.FindFirstObjectByType<CNNPixelLabManager>();
         if (lab == null) { return; }
         CNNMousePreviewController preview = lab.GetComponent<CNNMousePreviewController>();
         bool requested = EditorPrefs.GetBool(CNNMousePreviewController.PreferenceKey, false)

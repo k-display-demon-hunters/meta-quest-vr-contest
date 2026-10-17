@@ -5,7 +5,7 @@ namespace CNNFeatureMaps
     [RequireComponent(typeof(Renderer))]
     public sealed class CNNFeatureMapNode : MonoBehaviour
     {
-        private CNNFeatureMapScene _scene;
+        private CNNFeatureMapLabManager _scene;
         private int _layer = -1;
         private int _channel;
         [SerializeField] private int _row;
@@ -22,7 +22,7 @@ namespace CNNFeatureMaps
         public int Row => _row;
         public int Column => _column;
 
-        public void Initialize(CNNFeatureMapScene scene, int layer, int channel)
+        public void Initialize(CNNFeatureMapLabManager scene, int layer, int channel)
         {
             _scene = scene;
             _layer = layer;

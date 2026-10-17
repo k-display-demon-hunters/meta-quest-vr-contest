@@ -1,6 +1,7 @@
 using System.Collections;
 using CNNFeatureMaps;
 using ModelDesignScene;
+using Tablet;
 using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -17,14 +18,25 @@ namespace FactoryEnvironment
         private readonly string[] _scenes = { "CNNPixelLab", "CNNFeatureMapLab", "CNNModelDesignLab" };
         private FactoryFlowPortalController _portal;
         private Scene _lesson;
-        private SpatialPixelLab _pixels;
+        private CNNPixelLabManager _pixels;
         private CNNFeatureMapGuide _maps;
         private int _stage;
         private bool _loading;
         private string _error;
+        private TabletManager _tablet;
+        private TabletMapData _mapData;
+
+        private void OnEnable()
+        {
+            if (_mapData != null)
+            {
+                PublishMap();
+            }
+        }
 
         private void Start()
         {
+            PublishMap();
             _portal = new GameObject("Factory learning navigation").AddComponent<FactoryFlowPortalController>();
             _portal.transform.SetParent(transform, false);
             _portal.Initialize(_font, Advance);
@@ -101,7 +113,7 @@ namespace FactoryEnvironment
                 body.position = body.transform.position;
                 body.rotation = body.transform.rotation;
             }
-            SpatialPixelLab nextPixels = content.GetComponentInChildren<SpatialPixelLab>(true);
+            CNNPixelLabManager nextPixels = content.GetComponentInChildren<CNNPixelLabManager>(true);
             if (nextPixels != null) { nextPixels.RebaseDock(offset); }
             CNNFeatureMapGuide nextMaps = content.GetComponentInChildren<CNNFeatureMapGuide>(true);
             if (_pixels != null) { _pixels.CloseDetails(); }
@@ -122,8 +134,8 @@ namespace FactoryEnvironment
         {
             foreach (GameObject root in scene.GetRootGameObjects())
             {
-                if (root.GetComponentInChildren<SpatialPixelLab>(true) != null
-                    || root.GetComponentInChildren<CNNFeatureMapScene>(true) != null
+                if (root.GetComponentInChildren<CNNPixelLabManager>(true) != null
+                    || root.GetComponentInChildren<CNNFeatureMapLabManager>(true) != null
                     || root.GetComponentInChildren<CNNModelDesignLabManager>(true) != null) { return root; }
             }
             return null;
@@ -151,6 +163,24 @@ namespace FactoryEnvironment
         }
 
         private void Fail(string message) { _error = message; _loading = false; Debug.LogError(message, this); }
+
+        private void PublishMap()
+        {
+            _mapData = FactoryMapReader.Read(gameObject);
+            _tablet = FindFirstObjectByType<TabletManager>();
+            if (_tablet != null)
+            {
+                _tablet.SetMapData(_mapData);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_tablet != null)
+            {
+                _tablet.ClearMapData(_mapData);
+            }
+        }
 
         private void OnDestroy()
         {

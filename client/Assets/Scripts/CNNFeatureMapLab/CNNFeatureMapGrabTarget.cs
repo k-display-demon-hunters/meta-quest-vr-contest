@@ -14,7 +14,7 @@ namespace CNNFeatureMaps
         [SerializeField] private CNNFeatureMapGrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
         [SerializeField] private bool _isFilter;
-        private CNNFeatureMapScene _scene;
+        private CNNFeatureMapLabManager _scene;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
         private CNNFeatureMapNode _node;
@@ -31,7 +31,7 @@ namespace CNNFeatureMaps
         internal Collider[] GrabColliders => _grabColliders;
         public bool canProcess => isActiveAndEnabled;
 
-        public void Initialize(CNNFeatureMapScene scene)
+        public void Initialize(CNNFeatureMapLabManager scene)
         {
             _scene = scene;
         }

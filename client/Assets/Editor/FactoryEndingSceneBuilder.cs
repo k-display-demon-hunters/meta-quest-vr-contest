@@ -17,7 +17,7 @@ namespace FactoryScenes.Editor
 
         private const string MaterialFolder = "Assets/Materials/FactoryEnding";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string FontPath = "Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf";
+        private const string FontPath = "Assets/Fonts/NotoSansCJKkr-Regular.otf";
 
         [MenuItem("Tools/Factory/Create Ending Scene")]
         public static void Create()

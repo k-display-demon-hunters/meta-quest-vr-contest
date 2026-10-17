@@ -80,6 +80,10 @@ namespace XR.Editor
         [MenuItem("Tools/XR/Configure Project")]
         public static void ConfigureProject()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                throw new InvalidOperationException("Stop Play Mode before configuring XR.");
+            }
             Directory.CreateDirectory("Assets/XR");
             AssetDatabase.Refresh();
             if (!EditorBuildSettings.TryGetConfigObject(XRGeneralSettings.k_SettingsKey,
@@ -98,7 +102,6 @@ namespace XR.Editor
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.GameActivity;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.kdisplaydemonhunters.metaquestvrcontest");
             PlayerSettings.colorSpace = ColorSpace.Linear;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan });
@@ -135,6 +138,7 @@ namespace XR.Editor
             if (target == BuildTargetGroup.Android)
             {
                 EnableFeature<MetaQuestFeature>(openXR);
+                EnableFeature<MetaQuestTouchPlusControllerProfile>(openXR);
             }
             EditorUtility.SetDirty(openXR);
             EditorUtility.SetDirty(general);
@@ -327,7 +331,7 @@ namespace XR.Editor
             SerializedObject serializedDisplay = new SerializedObject(display);
             serializedDisplay.FindProperty("_message").objectReferenceValue = message;
             serializedDisplay.FindProperty("_font").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+                AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             serializedDisplay.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject right = CreateChild("RightHand Grip Visual", parent);
@@ -371,7 +375,7 @@ namespace XR.Editor
             labelRect.offsetMin = Vector2.zero;
             labelRect.offsetMax = Vector2.zero;
             Text message = label.GetComponent<Text>();
-            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             message.font = font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             message.fontSize = 28;
             message.alignment = TextAnchor.MiddleCenter;

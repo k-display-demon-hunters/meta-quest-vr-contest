@@ -40,8 +40,10 @@ B는 같은 위치의 9개 픽셀과 가중치를 곱해 전체 합을 구한다
 `CNNFeatureMapLab`와 같은 공통 `XRPlayerRig` 프리팹을 씬에 배치한다. 기존 리그가 있으면 새 중복 리그를 제거하고 기존 카메라·컨트롤러·태블릿 상태를 유지한다. 별도 `Quest XR Origin`은 제거했다.
 Quest와 에디터 XR 시뮬레이터는 오른손 Grip을 누르는 동안 필터를 잡고 시선으로 움직이며, Grip을 놓으면 놓는다. 이미지와 UI 버튼은 오른손 Trigger로 클릭한다. 시점·정면 복원·레이저와 태블릿 조작은 공통 리그의 [통일된 조작법](xr-simulator.md)을 따른다. 실행 중 카메라는 유지된 리그의 `Camera.main`으로 연결한다.
 입력 사진을 128×72로 축소하고 부드럽게 만든 뒤 32×18 RGB 데이터를 샘플링한다.
-SpatialPixelLab은 선택과 단계 진입, PixelRevealStage는 확대와 픽셀 전환,
-RgbConvolutionView는 RGB 관찰/학습 구분, ConvolutionExercise는 고정 가중치 학습과 퀴즈의 진행을 담당한다. SpatialConvolutionController는 미터 단위 3D 타일, RGB 깊이 배치, 숫자 이동, 가중치 잡기와 답 블록 제출을 담당한다. 기존 씬의 런타임 초기화에서 연결하므로 별도 씬 재생성은 필요 없다.
+CNNPixelLabManager는 초기화와 단계 진입을 조율하고, PixelSelectionController는 필터 입력·선택·미리보기를, PixelLabUIController는 안내·버튼·배경 표시를 담당한다. PixelImageFactory는 사진 축소·블러·픽셀 샘플링과 텍스처 생성을 담당한다. PixelRevealStage는 확대와 픽셀 전환,
+RgbConvolutionView는 RGB 관찰/학습 구분, ConvolutionExercise는 고정 가중치 학습과 퀴즈의 진행을 담당한다. SpatialConvolutionController는 RGB 깊이 배치, 숫자 이동, 계산 표시를 담당한다. SpatialConvolutionViewBuilder는 미터 단위 3D 타일·라벨·공간 오브젝트와 공유 재질을 생성하고, SpatialConvolutionInteractionController는 가중치 잡기·정렬과 답 블록 제출·선택 해제를 담당한다. 두 클래스는 기존 컴포넌트가 생성하는 일반 C# 객체이며 기존 공개 API와 GUID를 유지한다. 기존 씬의 런타임 초기화에서 연결하므로 별도 씬 재생성은 필요 없다.
+
+CNNPixelLabManager는 기존 진입 컴포넌트의 GUID와 직렬화 필드를 유지한다. PixelSelectionController와 PixelLabUIController는 Manager가 생성하는 일반 C# 객체이며 추가 Inspector 연결은 필요 없다. 버튼의 호출 메서드는 유지하고 씬에 저장된 타입 이름만 갱신했다. 필터의 공장 내 위치 보정과 합성곱 완료 상태도 유지한다. 이번 책임 분리는 소스·참조를 정적으로 검토하고, 사용자 요청으로 2026-10-18 Unity 6000.3.24f1 스크립트 컴파일을 완료했다. Play·테스트·앱 빌드는 실행하지 않았다. 상세 결과는 [클라이언트 책임 분리 검증 기록](xr-setup.md#2026-10-18-클라이언트-책임-분리-검증)을 따른다.
 
 기존 학습 구현에는 컴파일 완료 기록이 있다. 이번 공통 XRPlayerRig 연결 변경은 소스·씬 참조만 정적으로 확인했으며 테스트·컴파일·Unity 실행·빌드·Quest 실기기 검증은 수행하지 않았다.
 
@@ -98,7 +100,7 @@ Unity 메뉴 `Tools > CNN > Mouse Preview (This Computer Only)`에서 전환한�
 5. 대응 관계 확인 후 R 층을 16cm 이상 직접 꺼내 놓으면 R 학습으로 이어진다. G/B도 해당 단계에서 해당 색 층을 직접 꺼내야 퀴즈로 이어진다. 색 성분을 꺼내는 동안 해당 가중치 층도 같이 움직인다. 가중치 값은 고정이다.
 6. R의 곱과 누적 합 애니메이션, G 첫 줄/G 전체/B 전체/최종 RGB 합 숫자 퀴즈를 거쳐 결과 하나를 만든다. 피처 맵 기록은 포함하지 않는다.
 
-`SpatialVolumeInteractionController`는 꺼내기·층 이동·필터 전체 정렬·대응 위치 표시를 담당한다. `SpatialConvolutionController`는 숫자 타일과 연산 애니메이션을, `ConvolutionExercise`는 R→G→B 학습 순서를 담당한다. 공통 XR 리그와 입력 바인딩은 변경하지 않는다.
+`SpatialVolumeInteractionController`는 꺼내기·층 이동·필터 전체 정렬·대응 위치 표시를 담당한다. `SpatialConvolutionController`는 연산 애니메이션과 표시 갱신을, `SpatialConvolutionViewBuilder`는 숫자 타일·라벨 생성을, `SpatialConvolutionInteractionController`는 계산 단계의 가중치와 답 블록 상호작용을, `ConvolutionExercise`는 R→G→B 학습 순서를 담당한다. 측면 숫자의 카메라 조회는 갱신 프레임마다 한 번만 수행한다. 공통 XR 리그와 입력 바인딩은 변경하지 않는다.
 
 관찰이 끝나거나 계산 화면에 들어가면 원본 이미지와 원래 버튼을 잠시 숨긴다. 이미지로 돌아가기에서 이전 활성 상태를 복구한다. 잡은 상태로 화면을 닫을 때는 선택을 취소하고 물체를 콘텐츠 부모로 회수한다. 재시작 시 물체 위치와 단계 상태를 초기화한다.
 

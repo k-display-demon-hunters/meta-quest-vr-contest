@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using Education;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Tablet
@@ -9,7 +7,6 @@ namespace Tablet
     [DisallowMultipleComponent]
     public sealed class TabletMinimapController : MaskableGraphic
     {
-        private const string FactorySceneName = "FactoryEnvironment";
         private const float RefreshInterval = 0.1f;
         private const float NearbyWorldHeight = 22f;
         private static readonly Color BackgroundColor = new Color(0.035f, 0.085f, 0.15f);
@@ -19,9 +16,9 @@ namespace Tablet
         private static readonly Color PaperColor = new Color(0.70f, 0.88f, 1f);
         private static readonly Color PlayerColor = new Color(0.24f, 0.90f, 1f);
 
-        private readonly List<MapFloor> _floors = new List<MapFloor>();
+        private readonly List<TabletMapData.Floor> _floors = new List<TabletMapData.Floor>();
         private readonly List<Rect> _walls = new List<Rect>();
-        private readonly List<ParchmentPickupController> _parchments = new List<ParchmentPickupController>();
+        private readonly List<TabletMapData.Parchment> _parchments = new List<TabletMapData.Parchment>();
         private readonly List<Text> _parchmentLabels = new List<Text>();
         private readonly List<Text> _roomLabels = new List<Text>();
         private TabletManager _tablet;
@@ -30,7 +27,7 @@ namespace Tablet
         private Text _status;
         private bool _overview;
         private bool _initialized;
-        private Rect _factoryBounds;
+        private Rect _mapBounds;
         private Rect _viewBounds;
         private Vector2 _playerPosition;
         private Vector2 _playerForward = Vector2.up;
@@ -41,8 +38,6 @@ namespace Tablet
         protected override void OnEnable()
         {
             base.OnEnable();
-            SceneManager.sceneLoaded += HandleSceneLoaded;
-            SceneManager.sceneUnloaded += HandleSceneUnloaded;
             if (_initialized)
             {
                 RebuildMap();
@@ -71,59 +66,38 @@ namespace Tablet
             RefreshTracking();
         }
 
-        private void RebuildMap()
+        internal void RebuildMap()
         {
             _floors.Clear();
             _walls.Clear();
             _parchments.Clear();
             ClearLabels(_parchmentLabels);
             ClearLabels(_roomLabels);
-            Scene scene = SceneManager.GetSceneByName(FactorySceneName);
-            if (scene.IsValid() && scene.isLoaded)
+            TabletMapData data = _tablet.MapData;
+            _mapBounds = data != null ? data.Bounds : default;
+            if (data != null)
             {
-                foreach (GameObject root in scene.GetRootGameObjects())
+                _floors.AddRange(data.Floors);
+                _walls.AddRange(data.Walls);
+                _parchments.AddRange(data.Parchments);
+                if (_overview)
                 {
-                    if (root.name == "Factory Environment")
+                    foreach (TabletMapData.Floor floor in _floors)
                     {
-                        ReadFactory(root);
-                        break;
+                        _roomLabels.Add(CreateLabel("Room " + floor.Name, floor.Name, 17,
+                            new Color(0.68f, 0.82f, 0.94f), new Vector2(118f, 26f)));
                     }
+                }
+                foreach (TabletMapData.Parchment marker in _parchments)
+                {
+                    _parchmentLabels.Add(CreateLabel("Parchment Marker " + marker.LessonIndex,
+                        (marker.LessonIndex + 1).ToString(), _overview ? 18 : 12, BackgroundColor,
+                        _overview ? new Vector2(24f, 28f) : new Vector2(18f, 20f)));
                 }
             }
             _nextRefreshTime = 0f;
             RefreshTracking();
             SetVerticesDirty();
-        }
-
-        private void ReadFactory(GameObject root)
-        {
-            // The existing scene names distinguish structural floors/walls from roofs and machines.
-            foreach (BoxCollider collider in root.GetComponentsInChildren<BoxCollider>())
-            {
-                Bounds bounds = collider.bounds;
-                Rect footprint = Rect.MinMaxRect(bounds.min.x, bounds.min.z, bounds.max.x, bounds.max.z);
-                if (collider.name.EndsWith("structural slab", System.StringComparison.Ordinal))
-                {
-                    _floors.Add(new MapFloor(footprint, FloorName(collider.name)));
-                    _factoryBounds = _floors.Count == 1 ? footprint : Union(_factoryBounds, footprint);
-                    if (_overview)
-                    {
-                        _roomLabels.Add(CreateLabel("Room " + collider.name, FloorName(collider.name), 17,
-                            new Color(0.68f, 0.82f, 0.94f), new Vector2(118f, 26f)));
-                    }
-                }
-                else if (collider.name.Contains("concrete") && bounds.size.y >= 1f && bounds.min.y < 0.6f)
-                {
-                    _walls.Add(footprint);
-                }
-            }
-            foreach (ParchmentPickupController pickup in root.GetComponentsInChildren<ParchmentPickupController>(true))
-            {
-                _parchments.Add(pickup);
-                _parchmentLabels.Add(CreateLabel("Parchment Marker " + pickup.LessonIndex,
-                    (pickup.LessonIndex + 1).ToString(), _overview ? 18 : 12, BackgroundColor,
-                    _overview ? new Vector2(24f, 28f) : new Vector2(18f, 20f)));
-            }
         }
 
         private void RefreshTracking()
@@ -145,8 +119,8 @@ namespace Tablet
             _visibleParchments = 0;
             for (int index = 0; index < _parchments.Count; index++)
             {
-                ParchmentPickupController pickup = _parchments[index];
-                if (pickup != null && pickup.isActiveAndEnabled && !_tablet.HasParchment(pickup.LessonIndex))
+                TabletMapData.Parchment pickup = _parchments[index];
+                if (pickup.IsActive && !_tablet.HasParchment(pickup.LessonIndex))
                 {
                     _visibleParchments |= 1 << index;
                 }
@@ -156,10 +130,10 @@ namespace Tablet
             Rect canvas = rectTransform.rect;
             if (_overview && _floors.Count > 0)
             {
-                float scale = Mathf.Min((canvas.width - 44f) / _factoryBounds.width,
-                    (canvas.height - 32f) / _factoryBounds.height);
+                float scale = Mathf.Min((canvas.width - 44f) / _mapBounds.width,
+                    (canvas.height - 32f) / _mapBounds.height);
                 Vector2 size = canvas.size / Mathf.Max(scale, 0.01f);
-                _viewBounds = new Rect(_factoryBounds.center - size * 0.5f, size);
+                _viewBounds = new Rect(_mapBounds.center - size * 0.5f, size);
             }
             else
             {
@@ -182,8 +156,8 @@ namespace Tablet
             safeArea.max -= Vector2.one * 12f;
             for (int index = 0; index < _parchments.Count; index++)
             {
-                ParchmentPickupController pickup = _parchments[index];
-                Vector2 point = pickup == null ? Vector2.zero : WorldToMap(pickup.transform.position);
+                TabletMapData.Parchment pickup = _parchments[index];
+                Vector2 point = WorldToMap(pickup.Position);
                 bool visible = (_visibleParchments & (1 << index)) != 0 && safeArea.Contains(point);
                 Text label = _parchmentLabels[index];
                 if (label.gameObject.activeSelf != visible)
@@ -197,7 +171,7 @@ namespace Tablet
             }
             for (int index = 0; index < _roomLabels.Count; index++)
             {
-                MapFloor floor = _floors[index];
+                TabletMapData.Floor floor = _floors[index];
                 Vector2 point = WorldToMap(floor.Bounds.center);
                 if (_roomLabels[index].rectTransform.anchoredPosition != point)
                 {
@@ -227,7 +201,7 @@ namespace Tablet
             }
             else
             {
-                foreach (MapFloor floor in _floors)
+                foreach (TabletMapData.Floor floor in _floors)
                 {
                     if (floor.Bounds.Contains(_playerPosition))
                     {
@@ -261,7 +235,7 @@ namespace Tablet
                 float pixelY = WorldToMap(new Vector2(0f, z)).y;
                 AddRectangle(mesh, new Rect(viewport.xMin, pixelY, viewport.width, 0.6f), GridColor);
             }
-            foreach (MapFloor floor in _floors)
+            foreach (TabletMapData.Floor floor in _floors)
             {
                 AddClippedRectangle(mesh, ToMapRect(floor.Bounds), FloorColor);
             }
@@ -390,78 +364,5 @@ namespace Tablet
             labels.Clear();
         }
 
-        private static Rect Union(Rect first, Rect second)
-        {
-            return Rect.MinMaxRect(Mathf.Min(first.xMin, second.xMin), Mathf.Min(first.yMin, second.yMin),
-                Mathf.Max(first.xMax, second.xMax), Mathf.Max(first.yMax, second.yMax));
-        }
-
-        private static string FloorName(string objectName)
-        {
-            if (objectName.StartsWith("Exterior", System.StringComparison.Ordinal))
-            {
-                return "하역장";
-            }
-            if (objectName.StartsWith("Security", System.StringComparison.Ordinal))
-            {
-                return "보안 구역";
-            }
-            if (objectName.StartsWith("Spine", System.StringComparison.Ordinal))
-            {
-                return "중앙 복도";
-            }
-            if (objectName.StartsWith("Inspection", System.StringComparison.Ordinal))
-            {
-                return "합성곱 실습실";
-            }
-            if (objectName.StartsWith("Feature", System.StringComparison.Ordinal))
-            {
-                return "CNN 실습실";
-            }
-            if (objectName.StartsWith("Assembly", System.StringComparison.Ordinal))
-            {
-                return "MLP 실습실";
-            }
-            if (objectName.StartsWith("Outbound", System.StringComparison.Ordinal))
-            {
-                return "출하 구역";
-            }
-            return "공장";
-        }
-
-        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (_initialized && scene.name == FactorySceneName)
-            {
-                RebuildMap();
-            }
-        }
-
-        private void HandleSceneUnloaded(Scene scene)
-        {
-            if (_initialized && scene.name == FactorySceneName)
-            {
-                RebuildMap();
-            }
-        }
-
-        protected override void OnDisable()
-        {
-            SceneManager.sceneLoaded -= HandleSceneLoaded;
-            SceneManager.sceneUnloaded -= HandleSceneUnloaded;
-            base.OnDisable();
-        }
-
-        private readonly struct MapFloor
-        {
-            public Rect Bounds { get; }
-            public string Name { get; }
-
-            public MapFloor(Rect bounds, string name)
-            {
-                Bounds = bounds;
-                Name = name;
-            }
-        }
     }
 }

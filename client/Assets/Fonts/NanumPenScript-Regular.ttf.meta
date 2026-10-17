@@ -12,7 +12,7 @@ TrueTypeFontImporter:
   fontNames:
   - Nanum Pen
   fallbackFontReferences:
-  - {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
+  - {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   customCharacters:
   fontRenderingMode: 0
   ascentCalculationMode: 1

@@ -4,6 +4,10 @@ Unity **6000.3.24f1**에서 사용하는 가상 공간 전용 구성이다.
 OpenXR 1.16.1, XR Plug-in Management 4.5.3, XR Interaction Toolkit 3.3.2를 고정했다.
 패키지의 전이 의존성은 `client/Packages/packages-lock.json`으로 관리한다.
 
+`Tools > CNN > Configure Quest VR`와 `Tools > XR > Configure Project`는 같은 XR 설정 코드를 사용한다. Android/OpenXR 설정은 구성하되 기존 앱 식별자·제품 이름·빌드 씬 순서는 유지한다. 픽셀 씬 생성은 별도 생성 메뉴로 실행한다.
+
+공용 한글 폰트는 `Assets/Fonts/NotoSansCJKkr-Regular.otf` 한 원본을 사용한다. 기존 `NotoSansKR` 폴더의 동일 폰트 참조와 Nanum Pen Script의 fallback도 이 원본으로 통일했으며, 폴더와 라이선스는 보존한다.
+
 ## 시작하기
 
 1. Unity Hub에서 Android Build Support, SDK/NDK Tools, OpenJDK를 설치한다.
@@ -195,3 +199,11 @@ API의 정확한 필드와 입력 바인딩은 위 버전으로 설치된 공식
 2026-10-08 태블릿·컨트롤러 표시 및 테스트 에셋 정리는 프로젝트 지침에 따라 테스트·Unity 컴파일·APK 빌드·실기기 검증 없이 적용했다. 위 과거 검증 결과는 이번 변경을 검증한 결과가 아니다.
 
 2026-10-10 스케치 배치 복원, 사각형 스타일, 설정창 넘침 수정 및 왼손 포커스 조작 변경은 소스와 설치된 XRI/UGUI API를 대조했다. 이번 수정에 대한 테스트·Unity Play·컴파일·빌드는 실행하지 않았다. 미니맵과 93% 진행률은 기존 예시 데이터이며, 실제 위치/교육 진행 데이터 연동은 별도 작업이다.
+
+## 2026-10-18 클라이언트 책임 분리 검증
+
+사용자 요청으로 기존 `client` 프로젝트를 Unity 6000.3.24f1의 배치 모드에서 열어 런타임·에디터 스크립트를 컴파일했다. `Assembly-CSharp`와 `Assembly-CSharp-Editor` 컴파일, 어셈블리 재로드 및 에디터 종료가 완료됐으며 종료 코드는 0, C# 컴파일 오류는 0건이다. 이번 결과는 CNNPixelLab·CNNFeatureMapLab 책임 분리, 입체 합성곱의 생성·입력 분리, 모델 결과 표시 분리, 오프닝 입력 수명 관리, 공장 지도 데이터 전달과 XR 설정 메뉴 정리를 포함한다.
+
+씬·프리팹의 변경은 기존 Manager 타입명과 공용 폰트 참조에 한정했다. 기존 컴포넌트의 GUID·직렬화 필드와 폴더 배치를 유지했고, 중복 NotoSansCJKkr 폰트 참조는 `Assets/Fonts/NotoSansCJKkr-Regular.otf`로 통일했다. 중복 GUID와 삭제한 폰트 GUID의 잔여 참조도 정적으로 확인했다.
+
+첫 가져오기에서 기존 `Assets/Fonts/NanumPenScript-OFL.txt.meta`의 33자리 GUID 오류를 발견했다. 다른 에셋의 참조가 없는 것을 확인하고 사용자 허가로 정상적인 32자리 GUID로 수정했다. 수정 후 Unity 가져오기와 컴파일을 다시 확인하여 해당 GUID 오류가 사라졌고 종료 코드 0으로 완료됐다. 최종 요청에 따라 Play·자동 테스트는 실행하지 않았다. 새 테스트 파일 생성·앱 빌드·프로젝트 복사·Quest 기기 확인도 수행하지 않았다.

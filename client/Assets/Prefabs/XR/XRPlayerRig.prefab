@@ -176,7 +176,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 370bc69beeb2489abdb2b2116a4f299e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::XR.LeftHandTablet
+  m_EditorClassIdentifier: Assembly-CSharp::Tablet.TabletManager
   _message: {fileID: 810603}
   _font: {fileID: 12800000, guid: 269f2b41bf047af48b38e4cd8dc79acf, type: 3}
   _parchmentFont: {fileID: 12800000, guid: e7d1a399ec684c3ca0b5e5d41e799c68, type: 3}

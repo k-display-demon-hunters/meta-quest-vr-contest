@@ -128,7 +128,7 @@ workspace.Connect(pool, flatten);    // 다시 연결
 - 선택 이미지와 정답, 예측 숫자, 클래스 0~9의 출력을 함께 표시한다. 이 씬의 고정 Output이 Softmax이므로 출력 비율을 백분율로 표시하며, 수신값을 다시 정규화하지 않는다. 예측 중에는 새 요청을 막고 응답의 이미지 ID가 선택한 이미지와 일치하는지 확인한다.
 - 학습 중·후에도 모델을 편집할 수 있다. 현재 전송 모델 JSON이 학습 시작 시점과 달라지면 이전 구성의 결과임을 안내한다. 추론은 서버에 남은 마지막 학습 모델로 수행하며, 새 학습을 시작하면 이전 결과와 그래프를 비운다.
 - 씬 비활성화 시 연결과 대기 요청을 정리한다. 서버 모델도 연결 수명에 따라 삭제되므로 다시 진입하면 새로 학습해야 한다. 뒤늦은 비동기 완료가 종료된 씬 UI를 갱신하지 않도록 세션을 구분한다.
-- 연결 주소는 `Assets/Scripts/Networking/WebSocketConnection.cs`의 `_serverUrl` 한 곳에서 변경한다. 기본값은 `ws://localhost:8000/ws`이며 `.env`는 사용하지 않는다. Quest에서는 서버 PC의 LAN 주소로 바꾼다. 실제 서버 실행은 별도로 필요하다.
+- 연결 주소는 `Assets/Scripts/Core/Networking/WebSocketConnection.cs`의 `_serverUrl` 한 곳에서 변경한다. 기본값은 `ws://localhost:8000/ws`이며 `.env`는 사용하지 않는다. Quest에서는 서버 PC의 LAN 주소로 바꾼다. 실제 서버 실행은 별도로 필요하다.
 
 기본 샘플 10개는 서버와 동일한 [공식 MNIST NPZ 배포본](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz)의 정렬을 바꾸지 않은 테스트 데이터에서 숫자별 첫 이미지를 추출했다. `Assets/Textures/CNNModelDesignLab/`에 원본 28×28 픽셀을 PNG로 보관한다. 데이터 파일 SHA-256은 `731c5ac602752760c8e48fbffcf8c3b850d9dc2a2aedcf2cc48468fc17b673d1`이다.
 

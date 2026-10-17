@@ -110,7 +110,7 @@ namespace FactoryIntro
             PlacePlayer(_interiorStart);
             _presentation.ShowTutorialChrome(true);
             _tutorial.BeginTutorial(_rig);
-            XR.LeftHandTablet tablet = _rig.GetComponentInChildren<XR.LeftHandTablet>(true);
+            Tablet.TabletManager tablet = _rig.GetComponentInChildren<Tablet.TabletManager>(true);
             _presentation.PlayHologramReveal(tablet != null ? tablet.transform : null);
         }
 

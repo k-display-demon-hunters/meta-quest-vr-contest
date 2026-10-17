@@ -8,7 +8,7 @@
 - `Tools > Factory > Create Missing Intro and Ending Scenes` 또는 배치 진입점 `FactoryScenes.Editor.FactoryStorySceneBuilder.CreateMissingScenes`가 `Assets/Scenes/FactoryIntro.unity`, `Assets/Scenes/FactoryEnding.unity`를 생성한다.
 - 생성 도구는 이미 존재하는 씬을 덮어쓰지 않는다. 신규 씬만 저장하고 기존 활성 씬을 복원한다. 생성 도구 자체는 Build Settings의 기존 시작 씬·순서를 보존한다. 현재 프로젝트의 Build Settings에서는 `FactoryIntro`를 첫 씬으로 지정했다.
 - Unity 실행은 에셋 가져오기와 스크립트 컴파일을 동반하므로 AGENTS.md에 따라 명시적 허가 후 실행한다. 테스트나 앱 빌드는 생성 과정에 포함되지 않는다.
-- 게임 빌드는 첫 씬 `FactoryIntro`에서 시작한다. 빈 에디터 씬에서 프로젝트를 열 때도 `FactoryIntro`가 열린다. 튜토리얼 완료 후 `공장 탐색 시작`은 기존 `QuestMain`을 연다. 기존 콘텐츠 씬에서 엔딩으로 자동 이동하는 연결은 추가하지 않았다. `FactoryEnding`은 독립적으로 열 수 있다.
+- 게임 빌드는 첫 씬 `FactoryIntro`에서 시작한다. 빈 에디터 씬에서 프로젝트를 열 때도 `FactoryIntro`가 열린다. 튜토리얼 완료 후 `공장 탐색 시작`은 `FactoryEnvironment`를 연다. 기존 콘텐츠 씬에서 엔딩으로 자동 이동하는 연결은 추가하지 않았다. `FactoryEnding`은 독립적으로 열 수 있다.
 - 두 씬은 기존 `XRPlayerRig.prefab`과 Noto Sans KR 폰트 원본을 참조한다. 기존 리그가 있으면 중복 방지 컴포넌트가 새 인스턴스를 제거한다. 진입 시 각 신규 씬의 바닥 시작점으로 이동하고 시선 방향을 맞추며 사용자의 추적 높이는 유지한다.
 
 ## 오프닝과 조작 연습

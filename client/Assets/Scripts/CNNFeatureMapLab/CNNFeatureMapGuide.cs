@@ -46,6 +46,7 @@ namespace CNNFeatureMaps
         private bool _initialized;
         private float _nextScan;
         private int _editCount;
+        public bool ReadyForModelDesign => _initialized && _step == 3 && _editCount > 0 && !_scene.HasHeldTargets;
 
         public void Initialize(CNNFeatureMapScene scene, CNNFeatureMapNode[] nodes)
         {

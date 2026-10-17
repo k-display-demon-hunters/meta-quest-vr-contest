@@ -13,7 +13,7 @@ namespace FactoryIntro
         [SerializeField] private FactoryTutorialController _tutorial;
         [SerializeField] private Transform _exteriorStart;
         [SerializeField] private Transform _interiorStart;
-        [SerializeField] private string _nextSceneName = "QuestMain";
+        [SerializeField] private string _nextSceneName = "FactoryEnvironment";
 
         private IntroStage _stage;
         private XROrigin _rig;

@@ -4683,7 +4683,7 @@ MonoBehaviour:
   _tutorial: {fileID: 1413934372}
   _exteriorStart: {fileID: 93790174}
   _interiorStart: {fileID: 934126326}
-  _nextSceneName: QuestMain
+  _nextSceneName: FactoryEnvironment
 --- !u!4 &1413934375
 Transform:
   m_ObjectHideFlags: 0

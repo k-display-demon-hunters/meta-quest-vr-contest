@@ -111,7 +111,9 @@ namespace FactoryEnvironment
             _maps = nextMaps;
             SceneManager.SetActiveScene(gameObject.scene);
             _stage++;
-            _portal.transform.position = anchor.position + new Vector3(1.9f, 1.35f, 0);
+            // Keep navigation beside the participant, outside the lesson's front-facing panels.
+            _portal.transform.position = anchor.position + new Vector3(-2.6f, 1.25f, -2.5f);
+            _portal.transform.rotation = Quaternion.Euler(0, -75f, 0);
             MovePlayer(anchor.position + Vector3.back * 3);
             _loading = false;
         }

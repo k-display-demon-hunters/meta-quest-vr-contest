@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -19,6 +20,8 @@ namespace UI
         private readonly XRGrabInteractable[] _answers = new XRGrabInteractable[3];
         private readonly Text[] _answerLabels = new Text[3];
         private readonly Vector3[] _answerHomes = new Vector3[3];
+        private readonly List<KeyValuePair<Text, Text>> _sideLabels = new List<KeyValuePair<Text, Text>>();
+        private LineRenderer _calculationPath;
         private Transform _kernel;
         private readonly Transform[] _parkedKernels = new Transform[3];
         private Transform _colourPatch;
@@ -101,7 +104,20 @@ namespace UI
         {
             _font = font;
             transform.localScale = Vector3.one * 500f;
-            _material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            transform.localRotation = Quaternion.Euler(0, -55, 0);
+            transform.localPosition = new Vector3(0, 0, -180);
+            _material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            _material.SetFloat("_Surface", 1);
+            _material.SetFloat("_Blend", 0);
+            _material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            _material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            _material.SetFloat("_ZWrite", 1);
+            _material.SetFloat("_Smoothness", 0.08f);
+            _material.SetFloat("_SpecularHighlights", 0);
+            _material.SetFloat("_EnvironmentReflections", 0);
+            _material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            _material.SetOverrideTag("RenderType", "Transparent");
+            _material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             for (int c = 0; c < 3; c++)
             {
                 _layers[c] = Root(Names[c] + " input slice");
@@ -112,21 +128,21 @@ namespace UI
                 rightSide.transform.parent.localRotation = Quaternion.Euler(0, -90, 0);
                 for (int i = 0; i < 9; i++)
                 {
-                    Transform tile = Tile(_layers[c], Cell(i), new Vector3(0.17f, 0.15f, 0.025f), Color.gray);
-                    _values[c, i] = Caption(tile, "", new Vector3(0, 0, -0.016f), 0.17f);
+                    Transform tile = Tile(_layers[c], Cell(i), new Vector3(0.17f, 0.15f, 0.12f), Color.gray);
+                    _values[c, i] = Caption(tile, "", new Vector3(0, 0, -0.066f), 0.17f);
                 }
                 _parkedKernels[c] = Root(Names[c] + " fixed filter slice");
                 Caption(_parkedKernels[c], Names[c] + " 가중치", new Vector3(0, 0.3f, 0), 0.6f);
                 for (int i = 0; i < 9; i++)
                 {
-                    Transform tile = Tile(_parkedKernels[c], Cell(i), new Vector3(0.09f, 0.065f, 0.02f), new Color(0.3f, 0.31f, 0.34f));
-                    _volumeWeightLabels[c, i] = Caption(tile, "", new Vector3(0, 0, -0.016f), 0.12f);
+                    Transform tile = Tile(_parkedKernels[c], Cell(i), new Vector3(0.09f, 0.065f, 0.08f), new Color(0.3f, 0.31f, 0.34f));
+                    _volumeWeightLabels[c, i] = Caption(tile, "", new Vector3(0, 0, -0.066f), 0.12f);
                 }
             }
             _colourPatch = Root("Reconstructed colour patch");
             for (int i = 0; i < 9; i++)
             {
-                Transform tile = Tile(_colourPatch, Cell(i), new Vector3(0.17f, 0.15f, 0.025f), Color.white);
+                Transform tile = Tile(_colourPatch, Cell(i), new Vector3(0.17f, 0.15f, 0.12f), Color.white);
                 _colourTiles[i] = tile.Find("Tile mesh").GetComponent<MeshRenderer>();
             }
             _colourPatch.gameObject.SetActive(false);
@@ -134,22 +150,22 @@ namespace UI
             _kernelTitle = Caption(_kernel, "고정 가중치", new Vector3(0, 0.32f, 0), 0.7f);
             for (int i = 0; i < 9; i++)
             {
-                Transform tile = Tile(_kernel, Cell(i), new Vector3(0.09f, 0.065f, 0.025f), new Color(0.3f, 0.31f, 0.34f));
-                _weights[i] = Caption(tile, "", new Vector3(0, 0, -0.016f), 0.12f);
+                Transform tile = Tile(_kernel, Cell(i), new Vector3(0.09f, 0.065f, 0.08f), new Color(0.3f, 0.31f, 0.34f));
+                _weights[i] = Caption(tile, "", new Vector3(0, 0, -0.066f), 0.12f);
             }
             _kernelGrab = MakeGrab(_kernel, new Vector3(0.6f, 0.52f, 0.04f));
             _kernelGrab.selectEntered.AddListener(_ => _aligned = false);
             _kernelGrab.selectExited.AddListener(_ => AlignReleasedKernel());
             _result = Root("Products at matching positions");
-            _result.localPosition = new Vector3(0.75f, 0, -0.05f);
+            _result.localPosition = new Vector3(0.65f, 0, -0.75f);
             Caption(_result, "같은 위치의 곱", new Vector3(0, 0.32f, 0), 0.7f);
             for (int i = 0; i < 9; i++)
             {
-                _productTiles[i] = Tile(_result, Cell(i), new Vector3(0.17f, 0.15f, 0.025f), new Color(0.16f, 0.18f, 0.22f));
-                _products[i] = Caption(_productTiles[i], "?", new Vector3(0, 0, -0.016f), 0.17f);
+                _productTiles[i] = Tile(_result, Cell(i), new Vector3(0.17f, 0.15f, 0.12f), new Color(0.16f, 0.18f, 0.22f));
+                _products[i] = Caption(_productTiles[i], "?", new Vector3(0, 0, -0.066f), 0.17f);
             }
             _slot = Root("Answer destination");
-            _slot.localPosition = new Vector3(0.7f, -0.4f, -0.12f);
+            _slot.localPosition = new Vector3(0.25f, -0.45f, -1.05f);
             Tile(_slot, Vector3.zero, new Vector3(0.36f, 0.14f, 0.035f), new Color(0.26f, 0.29f, 0.34f));
             _sumLabel = Caption(_slot, "합: ?", new Vector3(0, 0, -0.025f), 0.34f);
             _flying = Root("Animated calculation copy");
@@ -170,7 +186,16 @@ namespace UI
                 answer.gameObject.SetActive(false);
             }
             _spatialGuide = Caption(transform, "", new Vector3(0, -0.55f, -0.15f), 1.9f);
+            _spatialGuide.transform.parent.localRotation = Quaternion.Euler(0, 55, 0);
             _spatialGuide.rectTransform.sizeDelta = new Vector2(1900, 180);
+            GameObject path = new GameObject("Active multiplication correspondence");
+            path.transform.SetParent(transform, false);
+            _calculationPath = path.AddComponent<LineRenderer>();
+            _calculationPath.sharedMaterial = _material;
+            _calculationPath.useWorldSpace = true;
+            _calculationPath.positionCount = 3;
+            _calculationPath.startWidth = _calculationPath.endWidth = 0.006f;
+            _calculationPath.enabled = false;
             _volume = gameObject.AddComponent<SpatialVolumeInteractionController>();
             _volume.Initialize(this, _layers, _parkedKernels, _colourPatch, _spatialGuide, _material);
         }
@@ -223,14 +248,14 @@ namespace UI
             {
                 for (int c = 0; c < 3; c++)
                 {
-                    Vector3 target = combine ? new Vector3(0, 0, 0.2f + c * 0.035f) : new Vector3((c - 1) * 0.65f, c * 0.06f, c * 0.3f);
+                    Vector3 target = combine ? new Vector3(0, 0, 0.2f + c * 0.035f) : new Vector3((c - 1) * 0.65f, c * 0.06f, c * 0.6f);
                     _layers[c].localPosition = Vector3.Lerp(starts[c], target, Mathf.SmoothStep(0, 1, time / 1.2f));
                 }
                 yield return null;
             }
             for (int c = 0; c < 3; c++)
             {
-                _layers[c].localPosition = combine ? new Vector3(0, 0, 0.2f + c * 0.035f) : new Vector3((c - 1) * 0.65f, c * 0.06f, c * 0.3f);
+                _layers[c].localPosition = combine ? new Vector3(0, 0, 0.2f + c * 0.035f) : new Vector3((c - 1) * 0.65f, c * 0.06f, c * 0.6f);
             }
             if (combine)
             {
@@ -274,7 +299,7 @@ namespace UI
                     _layers[c].gameObject.SetActive(true);
                     _layers[c].localPosition = Vector3.Lerp(starts[c], LayerPosition(c, channel), t);
                     _parkedKernels[c].gameObject.SetActive(c != channel);
-                    _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.14f);
+                    _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.3f);
                 }
                 _kernel.localPosition = Vector3.Lerp(new Vector3(-0.38f, 0, 0.6f), KernelHome, t);
                 yield return null;
@@ -282,7 +307,7 @@ namespace UI
             for (int c = 0; c < 3; c++)
             {
                 _layers[c].localPosition = LayerPosition(c, channel);
-                _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.14f);
+                _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.3f);
             }
             ResetGrab(_kernelGrab, KernelHome);
             _kernelGrab.enabled = true;
@@ -316,7 +341,11 @@ namespace UI
             int product = _inputs[channel, index] * _fixedWeights[channel, index];
             _flying.gameObject.SetActive(true);
             Vector3 start = _layers[channel].localPosition + Cell(index);
-            Vector3 meeting = new Vector3(0.1f, 0.42f, -0.32f);
+            Vector3 meeting = new Vector3(0.1f, 0.42f, -0.65f);
+            _calculationPath.enabled = true;
+            _calculationPath.SetPosition(0, _layers[channel].TransformPoint(Cell(index)));
+            _calculationPath.SetPosition(1, _kernel.TransformPoint(Cell(index)));
+            _calculationPath.SetPosition(2, _result.TransformPoint(Cell(index)));
             _flyingLabel.text = _inputs[channel, index].ToString();
             _weightCopyLabel.text = "× (" + _fixedWeights[channel, index] + ")";
             _weightCopy.gameObject.SetActive(true);
@@ -339,6 +368,7 @@ namespace UI
             _flyingLabel.text = "(" + product + ")";
             yield return Fly(result, _slot.localPosition, 0.4f);
             _sumLabel.text = "합: " + accumulated;
+            _calculationPath.enabled = false;
             _flying.gameObject.SetActive(false);
         }
 
@@ -414,9 +444,9 @@ namespace UI
             {
                 for (int c = 0; c < 3; c++)
                 {
-                    Vector3 target = new Vector3(-0.38f, 0, 0.12f + c * 0.3f);
+                    Vector3 target = new Vector3(-0.38f, 0, 0.12f + c * 0.6f);
                     _layers[c].localPosition = Vector3.Lerp(starts[c], target, Mathf.SmoothStep(0, 1, time / 1.2f));
-                    _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.14f);
+                    _parkedKernels[c].localPosition = _layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.3f);
                 }
                 yield return null;
             }
@@ -444,8 +474,8 @@ namespace UI
         }
 
         private static Vector3 KernelHome => new Vector3(-1.05f, 0, -0.22f);
-        private static Vector3 KernelTarget => new Vector3(-0.3f, 0.055f, -0.14f);
-        private static Vector3 LayerPosition(int c, int focus) => c == focus ? new Vector3(-0.38f, 0, 0.1f) : new Vector3(-0.38f + (c + 1) * 0.22f, 0.1f + c * 0.08f, 0.65f + c * 0.25f);
+        private static Vector3 KernelTarget => new Vector3(-0.3f, 0.055f, -0.3f);
+        private static Vector3 LayerPosition(int c, int focus) => c == focus ? new Vector3(-0.38f, 0, 0.1f) : new Vector3(-0.38f + (c + 1) * 0.22f, 0.1f + c * 0.08f, 0.65f + c * 0.55f);
         private static Vector3 Cell(int i) => new Vector3((i % 3 - 1) * 0.19f, (1 - i / 3) * 0.17f, 0);
 
         private Transform Root(string name)
@@ -478,6 +508,7 @@ namespace UI
         {
             if (renderer == null) { return; }
             MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            color.a = 0.9f;
             properties.SetColor("_BaseColor", color);
             renderer.SetPropertyBlock(properties);
         }
@@ -500,6 +531,27 @@ namespace UI
             label.color = Color.white;
             label.raycastTarget = false;
             label.text = value;
+            if (parent.name == "Number tile")
+            {
+                // Fixed side faces make walking around the block informative without billboarding.
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Text copy = Instantiate(label, parent);
+                    copy.name = "Side value";
+                    copy.transform.localScale = Vector3.one * 0.001f;
+                    float halfWidth = parent.Find("Tile mesh").localScale.x * 0.5f;
+                    copy.transform.localPosition = new Vector3(side * (halfWidth + 0.002f), 0, 0);
+                    copy.transform.localRotation = Quaternion.Euler(0, -side * 90, 0);
+                    copy.rectTransform.sizeDelta = new Vector2(115, 100);
+                    copy.resizeTextForBestFit = true;
+                    copy.resizeTextMinSize = 18;
+                    copy.resizeTextMaxSize = 42;
+                    // Each side needs its own world-space Canvas outside the front label canvas.
+                    Canvas sideCanvas = copy.gameObject.AddComponent<Canvas>();
+                    sideCanvas.renderMode = RenderMode.WorldSpace;
+                    _sideLabels.Add(new KeyValuePair<Text, Text>(label, copy));
+                }
+            }
             return label;
         }
 
@@ -548,7 +600,26 @@ namespace UI
             _closing = false;
         }
 
-        private void OnDisable() { ReleaseInteractions(); }
+        private void LateUpdate()
+        {
+            foreach (KeyValuePair<Text, Text> pair in _sideLabels)
+            {
+                if (pair.Value.text != pair.Key.text) { pair.Value.text = pair.Key.text; }
+                pair.Value.color = pair.Key.color;
+                Camera viewer = Camera.main;
+                if (viewer != null)
+                {
+                    Vector3 towardViewer = (viewer.transform.position - pair.Value.transform.position).normalized;
+                    pair.Value.enabled = Vector3.Dot(pair.Value.transform.forward, towardViewer) < -0.25f;
+                }
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_calculationPath != null) { _calculationPath.enabled = false; }
+            ReleaseInteractions();
+        }
 
         private void OnDestroy()
         {

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -29,7 +29,7 @@ namespace UI
         private bool _exploring;
         private int _expected = -1;
         private bool _pulled;
-        private static readonly Vector3 WeightOffset = new Vector3(0.08f, 0.055f, -0.12f);
+        private static readonly Vector3 WeightOffset = new Vector3(0.08f, 0.055f, -0.3f);
         private static readonly Vector3 FilterTarget = new Vector3(-0.38f, 0, 0.15f);
 
         public void Initialize(SpatialConvolutionController owner, Transform[] layers, Transform[] weights,
@@ -44,13 +44,13 @@ namespace UI
             _patchGrab.selectExited.AddListener(_ => Released(_patchGrab));
             _filter = new GameObject("One 3x3x3 filter").transform;
             _filter.SetParent(transform, false);
-            _filterGrab = Grab(_filter, new Vector3(0.6f, 0.52f, 0.85f), new Vector3(0.08f, 0.055f, 0.28f));
+            _filterGrab = Grab(_filter, new Vector3(0.6f, 0.52f, 1.5f), new Vector3(0.08f, 0.055f, 0.55f));
             _filterGrab.selectExited.AddListener(_ => Released(_filterGrab));
             for (int c = 0; c < 3; c++)
             {
                 int colour = c;
                 // The entire slice is grabbed directly; no separate handle is introduced.
-                _layerGrabs[c] = Grab(layers[c], new Vector3(0.58f, 0.5f, 0.04f), Vector3.zero);
+                _layerGrabs[c] = Grab(layers[c], new Vector3(0.58f, 0.5f, 0.14f), Vector3.zero);
                 _layerGrabs[c].selectExited.AddListener(_ => Released(_layerGrabs[colour]));
                 _pairs[c] = Line("Input to weight " + c, material, 2);
             }
@@ -106,15 +106,15 @@ namespace UI
             _aligned = false;
             _patch.gameObject.SetActive(false);
             _filter.gameObject.SetActive(true);
-            _filter.localPosition = new Vector3(-1.15f, 0, 0.15f);
+            _filter.localPosition = new Vector3(-1.65f, 0, 0.15f);
             _filter.localRotation = Quaternion.identity;
             for (int c = 0; c < 3; c++)
             {
                 _layers[c].gameObject.SetActive(true);
-                _layers[c].localPosition = FilterTarget + Vector3.forward * (c * 0.4f);
+                _layers[c].localPosition = FilterTarget + Vector3.forward * (c * 0.65f);
                 _weights[c].gameObject.SetActive(true);
                 _weights[c].SetParent(_filter, false);
-                _weights[c].localPosition = WeightOffset + Vector3.forward * (c * 0.4f);
+                _weights[c].localPosition = WeightOffset + Vector3.forward * (c * 0.65f);
             }
             EnableGrab(_filterGrab);
             _exploring = true;
@@ -134,7 +134,7 @@ namespace UI
             for (int c = 0; c < 3; c++)
             {
                 _layers[c].gameObject.SetActive(true);
-                _layerHomes[c] = FilterTarget + new Vector3(c * 0.22f, c * 0.05f, c * 0.4f);
+                _layerHomes[c] = FilterTarget + new Vector3(c * 0.22f, c * 0.05f, c * 0.65f);
                 _layers[c].localPosition = _layerHomes[c];
                 _weights[c].gameObject.SetActive(true);
                 _weights[c].localPosition = _layers[c].localPosition + WeightOffset;
@@ -164,7 +164,7 @@ namespace UI
             {
                 _aligned = Vector3.Distance(_filter.localPosition, FilterTarget) < 0.22f &&
                     Quaternion.Angle(_filter.localRotation, Quaternion.identity) < 18;
-                _filter.localPosition = _aligned ? FilterTarget : new Vector3(-1.15f, 0, 0.15f);
+                _filter.localPosition = _aligned ? FilterTarget : new Vector3(-1.65f, 0, 0.15f);
                 _filter.localRotation = Quaternion.identity;
                 if (!_aligned) { _instruction.text = "세 색의 순서와 가로·세로 위치를 맞춰 다시 놓으세요."; }
             }

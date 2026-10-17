@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 namespace ModelDesignScene
 {
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class ModelMetricGraph : MaskableGraphic
     {
         private struct MetricPoint

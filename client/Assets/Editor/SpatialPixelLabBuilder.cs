@@ -28,7 +28,7 @@ namespace UI.Editor
         {
             if (EditorApplication.isPlaying) { throw new InvalidOperationException("Stop Play Mode first."); }
             if (File.Exists(ScenePath)) { Debug.Log("[CNN] Spatial lab already exists: " + ScenePath); return; }
-            _font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+            _font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             Directory.CreateDirectory(MaterialFolder);
             AssetDatabase.Refresh();
             _dark = Material("Structure", new Color32(36, 41, 47, 255), true);
@@ -42,7 +42,7 @@ namespace UI.Editor
             Camera camera = player.GetComponentInChildren<Camera>();
 
             GameObject lab = new GameObject("CNN Pixel Workshop");
-            SpatialPixelLab controller = lab.AddComponent<SpatialPixelLab>();
+            CNNPixelLabManager controller = lab.AddComponent<CNNPixelLabManager>();
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
             board.localPosition = new Vector3(0, 1.65f, 1.8f);

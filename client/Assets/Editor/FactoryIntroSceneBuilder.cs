@@ -30,7 +30,7 @@ namespace FactoryScenes.Editor
                 return;
             }
             GameObject rigAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/XR/XRPlayerRig.prefab");
-            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (rigAsset == null || font == null || shader == null)
             {

@@ -47,7 +47,11 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapLab` 씬으로 �
 
 ## 코드 위치
 
-- `client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGuide.cs`: 4단계 안내, 필터 도구, 진행 표시, 버튼 처리.
+- `CNNFeatureMapLabManager.cs`: 씬 초기화, 4단계 학습 진행·버튼 명령·방문 위치·입력 수정 상태와 배치 초기화 조율.
+- `CNNFeatureMapInteractionController.cs`: 잡고 있는 대상 관리, 부모·자식 동시 잡기 제한, 확대·축소 대상 선택.
+- `CNNFeatureMapFilterController.cs`: 필터 드래그의 격자 위치 계산, 자동 스캔, 입력 평면 고정과 결과 뉴런 연결선.
+- `CNNFeatureMapDisplayController.cs`: 학습 진행에 따른 노드 강조·계산 여부 표시와 출력 막대의 크기·색상 표시.
+- `client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGuide.cs`: 기존 프리팹 참조를 유지하는 안내 표시 뷰. 단계별 콘텐츠 표시, 문구와 버튼 상태를 갱신한다.
 - `CNNFeatureMapExampleData.cs`: 실제 합성곱·ReLU·수용 영역·입력 수정 계산.
 - `CNNFeatureMapNode.cs`: 계산값과 강조색.
 - `CNNFeatureMapGrabTarget.cs`, `CNNFeatureMapLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
@@ -74,7 +78,9 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapLab` 씬으로 �
 
 맵은 동일한 뉴런 원본을, 각 층은 동일한 맵 원본을 중첩 사용한다. 행·열과 배치는 인스턴스에 저장하며, 채널은 맵의 `_channel`, 층 인덱스는 층의 `_layerIndex`에서 설정한다. 입력 픽셀과 은닉 뉴런 수, 계산 방식과 잡기 동작은 기존 구성을 유지한다.
 
-`CNNFeatureMapScene.Awake()`가 하위 부품에 현재 Workspace를 연결한다. 맵이 자기 노드에 층·채널 문맥을 전달하므로 재사용하는 원본 프리팹에 특정 Workspace 참조를 저장하지 않는다. 가이드의 UI·필터 참조는 Workspace에 연결되어 있고 버튼 콜백은 초기화 시 연결한다. 필터와 결과 뉴런을 잇는 연결선만 실행 중 생성한다.
+`CNNFeatureMapLabManager.Awake()`가 하위 부품에 현재 Workspace를 연결한다. 맵이 자기 노드에 층·채널 문맥을 전달하므로 재사용하는 원본 프리팹에 특정 Workspace 참조를 저장하지 않는다. 가이드의 UI·필터 참조는 Workspace에 연결되어 있고 버튼 콜백은 초기화 시 Manager에 직접 연결한다. 필터와 결과 뉴런을 잇는 연결선은 FilterController가 실행 중 생성한다.
+
+Manager와 Guide는 기존 컴포넌트의 GUID와 직렬화 필드를 유지한다. 분리한 Interaction/Display/Filter Controller는 Manager가 생성하는 일반 C# 객체이며, 프리팹에 추가 컴포넌트를 연결할 필요가 없다. 학습 단계·채널·방문 위치·입력 수정 횟수는 Manager가, 현재 필터 위치와 스캔 상태는 FilterController가 단독으로 관리한다. Guide의 공장 다음 단계 진입 상태는 Manager를 참조하므로 기존 공장 연결을 유지한다. 입력 복원은 Manager가 가진 원본 이미지로 수행하며 별도 텍스처 사본을 만들지 않는다. 합성곱 계산과 개별 잡기 부품의 동작은 유지한다.
 
 에셋은 Unity를 실행하지 않고 YAML로 분리했다. 파일 내부와 중첩 원본의 참조를 정적으로 확인했으며, Unity 임포트·Play·기기 동작은 실행 확인 전이다.
 
@@ -82,4 +88,4 @@ CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapLab` 씬으로 �
 
 ## 확인 상태
 
-소스와 에셋 참조를 정적으로 검토했다. 저장소 `AGENTS.md`의 사전 허가 규칙에 따라 Play·테스트·컴파일·빌드는 실행하지 않았다. 실제 화면 배치와 Quest 조작은 아직 실행 확인 전이다. Build Settings와 프로젝트 패키지 설정은 변경하지 않았다.
+초기 에셋 분리에서는 소스와 에셋 참조만 정적으로 검토했다. 이후 Manager와 Controller 책임 분리를 포함하여 사용자 요청으로 2026-10-18 Unity 6000.3.24f1 스크립트 컴파일을 완료했다. 이번 변경에서 Play·테스트·앱 빌드는 실행하지 않았으므로 실제 화면 배치와 Quest 조작은 실행 확인 전이다. Build Settings와 프로젝트 패키지 설정은 변경하지 않았다. 상세 결과는 [클라이언트 책임 분리 검증 기록](xr-setup.md#2026-10-18-클라이언트-책임-분리-검증)을 따른다.

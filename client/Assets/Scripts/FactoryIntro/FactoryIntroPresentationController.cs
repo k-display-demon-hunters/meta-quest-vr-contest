@@ -2,13 +2,8 @@ using System;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace FactoryIntro
 {
@@ -38,12 +33,6 @@ namespace FactoryIntro
         [SerializeField] private AudioClip _alarmClip;
         [SerializeField, Min(0.1f)] private float _attackDuration = 3f;
 
-        private XRRayInteractor _rightRay;
-        private XRInputButtonReader _previousUIPress;
-        private XRInputButtonReader _uiPress;
-        private bool _previousUIInteraction;
-        private GameObject _ownedEventSystem;
-        private XRUIInputModule _addedInputModule;
         private RectTransform _tutorialChrome;
         private GameObject _skipConfirmation;
         private Text _progressLabel;
@@ -74,37 +63,6 @@ namespace FactoryIntro
         {
             _canvas.worldCamera = rig.Camera;
             BuildTutorialChrome();
-            if (EventSystem.current == null)
-            {
-                _ownedEventSystem = new GameObject("Factory Intro UI Input", typeof(EventSystem), typeof(XRUIInputModule));
-                _ownedEventSystem.transform.SetParent(transform, false);
-            }
-            else if (EventSystem.current.GetComponent<XRUIInputModule>() == null)
-            {
-                _addedInputModule = EventSystem.current.gameObject.AddComponent<XRUIInputModule>();
-            }
-            foreach (XRRayInteractor ray in rig.GetComponentsInChildren<XRRayInteractor>())
-            {
-                if (ray.handedness == InteractorHandedness.Right && ray.isActiveAndEnabled)
-                {
-                    _rightRay = ray;
-                    break;
-                }
-            }
-            if (_rightRay == null)
-            {
-                Debug.LogError("[FactoryIntro] The common rig needs an active right-hand ray.", this);
-                return;
-            }
-            _previousUIPress = _rightRay.uiPressInput;
-            _previousUIInteraction = _rightRay.enableUIInteraction;
-            _uiPress = new XRInputButtonReader("Factory Intro UI", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
-            {
-                inputActionPerformed = new InputAction("Factory Intro Press", InputActionType.Button, "<XRController>{RightHand}/triggerPressed"),
-                inputActionValue = new InputAction("Factory Intro Value", InputActionType.Value, "<XRController>{RightHand}/trigger")
-            };
-            _rightRay.uiPressInput = _uiPress;
-            _rightRay.enableUIInteraction = true;
         }
 
         public void Show(string heading, string instruction, string button, bool canContinue)
@@ -479,29 +437,9 @@ namespace FactoryIntro
 
         public void ReleasePlayer()
         {
-            if (_rightRay != null)
+            if (_canvas != null)
             {
-                _rightRay.uiPressInput = _previousUIPress;
-                _rightRay.enableUIInteraction = _previousUIInteraction;
-                _rightRay = null;
-            }
-            if (_uiPress != null)
-            {
-                _uiPress.inputActionPerformed.Dispose();
-                _uiPress.inputActionValue.Dispose();
-                _uiPress = null;
-            }
-            if (_ownedEventSystem != null)
-            {
-                _ownedEventSystem.SetActive(false);
-                Destroy(_ownedEventSystem);
-                _ownedEventSystem = null;
-            }
-            if (_addedInputModule != null)
-            {
-                _addedInputModule.enabled = false;
-                Destroy(_addedInputModule);
-                _addedInputModule = null;
+                _canvas.worldCamera = null;
             }
         }
 

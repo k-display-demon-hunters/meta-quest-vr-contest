@@ -43,9 +43,9 @@
 
 미니맵을 왼손 X로 선택하면 기존 상세 시트에 공장 전체 지도가 열린다. 방 이름과 미수집 양피지 번호 1~5가 표시되며, Y 또는 완료로 닫으면 이전 포커스로 돌아간다. 작은 지도에는 현재 표시 범위 안의 양피지만 표시하며 전체 지도에는 공장에 남은 양피지를 모두 표시한다. 수집된 양피지 마커는 사라지지만 기존 인벤토리 등록과 문서 열람은 유지된다.
 
-`Assets/Scripts/Core/Tablet/TabletMinimapController.cs`는 공용 태블릿의 표시 전용 컴포넌트다. `FactoryEnvironment`의 `Factory Environment` 루트 아래에서 이름이 `structural slab`으로 끝나는 바닥 BoxCollider와 지면에 닿는 `concrete` 벽/기둥 BoxCollider를 읽어 평면도를 만든다. 지붕·기계·조명은 제외하며 추가 미니맵 카메라나 RenderTexture를 만들지 않는다. 정적 배치는 씬 진입/종료와 지도 활성화 때만 읽고, 위치·방향·수집 상태는 초당 최대 10회 갱신한다. 공장을 로드하지 않은 씬에서는 가짜 위치 대신 `공장 지도 미연결`을 표시한다. 런타임에 구조물을 이동하거나 위 이름 규칙을 바꾸는 기능은 이번 범위에 포함하지 않는다.
+`Assets/Scripts/Core/Tablet/TabletMinimapController.cs`는 전달받은 지도 데이터의 투영·위치 추적·표시만 담당한다. 공장 전용 `Assets/Scripts/FactoryEnvironment/FactoryMapReader.cs`가 `Factory Environment` 루트 아래에서 이름이 `structural slab`으로 끝나는 바닥 BoxCollider와 지면에 닿는 `concrete` 벽/기둥 BoxCollider를 읽어 평면도를 만든다. 지붕·기계·조명은 제외하며 추가 미니맵 카메라나 RenderTexture를 만들지 않는다. `FactoryLearningFlowManager`가 시작·재활성화 시 읽은 정적 배치를 `TabletMapData`로 태블릿에 전달하고, 비활성화·언로드 시 자기 데이터를 해제한다. 작은 지도와 비활성 전체 지도는 동일한 데이터를 사용하며, 위치·방향·수집 상태는 초당 최대 10회 갱신한다. 공장을 로드하지 않은 씬에서는 가짜 위치 대신 `공장 지도 미연결`을 표시한다. 런타임에 구조물을 이동하거나 위 이름 규칙을 바꾸는 기능은 이번 범위에 포함하지 않는다.
 
-양피지 위치는 `ParchmentPickupController`의 실제 Transform과 읽기 전용 `LessonIndex`를 사용한다. 수집 처리는 기존 컴포넌트가 담당하며, 미니맵은 `TabletManager.HasParchment`와 활성 상태만 읽는다. 저장 키·입력 매핑·씬·공용 리그 프리팹은 변경하지 않는다.
+공장 Reader는 `ParchmentPickupController`의 참조와 읽기 전용 `LessonIndex`를 지도 마커 데이터로 변환한다. 태블릿은 공장 씬 이름이나 양피지 컴포넌트 타입을 직접 탐색하지 않는다. 마커는 실제 Transform 위치를 계속 사용한다. 수집 처리는 기존 컴포넌트가 담당하며, 미니맵은 `TabletManager.HasParchment`와 활성 상태만 읽는다. 저장 키·입력 매핑·씬·공용 리그 프리팹은 변경하지 않는다.
 
 2026-10-16 미니맵 변경은 Unity 6000.3.24f1에서 C# 오류 없이 컴파일하고 `FactoryEnvironment` Play에서 작은 지도와 전체 지도 지형·양피지 마커를 확인했다. 자동화 키 입력으로 전체 조작 흐름을 확인하지 못해, 전체 지도는 런타임 Inspector에서 활성화했다. 리그 Z 위치를 -20에서 5로 바꾸어 플레이어 표시와 주변 지도의 갱신을 확인하고 양피지 1을 런타임에 비활성화하여 마커 제거를 확인했다. Play 종료로 이 임시 변경을 폐기했으며 씬을 저장하지 않았다. 실제 수집 입력부터 지도 제거까지의 전체 흐름, 새 지도 버튼의 X/Y 입력 및 실제 Quest 기기는 미확인이다. 단위 테스트·새 테스트 파일·빌드·프로젝트 복사본은 만들거나 실행하지 않았다.
 

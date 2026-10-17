@@ -14,7 +14,7 @@ namespace CNNFeatureMaps
         public int Channel => _channel;
         public System.Collections.Generic.IReadOnlyList<CNNFeatureMapNode> Nodes => _nodes;
 
-        public void Initialize(CNNFeatureMapScene scene)
+        public void Initialize(CNNFeatureMapLabManager scene)
         {
             CNNFeatureMapLayer layer = GetComponentInParent<CNNFeatureMapLayer>();
             _layer = layer != null ? layer.Index : -1;

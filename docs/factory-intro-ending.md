@@ -13,7 +13,7 @@
 
 ## 오프닝과 조작 연습
 
-`FactoryIntroManager`는 타이틀 → 소개 → 습격 → 임무 → 입장 → 튜토리얼 → 탐색 시작의 순서를 조율한다. `FactoryIntroPresentationController`는 안내 화면, 배경 상태, 습격 연출과 로컬 UI 입력을 관리한다. `FactoryTutorialController`는 실제 입력과 연습 대상의 완료 조건을 판정한다. `FactoryIntroInputController`는 시작부터 게임 조작을 잠그고 연습 단계에 필요한 입력만 열었다가 완료 시 게임 조작을 복원한다. 머리·손 추적과 오른손 레이는 계속 사용할 수 있으며, 레이는 탐색 시작 버튼 선택까지 켜 둔다.
+`FactoryIntroManager`는 타이틀 → 소개 → 습격 → 임무 → 입장 → 튜토리얼 → 탐색 시작의 순서를 조율한다. `FactoryIntroPresentationController`는 안내 화면, 배경 상태와 습격 연출을 관리한다. `FactoryTutorialController`는 실제 입력과 연습 대상의 완료 조건을 판정한다. `FactoryIntroInputController`는 시작부터 게임 조작을 잠그고 연습 단계에 필요한 입력만 열었다가 완료 시 게임 조작을 복원한다. 오른손 UI 입력 리더와 EventSystem의 준비·복원도 이 입력 Controller에서 함께 관리한다. 머리·손 추적과 오른손 레이는 계속 사용할 수 있으며, 레이는 탐색 시작 버튼 선택까지 켜 둔다.
 
 튜토리얼 안내는 왼손 태블릿에서 펼쳐지는 큰 홀로그램 창으로 표시한다. 창 맨 위에는 오른손 레이와 Trigger로 튜토리얼을 건너뛸 수 있다는 문구를, 오른쪽 아래에는 `건너뛰기` 버튼을 둔다. 건너뛰기는 확인창에서 한 번 더 선택해야 적용되며, 취소하면 현재 연습으로 돌아간다. 완료하거나 건너뛰면 연습 오브젝트와 안내를 정리하고 `공장 탐색 시작` 화면으로 진행한다.
 

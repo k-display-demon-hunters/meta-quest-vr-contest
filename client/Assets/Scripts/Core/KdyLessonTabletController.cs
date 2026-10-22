@@ -176,7 +176,7 @@ namespace KdyLearning
             }
             else
             {
-                _content.text = string.IsNullOrEmpty(_hint) ? "오른손 Trigger: 선택\n오른손 Grip: 잡기\n왼손 X / Y: 메뉴 넘기기\n\n노트북: T 선택 · G 잡기\nWASD 이동 · Q/E 높이" : _hint;
+                _content.text = string.IsNullOrEmpty(_hint) ? "오른손 Trigger: 선택\n오른손 Grip: 잡기\n왼손 X / Y: 메뉴 넘기기\n\n시뮬레이터: T 선택 · G 잡기\nShift + I/K/J/L: 스틱 이동" : _hint;
             }
         }
     }

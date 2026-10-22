@@ -98,7 +98,7 @@ namespace KdyLearning
 
             _switchProperties = new MaterialPropertyBlock();
             _clearImage = KdySignExampleData.CreateImage();
-            _blurredImage = CreateBlurredImage();
+            _blurredImage = KdyTrainingExampleData.CreateBlurredImage();
             _outputPixels = new Color[_clearImage.Length];
             BuildFeatureValues();
             _textures[0] = CreateTexture("Kdy blurred input", _blurredImage);
@@ -264,31 +264,6 @@ namespace KdyLearning
 
             Color pixel = _blurredImage[y * KdySignExampleData.Width + x];
             return .2126f * pixel.r + .7152f * pixel.g + .0722f * pixel.b;
-        }
-
-        private Color[] CreateBlurredImage()
-        {
-            Color[] blurred = new Color[_clearImage.Length];
-            for (int y = 0; y < KdySignExampleData.Height; y++)
-            {
-                for (int x = 0; x < KdySignExampleData.Width; x++)
-                {
-                    Color sum = Color.clear;
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        for (int dx = -1; dx <= 1; dx++)
-                        {
-                            int sampleX = Mathf.Clamp(x + dx, 0, KdySignExampleData.Width - 1);
-                            int sampleY = Mathf.Clamp(y + dy, 0, KdySignExampleData.Height - 1);
-                            sum += _clearImage[sampleY * KdySignExampleData.Width + sampleX];
-                        }
-                    }
-
-                    blurred[y * KdySignExampleData.Width + x] = sum / 9.0f;
-                }
-            }
-
-            return blurred;
         }
 
         private Color[] CreateMapColors(int map)

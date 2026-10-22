@@ -49,15 +49,15 @@ namespace Education.Editor
 
             Transform convolutionPapers = PrepareGroup(convolutionRoom);
             Transform mlpPapers = PrepareGroup(mlpRoom);
-            CreateParchment(convolutionPapers, 0, new Vector3(-8.5f, 1.65f, 9.15f),
+            CreateParchment(convolutionPapers, 0, new Vector3(-8.5f, 1.65f, 1f),
                 new Vector3(-11f, 1.65f, 5f), sprite, font);
 
             Vector3[] mlpPositions =
             {
                 new Vector3(6.8f, 1.45f, 12f),
                 new Vector3(17.3f, 1.45f, 12f),
-                new Vector3(6.8f, 1.45f, 26f),
-                new Vector3(17.3f, 1.45f, 26f)
+                new Vector3(6.8f, 1.45f, 14f),
+                new Vector3(17.3f, 1.45f, 14f)
             };
             for (int i = 0; i < mlpPositions.Length; i++)
             {

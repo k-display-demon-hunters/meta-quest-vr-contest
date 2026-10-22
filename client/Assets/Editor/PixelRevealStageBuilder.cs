@@ -18,13 +18,13 @@ namespace UI.Editor
             {
                 throw new InvalidOperationException("Open CNNPixelLab in Edit Mode first.");
             }
-            SpatialPixelLab lab = null;
+            CNNPixelLabManager lab = null;
             foreach (GameObject root in scene.GetRootGameObjects())
             {
-                lab = root.GetComponentInChildren<SpatialPixelLab>();
+                lab = root.GetComponentInChildren<CNNPixelLabManager>();
                 if (lab != null) { break; }
             }
-            if (lab == null) { throw new InvalidOperationException("SpatialPixelLab is missing."); }
+            if (lab == null) { throw new InvalidOperationException("CNNPixelLabManager is missing."); }
             PixelRevealStage stage = lab.GetComponent<PixelRevealStage>();
             if (stage == null) { stage = lab.gameObject.AddComponent<PixelRevealStage>(); }
             Transform controls = lab.transform.Find("Spatial controls");
@@ -53,7 +53,7 @@ namespace UI.Editor
             stageFields.FindProperty("_board").objectReferenceValue = lab.transform.Find("Floating image board");
             stageFields.FindProperty("_controls").objectReferenceValue = controls;
             stageFields.FindProperty("_camera").objectReferenceValue = null;
-            stageFields.FindProperty("_font").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansKR/NotoSansCJKkr-Regular.otf");
+            stageFields.FindProperty("_font").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             stageFields.ApplyModifiedPropertiesWithoutUndo();
             SerializedObject labFields = new SerializedObject(lab);
             labFields.FindProperty("_revealStage").objectReferenceValue = stage;

@@ -27,6 +27,12 @@ namespace Tablet
         private TabletLearningController _learning;
         private int _detailReturnFocusIndex;
         private bool _initialized;
+        internal TabletMapData MapData { get; private set; }
+#if UNITY_EDITOR
+        private bool _useSimulatorTabletPose;
+        private Vector3 _tabletReadingPosition;
+        private Vector3 _tabletReadingScale;
+#endif
 
         private TabletInputController.FocusGroup ActiveGroup => _ui.Shell.DetailOverlay.activeSelf
             ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
@@ -51,6 +57,10 @@ namespace Tablet
             _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
             _ui.Build(this, _parchment, _settings, _learning);
+#if UNITY_EDITOR
+            _tabletReadingPosition = transform.localPosition;
+            _tabletReadingScale = transform.localScale;
+#endif
             RefreshAll();
             _initialized = true;
         }
@@ -65,9 +75,43 @@ namespace Tablet
             _input.Tick();
         }
 
+#if UNITY_EDITOR
+        private void Start()
+        {
+            _useSimulatorTabletPose = FindFirstObjectByType<XR.XREditorSimulator>() != null;
+        }
+
+        private void LateUpdate()
+        {
+            if (!_useSimulatorTabletPose || !_initialized) { return; }
+            bool reading = _input.IsInteracting || UnityEngine.XR.XRSettings.isDeviceActive;
+            transform.localPosition = reading ? _tabletReadingPosition
+                : _tabletReadingPosition + new Vector3(-.35f, -.32f, .35f);
+            transform.localScale = _tabletReadingScale * (reading ? 1f : .65f);
+        }
+#endif
+
         // Keep the pickup, minimap and serialized component links on the existing entry point.
         public bool HasParchment(int index) => _parchment.HasParchment(index);
         public bool CollectParchment(int index) => _parchment.CollectParchment(index);
+
+        public void SetMapData(TabletMapData data)
+        {
+            MapData = data;
+            foreach (TabletMinimapController map in GetComponentsInChildren<TabletMinimapController>(true))
+            {
+                map.RebuildMap();
+            }
+        }
+
+        public void ClearMapData(TabletMapData data)
+        {
+            // An unloading scene must not clear a newer scene's map.
+            if (MapData == data)
+            {
+                SetMapData(null);
+            }
+        }
 
         private void HandleStageMoveRequested(int stageIndex)
         {

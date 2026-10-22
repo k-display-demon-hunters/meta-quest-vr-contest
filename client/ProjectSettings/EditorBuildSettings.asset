@@ -20,6 +20,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FactoryEnding.unity
     guid: 0384c41fc802f354ead1c1ef35031308
+  - enabled: 1
+    path: Assets/Scenes/FactoryEnvironment.unity
+    guid: ce1adfd336e24bd4b1c865f0bfe8efa7
+  - enabled: 1
+    path: Assets/Scenes/CNNFeatureMapLab.unity
+    guid: daf1785003a44240bcf6f4f64b6cfba6
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 0b8482a2cde0537478b7f3e34b8f56fe, type: 2}

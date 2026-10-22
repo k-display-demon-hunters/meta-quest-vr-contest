@@ -7,14 +7,14 @@ namespace CNNFeatureMaps
         [SerializeField] private CNNFeatureMapPanel[] _maps;
         [SerializeField] private int _layerIndex;
         [SerializeField] private float _spreadSpacing = .64f;
-        private CNNFeatureMapScene _scene;
+        private CNNFeatureMapLabManager _scene;
         private Vector3[] _stackPositions;
         private bool _expanded;
         private bool _animating;
         public bool IsExpanded => _expanded;
         public int Index => _layerIndex;
 
-        public void Initialize(CNNFeatureMapScene scene)
+        public void Initialize(CNNFeatureMapLabManager scene)
         {
             _scene = scene;
         }

@@ -4988,7 +4988,6 @@ MonoBehaviour:
   _manager: {fileID: 10003}
   _rig: {fileID: 10002}
   _tablet: {fileID: 10302}
-  _rayMaterial: {fileID: 2100000, guid: 4bf6a5fe80125d5a9ccf1b3101ba4f5f, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

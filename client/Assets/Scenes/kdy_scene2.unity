@@ -3620,7 +3620,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7930e3ab0db059dda9858f4eb42a6592, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::KdyIntro.KdyControllerInput
-  _rayMaterial: {fileID: 2100000, guid: 4bf6a5fe80125d5a9ccf1b3101ba4f5f, type: 2}
   _manager: {fileID: 10002}
   _rig: {fileID: 10003}
   _tablet: {fileID: 10004}

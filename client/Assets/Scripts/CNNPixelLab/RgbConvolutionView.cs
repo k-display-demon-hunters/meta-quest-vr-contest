@@ -12,7 +12,7 @@ namespace UI
             { -1, 0, 1, -1, 0, 1, -1, 0, 1 },
             { -1, 0, 1, -1, 0, 1, -1, 0, 1 } };
         private readonly int[,] _inputs = new int[3, 9];
-        private SpatialPixelLab _lab;
+        private CNNPixelLabManager _lab;
         private Font _font;
         private SpatialConvolutionController _observation;
         private ConvolutionExercise _exercise;
@@ -27,7 +27,7 @@ namespace UI
         private bool _combined;
         private bool _busy;
 
-        public void Initialize(SpatialPixelLab lab, Font font)
+        public void Initialize(CNNPixelLabManager lab, Font font)
         {
             _lab = lab;
             _font = font;
@@ -122,6 +122,7 @@ namespace UI
 
         private void CompleteExercise(int[] sums)
         {
+            _lab.MarkConvolutionCompleted();
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(true);
             _combine.gameObject.SetActive(false);

@@ -9,7 +9,7 @@ namespace CNNFeatureMaps
     [RequireComponent(typeof(BoxCollider))]
     public sealed class CNNFeatureMapButton : MonoBehaviour
     {
-        private CNNFeatureMapGuide _guide;
+        private CNNFeatureMapLabManager _scene;
         private CNNFeatureMapAction _action;
         private XRSimpleInteractable _interactable;
         private Renderer _renderer;
@@ -17,9 +17,9 @@ namespace CNNFeatureMaps
         private bool _available = true;
         private float _lastPress = -1f;
 
-        public void Configure(CNNFeatureMapGuide guide, CNNFeatureMapAction action)
+        public void Configure(CNNFeatureMapLabManager scene, CNNFeatureMapAction action)
         {
-            _guide = guide;
+            _scene = scene;
             _action = action;
         }
 
@@ -45,12 +45,12 @@ namespace CNNFeatureMaps
 
         public void Press()
         {
-            if (!_available || Time.unscaledTime - _lastPress < .35f || _guide == null)
+            if (!_available || Time.unscaledTime - _lastPress < .35f || _scene == null)
             {
                 return;
             }
             _lastPress = Time.unscaledTime;
-            _guide.Perform(_action);
+            _scene.Perform(_action);
         }
 
         private void HandleActivate(ActivateEventArgs args) => Press();

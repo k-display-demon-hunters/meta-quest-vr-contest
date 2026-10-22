@@ -8,12 +8,12 @@
 - `Tools > Factory > Create Missing Intro and Ending Scenes` 또는 배치 진입점 `FactoryScenes.Editor.FactoryStorySceneBuilder.CreateMissingScenes`가 `Assets/Scenes/FactoryIntro.unity`, `Assets/Scenes/FactoryEnding.unity`를 생성한다.
 - 생성 도구는 이미 존재하는 씬을 덮어쓰지 않는다. 신규 씬만 저장하고 기존 활성 씬을 복원한다. 생성 도구 자체는 Build Settings의 기존 시작 씬·순서를 보존한다. 현재 프로젝트의 Build Settings에서는 `FactoryIntro`를 첫 씬으로 지정했다.
 - Unity 실행은 에셋 가져오기와 스크립트 컴파일을 동반하므로 AGENTS.md에 따라 명시적 허가 후 실행한다. 테스트나 앱 빌드는 생성 과정에 포함되지 않는다.
-- 게임 빌드는 첫 씬 `FactoryIntro`에서 시작한다. 빈 에디터 씬에서 프로젝트를 열 때도 `FactoryIntro`가 열린다. 튜토리얼 완료 후 `공장 탐색 시작`은 기존 `QuestMain`을 연다. 기존 콘텐츠 씬에서 엔딩으로 자동 이동하는 연결은 추가하지 않았다. `FactoryEnding`은 독립적으로 열 수 있다.
+- 게임 빌드는 첫 씬 `FactoryIntro`에서 시작한다. 빈 에디터 씬에서 프로젝트를 열 때도 `FactoryIntro`가 열린다. 튜토리얼 완료 후 `공장 탐색 시작`은 `FactoryEnvironment`를 연다. 기존 콘텐츠 씬에서 엔딩으로 자동 이동하는 연결은 추가하지 않았다. `FactoryEnding`은 독립적으로 열 수 있다.
 - 두 씬은 기존 `XRPlayerRig.prefab`과 Noto Sans KR 폰트 원본을 참조한다. 기존 리그가 있으면 중복 방지 컴포넌트가 새 인스턴스를 제거한다. 진입 시 각 신규 씬의 바닥 시작점으로 이동하고 시선 방향을 맞추며 사용자의 추적 높이는 유지한다.
 
 ## 오프닝과 조작 연습
 
-`FactoryIntroManager`는 타이틀 → 소개 → 습격 → 임무 → 입장 → 튜토리얼 → 탐색 시작의 순서를 조율한다. `FactoryIntroPresentationController`는 안내 화면, 배경 상태, 습격 연출과 로컬 UI 입력을 관리한다. `FactoryTutorialController`는 실제 입력과 연습 대상의 완료 조건을 판정한다. `FactoryIntroInputController`는 시작부터 게임 조작을 잠그고 연습 단계에 필요한 입력만 열었다가 완료 시 게임 조작을 복원한다. 머리·손 추적과 오른손 레이는 계속 사용할 수 있으며, 레이는 탐색 시작 버튼 선택까지 켜 둔다.
+`FactoryIntroManager`는 타이틀 → 소개 → 습격 → 임무 → 입장 → 튜토리얼 → 탐색 시작의 순서를 조율한다. `FactoryIntroPresentationController`는 안내 화면, 배경 상태와 습격 연출을 관리한다. `FactoryTutorialController`는 실제 입력과 연습 대상의 완료 조건을 판정한다. `FactoryIntroInputController`는 시작부터 게임 조작을 잠그고 연습 단계에 필요한 입력만 열었다가 완료 시 게임 조작을 복원한다. 오른손 UI 입력 리더와 EventSystem의 준비·복원도 이 입력 Controller에서 함께 관리한다. 머리·손 추적과 오른손 레이는 계속 사용할 수 있으며, 레이는 탐색 시작 버튼 선택까지 켜 둔다.
 
 튜토리얼 안내는 왼손 태블릿에서 펼쳐지는 큰 홀로그램 창으로 표시한다. 창 맨 위에는 오른손 레이와 Trigger로 튜토리얼을 건너뛸 수 있다는 문구를, 오른쪽 아래에는 `건너뛰기` 버튼을 둔다. 건너뛰기는 확인창에서 한 번 더 선택해야 적용되며, 취소하면 현재 연습으로 돌아간다. 완료하거나 건너뛰면 연습 오브젝트와 안내를 정리하고 `공장 탐색 시작` 화면으로 진행한다.
 
@@ -39,3 +39,15 @@
 - 이번 조작 튜토리얼 작업에서는 `FactoryIntro` 전용 스크립트와 공용 XR 입력 스크립트, 시작 씬 설정을 갱신했다. 콘텐츠 씬, 공용 태블릿·리그 프리팹, 서버와 JSON 규격은 변경하지 않았다. 엔딩 자동 진입과 실제 수집 현황 연동은 별도 작업이다.
 - 2026-10-13 사용자 허가 후 Unity CLI로 Unity 6000.3.24f1 에디터를 열어 스크립트를 컴파일하고 생성 메뉴를 실행했다. 두 씬 저장과 Build Settings 추가를 완료했으며 에디터의 Scene View에서 배치를 확인했다. Play·자동 테스트·앱 빌드는 실행하지 않았다. 런타임 상호작용과 실제 Quest 착용 상태의 가독성은 아직 검증하지 않았다.
 - 2026-10-16 사용자 허가 후 Unity 6000.3.24f1 에디터에서 `FactoryIntro`를 열어 컴파일과 Play 진입을 확인했다. 실행 중 Console에는 오류가 표시되지 않았다. XR 장치가 연결되지 않은 에디터 Game 화면에서는 태블릿이 카메라 앞에 겹쳐 보여 실제 컨트롤러 조작과 착용 상태 가독성까지 검증하지 못했다. 자동 테스트와 앱 빌드는 실행하지 않았다.
+
+## Kdy 체험 씬의 공용 XR 통합
+
+`kdy_scene1`부터 `kdy_scene17`까지의 별도 체험은 유지한다. RGB·합성곱·필터·특징 맵·활성화 조작과 간판 복원을 위한 교육용 가상 학습은 기존 CNN 실습·실제 서버 학습과 데이터 및 진행 조건이 다르므로 대체하지 않는다. 이 씬들은 기존 Build Settings 목록에 포함되어 있지 않으며, 에디터에서 `kdy_scene1`을 열면 `KdyTransitionController`가 후속 씬을 연결한다. 기존 시작 씬과 Build Settings 순서는 유지한다.
+
+- 이동·시점·시뮬레이터·레이 표시는 공용 `XRPlayerRig`, `XRPlayerInputController`, `XREditorSimulator`를 사용한다. 별도 `KdyDesktopController`와 중복 키보드 이동 처리는 제거했다.
+- Kdy 입력 컴포넌트는 공용 오른손 `XRRayInteractor`의 충돌 결과와 Trigger 입력을 읽어 각 체험의 버튼·픽셀 선택에 전달한다. 레이저 켜기·끄기, UI 가림, 물체를 잡고 있는 상태를 따르며 선택 거리도 공용 리그의 5m 설정을 사용한다. 별도 레이와 재질은 제거했다.
+- 시뮬레이터 조작은 [xr-simulator.md](xr-simulator.md)를 따른다. `Shift + I/K/J/L`은 스틱 이동, `T`는 오른손 선택, `G`는 잡기다. Kdy 체험에서 왼손 X/Y(`Shift + 1/2`)는 기존대로 전용 안내 패널의 탭을 넘긴다.
+- Kdy 전용 진행도·신경망·힌트 패널은 유지한다. 공용 태블릿 타입은 현재의 `TabletManager`를 참조하며, 전용 패널을 사용하는 동안 공용 화면을 숨겼다가 씬을 떠날 때 복원한다. 공용 태블릿의 저장 형식과 수집 상태는 변경하지 않는다.
+- 특징 맵 씬의 흐린 간판 생성은 기존 `KdyTrainingExampleData.CreateBlurredImage()`를 재사용한다. 동일한 원본과 계산을 유지하면서 중복 구현만 제거했다.
+
+2026-10-22 `main` 반영 및 정리 과정에서는 diff, 삭제된 타입·에셋의 잔여 참조, GUID 중복, 씬·프리팹의 스크립트 및 폰트 연결을 정적으로 확인했다. 테스트·빌드·컴파일·Unity 실행은 수행하지 않았다. 공용 입력을 통한 실제 씬 진행은 런타임 확인이 필요하다.

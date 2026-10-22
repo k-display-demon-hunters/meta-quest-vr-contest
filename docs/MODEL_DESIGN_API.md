@@ -171,3 +171,8 @@ Controller는 Manager를 참조하지 않고 자신의 입력이나 요청을 �
 `SlotSettingsControl.prefab`에서 조작기기 외형과 `Popup Anchor`의 로컬 위치·회전을 조절한다. 슬롯 조작기기는 `Slot Settings Controls` 아래에 두며, 빈 칸 표시와 입력 상태는 슬롯 점유에 따라 갱신된다. `Training Anchor`에는 기존 학습 UI 인스턴스가 연결되어 있다.
 
 이번 변경은 소스와 에셋 참조만 정적으로 검토했다. 테스트 실행·테스트 파일 생성·Unity 실행·컴파일·빌드는 수행하지 않았다.
+
+
+## 결과 화면의 클라이언트 책임
+
+`ModelResultsController`는 결과 패널의 공통 상태·오류와 하위 표시 기능을 조율한다. `ModelTrainingMetricsController`는 epoch·학습/검증/테스트 지표·그래프를, `ModelInferenceResultsController`는 샘플 선택·페이지·예측 결과를 담당한다. `ModelResultsUIBuilder`는 이 씬의 기존 생성형 UI 요소와 스타일을 제공한다. 하위 Controller는 일반 C# 객체이므로 씬 컴포넌트 연결은 추가하지 않는다. 모델 JSON과 서버 API는 변경하지 않는다.

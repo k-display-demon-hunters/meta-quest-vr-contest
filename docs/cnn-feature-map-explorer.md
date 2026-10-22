@@ -1,91 +1,87 @@
-# CNN 초보자 체험 씬
+# CNN 특징 맵 구현
 
-CNN 체험은 같은 `client` 프로젝트 안의 `CNNFeatureMapLab` 씬으로 제공한다. 전용 스크립트는 `Assets/Scripts/CNNFeatureMapLab/`의 `CNNFeatureMaps` 네임스페이스에 있으며, 콘텐츠 프리팹은 `Assets/Prefabs/CNNFeatureMapLab/CNNFeatureMapWorkspace.prefab`이다. 이전 `FeatureMapLab` 씬과 전용 스크립트·프리팹은 제거했다. 입력 이미지와 재질은 `Assets/Textures/CNNFeatureMapLab/`와 `Assets/Materials/CNNFeatureMapLab/`에 유지하며, 기존 XRPlayerRig를 재사용한다.
+[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)는 고정 필터로 특징 맵을 계산하고, 입력 픽셀의 수용 영역과 입력 변경에 따른 결과를 보여준다. 런타임 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`의 `CNNFeatureMaps` 네임스페이스에 있다. 컨트롤러 입력과 체험 버튼 사용법은 [조작법](xr-simulator.md)을 참고한다.
 
-## 열기
+## 파일과 클래스 역할
 
-1. Unity Hub에서 `C:\Github_local\MetaQuest\meta-quest-vr-contest\client` 프로젝트를 사용한다.
-2. 현재 Play 중이면 먼저 정지한다.
-3. Project 창에서 `Assets/Scenes/CNNFeatureMapLab.unity`를 더블클릭한다.
-4. 학습 안내와 필터 도구는 Workspace의 중첩 프리팹으로 배치되어 Play 전에도 편집할 수 있다. 사용자가 Play를 실행하면 안내 내용과 계산 결과가 갱신된다.
-
-처음에는 입력과 첫 번째 맵만 보인다. 아래쪽의 **다음** 버튼으로 단계를 진행한다. 카메라·양손·이동은 기존 XRPlayerRig를 사용하며, 콘텐츠는 VR 컨트롤러로 조작한다.
-
-## 체험 순서
-
-1. **feature map 만들기**: 민트색 필터 손잡이를 입력 위에서 끌거나 입력 픽셀을 클릭한다. 3×3 입력 영역과 해당 결과 뉴런이 연결선으로 표시된다. 방문한 위치가 맵에 채워지고, 곱한 값의 합과 ReLU 결과를 표시한다. **자동 이동**은 64개 위치를 순서대로 보여준다. 이미지 밖은 0으로 채운다.
-2. **다른 필터 비교**: 좌우 변화 감지와 위아래 변화 감지 필터의 맵을 펼쳐 비교한다. **필터 바꾸기**로 현재 입력 영역에 적용하는 필터를 바꾼다. 맵 테두리를 잡아 끌어오거나 회전·확대할 수 있다.
-3. **한 픽셀의 영향 따라가기**: 입력 픽셀을 클릭하면 수용 영역에 그 픽셀을 포함하는 뉴런들이 각 층에서 노랗게 표시된다. **펼치기 1/2/3**으로 살펴볼 층을 차례로 펼친다. 직접 층 손잡이를 잡고 펼치는 기존 조작도 유지한다.
-4. **입력 바꾸기**: 입력 픽셀을 클릭해 흑백을 바꾸면 전체 합성곱을 다시 계산한다. feature map의 계산값과 예시 반응 막대가 바뀐다. **처음 상태**는 원래 입력, 노드·맵 배치와 현재 단계의 표시를 복원한다.
-
-## 콘텐츠 조작
-
-| 동작 | VR 오른손 |
+| 파일·클래스 | 역할과 처리 방식 |
 |---|---|
-| 안내 버튼 | 레이로 가리키고 Trigger |
-| 입력 픽셀 선택·칠하기 | 레이로 가리키고 Trigger |
-| 필터·뉴런·맵·층 잡기 | Grip을 누르는 동안 잡고 시선으로 이동, 놓으면 놓기 |
-| 크기 | 뉴런·맵·층을 클릭하거나 잡았다 놓은 뒤 화면의 확대·축소 버튼 |
-| 시점 | 오른쪽 스틱 상하좌우 회전 |
-| 정면 방향 복원 | A. 현재 위치는 유지 |
-| 레이저 켜기·끄기 | B. 꺼진 동안 오른손 클릭·잡기도 차단 |
-| 특정 층 펼치기 | 층 손잡이를 가리키거나 잡은 상태에서 Trigger |
-| 배치·입력 복원 | 화면의 처음 상태 버튼 |
+| [CNNFeatureMapLabManager.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapLabManager.cs) | 씬의 노드·층·안내판을 모으고 입력 텍스처로 계산 데이터를 만든다. 버튼 명령과 픽셀 선택을 받아 현재 단계·필터 채널·방문 기록을 바꾸고, FilterController와 DisplayController를 호출해 선택 영역과 계산 결과를 화면에 반영한다. 마지막 단계의 입력 수정 여부와 잡기 상태를 조합해 공장에 다음 체험 진입 가능 여부를 제공한다. |
+| [CNNFeatureMapExampleData.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapExampleData.cs) | 8×8 입력을 배열로 보관하고, 고정 커널로 세 층의 합성곱·ReLU 값과 A/B 반응을 계산한다. 픽셀을 수정하면 전체 결과를 다시 계산하며, 픽셀을 선택하면 그 위치와 연결되는 수용 영역 마스크를 만든다. Node와 안내판은 이 객체에서 값·가중치·강조 여부를 읽어 표시한다. |
+| [CNNFeatureMapFilterController.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapFilterController.cs) | 필터 도구의 위치를 입력 평면 기준 행·열로 바꾸고 격자에 맞춘다. 자동 스캔 중에는 위치를 순서대로 바꾸며, 위치 변경 여부를 Manager에 반환해 방문 기록과 계산 설명을 갱신하게 한다. 선택한 채널의 출력 뉴런까지 연결선도 표시한다. |
+| [CNNFeatureMapInteractionController.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapInteractionController.cs) | 현재 잡은 대상 목록과 마지막으로 선택한 확대·축소 대상을 보관한다. 새 대상이 잡힌 물체의 부모나 자식이면 잡기를 거절하고, 잡은 물체가 있는 동안에는 크기 변경도 거절한다. Manager와 Layer는 이 상태를 읽어 버튼 실행이나 자동 배치를 보류한다. |
+| [CNNFeatureMapDisplayController.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapDisplayController.cs) | Manager가 넘긴 단계·채널·필터 위치·방문 배열로 각 Node의 계산 완료 표시와 강조 상태를 정한다. 이어 Node가 계산 데이터에서 값을 읽어 색상을 갱신하도록 호출하고, A/B 반응값은 출력 막대의 높이와 색상으로 바꾼다. |
+| [CNNFeatureMapGuide.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGuide.cs) | Manager가 전달한 현재 단계와 계산 내용을 제목·설명·커널 카드·버튼 상태로 표현한다. 단계에 필요한 입력·층·출력만 보이게 하고, 확대·축소 버튼을 생성해 Manager의 크기 변경 명령에 연결한다. 공장에 제공하는 준비 상태도 Manager에서 읽는다. |
+| [CNNFeatureMapButton.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapButton.cs) | 각 안내 버튼에 저장된 `CNNFeatureMapAction`을 XRI Activate 이벤트와 연결한다. 비활성 상태와 연속 입력을 걸러낸 뒤 `Manager.Perform()`을 호출하므로, 버튼 자체가 단계나 계산 데이터를 바꾸지는 않는다. |
+| [CNNFeatureMapNode.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapNode.cs) | 입력 픽셀 또는 특징 맵의 한 칸이다. 층·채널·행·열로 계산값을 조회하고 방문 여부·선택 강조를 합쳐 `MaterialPropertyBlock`으로 색상과 발광을 갱신한다. 입력 노드 선택은 Manager로 전달하며, 격자에서 꺼낸 상태는 별도로 기록한다. |
+| [CNNFeatureMapPanel.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapPanel.cs) | 한 채널의 맵에 속한 Node를 수집하고 상위 Layer의 층 번호와 자신의 채널 번호를 각 Node에 전달한다. 맵 전체를 꺼냈는지 기록해 Layer가 해당 맵을 자동 정렬할지 판단하게 한다. 맵의 위치가 바뀌어도 Node의 계산 인덱스는 유지한다. |
+| [CNNFeatureMapLayer.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapLayer.cs) | 같은 합성곱 층의 Panel들을 모아 펼침·접힘 목표 위치로 이동시킨다. 이미 꺼낸 맵은 자동 배치에서 제외하고, 하위 물체를 잡고 있으면 그 맵의 이동을 기다린다. 층 단위 배치와 개별 맵·노드의 직접 이동이 충돌하지 않게 한다. |
+| [CNNFeatureMapGrabTarget.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGrabTarget.cs) | 노드·맵·층·필터에 Rigidbody와 잡기 컴포넌트를 구성하고 초기 자세를 저장한다. 선택 시작·해제·Activate를 Manager 및 해당 Node·Panel의 상태 변경으로 연결한다. 초기 배치 복원과 크기 배율 적용도 이 객체에서 수행하며 필터는 크기 변경 대상에서 제외한다. |
+| [CNNFeatureMapGrabInteractable.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGrabInteractable.cs) | XRI가 잡기 대상을 초기화하기 전에 `GrabTarget`에 지정된 Collider 목록을 사용하도록 한다. 맵·층의 잡기 컴포넌트가 하위 노드의 Collider까지 자동 수집하는 것을 막아, 같은 공간에서도 노드·맵·층을 각각 선택할 수 있게 한다. |
 
-필터는 학습용 도구이므로 입력 격자의 평면에 맞춰 움직이고, 임의 회전·확대는 적용하지 않는다. 잡은 물체를 놓은 뒤 체험 단계·확대·축소 버튼을 사용한다. 확대·축소는 마지막으로 클릭하거나 놓은 대상에 한 번에 1.2배씩 적용하며 기존 0.4~4배 범위를 유지한다. **처음 상태**는 입력 수정 내용과 배치를 복원한다. 공통 태블릿을 이 씬에서도 그대로 표시하며 조작은 [XR 시뮬레이터 조작법](xr-simulator.md)을 따른다.
+## 초기화와 실행 흐름
 
-## 계산과 표시의 의미
+1. `CNNFeatureMapLabManager.Awake()`가 하위 노드·잡기 대상·층을 수집하고 `DisplayController`를 생성한다. 각 Panel은 상위 Layer의 인덱스와 자신의 채널을 하위 Node에 전달한다. 입력 Panel의 층 인덱스는 `-1`이다.
+2. `Start()`가 `_inputImage`를 확인하고 `CNNFeatureMapExampleData`를 만든다. 입력은 Read/Write가 활성화된 8×8 텍스처여야 한다.
+3. `Guide.Initialize()`가 안내와 버튼을 연결한다. Manager는 Guide의 입력 루트·필터·재질 참조로 `FilterController`를 생성하고 첫 단계를 적용한다.
+4. 첫 두 단계의 `LateUpdate()`에서 필터 이동·스캔으로 행·열이 바뀌면 `ApplyPatch()`를 호출한다. Manager가 방문 기록을 저장하고 선택 영역, 출력 뉴런, 합성곱 합과 ReLU 결과를 갱신한다.
+5. 입력 픽셀 선택은 현재 단계에 따라 필터 위치 선택, 수용 영역 강조, 입력값 변경으로 분기한다. 입력값을 바꾸면 전체 층을 다시 계산한다.
 
-- 입력 8×8, 3개의 합성곱 층, 채널 수 2→3→5. 모두 3×3, stride 1, zero padding, ReLU이며 이 버전에는 pooling과 학습 과정이 없다.
-- 첫 층의 좌우 필터는 각 행이 `[-1/3, 0, +1/3]`, 위아래 필터는 각 행이 `[-1/3, -1/3, -1/3]`, `[0, 0, 0]`, `[+1/3, +1/3, +1/3]`이다. 안내의 합과 실제 첫 층 계산은 같은 가중치를 사용한다.
-- 뒤의 층은 이전 층 모든 채널을 합성곱하고 입력 채널 수로 정규화한다. 미리 지정한 교육용 필터이며 훈련된 이미지 분류 모델이 아니다.
-- **노란색**은 구조적 수용 영역이다. 가중치가 0이거나 ReLU로 값이 0이 되는 연결도 포함하므로 실제 값 변화나 중요도의 증거가 아니다.
-- 3개 층의 입력 기준 수용 영역은 최대 3×3, 5×5, 7×7이다. 경계에서는 유효한 이미지 영역만 표시한다. 입력 픽셀에서 영향을 받는 출력 위치는 경계에 따라 더 적을 수 있다.
-- 입력의 노란 강조는 흑백 차이가 남도록 색을 섞는다. 계산되지 않은 것처럼 어둡게 표시한 뉴런은 첫 단계의 시각적 진행 표시이며, 내부 계산은 전체 결과를 미리 보유한다.
-- 뉴런·맵을 옮기는 것은 배치 변경이다. CNN의 인덱스와 계산 연결은 바뀌지 않는다.
-- A/B 막대는 마지막 맵으로 만든 예시 반응이며 고양이·강아지 등 학습된 클래스 확률이 아니다.
+Interaction·Display·Filter Controller는 Manager가 사용하는 일반 C# 객체다. 씬의 컴포넌트 참조는 Manager·Guide와 각 프리팹 부품에 둔다.
 
-## 코드 위치
+## 단계와 상태
 
-- `CNNFeatureMapLabManager.cs`: 씬 초기화, 4단계 학습 진행·버튼 명령·방문 위치·입력 수정 상태와 배치 초기화 조율.
-- `CNNFeatureMapInteractionController.cs`: 잡고 있는 대상 관리, 부모·자식 동시 잡기 제한, 확대·축소 대상 선택.
-- `CNNFeatureMapFilterController.cs`: 필터 드래그의 격자 위치 계산, 자동 스캔, 입력 평면 고정과 결과 뉴런 연결선.
-- `CNNFeatureMapDisplayController.cs`: 학습 진행에 따른 노드 강조·계산 여부 표시와 출력 막대의 크기·색상 표시.
-- `client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapGuide.cs`: 기존 프리팹 참조를 유지하는 안내 표시 뷰. 단계별 콘텐츠 표시, 문구와 버튼 상태를 갱신한다.
-- `CNNFeatureMapExampleData.cs`: 실제 합성곱·ReLU·수용 영역·입력 수정 계산.
-- `CNNFeatureMapNode.cs`: 계산값과 강조색.
-- `CNNFeatureMapGrabTarget.cs`, `CNNFeatureMapLayer.cs`: VR 잡기, 이동·회전·확대, 펼치기.
-- `client/Assets/Prefabs/CNNFeatureMapLab/CNNFeatureMapWorkspace.prefab`: CNN 배치와 학습 컴포넌트 참조.
+Manager의 `_step`은 `0~3`이며, 단계 변경은 `Perform()` → `ApplyStep()`으로 처리한다.
 
-## 프리팹 구성
+| 단계 | 계산·표시 동작 |
+|---|---|
+| 특징 맵 만들기 | 입력과 선택한 첫 층 채널을 표시한다. `_visited[channel, row, column]`으로 방문한 출력 위치를 구분한다. |
+| 필터 비교 | 첫 층의 두 맵을 펼치고 선택 채널의 필터와 출력 위치를 표시한다. |
+| 수용 영역 추적 | 세 층을 표시한다. 선택한 입력 픽셀을 포함하는 수용 영역을 층별로 강조한다. |
+| 입력 변경 | 입력 픽셀을 0 또는 1로 바꾸고 전체 특징 맵과 A/B 반응을 다시 표시한다. |
 
-`Assets/Prefabs/CNNFeatureMapLab/`의 Workspace는 전체 배치와 실행 문맥을 연결하는 조립용 프리팹이다. 각 부품은 아래 원본 프리팹에서 편집한다.
+`_step`, `_channel`, `_visited`, `_editCount`는 Manager가 관리하고, 필터의 행·열과 스캔 상태는 FilterController가 관리한다. `Restore` 명령은 원본 텍스처에서 입력을 복원하고 방문 기록·수정 횟수·배치를 초기화한 뒤 현재 단계를 다시 적용한다.
+
+공장 진행에서 읽는 `ReadyForModelDesign`은 초기화 완료, Guide 존재, 마지막 단계, 입력 수정 1회 이상, 잡은 대상 없음이 모두 충족될 때 참이다. Guide는 이 값을 Manager에서 읽어 제공한다. 공장 씬 전환은 [공장 환경 구현](factory-environment.md)에서 다룬다.
+
+## 계산 데이터
+
+`CNNFeatureMapExampleData`는 Unity 텍스처의 아래에서 위로 향하는 행을 뒤집어, 위에서 아래로 읽는 `_input[row, column]` 배열을 만든다.
+
+- 입력 크기는 8×8이고 합성곱 층의 출력 채널은 `2 → 3 → 5`다. 각 층은 3×3 커널, stride 1, zero padding, ReLU를 적용해 공간 크기를 유지한다.
+- `ReadKernelWeight()`는 채널 번호를 기준으로 좌우 변화, 위아래 변화, 평균 필터를 반복 선택한다. 첫 층의 두 필터는 각각 `dx / 3`, `dy / 3`이다.
+- `ComputeConvolutions()`는 이전 층의 모든 입력 채널을 합산하고 입력 채널 수로 정규화한다. 경계 밖의 항은 건너뛰어 0 패딩으로 처리한다.
+- `SelectPixel()`은 가중치와 활성값에 관계없이 연결되는 공간 위치를 다음 층으로 전파한다. 강조는 구조적 수용 영역을 뜻하며, 실제 값의 변화량이나 중요도를 계산한 결과가 아니다.
+- `ToggleInput()`은 선택값이 0.5 이상이면 0, 미만이면 1로 바꾼다. `RestoreInput()`은 원본 이미지의 흑백 값을 다시 읽는다.
+- `ReadOutput()`은 마지막 층의 채널 평균을 두 점수로 합산한 뒤 로지스틱 함수로 A/B 반응을 만든다. 학습된 분류 모델의 클래스 확률은 아니다.
+
+첫 단계의 미방문 노드는 표시만 어둡게 처리한다. 계산 결과는 데이터 생성 시 전체 위치에 대해 보유한다. 노드·맵·층의 Transform을 옮겨도 계산 인덱스와 연결 관계는 바뀌지 않는다.
+
+## 잡기와 배치 처리
+
+`GrabTarget`은 `Rigidbody`와 `CNNFeatureMapGrabInteractable`을 구성하고 Manager의 잡기 허용 여부를 XRI Select Filter로 연결한다. 선택 시작 시 Node와 Panel을 분리 상태로 표시하며, 해제 시 크기 변경 대상을 갱신한다. 필터는 회전 추적과 크기 변경 대상에서 제외한다.
+
+`InteractionController.CanGrab()`은 이미 잡은 대상의 부모나 자식을 동시에 잡지 못하게 한다. Manager는 잡은 대상이 있는 동안 안내 버튼 명령을 처리하지 않는다. `Layer.Update()`는 분리되지 않은 맵만 목표 배치로 보간하고, 하위 물체가 잡혀 있으면 해당 맵의 이동을 기다린다.
+
+## 프리팹과 참조
+
+[CNNFeatureMapWorkspace.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/CNNFeatureMapWorkspace.prefab)이 입력·층·출력·안내 UI를 조립한다. 아래 프리팹은 모두 `client/Assets/Prefabs/CNNFeatureMapLab/`에 있다.
 
 | 프리팹 | 역할 |
 |---|---|
-| `CNNFeatureMapWorkspace` | 입력·층·출력·안내 UI 조립, 씬 컨트롤러와 가이드 |
-| `CNNFeatureMapInput` | 입력 픽셀 64개, 입력 손잡이, 캡션과 필터 도구 |
-| `CNNFeatureMapInputPixel` | 개별 입력 픽셀의 모양·콜라이더·잡기 |
-| `CNNFeatureMapNeuron` | 개별 은닉 뉴런의 모양·콜라이더·잡기 |
-| `CNNFeatureMapPanel` | 공통 뉴런 64개와 맵 테두리 |
-| `CNNFeatureMapLayer2Channels` | 맵 2개와 첫 층 손잡이·캡션 |
-| `CNNFeatureMapLayer3Channels` | 맵 3개와 두 번째 층 손잡이·캡션 |
-| `CNNFeatureMapLayer5Channels` | 맵 5개와 세 번째 층 손잡이·캡션 |
-| `CNNFeatureMapOutput` | 출력 막대와 캡션. Workspace에서 A/B 두 개 사용 |
-| `CNNFeatureMapLessonControls` | 단계 제목·설명·결과와 6개 안내 버튼 |
-| `CNNFeatureMapFilter` | 3×3 필터 격자와 민트색 손잡이 |
-| `CNNFeatureMapFilterCard` | 필터 이름·가중치·패딩 안내 |
+| `CNNFeatureMapWorkspace` | Manager·Guide와 전체 콘텐츠 참조를 보관한다. |
+| `CNNFeatureMapInput` | 입력 노드 64개, 입력 손잡이, 필터 도구를 구성한다. |
+| `CNNFeatureMapInputPixel` | 입력 픽셀의 Node와 잡기 콜라이더를 구성한다. |
+| `CNNFeatureMapNeuron` | 특징 맵의 개별 Node와 잡기 콜라이더를 구성한다. |
+| `CNNFeatureMapPanel` | 뉴런 64개와 맵 잡기 대상을 구성한다. |
+| `CNNFeatureMapLayer2Channels` | 첫 층의 맵 2개와 층 잡기 대상을 구성한다. |
+| `CNNFeatureMapLayer3Channels` | 두 번째 층의 맵 3개와 층 잡기 대상을 구성한다. |
+| `CNNFeatureMapLayer5Channels` | 세 번째 층의 맵 5개와 층 잡기 대상을 구성한다. |
+| `CNNFeatureMapOutput` | A/B 반응을 표시하는 출력 Renderer와 캡션이다. |
+| `CNNFeatureMapLessonControls` | 단계 제목·설명·계산 결과와 기본 안내 버튼 6개를 구성한다. |
+| `CNNFeatureMapFilter` | 필터 도구와 잡기 대상을 구성한다. |
+| `CNNFeatureMapFilterCard` | 필터 이름·가중치·패딩 안내를 표시한다. |
 
-맵은 동일한 뉴런 원본을, 각 층은 동일한 맵 원본을 중첩 사용한다. 행·열과 배치는 인스턴스에 저장하며, 채널은 맵의 `_channel`, 층 인덱스는 층의 `_layerIndex`에서 설정한다. 입력 픽셀과 은닉 뉴런 수, 계산 방식과 잡기 동작은 기존 구성을 유지한다.
+Node의 `_row`·`_column`, Panel의 `_channel`, Layer의 `_layerIndex`가 계산 배열과의 대응을 결정한다. Guide의 기본 버튼 배열은 `Previous`, `Next`, `Scan`, `Filter`, `Spread`, `Restore` 순서로 연결한다. Manager의 `_outputs`는 A/B 순서로 지정한다.
 
-`CNNFeatureMapLabManager.Awake()`가 하위 부품에 현재 Workspace를 연결한다. 맵이 자기 노드에 층·채널 문맥을 전달하므로 재사용하는 원본 프리팹에 특정 Workspace 참조를 저장하지 않는다. 가이드의 UI·필터 참조는 Workspace에 연결되어 있고 버튼 콜백은 초기화 시 Manager에 직접 연결한다. 필터와 결과 뉴런을 잇는 연결선은 FilterController가 실행 중 생성한다.
-
-Manager와 Guide는 기존 컴포넌트의 GUID와 직렬화 필드를 유지한다. 분리한 Interaction/Display/Filter Controller는 Manager가 생성하는 일반 C# 객체이며, 프리팹에 추가 컴포넌트를 연결할 필요가 없다. 학습 단계·채널·방문 위치·입력 수정 횟수는 Manager가, 현재 필터 위치와 스캔 상태는 FilterController가 단독으로 관리한다. Guide의 공장 다음 단계 진입 상태는 Manager를 참조하므로 기존 공장 연결을 유지한다. 입력 복원은 Manager가 가진 원본 이미지로 수행하며 별도 텍스처 사본을 만들지 않는다. 합성곱 계산과 개별 잡기 부품의 동작은 유지한다.
-
-에셋은 Unity를 실행하지 않고 YAML로 분리했다. 파일 내부와 중첩 원본의 참조를 정적으로 확인했으며, Unity 임포트·Play·기기 동작은 실행 확인 전이다.
-
-한글 표시는 `Assets/Fonts/NotoSansCJKkr-Regular.otf`의 [Noto Sans CJK KR](https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/Korean) Regular를 포함하며, `Assets/Fonts/OFL.txt`에 [SIL OFL 원문](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE)을 보존한다.
-
-## 확인 상태
-
-초기 에셋 분리에서는 소스와 에셋 참조만 정적으로 검토했다. 이후 Manager와 Controller 책임 분리를 포함하여 사용자 요청으로 2026-10-18 Unity 6000.3.24f1 스크립트 컴파일을 완료했다. 이번 변경에서 Play·테스트·앱 빌드는 실행하지 않았으므로 실제 화면 배치와 Quest 조작은 실행 확인 전이다. Build Settings와 프로젝트 패키지 설정은 변경하지 않았다. 상세 결과는 [클라이언트 책임 분리 검증 기록](xr-setup.md#2026-10-18-클라이언트-책임-분리-검증)을 따른다.
+공용 XR 입력과 태블릿은 `client/Assets/Prefabs/XR/XRPlayerRig.prefab`을 사용한다. 입력 텍스처와 재질은 각각 `client/Assets/Textures/CNNFeatureMapLab/`, `client/Assets/Materials/CNNFeatureMapLab/`에 있다.

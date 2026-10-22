@@ -23,7 +23,7 @@
 
 `XRPlayerRig`는 `XROrigin`, Camera Offset, Main Camera, 양손 추적 오브젝트와 `XRInteractionManager`로 구성된다. `TrackedPoseDriver`가 HMD와 컨트롤러의 위치·회전을 갱신한다. 컨트롤러 레이는 OpenXR의 aim pose를 우선 읽고, 해당 입력이 없으면 device pose로 대체한다. 손에 표시되는 오브젝트는 grip pose를 사용한다.
 
-수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 비행·중력·CharacterController 충돌은 사용하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다.
+수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 3m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력·CharacterController 충돌은 사용하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 WASD 가상 기기 이동 속도는 별개이며 기존 설정을 유지한다.
 
 `XRPlayerInputController`는 수평 회전을 리그에, 수직 회전을 Camera Offset에 적용한다. `_turnSpeed`는 회전 속도, `_maximumPitch`는 스틱으로 추가하는 수직 회전의 한계다. `RestoreFrontView()`는 카메라 위치를 유지하며 시작 정면과 초기 Camera Offset 회전을 복원한다.
 
@@ -106,9 +106,8 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 | --- | --- |
 | [XRProjectSetup.ConfigureProject](../client/Assets/Editor/XRProjectSetup.cs) | Android·Standalone OpenXR 로더, 컨트롤러 프로필, Android 실행·렌더링 설정을 구성한다. 메뉴는 `Tools > XR > Configure Project`다. |
 | `XRProjectSetup.ScheduleStartupScene` / `OpenStartupScene` | 에디터 세션에서 한 번, 저장 경로·변경사항·루트 오브젝트가 없는 빈 씬이면 `FactoryIntro`를 연다. |
-| `XRProjectSetup.CreateInitialScene` | XR 설정을 적용하고 공용 리그와 `QuestMain`을 생성한 뒤 Build Settings의 씬 목록을 `QuestMain` 하나로 설정한다. 결과물이 이미 있으면 중단한다. 메뉴는 `Tools > XR > Create Initial VR Scene`이다. |
 | `XRProjectSetup.AddLeftStickMovement` | 기존 리그 프리팹에 이동 컴포넌트를 구성한다. `ContinuousMoveProvider`가 있으면 기존 구성을 사용한다. |
-| `XRProjectSetup.ValidateProject` / `ValidateRig` | OpenXR 설정, 씬 존재 여부, 카메라·리그·태블릿·레이 참조를 검사한다. |
+| `XRProjectSetup.ValidateProject` / `ValidateRig` | OpenXR 설정, 시작 씬 `FactoryIntro`의 존재 여부, 카메라·리그·태블릿·레이 참조를 검사한다. |
 | [QuestSetup.Configure](../client/Assets/Editor/QuestSetup.cs) | `Tools > CNN > Configure Quest VR`를 `XRProjectSetup.ConfigureProject()`에 연결한다. |
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.

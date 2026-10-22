@@ -1,13 +1,15 @@
 # 공장 환경과 체험 연결
 
-[FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 공장 환경, 체험 배치 기준점, 수집형 양피지를 담는다. 공장을 유지하면서 픽셀·합성곱, 피처맵, 모델 제작 씬을 순서대로 불러온다. 버튼과 양피지 사용법은 [조작법](xr-simulator.md)을 참고한다.
+[FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 공장 환경, 체험 배치 기준점, 수집형 양피지를 담는다. 입구에서 바닥 안내선을 따라 직접 이동해 학습 순서에 맞는 방에 들어가면 픽셀·합성곱, 피처맵, 모델 제작 씬을 차례로 불러온다. 마지막 학습을 완료한 뒤 뒤쪽 출구로 가면 엔딩을 연다. 체험과 양피지 사용법은 [조작법](xr-simulator.md)을 참고한다.
 
 ## 파일과 클래스 역할
 
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
-| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 현재 체험 단계와 각 씬의 완료 상태를 읽어 전환 안내판의 사용 가능 여부를 정한다. 전환 요청이 오면 잡기·로딩 상태를 확인하고 다음 씬을 Additive로 열어 공장 기준점에 콘텐츠를 배치한 뒤 이전 체험을 닫는다. 플레이어·안내판 이동과 태블릿 지도 게시도 조율하며 계산·퀴즈 판정은 각 체험 Manager에 맡긴다. |
-| [FactoryFlowPortalController](../client/Assets/Scripts/FactoryEnvironment/FactoryFlowPortalController.cs) | Manager가 초기화할 때 전환 안내판과 XRI 선택 버튼을 생성한다. `Show()`로 전달받은 단계 이름·안내·사용 가능 여부를 화면에 반영하고, 허용된 Activate 입력을 받으면 초기화 때 받은 전환 콜백을 호출한다. 어떤 씬을 열지는 Manager가 결정한다. |
+| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 최초 입구 배치, 학습 순서·완료 조건, 목적지와 태블릿 지도 게시를 조율한다. 목적지 영역에 플레이어가 머물면 잡기·로딩 상태를 확인하고 체험을 Additive로 불러온다. 다음 체험 준비 후 이전 체험을 닫으며, 완료 후 출구 진입은 엔딩 Single 로드로 연결한다. |
+| [FactoryAreaEntryController](../client/Assets/Scripts/FactoryEnvironment/FactoryAreaEntryController.cs) | `Bind()`로 전달된 플레이어 카메라가 BoxCollider 영역 안에 있는지 로컬 좌표로 판정한다. 리그의 물리 충돌이나 Rigidbody·Trigger 이벤트에 의존하지 않으며 손·잡은 물체의 진입은 판정하지 않는다. |
+| [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | 씬에 저장한 양방향 경유점 연결에서 목적지까지의 경로를 구하고, 플레이어가 합류할 수 있는 구간부터 바닥 LineRenderer를 표시한다. 합류 구간의 장애물 확인은 SphereCast로 처리하며 플레이어 이동을 막지는 않는다. |
+| [FactoryFlowPortalController](../client/Assets/Scripts/FactoryEnvironment/FactoryFlowPortalController.cs) | 입구에 `바닥의 안내선을 따라 이동하세요.`라는 고정 안내판을 생성한다. 다음 버튼이나 상호작용 컴포넌트는 생성하지 않는다. |
 | [FactoryMapReader](../client/Assets/Scripts/FactoryEnvironment/FactoryMapReader.cs) | 공장 루트 아래 BoxCollider의 이름·높이·월드 경계를 읽어 바닥과 벽을 구분한다. 여기에 방 이름, 양피지 컴포넌트의 문서 인덱스·참조를 모아 `TabletMapData`로 반환한다. Manager는 이 데이터를 태블릿에 전달하므로 지도 UI가 공장의 계층 구조를 직접 해석할 필요가 없다. |
 | [ParchmentPickupController](../client/Assets/Scripts/FactoryEnvironment/ParchmentPickupController.cs) | XRI Activate와 선택 시작을 같은 수집 요청으로 처리한다. 입력을 보낸 Interactor와의 거리를 확인하고 해당 리그의 `TabletManager.CollectParchment()`를 호출한 뒤, 획득했거나 이미 보유한 양피지를 다음 프레임에 비활성화한다. 평상시에는 양피지의 표시 애니메이션을 갱신한다. |
 | [TabletMapData](../client/Assets/Scripts/Core/Tablet/TabletMapData.cs) | 판독한 바닥·벽 목록과 지도 경계를 읽기 전용 데이터로 묶는다. 양피지는 원본 컴포넌트 참조와 문서 인덱스를 보관해 위치·활성 상태를 조회할 수 있게 한다. 공장 배치를 읽는 코드와 지도 그래픽을 그리는 코드 사이의 전달 형식이다. |
@@ -23,27 +25,37 @@ FactoryIntro
       → CNNPixelLab
       → CNNFeatureMapLab
       → CNNModelDesignLab
+      → 뒤쪽 출구 → FactoryEnding
 ```
 
-`FactoryLearningFlowManager.Start`는 지도를 태블릿에 전달하고 전환 안내판을 생성한다. 이후 `Advance`와 `LoadLesson`이 다음 순서로 체험을 전환한다.
+`FactoryLearningFlowManager.Start`는 유지된 XR 리그를 씬의 `_entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. 진입 영역과 안내선에 카메라를 연결하고 지도를 태블릿에 게시한다. 이후 체험은 다음 순서로 진행한다.
 
-1. 현재 단계의 완료 조건을 확인한다. 로딩 중이거나 XRI Interactor가 물체를 선택한 상태면 전환하지 않는다.
-2. `_contentAnchors`의 다음 기준점과 대상 씬 등록 여부를 확인하고 씬을 Additive로 로드한다.
+1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
+2. 플레이어가 허용된 다음 영역에 머물고 물체를 잡지 않았으면 대상 씬 등록 여부를 확인하고 Additive로 로드한다. 영역 안에서 물체를 놓아도 전환할 수 있다. 로딩 중 중복 요청은 차단한다.
 3. `CNNPixelLabManager`, `CNNFeatureMapLabManager`, `CNNModelDesignLabManager` 중 하나가 포함된 루트를 체험 콘텐츠로 찾는다.
 4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠를 기준점에 배치하고 Rigidbody 위치를 맞춘다. 픽셀 체험은 `RebaseDock`으로 원위치 복귀 기준도 갱신한다.
-5. 다음 콘텐츠 준비가 끝나면 이전 체험을 언로드한다. 콘텐츠 루트를 찾지 못하면 새 씬만 언로드하고 기존 체험을 유지한다.
-6. 공장 씬을 활성 씬으로 유지하고 안내판과 플레이어를 새 체험 위치로 이동한다. 플레이어 이동에는 카메라의 추적 높이를 보존한다.
+5. 다음 콘텐츠 준비가 끝나면 완료 조건과 잡기 상태를 다시 확인하고 이전 체험을 언로드한다. 콘텐츠를 준비하지 못하면 기존 체험을 유지한다. 로드 실패는 Console에 알리고, 해당 영역에서 나갔다 다시 들어오면 재시도한다.
+6. 공장 씬을 활성 씬으로 유지한다. 체험 전환 때 플레이어를 이동시키지 않는다. 현재 방을 잠깐 나가도 체험은 유지되며, 다음 체험으로 진행한 뒤 이전 체험의 재실행·진행 복원은 제공하지 않는다.
+7. 모델 학습 성공·결과 표시 후에는 뒤쪽 출구를 안내한다. 출구 진입 시 `FactoryEnding`을 Single로 열어 공장과 체험을 정리한다. 이 전환에서는 Manager의 파괴 콜백이 체험을 중복 언로드하지 않는다.
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | 시작 버튼을 사용할 수 있다. |
-| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이어야 한다. |
-| 피처맵 | `CNNFeatureMapGuide.ReadyForModelDesign`이 참이어야 한다. |
-| 모델 제작 | 공장 Manager가 연결하는 마지막 단계다. |
+| 공장 진입 | Convolution Room에 들어가면 `CNNPixelLab`을 불러온다. |
+| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 CNN Room을 안내한다. |
+| 피처맵 | `CNNFeatureMapGuide.ReadyForModelDesign`이 참이면 MLP Room을 안내한다. |
+| 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 재학습 시작 시 완료 상태를 초기화한다. |
 
 각 체험의 계산과 입력은 해당 씬의 Manager·Controller가 담당한다. 픽셀 체험의 계산 결과를 피처맵 씬으로 전달하지 않으며, 피처맵은 자체 예제 데이터를 사용한다. 자세한 구현은 [픽셀·합성곱](pixel-inspection.md), [피처맵](cnn-feature-map-explorer.md), [모델 제작](MODEL_DESIGN_API.md)에 정리한다.
 
-공용 [XRPlayerRig](../client/Assets/Prefabs/XR/XRPlayerRig.prefab)는 `PersistentXRPlayerRig`가 유지한다. 공장 Manager가 파괴되면 자신이 로드한 체험 씬을 언로드한다.
+공용 [XRPlayerRig](../client/Assets/Prefabs/XR/XRPlayerRig.prefab)는 `PersistentXRPlayerRig`가 유지한다. 공장 Manager가 파괴되면 자신이 로드한 체험 씬을 언로드하되, 엔딩 Single 전환은 해당 전환이 정리를 담당한다.
+
+## 바닥 안내선과 이동
+
+안내선은 복도와 각 방 출입구를 연결한 경유점 그래프를 사용한다. MLP 방 입구의 랙 북쪽을 우회하고, MLP 방에서 출구로 갈 때는 중앙 복도로 나와 출하 구역 서쪽 출입구를 통과한다. 출구 목적지는 `(12.5, 0, 39.6)`이다. 경로를 벗어나면 현재 위치에서 벽·기계를 통과하지 않고 합류할 수 있는 구간을 다시 선택한다. 합류 가능한 구간이 없으면 선을 숨기고 다음 갱신에서 재확인한다.
+
+`FactoryRouteGuideController`의 `_nodes`는 로컬 좌표와 양방향 이웃 인덱스, `_destinationNodes`는 합성곱·피처맵·모델 제작·출구 순서의 도착 노드다. 안내선은 0.15초 간격으로 갱신하고 재질 원본 [FactoryRoute.mat](../client/Assets/Materials/FactoryEnvironment/FactoryRoute.mat)을 참조한다. 경로 배열은 초기화 시 확보해 반복 생성하지 않는다.
+
+공용 스틱 이동 속도는 3m/s다. 플레이어의 벽 충돌은 이번 변경에 포함하지 않는다. 에디터 WASD 가상 기기 이동은 기존 방식과 속도를 유지한다.
 
 ## 공장 지도 데이터
 
@@ -89,7 +101,7 @@ FactoryMapReader.Read(공장 루트)
 
 ## 씬 구성과 에디터 도구
 
-공장 루트는 `Factory Environment`다. 각 실의 `CONTENT ZONE` Transform을 체험 배치 기준으로 사용하며, `FactoryLearningFlowManager._contentAnchors` 배열은 픽셀·피처맵·모델 제작 순서로 연결한다. `_font`는 전환 안내판의 글꼴 참조다.
+공장 루트는 `Factory Environment`다. 기존 `08 Content anchors and future scene links` 아래에 `Factory room navigation`을 추가하고 안내선 Controller와 세 방·출구의 진입 영역을 배치한다. 기존 입구 기준점 `ENTRY FROM FACTORY INTRO - exterior approach`를 `_entrance`에 연결한다. 각 실의 `CONTENT ZONE` Transform은 기존 콘텐츠 배치를 유지한다. `_contentAnchors`는 픽셀·피처맵·모델 제작 순서이며, `_areas`는 같은 세 방 뒤에 출구 영역을 연결한다. `_routeGuide`는 안내선 Controller, `_font`는 고정 안내판 글꼴, `_endingSceneName`은 `FactoryEnding`이다.
 
 | 도구 | 역할과 의존성 |
 | --- | --- |
@@ -99,3 +111,7 @@ FactoryMapReader.Read(공장 루트)
 양피지는 [LearningParchment.png](../client/Assets/Textures/Common/LearningParchment.png)와 [Nanum Pen Script](../client/Assets/Fonts/NanumPenScript-Regular.ttf)를 참조한다. 본문은 텍스처와 별도로 표시한다. 폰트 배포 조건은 동봉된 [OFL](../client/Assets/Fonts/NanumPenScript-OFL.txt)에 있다.
 
 공장 전용 렌더링 에셋은 [Materials](../client/Assets/Materials/FactoryEnvironment), [Textures](../client/Assets/Textures/FactoryEnvironment), [Meshes](../client/Assets/Meshes/FactoryEnvironment)에 있다.
+
+## 이번 변경의 확인 범위
+
+방 진입·바닥선·출구 엔딩 연결과 속도 변경은 소스 및 씬·에셋 참조만 정적으로 검토했다. 사용자 지시에 따라 Unity 실행, 테스트, 빌드, 컴파일은 수행하지 않았다. 안내선의 실제 표시와 컨트롤러 조작·씬 진행은 실행 확인 전이다.

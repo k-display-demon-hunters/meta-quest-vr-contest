@@ -1,58 +1,41 @@
-using System;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace FactoryEnvironment
 {
     public sealed class FactoryFlowPortalController : MonoBehaviour
     {
-        private TextMesh _label;
-        private TextMesh _hint;
-        private XRSimpleInteractable _button;
         private Material _material;
-        private Action _advance;
 
-        public void Initialize(Font font, Action advance)
+        public void Initialize(Font font)
         {
-            _advance = advance;
             GameObject face = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            face.name = "Next experience";
+            face.name = "Factory route instruction";
             face.transform.SetParent(transform, false);
-            face.transform.localScale = new Vector3(1.7f, .3f, .05f);
+            face.transform.localScale = new Vector3(3.6f, 0.45f, 0.05f);
+            // This sign displays instructions without blocking movement or accepting input.
+            Destroy(face.GetComponent<Collider>());
             _material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            _material.color = new Color(.16f, .22f, .28f);
+            _material.color = new Color(0.16f, 0.22f, 0.28f);
             face.GetComponent<Renderer>().sharedMaterial = _material;
-            _button = face.AddComponent<XRSimpleInteractable>();
-            _button.activated.AddListener(Activate);
-            _label = Label(font, new Vector3(0, 0, -.04f), .013f);
-            _hint = Label(font, new Vector3(0, -.35f, -.04f), .008f);
-        }
-
-        private TextMesh Label(Font font, Vector3 position, float size)
-        {
-            TextMesh label = new GameObject("Label").AddComponent<TextMesh>();
+            TextMesh label = new GameObject("Instruction").AddComponent<TextMesh>();
             label.transform.SetParent(transform, false);
-            label.transform.localPosition = position;
+            label.transform.localPosition = new Vector3(0f, 0f, -0.04f);
             label.font = font;
             label.fontSize = 64;
-            label.characterSize = size;
+            label.characterSize = 0.01f;
             label.anchor = TextAnchor.MiddleCenter;
             label.alignment = TextAlignment.Center;
             label.color = Color.white;
+            label.text = "바닥의 안내선을 따라 이동하세요.";
             label.GetComponent<MeshRenderer>().sharedMaterial = font.material;
-            return label;
         }
 
-        public void Show(string title, string hint, bool ready)
+        private void OnDestroy()
         {
-            if (_label.text != title) { _label.text = title; }
-            if (_hint.text != hint) { _hint.text = hint; }
-            _label.color = ready ? Color.white : Color.gray;
-            if (_button.enabled != ready) { _button.enabled = ready; }
+            if (_material != null)
+            {
+                Destroy(_material);
+            }
         }
-
-        private void Activate(ActivateEventArgs args) { _advance?.Invoke(); }
-        private void OnDestroy() { if (_material != null) { Destroy(_material); } }
     }
 }

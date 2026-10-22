@@ -58,7 +58,7 @@ Title → Introduction → Attack → Mission → Tutorial → Ready → Loading
 
 재시작은 `_restartSceneName`을 Single 모드로 로드하며 기본값은 `FactoryIntro`다. 로드 전에 패널을 비활성화해 UI 입력을 복원하고, 로드 실패 시 완료 화면을 다시 활성화한다. 종료는 플레이어에서 `Application.Quit`를 호출하고 에디터에서는 안내 문구를 표시한다.
 
-현재 공장의 체험 연결은 `CNNModelDesignLab`에서 끝난다. 엔딩은 학습 결과나 양피지 수집 상태를 받아 진입 여부를 판정하지 않는다.
+공장에서는 `CNNModelDesignLab`의 정상 학습 완료·결과 표시 후 뒤쪽 출구를 안내한다. `FactoryLearningFlowManager`가 플레이어의 출구 진입을 확인해 `FactoryEnding`을 Single 모드로 연다. 엔딩 씬은 별도의 학습 결과나 양피지 수집 데이터를 받지 않고 기존 복구 연출을 자동 시작한다. 이 연결은 Unity 실행·테스트·빌드·컴파일 없이 정적으로 반영했다.
 
 ## 씬 구성 도구와 참조
 

@@ -15,16 +15,10 @@ using UnityEngine.InputSystem.XR;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
-using UnityEngine.XR.Interaction.Toolkit.Locomotion.Gravity;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
@@ -36,7 +30,6 @@ namespace XR.Editor
 {
     public static class XRProjectSetup
     {
-        private const string ScenePath = "Assets/Scenes/QuestMain.unity";
         private const string StartupScenePath = "Assets/Scenes/FactoryIntro.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
         private const string StartupSceneScheduledKey = "XR.FactoryIntroStartupSceneScheduled";
@@ -156,73 +149,6 @@ namespace XR.Editor
             EditorUtility.SetDirty(feature);
         }
 
-        // Explicit command only: opening the project never overwrites a scene or prefab.
-        [MenuItem("Tools/XR/Create Initial VR Scene")]
-        public static void CreateInitialScene()
-        {
-            if (File.Exists(ScenePath) || File.Exists(RigPath))
-            {
-                throw new InvalidOperationException("XR scene or rig already exists. Edit the existing assets instead.");
-            }
-            if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            {
-                return;
-            }
-
-            ConfigureProject();
-            Directory.CreateDirectory("Assets/Prefabs/XR");
-            Directory.CreateDirectory("Assets/XR/Materials");
-            AssetDatabase.Refresh();
-            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-            Material floorMaterial = CreateMaterial("Floor", new Color(0.18f, 0.22f, 0.28f));
-            Material rayMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            AssetDatabase.CreateAsset(rayMaterial, "Assets/XR/Materials/ControllerRay.mat");
-
-            GameObject rig = new GameObject("XR Player Rig");
-            rig.AddComponent<PersistentXRPlayerRig>();
-            XROrigin origin = rig.AddComponent<XROrigin>();
-            GameObject offset = CreateChild("Camera Offset", rig.transform);
-            origin.CameraFloorOffsetObject = offset;
-            origin.RequestedTrackingOriginMode = XROrigin.TrackingOriginMode.Floor;
-            origin.CameraYOffset = 1.6f;
-            GameObject cameraObject = CreateChild("Main Camera", offset.transform);
-            cameraObject.tag = "MainCamera";
-            Camera camera = cameraObject.AddComponent<Camera>();
-            camera.nearClipPlane = 0.05f;
-            camera.farClipPlane = 100f;
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.035f, 0.05f, 0.085f, 1f);
-            cameraObject.AddComponent<AudioListener>();
-            cameraObject.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
-            origin.Camera = camera;
-            AddPoseDriver(cameraObject, "<XRHMD>", "centerEyePosition", "centerEyeRotation");
-            XRInteractionManager manager = rig.AddComponent<XRInteractionManager>();
-            CreateController(offset.transform, manager, "LeftHand", InteractorHandedness.Left, rayMaterial);
-            CreateController(offset.transform, manager, "RightHand", InteractorHandedness.Right, rayMaterial);
-            CreateHeldDevices(offset.transform);
-            ConfigureMovement(rig);
-            PrefabUtility.SaveAsPrefabAssetAndConnect(rig, RigPath, InteractionMode.AutomatedAction);
-
-            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            floor.name = "Floor";
-            floor.transform.position = new Vector3(0f, -0.1f, 0f);
-            floor.transform.localScale = new Vector3(8f, 0.2f, 8f);
-            floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
-            GameObject lightObject = new GameObject("Directional Light");
-            Light light = lightObject.AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = 1.2f;
-            lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = Color.gray;
-
-            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-            AssetDatabase.SaveAssets();
-            ValidateRig();
-        }
-
         [MenuItem("Tools/XR/Add Left Stick Movement")]
         public static void AddLeftStickMovement()
         {
@@ -260,7 +186,7 @@ namespace XR.Editor
             }
             ContinuousMoveProvider movement = rig.AddComponent<ContinuousMoveProvider>();
             movement.mediator = mediator;
-            movement.moveSpeed = 1.5f;
+            movement.moveSpeed = 3f;
             movement.enableStrafe = true;
             movement.enableFly = false;
             // XRI still has a legacy gravity fallback when no GravityProvider exists.
@@ -278,178 +204,6 @@ namespace XR.Editor
             // A deadzone filters small resting-stick values from the OpenXR Vector2 control.
             movement.rightHandMoveInput = new XRInputValueReader<Vector2>("Right Move Disabled",
                 XRInputValueReader.InputSourceMode.Unused);
-        }
-
-        private static void CreateController(Transform parent, XRInteractionManager manager, string hand,
-            InteractorHandedness handedness, Material rayMaterial)
-        {
-            GameObject controller = CreateChild(hand + " Controller", parent);
-            string device = "<XRController>{" + hand + "}";
-            // Prefer OpenXR's aim pose; simulated controllers only expose the device pose.
-            AddPoseDriver(controller, device, "pointerPosition", "pointerRotation", fallbackToDevicePose: true);
-            XRRayInteractor ray = controller.AddComponent<XRRayInteractor>();
-            ray.interactionManager = manager;
-            ray.handedness = handedness;
-            ray.enableUIInteraction = false;
-            ray.maxRaycastDistance = 5f;
-            ray.raycastTriggerInteraction = QueryTriggerInteraction.Collide;
-            if (handedness == InteractorHandedness.Right)
-            {
-                ray.manipulateAttachTransform = false;
-                ray.allowHoveredActivate = true;
-            }
-            ray.selectInput = CreateButton(hand + " Select", device + "/gripPressed", device + "/grip");
-            ray.activateInput = CreateButton(hand + " Activate", device + "/triggerPressed", device + "/trigger");
-            LineRenderer line = controller.AddComponent<LineRenderer>();
-            line.sharedMaterial = rayMaterial;
-            line.startWidth = 0.005f;
-            line.endWidth = 0.005f;
-            XRInteractorLineVisual lineVisual = controller.AddComponent<XRInteractorLineVisual>();
-            // Keep the pointer on the raycast path instead of bending it back toward a selected port.
-            lineVisual.lineBendRatio = 1f;
-            if (handedness == InteractorHandedness.Left)
-            {
-                ray.enabled = false;
-                line.enabled = false;
-                lineVisual.enabled = false;
-            }
-        }
-
-        private static void CreateHeldDevices(Transform parent)
-        {
-            Material body = CreateMaterial("DeviceBody", new Color(0.72f, 0.76f, 0.82f));
-            Material screen = CreateMaterial("DeviceScreen", new Color(0.015f, 0.025f, 0.04f));
-            Material tabletBody = CreateMaterial("TabletBody", new Color(0.028f, 0.034f, 0.044f),
-                "Universal Render Pipeline/Unlit");
-            GameObject left = CreateChild("LeftHand Grip Visual", parent);
-            AddPoseDriver(left, "<XRController>{LeftHand}", "devicePosition", "deviceRotation");
-            GameObject tablet = CreateChild("Tablet", left.transform);
-            tablet.transform.localPosition = new Vector3(0f, 0.12f, 0.04f);
-            CreateDevicePart("Tablet Body", tablet.transform, Vector3.zero, new Vector3(0.30f, 0.205f, 0.014f), tabletBody);
-            Text message = CreateTabletCanvas(tablet.transform);
-            TabletManager display = tablet.AddComponent<TabletManager>();
-            SerializedObject serializedDisplay = new SerializedObject(display);
-            serializedDisplay.FindProperty("_message").objectReferenceValue = message;
-            serializedDisplay.FindProperty("_font").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
-            serializedDisplay.ApplyModifiedPropertiesWithoutUndo();
-
-            GameObject right = CreateChild("RightHand Grip Visual", parent);
-            AddPoseDriver(right, "<XRController>{RightHand}", "devicePosition", "deviceRotation");
-            CreateDevicePart("Controller Handle", right.transform, new Vector3(0f, -0.035f, 0f), new Vector3(0.035f, 0.11f, 0.04f), body);
-            CreateDevicePart("Controller Head", right.transform, new Vector3(0f, 0.027f, 0.01f), new Vector3(0.072f, 0.025f, 0.075f), body);
-            CreateDevicePart("Controller Stick", right.transform, new Vector3(-0.016f, 0.046f, 0.018f), new Vector3(0.016f, 0.015f, 0.016f), screen);
-            CreateDevicePart("Controller A", right.transform, new Vector3(0.017f, 0.043f, 0.002f), new Vector3(0.011f, 0.007f, 0.011f), screen);
-            CreateDevicePart("Controller B", right.transform, new Vector3(0.017f, 0.043f, 0.022f), new Vector3(0.011f, 0.007f, 0.011f), screen);
-            CreateDevicePart("Controller Trigger", right.transform, new Vector3(0f, 0.009f, 0.054f), new Vector3(0.025f, 0.027f, 0.012f), screen);
-        }
-
-        private static Text CreateTabletCanvas(Transform parent)
-        {
-            GameObject canvasObject = new GameObject("Tablet Canvas", typeof(RectTransform), typeof(Canvas),
-                typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
-            canvasObject.layer = LayerMask.NameToLayer("UI");
-            canvasObject.transform.SetParent(parent, false);
-            canvasObject.transform.localPosition = new Vector3(0f, 0f, -0.0075f);
-            // UI pixels map to 0.5 mm in world space, matching the tablet screen.
-            canvasObject.transform.localScale = Vector3.one * 0.0005f;
-            canvasObject.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 340f);
-            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-
-            GameObject background = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            background.layer = canvasObject.layer;
-            background.transform.SetParent(canvasObject.transform, false);
-            // Preserve the old 26 x 18 cm screen, with text 0.5 mm in front.
-            background.transform.localPosition = new Vector3(0f, 0f, 1f);
-            background.GetComponent<RectTransform>().sizeDelta = new Vector2(520f, 360f);
-            Image backgroundImage = background.GetComponent<Image>();
-            backgroundImage.color = new Color(0.015f, 0.025f, 0.04f);
-            backgroundImage.raycastTarget = false;
-
-            GameObject label = new GameObject("Runtime UI Preview", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            label.layer = canvasObject.layer;
-            label.transform.SetParent(canvasObject.transform, false);
-            RectTransform labelRect = label.GetComponent<RectTransform>();
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero;
-            labelRect.offsetMax = Vector2.zero;
-            Text message = label.GetComponent<Text>();
-            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
-            message.font = font != null ? font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            message.fontSize = 28;
-            message.alignment = TextAnchor.MiddleCenter;
-            message.color = Color.white;
-            message.raycastTarget = false;
-            message.text = "케디헌 XR TABLET\n\nUI BUILDS AT RUNTIME";
-            return message;
-        }
-
-        private static void CreateDevicePart(string name, Transform parent, Vector3 position, Vector3 scale, Material material)
-        {
-            GameObject part = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            part.name = name;
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = position;
-            part.transform.localScale = scale;
-            UnityEngine.Object.DestroyImmediate(part.GetComponent<Collider>());
-            part.GetComponent<Renderer>().sharedMaterial = material;
-            part.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
-        }
-
-        private static XRInputButtonReader CreateButton(string name, string button, string value)
-        {
-            return new XRInputButtonReader(name, name + " Value", true, XRInputButtonReader.InputSourceMode.InputAction)
-            {
-                inputActionPerformed = new InputAction(name, InputActionType.Button, button),
-                inputActionValue = new InputAction(name + " Value", InputActionType.Value, value)
-            };
-        }
-
-        private static void AddPoseDriver(GameObject target, string device, string position, string rotation,
-            bool fallbackToDevicePose = false)
-        {
-            InputAction positionAction = new InputAction("Position", InputActionType.Value,
-                expectedControlType: "Vector3");
-            InputAction rotationAction = new InputAction("Rotation", InputActionType.Value,
-                expectedControlType: "Quaternion");
-            if (fallbackToDevicePose)
-            {
-                // XRI's fallback composites keep aim priority even when its value is zero.
-                positionAction.AddCompositeBinding("Vector3Fallback")
-                    .With("first", device + "/" + position)
-                    .With("second", device + "/devicePosition");
-                rotationAction.AddCompositeBinding("QuaternionFallback")
-                    .With("first", device + "/" + rotation)
-                    .With("second", device + "/deviceRotation");
-            }
-            else
-            {
-                positionAction.AddBinding(device + "/" + position);
-                rotationAction.AddBinding(device + "/" + rotation);
-            }
-
-            TrackedPoseDriver driver = target.AddComponent<TrackedPoseDriver>();
-            driver.positionInput = new InputActionProperty(positionAction);
-            driver.rotationInput = new InputActionProperty(rotationAction);
-            driver.trackingStateInput = new InputActionProperty(new InputAction("Tracking State", InputActionType.Value,
-                device + "/trackingState", expectedControlType: "Integer"));
-            driver.updateType = TrackedPoseDriver.UpdateType.UpdateAndBeforeRender;
-        }
-
-        private static GameObject CreateChild(string name, Transform parent)
-        {
-            GameObject child = new GameObject(name);
-            child.transform.SetParent(parent, false);
-            return child;
-        }
-
-        private static Material CreateMaterial(string name, Color color, string shaderName = "Universal Render Pipeline/Lit")
-        {
-            Material material = new Material(Shader.Find(shaderName));
-            material.SetColor("_BaseColor", color);
-            AssetDatabase.CreateAsset(material, $"Assets/XR/Materials/{name}.mat");
-            return material;
         }
 
         [MenuItem("Tools/XR/Validate Project")]
@@ -472,9 +226,9 @@ namespace XR.Editor
             {
                 throw new BuildFailedException("Enable Meta Quest Support and the Oculus Touch interaction profile.");
             }
-            if (!File.Exists(ScenePath))
+            if (!File.Exists(StartupScenePath))
             {
-                throw new BuildFailedException("QuestMain scene is missing.");
+                throw new BuildFailedException("FactoryIntro scene is missing.");
             }
             List<OpenXRFeature.ValidationRule> issues = new List<OpenXRFeature.ValidationRule>();
             OpenXRProjectValidation.GetCurrentValidationIssues(issues, BuildTargetGroup.Android);

@@ -97,7 +97,7 @@ namespace ModelDesignScene
             }
             if (_rightRay == null)
             {
-                Debug.LogWarning("[ModelDesign] Enter this content scene from QuestMain to use its XR player rig.", this);
+                Debug.LogWarning("[ModelDesign] Enter the MLP Room in FactoryEnvironment to use the shared XR player rig.", this);
                 return;
             }
         }

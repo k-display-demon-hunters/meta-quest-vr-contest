@@ -23,6 +23,9 @@ namespace ModelDesignScene
         private ModelWorkspace _workspace;
         private ModelBlockController _grabbedBlock;
         private bool _initialized;
+        private bool _trainingCompleted;
+
+        public bool ReadyForFactoryExit => _trainingCompleted && !_execution.IsBusy;
 
         private void Awake()
         {
@@ -205,6 +208,7 @@ namespace ModelDesignScene
             }
             _settings.Close();
             _results.ResetTraining();
+            _trainingCompleted = false;
             await _execution.StartTrainingAsync(json);
         }
 
@@ -240,6 +244,7 @@ namespace ModelDesignScene
         private void HandleTrainingCompleted(TrainingResult result)
         {
             _results.ShowCompleted(result);
+            _trainingCompleted = result != null;
         }
 
         private void HandleTrainingCancelled()
@@ -268,6 +273,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _trainingCompleted = false;
             _execution.CloseSession();
             if (_initialized)
             {

@@ -1,138 +1,152 @@
-# 블록 모델 편집 API
+# 모델 제작 씬과 편집 API
 
-`client/Assets/Scripts/CNNModelDesignLab/ModelDesign/`, namespace `ModelDesign`.
+대상 씬은 [CNNModelDesignLab.unity](../client/Assets/Scenes/CNNModelDesignLab.unity)다. 슬롯에 배치된 블록 순서로 모델을 구성하고 서버에 학습·추론을 요청한다. 조작은 [공통 조작법](xr-simulator.md), 전송 형식은 [모델 JSON 명세](MODEL_JSON_SPEC.md)와 [WebSocket 통신](WEBSOCKET_PROTOCOL.md)을 참고한다.
 
-씬 전용 폴더 아래에 배치하지만 순수 모델 코드는 `ModelDesign.asmdef`로 Unity 컴포넌트와 분리한다. 어셈블리 이름 `ModelDesign`과 `noEngineReferences: true`를 유지하며 Unity API에 의존하지 않는다.
+## 파일과 클래스
+
+씬 스크립트는 `client/Assets/Scripts/CNNModelDesignLab/`, 네임스페이스는 `ModelDesignScene`이다.
+
+| 파일·클래스 | 역할과 처리 방식 |
+| --- | --- |
+| [CNNModelDesignLabManager](../client/Assets/Scripts/CNNModelDesignLab/CNNModelDesignLabManager.cs) | Workspace와 고정 Input·Output을 준비하고 공급·배치·설정·실행 Controller의 이벤트를 연결한다. 블록을 꺼내거나 슬롯에 놓을 때 Workspace의 레이어와 연결 순서를 갱신하며, 학습 요청 시 검증·직렬화 후 ExecutionController에 JSON을 전달한다. 응답을 결과 화면에 넘기고 현재 편집 모델이 학습 당시 모델과 달라졌는지도 비교한다. |
+| [ModelDesignEntrance](../client/Assets/Scripts/CNNModelDesignLab/ModelDesignEntrance.cs) | 진입 표지의 XRI Activate를 받아 제작 씬을 Additive로 연다. 진입 뒤 표지를 비활성화해 같은 안내판을 다시 선택하지 않게 한다. 실제 모델 생성과 학습 준비는 로드된 씬의 Manager가 수행한다. |
+| [ModelSupplyController](../client/Assets/Scripts/CNNModelDesignLab/ModelSupplyController.cs) | 공급소에 놓일 레이어 종류별 기본값으로 블록을 준비한다. 블록이 꺼내졌는지 판별하고 원래 자리에 새 블록을 보충한다. 꺼낸 블록의 Workspace 등록과 슬롯 배치는 Manager가 처리하므로 공급소는 계속 사용할 부품을 제공하는 역할이다. |
+| [ModelBlockController](../client/Assets/Scripts/CNNModelDesignLab/ModelBlockController.cs) | 하나의 `LayerDefinition`을 3D 블록에 연결하고 레이어 변경을 라벨에 반영한다. XRI 잡기·놓기를 이벤트로 알려 Manager가 공급소 출고나 슬롯 이동을 처리하게 한다. 고정 Input·Output은 선택을 차단해 공급 블록과 구분한다. |
+| [ModelConveyorController](../client/Assets/Scripts/CNNModelDesignLab/ModelConveyorController.cs) | 슬롯별 점유 블록을 보관하고 잡은 블록의 중심을 벨트 로컬 좌표로 바꿔 배치 가능한 슬롯을 찾는다. 이동 중 후보를 표시하고 유효한 빈 슬롯에 놓으면 위치·방향을 맞춘다. 슬롯 순서의 블록 목록과 설정 조작기기 상태를 제공해 Manager가 모델 연결을 다시 만들게 한다. |
+| [SlotSettingsController](../client/Assets/Scripts/CNNModelDesignLab/SlotSettingsController.cs) | 한 슬롯의 설정 조작기기에 붙어 현재 배치된 블록과 팝업 기준점을 보관한다. 슬롯의 사용 가능 상태에 맞춰 조작기기를 갱신하고 XRI Activate를 설정 요청으로 전달한다. Manager가 입력과 블록 상태를 확인한 뒤 실제 팝업을 열게 한다. |
+| [ModelXRInputController](../client/Assets/Scripts/CNNModelDesignLab/ModelXRInputController.cs) | 공용 오른손 레이와 XR UI 입력 환경을 연결한다. 슬롯 설정 요청이 이 레이에서 왔는지, 물체를 잡고 있지 않은지, 가까운 UI에 가려지지 않고 해당 슬롯 Collider에 맞았는지 검사한다. 입력 종료 시 자신이 추가한 EventSystem 또는 UI 모듈을 정리한다. |
+| [ModelSettingsController](../client/Assets/Scripts/CNNModelDesignLab/ModelSettingsController.cs) | 팝업 인스턴스 하나를 만들고 현재 설정 대상 블록을 보관한다. 슬롯 요청을 받으면 팝업을 해당 `Popup Anchor`의 자식으로 옮겨 대상 레이어를 표시하고, 삭제 버튼은 블록을 지정한 이벤트로 Manager에 전달한다. 닫기·비활성화·파괴 시 대상 참조와 팝업을 정리한다. |
+| [BlockSettingsPopup](../client/Assets/Scripts/CNNModelDesignLab/BlockSettingsPopup.cs) | 선택한 레이어 종류에 필요한 숫자·활성화 항목을 구성한다. 설정 버튼은 `LayerDefinition.Set*()`을 호출해 값을 바꾸고 변경 이벤트가 Workspace 검증과 블록 라벨 갱신으로 이어지게 한다. Done은 팝업을 닫고 Delete는 상위 Controller에 삭제를 요청한다. |
+| [ModelTrainingController](../client/Assets/Scripts/CNNModelDesignLab/ModelTrainingController.cs) | 컨베이어의 학습 시작·중지 버튼을 사용자 요청 이벤트로 바꾼다. Manager가 알려준 실행 상태와 취소 가능 여부로 문구와 버튼 활성 상태를 갱신한다. 모델 JSON 준비나 서버 통신은 Manager와 ExecutionController에서 수행한다. |
+| [ModelExecutionController](../client/Assets/Scripts/CNNModelDesignLab/ModelExecutionController.cs) | 직렬화된 모델 JSON을 받아 통신 세션을 만들고 연결 → 시작 확인 대기 → 학습 → 완료 상태를 관리한다. 중지 시점에 따라 연결을 닫거나 서버 취소 응답을 기다리며, 학습된 모델이 있으면 이미지 ID 추론 요청을 보낸다. 진행·결과·오류를 이벤트로 알리고 세션·작업 번호로 종료된 요청의 늦은 응답을 걸러낸다. |
+| [ModelResultsController](../client/Assets/Scripts/CNNModelDesignLab/ModelResultsController.cs) | 결과 화면을 구성하고 Metrics·Inference Controller를 생성한다. Manager가 넘긴 실행 상태·진행·완료·오류를 각 표시 담당 객체에 전달하며, 편집 모델 변경 안내를 별도로 표시한다. 샘플 선택에서 생긴 추론 요청은 이벤트로 Manager에 돌려보낸다. |
+| [ModelTrainingMetricsController](../client/Assets/Scripts/CNNModelDesignLab/ModelTrainingMetricsController.cs) | 학습 진행 응답에서 epoch와 학습·검증 loss·accuracy를 읽어 숫자와 그래프에 누적한다. 완료 응답의 마지막 epoch도 반영하고, 별도 테스트 평가 지표는 최종 결과로 표시한다. 새 학습에서는 이전 지표를 초기화한다. |
+| [ModelInferenceResultsController](../client/Assets/Scripts/CNNModelDesignLab/ModelInferenceResultsController.cs) | 이미지·정답 목록으로 샘플 페이지를 구성하고 선택한 이미지의 에셋 이름을 추론 ID로 요청한다. 응답 ID가 대기 중인 샘플과 일치할 때 예측 숫자·클래스별 출력을 표시한다. 학습 모델 유무와 작업 상태에 따라 샘플 선택 가능 여부도 갱신한다. |
+| [ModelResultsUIBuilder](../client/Assets/Scripts/CNNModelDesignLab/ModelResultsUIBuilder.cs) | 결과 표시 객체들이 사용할 루트·텍스트·배경·버튼 등 uGUI 요소를 생성한다. 공통 글꼴과 색상·배치를 적용한 참조를 돌려주며, 지표 데이터나 추론 대기 상태는 생성한 UI를 사용하는 Controller가 관리한다. |
+| [ModelMetricGraph](../client/Assets/Scripts/CNNModelDesignLab/ModelMetricGraph.cs) | epoch별 학습·검증 수치를 저장하고 `Graphic`의 메시로 두 데이터의 선 그래프를 그린다. MetricsController가 진행 응답을 추가하거나 초기화하면 그래프가 갱신된다. 서버 통신과 지표 계산은 수행하지 않고 전달된 수치를 시각화한다. |
+
+Manager는 Controller의 인스턴스 이벤트를 구독하고 기능 사이의 순서를 조율한다. Controller는 Manager를 직접 참조하지 않는다. `ModelTrainingMetricsController`, `ModelInferenceResultsController`, `ModelResultsUIBuilder`는 `ModelResultsController`가 생성하는 일반 C# 객체다.
+
+## 블록 배치에서 모델 갱신까지
+
+1. Manager가 `Awake()`에서 Workspace를 생성한다. `Start()`에서 고정 Input·Output 블록, 공급소, 슬롯을 초기화하고 이벤트를 연결한다.
+2. 공급소의 블록을 잡으면 `ModelSupplyController.TryTakeBlock()`이 기본 블록을 보충한다. Manager는 꺼낸 블록의 레이어를 Workspace에 추가한다.
+3. 슬롯에 있던 블록을 잡으면 Manager가 팝업을 닫고 해당 슬롯을 비운 뒤 모델 순서를 갱신한다.
+4. 잡고 있는 동안 `LateUpdate()`가 `PreviewPlacement()`를 호출한다. `ModelConveyorController`는 블록 중심을 벨트 로컬 좌표로 변환하고 슬롯 중심과 `Placement Half Extents`를 비교한다.
+5. 정상적으로 놓으면 `TryPlaceBlock()`이 빈 슬롯에 블록을 등록하고 위치·방향을 정렬한다. 슬롯 밖·점유된 슬롯·취소된 잡기는 배치하지 않는다.
+6. `RefreshModelOrder()`가 이전 연결을 해제하고 `Input → 슬롯 순서의 블록 → Output`으로 연결한다. 빈 슬롯은 건너뛰며 다른 블록의 실제 위치는 옮기지 않는다.
+
+슬롯 밖 블록도 Workspace에는 남지만 Input에 연결되지 않아 전송 대상에서 제외된다. 배치는 레이어 순서 오류를 허용하며, 학습 시작 시 전송 검증으로 걸러낸다.
+
+## 설정과 삭제
+
+`SlotSettingsController`가 설정 요청을 보내면 Manager가 현재 블록, 잡기 상태, `ModelXRInputController.CanActivateSlot()` 결과를 확인한다. `ModelSettingsController`는 해당 슬롯의 `Popup Anchor`에 팝업을 연다. 팝업은 한 번에 하나이며 사용자 시점을 따라가지 않는다.
+
+`BlockSettingsPopup`은 레이어 종류에 맞는 숫자·활성화 항목을 만들고 `LayerDefinition.Set*()`을 호출한다. 값 변경은 Workspace의 검증·변경 이벤트로 이어진다. 삭제 요청은 Manager가 받아 슬롯 제거, Workspace 레이어 제거, 이벤트 해제, 블록 비활성화·파괴 순서로 처리한다. Input·Output은 삭제할 수 없다.
+
+## 학습·추론 흐름과 수명
+
+`ModelTrainingController`의 시작 요청을 받은 Manager는 작업 중이거나 블록을 잡고 있으면 요청을 처리하지 않는다. `ModelJsonSerializer.TrySerialize()`가 성공하면 결과 화면을 초기화하고 `ModelExecutionController.StartTrainingAsync()`에 JSON을 넘긴다.
+
+`ModelExecutionController`는 연결을 만들고 `TrainAsync(modelJson, epoch: null)`을 호출한다. 서버 기본 epoch를 사용하며 `Connecting → StartingTraining → Training` 상태로 진행한다. 시작 확인 전의 중지는 연결 종료로 처리하고, 학습 중의 중지는 취소 요청 후 서버 응답을 기다린다. 학습·추론·취소 대기 중에는 추가 학습·추론을 받지 않는다.
+
+진행·완료 응답은 Manager를 거쳐 결과 화면으로 전달된다. `ModelTrainingMetricsController`는 학습·검증 지표를 epoch별로 누적하고 마지막 epoch는 완료 응답에서 추가한다. 최종 테스트 지표는 별도로 표시한다. 총 epoch 표시도 실제 진행·완료 응답을 사용한다.
+
+학습 완료 후 `ModelInferenceResultsController`는 선택한 샘플의 `Texture2D.name`을 `image_id`로 보낸다. 응답 ID가 선택한 샘플과 일치하는지 확인한 뒤 예측 숫자와 클래스별 출력을 표시한다. 씬의 고정 Output은 Softmax이며 수신값을 재정규화하지 않고 백분율로 표시한다.
+
+모델은 학습 중·후에도 편집할 수 있다. Manager는 현재 JSON과 `SubmittedModelJson`을 비교해 결과가 이전 구성에 해당하는지 표시한다. 추론은 서버에 남아 있는 마지막 학습 모델을 사용한다.
+
+Manager의 `OnDisable()`은 세션 종료, 결과 초기화, 팝업 닫기, 잡기 취소와 입력 해제를 수행한다. `ModelExecutionController`는 세션·작업 세대 번호를 비교해 종료된 요청의 늦은 응답을 무시한다. `OnDestroy()`에서는 이벤트 구독과 Workspace를 해제한다. 서버 모델은 연결과 함께 사라지므로 다시 진입하면 학습이 필요하다.
+
+## 씬·프리팹 연결
+
+| 에셋·필드 | 구현 연결 |
+| --- | --- |
+| [XRPlayerRig.prefab](../client/Assets/Prefabs/XR/XRPlayerRig.prefab) | 공용 추적·입력 리그. `PersistentXRPlayerRig`가 씬 추가 로드 시 중복 리그를 제거 |
+| [ModelBlock.prefab](../client/Assets/Prefabs/CNNModelDesignLab/ModelBlock.prefab) | `ModelBlockController`, Collider, XRI 잡기 구성 |
+| [PartsSupplyRack.prefab](../client/Assets/Prefabs/CNNModelDesignLab/PartsSupplyRack.prefab) | 공급소와 기본 블록 참조 |
+| [ModelConveyor.prefab](../client/Assets/Prefabs/CNNModelDesignLab/ModelConveyor.prefab) | 슬롯·설정 조작기기·고정 Input/Output 배치 |
+| [SlotSettingsControl.prefab](../client/Assets/Prefabs/CNNModelDesignLab/SlotSettingsControl.prefab) | `SlotSettingsController`와 `Popup Anchor` |
+| [TrainingControls.prefab](../client/Assets/Prefabs/CNNModelDesignLab/TrainingControls.prefab) | `ModelTrainingController`의 버튼과 상태 참조. 벨트의 `Training Anchor`에 연결 |
+| [ModelResults.prefab](../client/Assets/Prefabs/CNNModelDesignLab/ModelResults.prefab) | Output 자식의 결과 화면. `Font`와 `Samples`를 Inspector에서 지정 |
+
+벨트의 `Slot Count`, `Slot Spacing`, `Block Center Height`, `Placement Half Extents`는 씬 초기화 시 슬롯 수·간격·기준 높이·배치 허용 범위에 적용된다. 실행 중 슬롯 수 변경은 지원하지 않는다. 슬롯 판정은 Renderer의 메시·Collider가 아니라 벨트 로컬 좌표를 사용한다. `Slot Visuals`는 직접 자식 Renderer로 구성하고 `Slot Template`에 복제할 Renderer를 연결한다.
+
+공용 오른손 입력은 [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs)가 담당한다. 모델 씬은 레이 적중 여부만 검사한다. 서버 주소는 [WebSocketConnection](../client/Assets/Scripts/Core/Networking/WebSocketConnection.cs)의 `_serverUrl`에서 설정한다.
+
+## 순수 모델 코드
+
+소스는 [ModelDesign 폴더](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/)에 있으며 네임스페이스와 어셈블리 이름은 `ModelDesign`이다. [ModelDesign.asmdef](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ModelDesign.asmdef)는 `noEngineReferences: true`로 Unity API 의존성을 차단한다.
+
+| 파일·클래스 | 역할과 처리 방식 |
+| --- | --- |
+| [LayerDefinition](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/LayerDefinition.cs) | 레이어 한 개의 종류와 filters·kernelSize·units·activation 같은 설정값을 보관한다. 설정 API로 실제 값이 바뀌면 `OnChanged`를 발생시켜 Workspace의 재검증과 블록 표시 갱신을 유도한다. 3D 위치나 슬롯 번호는 포함하지 않는다. |
+| [ModelDefinition](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ModelDefinition.cs) | 서로 연결된 레이어 덩어리 하나를 읽기 전용 `Layers` 목록으로 나타낸다. Workspace가 연결·분리 작업의 결과로 이 객체를 구성하고 Validator와 Serializer가 목록을 읽는다. 블록이 이동한 뒤의 소속은 Workspace에서 다시 조회한다. |
+| [ModelWorkspace](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ModelWorkspace.cs) | 고정 Input·Output과 모든 레이어 덩어리를 소유한다. 연결·분리·삭제·교체 요청이 오면 덩어리 목록과 레이어 이벤트 구독을 갱신하고 편집 검증을 다시 수행한다. 변경된 검증 결과와 모델 변경을 이벤트로 알려 씬·UI가 대응하게 한다. |
+| [ModelValidator](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ModelValidator.cs) | 레이어 순서대로 입력 형태를 추적해 공간 크기·Flatten 전환·Dense 연결 등 구조를 검사한다. 편집 검증은 아직 입력이 없는 조각의 판정을 보류할 수 있고, 전송 검증은 Input에서 고정 Output까지 유효하게 연결되었는지도 요구한다. 오류는 해당 모델과 블록 위치를 가진 `ValidationIssue` 목록으로 반환한다. |
+| [ValidationIssue](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ValidationIssue.cs) | 검증에서 발견한 문제 하나를 `Model`, `Path`, `Message`로 묶는다. 호출자는 모델 참조로 문제가 속한 덩어리를 찾고 Path로 블록 위치를 구분해 오류를 표시할 수 있다. 검증을 실행하거나 모델을 수정하지 않는 결과 데이터다. |
+| [ModelJsonSerializer](../client/Assets/Scripts/CNNModelDesignLab/ModelDesign/ModelJsonSerializer.cs) | 전송 검증을 먼저 실행하고 성공하면 Input에 연결된 덩어리를 실행 순서로 읽는다. Input은 입력 형태로, Output은 고정 Dense로 변환하고 레이어 종류에 필요한 필드와 `modelType`을 JSON에 기록한다. 실패 시 `TrySerialize()`는 오류 목록을, `Serialize()`는 예외를 제공한다. |
+
+### 편집 API
+
+| 호출·속성 | 동작 |
+| --- | --- |
+| `workspace.AddLayer(layer)` | 단독 블록 덩어리 추가 |
+| `workspace.AddAndConnect(existingLayer, newLayer)` | 기존 덩어리의 비어 있는 끝점에 새 블록 추가·연결 |
+| `workspace.Connect(first, second)` | 서로 다른 두 덩어리의 비어 있는 끝점 연결. 인자 순서 무관 |
+| `workspace.Disconnect(first, second)` | 인접한 두 블록의 연결 해제 |
+| `workspace.RemoveLayer(layer)` | 블록 삭제. 중간 블록의 양쪽은 별도 덩어리가 됨 |
+| `workspace.ReplaceLayer(oldLayer, newLayer)` | 연결 위치를 유지하며 블록 교체 |
+| `workspace.GetModel(layer)` | 블록이 현재 속한 덩어리 |
+| `workspace.InputModel` / `workspace.Models` | Input 덩어리 / 전체 덩어리의 읽기 전용 목록 |
+| `workspace.ValidationIssues` | 최신 편집 검증 결과 |
+| `layer.SetFilters(filters)` / `SetKernelSize(height, width)` | Conv2D 설정 변경 |
+| `layer.SetPoolSize(height, width)` | Pooling 크기 변경 |
+| `layer.SetUnits(units)` | Dense 뉴런 수 변경 |
+| `layer.SetActivation(activation)` | Conv2D·Dense 활성화 함수 변경 |
+| `ModelValidator.ValidateEditing(model)` | 미완성 덩어리의 편집 검증. 입력 형태를 모르면 해당 판정 보류 |
+| `ModelValidator.ValidateForTransmission(workspace)` | Input 덩어리의 구조와 고정 Output 도달 여부 검사 |
+| `ModelJsonSerializer.TrySerialize(workspace, out json, out issues)` | 검증 실패 시 `false`와 오류 목록, 성공 시 JSON 반환 |
+| `ModelJsonSerializer.Serialize(workspace)` | JSON 반환. 검증 실패 시 `InvalidOperationException` 발생 |
+
+Input·Output은 Workspace 생성 시 하나씩 생기며 연결·분리만 가능하다. 분기·순환은 허용하지 않고 같은 블록은 한 Workspace의 한 덩어리에만 속한다. 덩어리 목록은 양방향으로 저장할 수 있으며 검증·직렬화는 Input에서 Output 방향으로 읽는다. 끝점 없는 조각은 양방향을 검사해 가능한 방향을 사용한다.
+
+레이어 순서 오류와 미완성 모델은 편집 상태로 보관할 수 있다. 목록·연결·설정 변경에 성공하면 편집 검증 후 `OnValidationChanged`, `OnChanged` 순서로 이벤트가 발생한다. 동일한 값 설정과 거절된 작업은 이벤트를 발생시키지 않는다.
+
+연결·분리·삭제·교체는 덩어리 객체를 새 목록으로 교체하므로 UI는 블록 참조를 유지하고 `GetModel()`로 현재 덩어리를 조회한다. 삭제·교체 시 레이어 이벤트 구독을 해제하고, Workspace 사용 종료 시 `Dispose()`를 호출한다. 위치·회전·크기·표시는 씬 계층에서 관리한다.
+
+직렬화는 Input을 `input`, Output을 마지막 Dense 10개·Softmax로 변환한다. Input에 연결되지 않은 덩어리는 보내지 않는다. `modelType`은 전송 덩어리에 Conv2D 또는 Pooling이 있으면 `cnn`, 없으면 `mlp`다.
+
+### 사용 예제
 
 ```csharp
 using ModelDesign;
 
 ModelWorkspace workspace = new ModelWorkspace();
-LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
-LayerDefinition flatten = LayerDefinition.Flatten();
 LayerDefinition dense = LayerDefinition.Dense(32, ActivationType.ReLU);
-
-workspace.AddLayer(conv);
-workspace.AddLayer(pool);
-workspace.AddLayer(flatten);
 workspace.AddLayer(dense);
-workspace.Connect(workspace.Input, conv);
-workspace.Connect(conv, pool);
-workspace.Connect(pool, flatten);
-workspace.Connect(flatten, dense);
+workspace.Connect(workspace.Input, dense);
 workspace.Connect(dense, workspace.Output);
 
 workspace.OnValidationChanged += issues =>
 {
-    // issues가 비어 있으면 경고를 지운다.
-    // issue.Model: 해당 덩어리, issue.Path: /blocks/인덱스, issue.Message: 설명.
+    // issue.Model, issue.Path, issue.Message로 블록별 오류를 표시한다.
 };
 
-conv.SetFilters(16); // 같은 객체에서 변경하며 자동 검증·이벤트 발생
-
+dense.SetUnits(64);
 if (ModelJsonSerializer.TrySerialize(workspace, out var json, out var issues))
 {
-    // json을 서버에 전달한다.
+    // json을 ModelProtocolClient.TrainAsync()에 전달한다.
 }
 
-workspace.Disconnect(pool, flatten); // 덩어리 두 개로 분리
-workspace.Connect(pool, flatten);    // 다시 연결
+workspace.Dispose();
 ```
 
-| 타입 | 역할 |
-| --- | --- |
-| `LayerDefinition` | 블록 설정과 `OnChanged` 이벤트 |
-| `ModelDefinition` | 덩어리 하나의 읽기 전용 블록 목록 `Layers` |
-| `ModelWorkspace` | 모든 덩어리와 고정 Input·Output 관리 |
-| `ModelValidator` | 편집·전송 검증 |
-| `ValidationIssue` | 오류가 속한 덩어리·블록 위치·설명 |
-| `ModelJsonSerializer` | Input 덩어리만 JSON으로 변환 |
+## 추론 샘플 연결
 
-| 호출 | 동작 |
-| --- | --- |
-| `workspace.AddLayer(layer)` | 단독 블록 덩어리 추가 |
-| `workspace.AddAndConnect(existingLayer, newLayer)` | 기존 덩어리의 비어 있는 끝점에 새 블록 추가·연결 |
-| `workspace.Connect(first, second)` | 두 덩어리의 비어 있는 끝점 연결. 인자 순서 무관 |
-| `workspace.Disconnect(first, second)` | 인접한 두 블록의 연결 해제 |
-| `workspace.RemoveLayer(layer)` | 블록 삭제. 중간 블록의 양쪽은 별도 덩어리가 됨 |
-| `workspace.ReplaceLayer(oldLayer, newLayer)` | 연결 위치를 유지하며 다른 블록으로 교체 |
-| `workspace.GetModel(layer)` | 블록이 현재 속한 덩어리 |
-| `workspace.InputModel` | Input이 현재 속한 덩어리 |
-| `workspace.Models` | 읽기 전용 덩어리 목록 |
-| `workspace.ValidationIssues` | 모든 덩어리의 최신 편집 검증 결과 |
-| `layer.SetFilters(filters)` | Conv2D 필터 수 변경 |
-| `layer.SetKernelSize(height, width)` | Conv2D 커널 크기 변경 |
-| `layer.SetPoolSize(height, width)` | Pooling 크기 변경 |
-| `layer.SetUnits(units)` | Dense 뉴런 수 변경 |
-| `layer.SetActivation(activation)` | Conv2D·Dense 활성화 함수 변경 |
-| `ModelValidator.ValidateEditing(model)` | 끝점 없는 조각도 검사. 앞부분이 없어 입력 형태를 모르면 판단 보류 |
-| `ModelValidator.ValidateForTransmission(workspace)` | Input 덩어리의 구조와 고정 Output 도달 여부 검사 |
+기본 샘플은 [Textures/CNNModelDesignLab](../client/Assets/Textures/CNNModelDesignLab/)의 MNIST 이미지다. `ModelResultsController`의 Inspector `Samples`에 이미지와 정답을 함께 연결한다. ID는 확장자를 제외한 이미지 에셋 이름이며 서버도 같은 ID의 MNIST 테스트 이미지를 사용한다. 이미지 픽셀은 전송하지 않는다.
 
-- Input·Output은 생성 시 하나씩 생긴다. 추가·삭제·교체·설정 변경 불가, 연결·분리는 가능.
-- 연결은 분기·순환을 만들 수 없다. 같은 블록은 한 Workspace의 한 덩어리에만 속한다.
-- 레이어 순서 오류는 편집 상태로 허용하며 검증 결과로 알린다.
-- 성공한 목록·연결·설정 변경마다 편집 검증 후 `OnValidationChanged`, `OnChanged` 순서로 이벤트가 발생한다.
-- 동일한 값 설정과 거절된 작업은 이벤트를 발생시키지 않는다. 최초 결과는 `ValidationIssues`로 읽는다.
-- 미완성은 편집 오류가 아니다. 전송 가능 여부는 `ValidateForTransmission()`으로 확인한다.
-- 연결·분리·삭제·교체 시 덩어리 객체는 새 목록으로 교체된다. UI는 블록 참조를 유지하고 `GetModel()`로 현재 덩어리를 조회한다.
-- 삭제·교체된 블록은 Workspace의 이벤트 구독에서 해제한다. 화면 종료 시 `Dispose()`를 호출한다.
-- 위치·회전·크기와 연결선 표현은 오브젝트/UI 계층에서 관리한다.
-- Input은 JSON의 `input`으로, Output은 마지막 Dense 10개·Softmax로 변환한다. 화면의 블록 이름을 JSON에 추가하지 않는다.
-- 분리된 다른 덩어리는 전송하지 않는다. `modelType`은 전송 덩어리만 보고 자동 판단한다.
-
-덩어리 목록은 양방향으로 저장할 수 있다. 검증과 JSON 변환은 Input에서 Output 방향으로 읽는다. 끝점이 없는 조각은 양방향을 검사하여 가능한 방향을 사용한다. Input·Output은 연결을 하나씩만 가질 수 있다.
-
-## VR 모델 제작 씬
-
-`Assets/Scenes/CNNModelDesignLab.unity`와 `Assets/Scripts/CNNModelDesignLab/`에 컨베이어 슬롯 방식의 3D 블록 조작을 구성했다. Input과 Output 사이의 칸에 블록을 놓으면 배치 순서가 모델 순서가 된다. 포트와 연결선 조작은 사용하지 않는다.
-
-### 진입과 기본 조작
-
-- `QuestMain`에서 오른손 레이로 `CNN MODEL DESIGN / Trigger to enter` 표지를 가리키고 Trigger를 누르면 제작 씬을 추가 로드한다. 기존 바닥·XR 리그를 사용한다.
-- 단독 개발용으로 씬에 기존 `XRPlayerRig.prefab` 인스턴스가 배치되어 있다. 현재 리그는 `EditorOnly`가 아니며, 기존 리그가 있는 상태에서 진입하면 `PersistentXRPlayerRig`가 새 중복 리그를 제거한다. 리그와 시뮬레이터 설정은 이번 변경에서 수정하지 않았다.
-- 시뮬레이터에서 `G`는 오른손 Grip(잡기·놓기), `T`는 Trigger(설정·UI 클릭)다. `]`로 오른손 위치 조작을 선택하고 WASD/QE와 마우스 우클릭으로 움직인다. 전체 조작법은 [XR 시뮬레이터 조작법](xr-simulator.md)을 참고한다.
-- 오른쪽 `Parts Supply`는 직육면체 벽·선반으로 만든 고정 부품 공급소다. 각 선반에 Conv2D, MaxPooling2D, Flatten, Dense 블록이 있다. 본체를 Grip으로 잡아 꺼내면 같은 기본 설정의 새 블록이 해당 자리에 보충된다.
-- 공급소에는 이동 핸들·XRGrabInteractable·Rigidbody가 없다. 공급소 자체는 이동할 수 없고, 꺼낸 블록만 자유롭게 움직인다. 외형은 `PartsSupplyRack.prefab`에서 교체한다.
-
-### 슬롯 배치 규칙
-
-- Input과 Output은 벨트 양 끝에 고정되어 있으며 이동·삭제할 수 없다. 고정 입력·출력 설정은 본체 라벨로 표시한다.
-- 두 끝점 사이에는 기본 8칸이 있고, 칸 하나에는 블록 하나만 배치된다. 벨트와 슬롯은 정지해 있으며 자동 운반은 하지 않는다.
-- 블록을 잡고 있는 동안에는 3D 공간에서 자유롭게 움직인다. 방향은 유지하며 기존 오른쪽 스틱으로 거리를 조절할 수 있다. 벨트 평면이나 영역 안으로 이동을 제한하지 않는다.
-- 배치 판정은 레이가 가리키는 곳이 아니라 **블록 중심의 실제 위치**를 사용한다. 빈 칸의 배치 범위에 들어오면 노란색, 이미 찬 칸이면 빨간색으로 표시한다.
-- 빈 칸 위에서 Grip을 놓으면 칸 중앙과 벨트 방향으로 정렬한다. 배치된 칸은 녹색으로 표시한다.
-- 찬 칸이나 벨트 밖에서 놓으면 기존 블록은 그대로 두고, 들고 있던 블록은 놓은 위치에 자유 상태로 남는다. 자동 교환·밀어내기·삭제·원위치 복귀는 하지 않는다.
-- 배치된 블록을 다시 잡으면 원래 칸이 즉시 비고 모델 순서에서도 빠진다. 다른 빈 칸에 놓으면 새 순서로 반영된다. 잡기가 취소되어도 자동 배치하지 않는다.
-- 중간 빈 칸은 건너뛰고 Input → 배치된 블록들 → Output 순서로 모델을 구성한다. 다른 블록의 실제 위치를 자동으로 당기지 않는다. 벨트 밖 블록과 꾸러미 블록은 전송 모델에 포함되지 않는다.
-- 레이어 순서가 잘못되어도 물리적인 배치는 허용한다. 기존 모델 검증이 학습 시작 시 전송 가능 여부를 판단한다.
-
-### 설정과 학습 UI
-
-- 각 슬롯 앞에 고정된 설정 조작기기가 하나씩 있다. 빈 칸에서는 `SLOT 번호 / EMPTY`와 어두운 색으로 비활성 상태를 표시한다. 블록을 놓으면 `SETTINGS` 표시와 함께 사용할 수 있게 된다.
-- 오른손 레이로 해당 조작기기를 가리키고 Trigger를 누르면 **현재 그 슬롯에 배치된 블록**의 설정이 열린다. 블록 본체 클릭으로는 팝업을 열지 않는다. 벨트 밖 블록을 설정하거나 삭제하려면 먼저 빈 슬롯에 놓는다.
-- 팝업은 조작기기의 `Popup Anchor`에 붙어 같은 위치·방향으로 열린다. 사용자 위치·머리 방향·카메라 방향을 읽거나 따라가지 않는다. 팝업은 한 번에 하나만 열며 다른 슬롯 조작기를 누르면 그쪽 기기로 옮겨 해당 블록을 표시한다.
-- 블록을 잡으면 열려 있던 팝업을 닫고, 슬롯을 비우면 그 칸의 조작기도 비활성화한다. 삭제 후에도 같은 슬롯의 이전 블록을 편집할 수 없다. 블록 이동 중이나 앞에 다른 UI가 있는 경우 조작기기를 통과해서 설정을 열지 않는다.
-- 숫자는 `-`/`+`, 활성화 함수는 `<`/`>`로 변경한다. Flatten에는 숫자 설정이 없다.
-- 팝업에는 `Delete`와 `Done`이 있다. 기존 `Disconnect` 버튼은 제거했다. 모델에서 빼고 보관하려면 블록을 잡아 벨트 밖에 놓는다.
-- `Delete`는 블록을 삭제하고 점유 슬롯을 비운 뒤 남은 슬롯 순서로 모델을 갱신한다. Input·Output의 삭제는 버튼과 코드 양쪽에서 막는다.
-- 벨트 맨 왼쪽 Input 앞의 `TrainingControls.prefab`에 학습 시작·중지 버튼과 상태 표시를 함께 배치했다. `학습 시작`은 현재 슬롯 순서를 검증·직렬화한 뒤 `ModelProtocolClient`로 실제 학습을 요청한다. 블록을 잡고 이동하는 동안에는 시작하지 않는다. 잘못된 모델은 결과 화면에 안내하며 서버로 보내지 않는다.
-- 연결·학습 준비·학습·취소 대기·추론 상태를 구분한다. `중지`는 시작 확인 전에는 연결을 종료하고, 학습 중에는 취소 요청을 보낸 뒤 서버의 종료 응답을 기다린다. 학습 또는 추론 중에는 추가 요청을 막는다. 완료를 가정하는 타이머나 임시 결과는 사용하지 않는다.
-
-### 학습 결과와 이미지 예측
-
-- `ModelResults.prefab`은 고정 Output 블록의 자식으로 배치된다. 사용자 시점과 무관한 위치에서 학습 진행, 최종 결과, 이미지 예측을 함께 보여준다. 위치·크기와 폰트·샘플 목록은 씬/프리팹에서 변경할 수 있다.
-- 서버 기본 epoch를 사용한다. 총 epoch 수가 포함된 첫 진행 응답이 오기 전에는 총량을 추측하지 않는다. 이후 실제 수신한 epoch와 학습·검증 정확도/손실을 표시하고 두 그래프에 누적한다. 마지막 epoch는 완료 응답에서 추가하므로 1 epoch 학습도 표시된다.
-- 학습/검증 지표와 최종 **테스트 데이터** 정확도/손실을 구분한다. 응답이 오지 않은 항목은 대기 상태로 표시한다. 오류·연결 종료·취소를 정상 완료로 표시하지 않는다.
-- 학습 완료 후 숫자 샘플을 선택하면 클라이언트의 `Texture2D.name`을 `image_id`로 전송한다. 즉 `mnist-test-3.png`의 ID는 확장자를 제외한 `mnist-test-3`이며, 이름을 인덱스로 변환하거나 이미지 픽셀을 업로드하지 않는다. 서버에도 같은 ID의 이미지가 있어야 한다.
-- 선택 이미지와 정답, 예측 숫자, 클래스 0~9의 출력을 함께 표시한다. 이 씬의 고정 Output이 Softmax이므로 출력 비율을 백분율로 표시하며, 수신값을 다시 정규화하지 않는다. 예측 중에는 새 요청을 막고 응답의 이미지 ID가 선택한 이미지와 일치하는지 확인한다.
-- 학습 중·후에도 모델을 편집할 수 있다. 현재 전송 모델 JSON이 학습 시작 시점과 달라지면 이전 구성의 결과임을 안내한다. 추론은 서버에 남은 마지막 학습 모델로 수행하며, 새 학습을 시작하면 이전 결과와 그래프를 비운다.
-- 씬 비활성화 시 연결과 대기 요청을 정리한다. 서버 모델도 연결 수명에 따라 삭제되므로 다시 진입하면 새로 학습해야 한다. 뒤늦은 비동기 완료가 종료된 씬 UI를 갱신하지 않도록 세션을 구분한다.
-- 연결 주소는 `Assets/Scripts/Core/Networking/WebSocketConnection.cs`의 `_serverUrl` 한 곳에서 변경한다. 기본값은 `ws://localhost:8000/ws`이며 `.env`는 사용하지 않는다. Quest에서는 서버 PC의 LAN 주소로 바꾼다. 실제 서버 실행은 별도로 필요하다.
-
-기본 샘플 10개는 서버와 동일한 [공식 MNIST NPZ 배포본](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz)의 정렬을 바꾸지 않은 테스트 데이터에서 숫자별 첫 이미지를 추출했다. `Assets/Textures/CNNModelDesignLab/`에 원본 28×28 픽셀을 PNG로 보관한다. 데이터 파일 SHA-256은 `731c5ac602752760c8e48fbffcf8c3b850d9dc2a2aedcf2cc48468fc17b673d1`이다.
-
-| 정답 | 에셋 이름 / 전송 ID |
+| 정답 | 에셋 이름·전송 ID |
 | --- | --- |
 | 0 | `mnist-test-3` |
 | 1 | `mnist-test-2` |
@@ -145,34 +159,4 @@ workspace.Connect(pool, flatten);    // 다시 연결
 | 8 | `mnist-test-61` |
 | 9 | `mnist-test-7` |
 
-샘플을 교체할 때는 프리팹의 `Samples`에 이미지 에셋과 정답을 함께 지정하고 서버에도 같은 에셋 이름의 이미지를 준비한다. 임의 파일 업로드는 지원하지 않는다. 서버 코드와 통신 JSON 규격은 변경하지 않았다.
-
-### 구성과 외형 교체
-
-- `CNNModelDesignLabManager`: Workspace 수명, 씬 초기화·종료 순서, 블록 이동·삭제에 따른 모델 갱신, 학습 시작 검증과 JSON 변환을 조율한다. Controller를 직접 참조하고 각 인스턴스 이벤트를 구독한다. 기존 `ModelWorkspace.Connect`/`Disconnect` API를 사용하며 모델 JSON 명세는 변경하지 않는다.
-- `ModelSupplyController`: 고정 공급소의 기본 블록 생성과 잡아 꺼낸 자리의 보충을 담당한다.
-- `ModelBlockController`: 개별 블록의 XRI 잡기·놓기 입력과 라벨·색상을 담당한다. XRI 선택 필터로 Input·Output의 잡기를 막으며, 본체의 Trigger 설정 이벤트는 사용하지 않는다. 기존 `ModelBlockView`의 역할을 유지하면서 이름을 바꿨다.
-- `ModelConveyorController`: 슬롯 점유, 배치 후보 표시, 위치 판정과 놓을 때의 정렬, 슬롯별 조작기기와 Input 쪽 학습 조작부의 배치를 담당한다.
-- `SlotSettingsController`: 해당 슬롯의 블록 참조, 조작기기의 비활성/활성 표시와 Trigger 입력, 팝업 기준점을 담당한다.
-- `ModelSettingsController`: 설정 팝업의 대상 블록과 고정 기준점, 열기·닫기와 삭제 요청을 담당한다. 기존 `ModelDesignSceneController`에서 공급·학습·XR 입력을 분리하고 팝업 역할만 남겼다. `BlockSettingsPopup`은 레이어별 설정 항목 표시와 값 편집을 유지한다.
-- `ModelTrainingController`: 학습 시작·중지 버튼 입력 이벤트와 학습 상태 표시를 담당한다.
-- `ModelExecutionController`: 씬의 `ModelProtocolClient` 세션, 학습·취소·추론 요청 및 비동기 응답 수명을 담당한다. 진행·결과·오류는 인스턴스 이벤트로 Manager에 알린다.
-- `ModelResultsController`: 결과 패널, 지표·그래프 표시, 샘플 이미지 선택과 예측 표시를 담당한다. `ModelMetricGraph`는 수신된 epoch별 학습·검증 지표를 그리는 UI Graphic이다.
-- `ModelXRInputController`: 공용 리그의 오른손 레이를 참조하고 조작기기 입력의 유효한 레이 적중 여부를 확인한다. 오른손 입력 설정은 공용 `XRPlayerInputController`가 관리한다.
-
-Controller는 Manager를 참조하지 않고 자신의 입력이나 요청을 인스턴스 이벤트로 알린다. Manager는 블록을 잡을 때 공급 보충·팝업 닫기·슬롯 비우기를 조율하고, 놓을 때 슬롯 배치 결과를 모델 순서에 반영한다. Singleton, 전역 이벤트 시스템, 새로운 공통 기반 클래스는 도입하지 않는다. `LayerDefinition`, `ModelWorkspace`, 검증·직렬화 클래스의 이름과 API는 그대로 유지한다.
-
-`Assets/Prefabs/CNNModelDesignLab/ModelConveyor.prefab`에는 직사각형 벨트와 8개의 슬롯·설정 조작기기가 미리 배치되어 Play 전에도 보인다. `ModelBlock.prefab`은 포트 없는 직육면체이며, 이름·기본 색상으로 종류를 구분한다. 새 재질은 `Assets/Materials/CNNModelDesignLab/`에 있다.
-
-벨트 Inspector의 `Slot Count`, `Slot Spacing`, `Block Center Height`, `Placement Half Extents`로 칸 수·간격·블록 높이·배치 허용 범위를 조절한다. **이 값은 씬 시작 시 적용**되며 실행 중 칸 수 변경은 지원하지 않는다. 기본 8칸과 다른 값을 저장하면 편집 화면의 기존 슬롯 미리보기는 그대로지만 실행 시 필요한 슬롯과 조작기기를 보충하거나 숨기고 양 끝점 위치·벨트 길이·Input 쪽 학습 조작부 위치를 맞춘다.
-
-외형은 `Belt Visual`, `Slot Visuals`의 Renderer, 블록의 `Body`를 교체한다. 슬롯 판정은 렌더러의 메시·콜라이더가 아닌 벨트 기준 위치와 허용 범위를 사용한다. 슬롯 시각 요소는 `Slot Visuals`의 직접 자식 Renderer로 유지하고 `Slot Template`에는 그중 하나를 연결한다. 새 블록 외형의 크기가 달라지면 본체 Collider와 `Block Center Height` 등도 함께 조절한다.
-
-`SlotSettingsControl.prefab`에서 조작기기 외형과 `Popup Anchor`의 로컬 위치·회전을 조절한다. 슬롯 조작기기는 `Slot Settings Controls` 아래에 두며, 빈 칸 표시와 입력 상태는 슬롯 점유에 따라 갱신된다. `Training Anchor`에는 기존 학습 UI 인스턴스가 연결되어 있다.
-
-이번 변경은 소스와 에셋 참조만 정적으로 검토했다. 테스트 실행·테스트 파일 생성·Unity 실행·컴파일·빌드는 수행하지 않았다.
-
-
-## 결과 화면의 클라이언트 책임
-
-`ModelResultsController`는 결과 패널의 공통 상태·오류와 하위 표시 기능을 조율한다. `ModelTrainingMetricsController`는 epoch·학습/검증/테스트 지표·그래프를, `ModelInferenceResultsController`는 샘플 선택·페이지·예측 결과를 담당한다. `ModelResultsUIBuilder`는 이 씬의 기존 생성형 UI 요소와 스타일을 제공한다. 하위 Controller는 일반 C# 객체이므로 씬 컴포넌트 연결은 추가하지 않는다. 모델 JSON과 서버 API는 변경하지 않는다.
+이미지는 공식 MNIST NPZ 테스트 데이터의 원래 순서를 기준으로 숫자별 첫 항목을 선택했다. 서버의 ID 해석은 [dataset.py](../server/app/dataset.py)의 `Dataset.index()`가 담당한다.

@@ -1,41 +1,73 @@
 # 공장 오프닝·튜토리얼과 엔딩
 
-이번 범위는 기획 다이어그램의 시작 화면·세계관·습격·입장·기본 조작과 씬 구성안의 엔딩이다. 필터·활성화함수 체험, 모델 설계, 학습·결과 화면은 변경하지 않는다.
+[FactoryIntro](../client/Assets/Scenes/FactoryIntro.unity)는 이야기와 기본 조작 튜토리얼을 진행한 뒤 공장 씬을 연다. [FactoryEnding](../client/Assets/Scenes/FactoryEnding.unity)은 복구 연출과 개념 복습을 담당하는 독립 씬이다. 버튼과 연습 순서는 [조작법](xr-simulator.md)에 정리한다.
 
-## 생성 및 진입
+## 오프닝 파일과 클래스
 
-- 두 `.unity` 씬은 생성되어 저장소에 포함된다. 일반 사용 시 다시 생성할 필요 없이 씬을 열면 된다.
-- `Tools > Factory > Create Missing Intro and Ending Scenes` 또는 배치 진입점 `FactoryScenes.Editor.FactoryStorySceneBuilder.CreateMissingScenes`가 `Assets/Scenes/FactoryIntro.unity`, `Assets/Scenes/FactoryEnding.unity`를 생성한다.
-- 생성 도구는 이미 존재하는 씬을 덮어쓰지 않는다. 신규 씬만 저장하고 기존 활성 씬을 복원한다. 생성 도구 자체는 Build Settings의 기존 시작 씬·순서를 보존한다. 현재 프로젝트의 Build Settings에서는 `FactoryIntro`를 첫 씬으로 지정했다.
-- Unity 실행은 에셋 가져오기와 스크립트 컴파일을 동반하므로 AGENTS.md에 따라 명시적 허가 후 실행한다. 테스트나 앱 빌드는 생성 과정에 포함되지 않는다.
-- 게임 빌드는 첫 씬 `FactoryIntro`에서 시작한다. 빈 에디터 씬에서 프로젝트를 열 때도 `FactoryIntro`가 열린다. 튜토리얼 완료 후 `공장 탐색 시작`은 `FactoryEnvironment`를 연다. 기존 콘텐츠 씬에서 엔딩으로 자동 이동하는 연결은 추가하지 않았다. `FactoryEnding`은 독립적으로 열 수 있다.
-- 두 씬은 기존 `XRPlayerRig.prefab`과 Noto Sans KR 폰트 원본을 참조한다. 기존 리그가 있으면 중복 방지 컴포넌트가 새 인스턴스를 제거한다. 진입 시 각 신규 씬의 바닥 시작점으로 이동하고 시선 방향을 맞추며 사용자의 추적 높이는 유지한다.
+| 파일·클래스 | 역할과 처리 방식 |
+| --- | --- |
+| [FactoryIntroManager](../client/Assets/Scripts/FactoryIntro/FactoryIntroManager.cs) | 공용 리그를 찾아 시작 위치에 배치하고 이야기 단계와 튜토리얼을 순서대로 진행한다. 화면 버튼과 TutorialController의 단계 변경·완료 이벤트를 받아 PresentationController의 표시와 InputController의 입력 권한을 함께 바꾼다. 완료·건너뛰기 후에는 입력을 복원하고 공장 씬을 Single 모드로 연다. |
+| [FactoryIntroPresentationController](../client/Assets/Scripts/FactoryIntro/FactoryIntroPresentationController.cs) | Manager가 지정한 제목·본문·버튼과 정상·손상 배경, 연습 대상, 진행 안내를 표시한다. 습격 연출과 태블릿에서 펼쳐지는 홀로그램을 실행하고 건너뛰기 확인창의 선택을 이벤트로 알린다. 연습 완료 판정은 TutorialController에 맡기고 화면과 연출을 담당한다. |
+| [FactoryTutorialController](../client/Assets/Scripts/FactoryIntro/FactoryTutorialController.cs) | 현재 연습 단계와 단계 안의 입력 순서를 보관한다. 왼손 스틱 사용·목표 위치 도달, 선택 확인, 연습 물체 배치, 시작점 복귀, 태블릿 입력 순서를 검사해 완료 시 다음 단계와 안내 이벤트를 발생시킨다. 중립 입력 대기, 건너뛰기 확인 중 일시정지·재개도 처리한다. |
+| [FactoryIntroInputController](../client/Assets/Scripts/FactoryIntro/FactoryIntroInputController.cs) | Bind 시 이동 Provider·태블릿·오른손 레이의 기존 입력과 활성 상태를 저장하고 XR UI 입력을 준비한다. Manager가 허용한 단계에 맞춰 이동·잡기·태블릿을 켜고 끄되 추적과 안내 버튼 선택은 유지한다. Release 시 저장한 설정을 되돌리고 자신이 추가한 InputAction·UI 입력 오브젝트를 정리한다. |
 
-## 오프닝과 조작 연습
+## 오프닝 실행 흐름
 
-`FactoryIntroManager`는 타이틀 → 소개 → 습격 → 임무 → 입장 → 튜토리얼 → 탐색 시작의 순서를 조율한다. `FactoryIntroPresentationController`는 안내 화면, 배경 상태와 습격 연출을 관리한다. `FactoryTutorialController`는 실제 입력과 연습 대상의 완료 조건을 판정한다. `FactoryIntroInputController`는 시작부터 게임 조작을 잠그고 연습 단계에 필요한 입력만 열었다가 완료 시 게임 조작을 복원한다. 오른손 UI 입력 리더와 EventSystem의 준비·복원도 이 입력 Controller에서 함께 관리한다. 머리·손 추적과 오른손 레이는 계속 사용할 수 있으며, 레이는 탐색 시작 버튼 선택까지 켜 둔다.
+```text
+Title → Introduction → Attack → Mission → Tutorial → Ready → Loading
+```
 
-튜토리얼 안내는 왼손 태블릿에서 펼쳐지는 큰 홀로그램 창으로 표시한다. 창 맨 위에는 오른손 레이와 Trigger로 튜토리얼을 건너뛸 수 있다는 문구를, 오른쪽 아래에는 `건너뛰기` 버튼을 둔다. 건너뛰기는 확인창에서 한 번 더 선택해야 적용되며, 취소하면 현재 연습으로 돌아간다. 완료하거나 건너뛰면 연습 오브젝트와 안내를 정리하고 `공장 탐색 시작` 화면으로 진행한다.
+1. `FactoryIntroManager.Start`가 공용 `XROrigin`을 찾고 `_exteriorStart`에 플레이어를 배치한다. `FactoryIntroInputController.Bind`와 `FactoryIntroPresentationController.BindPlayer`로 입력과 화면을 연결한다.
+2. 화면의 계속 버튼은 `FactoryIntroManager.Continue`를 호출한다. Manager는 현재 단계에 따라 화면을 바꾸거나 `PlayAttack` 코루틴을 실행한다.
+3. 튜토리얼 진입 시 `_interiorStart`로 이동하고 `BeginTutorial`을 호출한다. Presentation Controller는 태블릿 위치에서 안내창이 펼쳐지는 연출과 단계별 연습 대상을 표시한다.
+4. Tutorial Controller의 `OnStepChanged`, `OnInstructionChanged`, `OnCompleted`를 Manager가 받아 입력 권한과 화면을 함께 갱신한다.
+5. 완료하면 `Ready`로 전환한다. `EnterFactory`는 UI 콜백이 끝난 다음 프레임에 입력을 복원하고 `_nextSceneName`을 Single 모드로 연다. 기본 대상은 `FactoryEnvironment`다. 씬을 열 수 없으면 준비 화면에서 재시도할 수 있다.
 
-1. 왼손 스틱을 사용하고 바닥의 청록색 표식 안으로 이동한다. 방향은 현재 프로젝트의 시선 기반 이동 설정을 따른다. 오른손 스틱 회전 등 새 이동 기능은 추가하지 않는다.
-2. 오른손 레이로 `선택 연습`을 가리켜 Trigger로 누른다.
-3. 오른손 Grip으로 주황색 블록을 잡아 청록색 받침 위에 놓는다. 취소된 잡기 해제는 완료로 인정하지 않는다. 놓친 물체는 `연습 물체 되돌리기`로 복원할 수 있다.
-4. `원위치로 돌아가기`를 Trigger로 선택한다. 기획서에서 미정인 A/B 버튼 역할을 임의로 배정하지 않고 안내 화면의 명시적 버튼을 사용한다.
-5. 왼손 Trigger → Trigger를 누른 채 스틱 이동 → 세 줄 Menu로 설정 열기·닫기 → X 선택 → Y 뒤로 가기를 연습하고 마지막에 버튼·스틱을 놓는다. 각 입력 사이에 중립 상태를 요구한다. 현재 태블릿의 공개 연동 API가 없어 입력 수행만 관찰하며, 기존 태블릿의 내부 상태·진행률·저장값은 읽거나 수정하지 않는다.
+플레이어 배치는 바닥 기준점과 시선 방향을 맞추되 카메라의 추적 높이를 보존한다. 공용 리그의 수명과 중복 제거는 [XR 구성](xr-setup.md)을 따른다.
 
-왼손 컨트롤러 연결이 끊기면 같은 단계에서 기다린다. 공용 리그의 오른손 UI 입력은 이 씬이 활성화된 동안만 설정하고 떠날 때 복원한다. 기존 시뮬레이터 조작법은 [xr-simulator.md](xr-simulator.md)를 따른다.
+## 튜토리얼 판정과 입력 권한
 
-## 엔딩
+| 단계 | 완료 판정 | 허용하는 게임 입력 |
+| --- | --- | --- |
+| `Movement` | 왼손 스틱 입력을 한 번 이상 사용하고 카메라의 수평 위치가 `_movementTarget` 반경 안에 들어옴 | 이동·화면 선택 |
+| `Selection` | `ConfirmSelection` 호출 | 화면 선택 |
+| `Grab` | 리그에서 연습 물체를 잡은 뒤 취소되지 않은 해제로 `_placementTarget` 반경 안에 놓음 | 잡기·화면 선택 |
+| `Return` | `ReturnToStart`가 리그 방향과 위치를 시작점으로 이동시키는 데 성공 | 화면 선택 |
+| `Tablet` | 정해진 입력 순서를 수행하고 마지막 입력을 놓음 | 태블릿·화면 선택 |
+| `Complete` | `OnCompleted` 발생 | 기존 설정에 따라 이동·태블릿·잡기 복원 |
 
-`FactoryEndingManager`는 복구 → 개념 복습 → 완료 순서를 담당한다. `FactoryRestorationController`는 공장·풍경 색상, 회전 부품, 조명, 파편을 연출한다. `FactoryEndingPanelController`는 화면과 버튼 입력을 담당한다.
+이동 판정에는 `_targetRadius`, 배치 판정에는 `_placementRadius`를 사용한다. 잡기 완료는 XRI 해제 콜백 다음 프레임에 반영해 상호작용 대상을 처리 도중 숨기지 않는다.
 
-복습 카드는 픽셀, 합성곱·패딩, 필터, 특징 맵, 활성화함수, 학습의 여섯 개념이다. 실제 수집 여부나 학습 개선율을 가정하지 않는다. 완료 후 `처음으로`는 `FactoryIntro`를 열며, `앱 종료`는 플레이어에서만 종료한다. 에디터에서는 안내 문구를 표시한다.
+태블릿 연습은 왼손 컨트롤러의 입력을 관찰한다. 각 입력 사이에 버튼과 스틱의 중립 상태가 필요하며, 연결이나 추적이 끊기면 같은 단계에서 기다린다. 태블릿의 내부 학습 진행률을 완료 조건으로 사용하지 않는다.
 
-## 에셋과 현재 제한
+건너뛰기 확인창을 열면 Tutorial Controller를 일시정지하고 화면 선택용 입력만 허용한다. 취소하면 현재 단계를 재개하며, 태블릿 단계는 입력 순서를 처음부터 다시 안내한다. 확정하면 튜토리얼을 정리하고 `Ready`로 전환한다.
 
-- 공장·주변 풍경·악령은 교체 가능한 임시 도형이다. 기존 UI와 배치 오브젝트는 씬에 직렬화되어 있다. 튜토리얼 홀로그램 장식·진행 표시·건너뛰기 확인창은 `FactoryIntroPresentationController`가 런타임에 생성한다.
-- 습격 시 장치와 창밖 배경을 거친 블록 형태로 교체한다. 화면 전체 후처리나 렌더링 파이프라인 변경은 하지 않으며 UI는 선명하게 유지한다.
-- 실제 모델·애니메이션·음성 파일은 제공되지 않았다. 대사는 자막으로 표시한다. 습격 알람은 Inspector의 선택적 AudioClip 슬롯에 연결할 수 있다.
-- 이번 조작 튜토리얼 작업에서는 `FactoryIntro` 전용 스크립트와 공용 XR 입력 스크립트, 시작 씬 설정을 갱신했다. 콘텐츠 씬, 공용 태블릿·리그 프리팹, 서버와 JSON 규격은 변경하지 않았다. 엔딩 자동 진입과 실제 수집 현황 연동은 별도 작업이다.
-- 2026-10-13 사용자 허가 후 Unity CLI로 Unity 6000.3.24f1 에디터를 열어 스크립트를 컴파일하고 생성 메뉴를 실행했다. 두 씬 저장과 Build Settings 추가를 완료했으며 에디터의 Scene View에서 배치를 확인했다. Play·자동 테스트·앱 빌드는 실행하지 않았다. 런타임 상호작용과 실제 Quest 착용 상태의 가독성은 아직 검증하지 않았다.
-- 2026-10-16 사용자 허가 후 Unity 6000.3.24f1 에디터에서 `FactoryIntro`를 열어 컴파일과 Play 진입을 확인했다. 실행 중 Console에는 오류가 표시되지 않았다. XR 장치가 연결되지 않은 에디터 Game 화면에서는 태블릿이 카메라 앞에 겹쳐 보여 실제 컨트롤러 조작과 착용 상태 가독성까지 검증하지 못했다. 자동 테스트와 앱 빌드는 실행하지 않았다.
+`FactoryIntroInputController.Bind`는 이동 Provider, 태블릿 활성 상태, 오른손 Grip·UI 입력과 레이 표시 상태를 보관한다. 튜토리얼 중에도 추적과 오른손 레이를 유지하며, 완료 화면의 버튼을 사용할 수 있도록 씬을 떠날 때까지 레이를 켜 둔다. `Release`는 보관한 입력을 복원하고 자신이 만든 InputAction·EventSystem 또는 추가한 UI 모듈을 정리한다.
+
+## 엔딩 파일과 실행 흐름
+
+| 파일·클래스 | 역할과 처리 방식 |
+| --- | --- |
+| [FactoryEndingManager](../client/Assets/Scripts/FactoryEnding/FactoryEndingManager.cs) | 플레이어를 엔딩 시작점으로 이동시키고 복구 연출이 끝날 때까지 기다린 뒤 복습 화면을 연다. 현재 상태가 복습일 때만 완료를, 완료 상태일 때만 재시작·종료를 처리한다. 재시작은 입력 콜백이 끝난 뒤 시작 씬을 로드하고 실패하면 완료 화면을 복원한다. |
+| [FactoryRestorationController](../client/Assets/Scripts/FactoryEnding/FactoryRestorationController.cs) | 씬에 연결된 Renderer·광원·회전 부품·파편의 초기 상태를 기준으로 `RestoreFactory()` 코루틴을 실행한다. 진행도에 따라 색상·광원 세기·회전·파편 크기를 보간하고 복구된 장식을 표시한다. Manager는 이 코루틴의 종료를 기다려 복습 단계로 넘어간다. |
+| [FactoryEndingPanelController](../client/Assets/Scripts/FactoryEnding/FactoryEndingPanelController.cs) | Manager의 상태에 맞춰 복구 안내·복습 카드·완료 화면과 사용 가능한 버튼을 표시한다. 버튼은 완료·재시작·종료 요청 이벤트를 발생시키며 실제 씬 이동과 종료 판단은 Manager에 맡긴다. 오른손 Trigger를 UI 클릭에 연결하고 비활성화 시 이전 레이 설정을 복원한다. |
+
+`FactoryEndingManager.Start`는 플레이어를 `_entryPoint`로 이동하고 복구 연출을 시작한다. 연출이 끝나면 여섯 개념의 복습 카드를 표시한다. 완료 요청은 `Recap`에서만, 재시작·종료 요청은 `Complete`에서만 처리한다.
+
+`FactoryRestorationController`는 초기 부품 회전과 파편 크기를 저장하고 진행도에 따라 보간한다. Renderer 색상은 `MaterialPropertyBlock`의 `_BaseColor`, `_EmissionColor`로 갱신한다.
+
+재시작은 `_restartSceneName`을 Single 모드로 로드하며 기본값은 `FactoryIntro`다. 로드 전에 패널을 비활성화해 UI 입력을 복원하고, 로드 실패 시 완료 화면을 다시 활성화한다. 종료는 플레이어에서 `Application.Quit`를 호출하고 에디터에서는 안내 문구를 표시한다.
+
+현재 공장의 체험 연결은 `CNNModelDesignLab`에서 끝난다. 엔딩은 학습 결과나 양피지 수집 상태를 받아 진입 여부를 판정하지 않는다.
+
+## 씬 구성 도구와 참조
+
+| 파일 | 역할 |
+| --- | --- |
+| [FactoryStorySceneBuilder](../client/Assets/Editor/FactoryStorySceneBuilder.cs) | `CreateMissingScenes()`에서 오프닝·엔딩 파일의 존재 여부를 확인하고 없는 씬만 각 Builder로 생성한다. Build Settings에는 누락된 씬 항목을 추가해 이후 Manager가 이름으로 로드할 수 있게 한다. |
+| [FactoryIntroSceneBuilder](../client/Assets/Editor/FactoryIntroSceneBuilder.cs) | 공용 리그, 오프닝 배경·Canvas, 이동 표식·연습 물체를 씬에 만든다. 시작점과 연습 판정 대상은 Manager·TutorialController에, 표시 대상과 버튼 콜백은 PresentationController·Manager에 연결해 저장한다. |
+| [FactoryEndingSceneBuilder](../client/Assets/Editor/FactoryEndingSceneBuilder.cs) | 공용 리그와 엔딩 시작점, 손상·복구 대상, 복습 카드와 완료 버튼을 생성한다. 복구에 사용할 Renderer·광원·부품은 RestorationController에, 화면과 버튼은 PanelController에 연결하고 EndingManager가 두 기능을 조율하도록 참조를 저장한다. |
+
+두 씬 생성기는 대상 씬이 이미 있으면 새로 덮어쓰지 않는다. 생성할 때 공용 [XRPlayerRig](../client/Assets/Prefabs/XR/XRPlayerRig.prefab)와 [Noto Sans KR](../client/Assets/Fonts/NotoSansCJKkr-Regular.otf)를 참조하고, 생성 후 이전 활성 씬을 복원한다.
+
+장면의 기본 배치와 UI 참조는 씬에 직렬화되어 있다. 오프닝의 진행 표시·홀로그램 장식·건너뛰기 확인창은 `FactoryIntroPresentationController`가 런타임에 생성한다. 습격 알람은 해당 Controller의 `_alarmClip`과 `_audio` 참조로 연결한다.

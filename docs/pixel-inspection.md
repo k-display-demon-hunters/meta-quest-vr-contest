@@ -1,123 +1,97 @@
-# CNN 픽셀 관찰과 합성곱 학습
+# CNN 픽셀 관찰과 합성곱 구현
 
-## 단계 구분
+[CNNPixelLab.unity](../client/Assets/Scenes/CNNPixelLab.unity)는 이미지의 RGB 값을 관찰하고 선택한 3×3 영역의 합성곱을 계산하는 씬이다. 런타임 코드는 `client/Assets/Scripts/CNNPixelLab/`의 `UI` 네임스페이스에 있다. 컨트롤러·마우스 조작과 체험 순서는 [조작법](xr-simulator.md)을 참고한다.
 
-1. 컬러 저화질 이미지 위에 3×3 필터를 드래그한다.
-2. 더 자세히 보기: 선택한 영역의 R/G/B 값만 표시한다. 가중치·합계·계산 버튼·퀴즈는 표시하지 않는다. 옆에는 RGB와 0~255의 의미를 설명한다.
-3. 이미지로 돌아가 다음으로를 누르면 이미지가 확대된다. 확대된 이미지를 오른손 Trigger로 클릭하면 픽셀로 전환된다.
-4. R/G/B 버튼으로 전체 이미지의 채널별 픽셀 숫자를 관찰한다. 전환 완료 후에만 합성곱 연산 원리 알아보기 버튼을 사용할 수 있다.
-5. 합성곱 연산 원리 알아보기: R 계산 설명 → G 퀴즈 → B 퀴즈 → RGB 최종 합산. 피처 맵에 값을 저장하는 기능은 포함하지 않는다.
+## 파일과 클래스 역할
 
-## 가중치는 고정
+| 파일·클래스 | 역할과 처리 방식 |
+|---|---|
+| [CNNPixelLabManager.cs](../client/Assets/Scripts/CNNPixelLab/CNNPixelLabManager.cs) | 원본 사진을 표시·계산용 데이터로 만들고 선택·UI Controller와 RGB 화면을 초기화한다. 필터 선택 확정, 픽셀 전환 완료, 상세 보기 요청을 받아 관찰·확대·계산 화면 사이의 전환을 조율한다. 결과 정리까지 끝나면 `ConvolutionCompleted`를 제공하고, 재시작 시 완료 상태와 선택·화면을 함께 초기화한다. |
+| [PixelImageFactory.cs](../client/Assets/Scripts/CNNPixelLab/PixelImageFactory.cs) | 원본 Texture2D를 축소하고 평균 블러를 적용해 사진 표시용 이미지를 만든다. 여기서 다시 RGB 픽셀 배열을 샘플링하고, 배열을 Point 필터링 텍스처로 바꿔 렌즈에 표시한다. Manager가 이 결과를 보관하므로 화면에 보이는 선택과 계산에 사용하는 색상 데이터가 같은 원본에서 나온다. |
+| [PixelSelectionController.cs](../client/Assets/Scripts/CNNPixelLab/PixelSelectionController.cs) | 이미지 보드·필터·선택 프레임을 연결받아 필터 위치를 3×3 영역의 원점으로 변환한다. 잡는 중에는 미리보기를 표시하고, 놓은 뒤 이미지와의 거리·방향이 유효하면 격자에 맞춰 선택을 확정한다. Manager에는 선택 유무·배열 좌표·월드 위치와 갱신 여부를 제공한다. |
+| [PixelLabUIController.cs](../client/Assets/Scripts/CNNPixelLab/PixelLabUIController.cs) | 선택 가능 여부와 픽셀 전환 상태를 받아 상세 보기·다음 버튼의 활성 상태와 안내 문구를 바꾼다. 상세 관찰에 들어갈 때 원본 이미지·필터·조작판의 활성 상태를 보관하고 숨긴 뒤, 돌아오면 그 상태대로 복원한다. 실제 선택 좌표나 계산값은 변경하지 않는다. |
+| [PixelRevealStage.cs](../client/Assets/Scripts/CNNPixelLab/PixelRevealStage.cs) | 원본 이미지 확대를 진행한 뒤 이미지 선택을 기다리고, 선택되면 픽셀·숫자를 열별로 드러낸다. 전환 중에는 입력을 제한하고 완료 시 `PixelsRevealed`를 발생시켜 Manager가 합성곱 진입을 허용하게 한다. 완료 후에는 선택한 R/G/B 채널의 표시를 갱신한다. |
+| [RgbConvolutionView.cs](../client/Assets/Scripts/CNNPixelLab/RgbConvolutionView.cs) | 선택 좌표와 전체 픽셀 배열에서 채널별 3×3 정수 입력을 추출하고 고정 가중치를 연결한다. 관찰 모드에서는 공간 RGB 화면을, 계산 모드에서는 `ConvolutionExercise`를 실행한다. 계산 완료 콜백을 받으면 채널 합과 최종 결과를 표시하고 Manager에 체험 완료를 알린다. |
+| [ConvolutionExercise.cs](../client/Assets/Scripts/CNNPixelLab/ConvolutionExercise.cs) | 입력·가중치 배열을 복사해 채널별 정답을 계산하고 코루틴으로 필터 정렬 → R 설명 → G/B 퀴즈 → RGB 합산을 진행한다. 각 구간에서 공간 상호작용이나 다음 버튼을 기다리며, 숫자 블록과 UI 답변을 같은 정답 판정으로 처리한다. 오답은 힌트를 표시하고 재입력을 기다리며 결과 정리 단계에서 완료 콜백을 호출한다. |
+| [SpatialConvolutionController.cs](../client/Assets/Scripts/CNNPixelLab/SpatialConvolutionController.cs) | 입력·가중치 데이터를 받아 공간 표시용 View와 상호작용 객체를 준비한다. 학습 단계의 요청에 따라 RGB 층 배치, 곱·누적 합 애니메이션, 연결선·숫자·강조를 갱신한다. 계산 진행 코드는 이 클래스의 정렬·채널 꺼내기 완료 상태를 기다려 다음 단계로 넘어간다. |
+| [SpatialConvolutionViewBuilder.cs](../client/Assets/Scripts/CNNPixelLab/SpatialConvolutionViewBuilder.cs) | RGB 입력, 가중치, 곱, 답 블록과 라벨·연결선을 런타임 오브젝트로 만든다. 참조를 `View`에 묶어 Controller가 계산 단계마다 같은 오브젝트를 갱신하도록 제공한다. 표시용 공유 재질을 소유하고 종료 시 해제하며 잡기 판정은 InteractionController에 맡긴다. |
+| [SpatialConvolutionInteractionController.cs](../client/Assets/Scripts/CNNPixelLab/SpatialConvolutionInteractionController.cs) | 계산용 가중치와 답 블록에 잡기 이벤트를 연결한다. 가중치를 목표 근처에 놓으면 정렬 완료로 고정하고, 답 칸에 놓은 숫자 블록은 선택지 인덱스를 계산 진행 코드에 전달한 뒤 원위치로 돌린다. 화면 종료 시 선택을 취소하고 부모·이벤트를 정리해 숨겨진 물체가 계속 잡혀 있지 않게 한다. |
+| [SpatialVolumeInteractionController.cs](../client/Assets/Scripts/CNNPixelLab/SpatialVolumeInteractionController.cs) | RGB 덩어리 전체, 채널 층, 필터 전체의 잡기와 놓기를 단계별로 허용한다. 이동 거리와 놓인 위치·회전을 검사해 선택 영역 꺼내기, 필터 정렬, 채널 분리를 완료 처리한다. 선택한 입력 칸과 대응 가중치를 함께 강조해 이후 계산 단계에서 무엇을 곱하는지 보여준다. |
+| [CNNMousePreviewController.cs](../client/Assets/Scripts/CNNPixelLab/CNNMousePreviewController.cs) | XR 기기가 없는 에디터에서 별도 카메라와 마우스 클릭·드래그를 제공한다. 필터 이동은 SelectionController에, 공간 물체의 이동·놓기는 SpatialConvolutionController에 전달해 기존 판정을 사용한다. 미리보기 동안 리그·시뮬레이터·입력 모듈 상태를 보관하고 종료 시 복원한다. |
 
-각 채널의 가중치는 [-1,0,1; -1,0,1; -1,0,1]로 정해져 있다.
-가중치 조절 버튼과 가중치 변경 퀴즈는 제거했다.
-선택 위치가 바뀌어도 같은 필터 가중치를 적용한다.
-픽셀 입력은 0~255, 편향은 0이다. 결과는 음수나 255 초과 값도 유지한다.
+`PixelImageFactory`는 정적 유틸리티다. `PixelSelectionController`, `PixelLabUIController`, `SpatialConvolutionViewBuilder`, `SpatialConvolutionInteractionController`는 일반 C# 객체다. 나머지 런타임 클래스는 `MonoBehaviour`이며, RGB 관찰·계산 화면과 공간 상호작용 컴포넌트는 초기화 과정에서 생성한다.
 
-## R 안내 학습
+## 초기화와 데이터 흐름
 
-선택한 3×3 입력의 RGB 층을 이미지 위치에서 꺼내고, R을 앞으로 이동한다. G/B와 해당 고정 가중치 층은 뒤쪽에서 깊이를 유지한다. 같은 위치의 픽셀·가중치 숫자 사본이 앞으로 이동해 곱해지고, 곱이 결과 칸을 거쳐 누적 합으로 이동한다.
-다음 버튼을 누르며 한 줄씩 세 쌍의 곱·줄별 합·누적 합을 확인한다.
-마지막에 세 줄의 합을 더하여 9개 곱의 전체 합을 설명한다.
-줄별 합은 계산을 나눠 보여주는 중간값이며 별도의 합성곱 출력이 아니다.
-설명은 옆에 계속 표시하며 입력마다 가중치를 곱해 모두 더하는 선형결합을 설명한다.
+1. `CNNPixelLabManager.Awake()`가 `Camera.main`을 찾아 하위 Canvas의 카메라로 지정한다. 씬이 사용하는 입력·태블릿은 공용 `XRPlayerRig`에서 제공한다.
+2. `PixelImageFactory.CreateSmoothPhoto()`가 원본을 128×72로 샘플링한 뒤 5×5 평균 블러를 적용한다. `SamplePixels()`가 이 결과를 32×18 `Color32[]`로 만든다.
+3. Manager는 부드러운 사진을 이미지 표면에, Point 필터링으로 만든 32×18 텍스처를 선택 렌즈에 연결한다. Selection/UI Controller와 `RgbConvolutionView`를 생성하고 필터·픽셀 전환 이벤트를 구독한다.
+4. `LateUpdate()`에서 SelectionController가 놓기 후 선택을 확정하면 상세 보기 버튼과 안내를 갱신한다.
+5. `ShowDetails()`는 `RgbConvolutionView.Show(..., false)`로 RGB 관찰을 연다. 픽셀 전환 완료 후 `BeginConvolution()`은 같은 데이터를 `Show(..., true)`로 전달해 계산 학습을 시작한다.
 
-## G/B 퀴즈
+UI 입력은 `OnEnable()`에서 준비한다. EventSystem이 없으면 씬 하위에 생성하고, 기존 EventSystem에 `XRUIInputModule`만 없으면 그 모듈을 추가한다. 비활성화할 때는 자신이 생성한 EventSystem 또는 추가한 모듈을 정리한다.
 
-G는 첫 줄의 세 곱을 더한 값을 선택하고, 이후 9개 항의 전체 합을 선택한다.
-B는 같은 위치의 9개 픽셀과 가중치를 곱해 전체 합을 구한다.
-단순 곱셈 한 칸을 반복하거나 결과의 증가·감소를 묻는 방식이 아니다.
-답 선택지는 중복을 제거하고 위치를 섞는다. 숫자 블록을 Grip으로 잡아 답 위치에서 놓으면 제출한다. 답 위치 밖에서 놓거나 오답이면 블록은 원래 위치로 돌아간다. Trigger 숫자 버튼도 같은 정답 처리에 연결한다. 오답에는 해당 계산 힌트를 표시한다.
-정답 후 곱한 결과를 보여주고 다음 버튼으로 진행한다.
-마지막에는 R 합 + G 합 + B 합 + 편향 0의 실제 값을 선택한다.
-최종 정답 후 R/G/B 합이 차례대로 결과 위치로 이동하며 합쳐진다. 편향 0은 마지막에 한 번 더한다고 설명한다. 결과 정리에서는 색 재구성과 합성곱의 숫자 출력을 구분한다.
+## 선택과 단계 전환
 
-## 공간과 구현
+`PixelSelectionController`의 선택값은 32×18 배열 안에서 3×3 영역의 원점을 나타낸다. 필터의 위치·깊이·방향으로 미리보기 유효성을 판단하고, 영역이 이미지 밖으로 나가지 않도록 원점을 제한한다. 레이로 잡은 필터는 이미지 평면과 레이의 교점을 따라 이동한다. 놓기 이벤트는 `_snapPending`을 설정하고 다음 갱신에서 유효한 선택을 확정한다.
 
-시작 씬: Assets/Scenes/CNNPixelLab.unity.
-이미지 받침판·화면 테두리·벽·바닥 없이 단색 공간에 이미지와 필터, 버튼을 배치한다.
-`CNNFeatureMapLab`와 같은 공통 `XRPlayerRig` 프리팹을 씬에 배치한다. 기존 리그가 있으면 새 중복 리그를 제거하고 기존 카메라·컨트롤러·태블릿 상태를 유지한다. 별도 `Quest XR Origin`은 제거했다.
-Quest와 에디터 XR 시뮬레이터는 오른손 Grip을 누르는 동안 필터를 잡고 시선으로 움직이며, Grip을 놓으면 놓는다. 이미지와 UI 버튼은 오른손 Trigger로 클릭한다. 시점·정면 복원·레이저와 태블릿 조작은 공통 리그의 [통일된 조작법](xr-simulator.md)을 따른다. 실행 중 카메라는 유지된 리그의 `Camera.main`으로 연결한다.
-입력 사진을 128×72로 축소하고 부드럽게 만든 뒤 32×18 RGB 데이터를 샘플링한다.
-CNNPixelLabManager는 초기화와 단계 진입을 조율하고, PixelSelectionController는 필터 입력·선택·미리보기를, PixelLabUIController는 안내·버튼·배경 표시를 담당한다. PixelImageFactory는 사진 축소·블러·픽셀 샘플링과 텍스처 생성을 담당한다. PixelRevealStage는 확대와 픽셀 전환,
-RgbConvolutionView는 RGB 관찰/학습 구분, ConvolutionExercise는 고정 가중치 학습과 퀴즈의 진행을 담당한다. SpatialConvolutionController는 RGB 깊이 배치, 숫자 이동, 계산 표시를 담당한다. SpatialConvolutionViewBuilder는 미터 단위 3D 타일·라벨·공간 오브젝트와 공유 재질을 생성하고, SpatialConvolutionInteractionController는 가중치 잡기·정렬과 답 블록 제출·선택 해제를 담당한다. 두 클래스는 기존 컴포넌트가 생성하는 일반 C# 객체이며 기존 공개 API와 GUID를 유지한다. 기존 씬의 런타임 초기화에서 연결하므로 별도 씬 재생성은 필요 없다.
+`PixelRevealStage.Phase`는 다음 순서로 진행한다.
 
-CNNPixelLabManager는 기존 진입 컴포넌트의 GUID와 직렬화 필드를 유지한다. PixelSelectionController와 PixelLabUIController는 Manager가 생성하는 일반 C# 객체이며 추가 Inspector 연결은 필요 없다. 버튼의 호출 메서드는 유지하고 씬에 저장된 타입 이름만 갱신했다. 필터의 공장 내 위치 보정과 합성곱 완료 상태도 유지한다. 이번 책임 분리는 소스·참조를 정적으로 검토하고, 사용자 요청으로 2026-10-18 Unity 6000.3.24f1 스크립트 컴파일을 완료했다. Play·테스트·앱 빌드는 실행하지 않았다. 상세 결과는 [클라이언트 책임 분리 검증 기록](xr-setup.md#2026-10-18-클라이언트-책임-분리-검증)을 따른다.
+```text
+Inactive → Enlarging → AwaitingClick → Revealing → Revealed
+```
 
-기존 학습 구현에는 컴파일 완료 기록이 있다. 이번 공통 XRPlayerRig 연결 변경은 소스·씬 참조만 정적으로 확인했으며 테스트·컴파일·Unity 실행·빌드·Quest 실기기 검증은 수행하지 않았다.
+확대 완료 후에만 이미지의 `XRSimpleInteractable`과 콜라이더를 활성화한다. 이미지 Activate가 픽셀 전환을 시작하고, 열별 `CanvasGroup` 표시가 끝나면 `PixelsRevealed` 이벤트를 발생시킨다. Manager는 이 이벤트를 받아 필터와 선택을 복원하고 합성곱 진입 버튼을 활성화한다. `IsReadyForConvolution`은 `Revealed` 상태에서만 참이다.
 
-## 이미지 제작 기록
+`RgbConvolutionView.Show()`는 선택한 3×3 영역을 위에서 아래 순서로 읽어 `int[3, 9]` 입력 배열을 채운다. 관찰 모드에서는 `SpatialConvolutionController.Observe()`를 통해 영역 꺼내기와 RGB 층 표시를 진행한다. 계산 모드에서는 `ConvolutionExercise.Begin()`으로 입력과 고정 가중치를 전달한다.
 
-기존 흑백 사진을 Built-in ImageGen edit로 컬러화했다.
-저장: client/Assets/Textures/CNNPixelLab/ColorPhoto.png
-프롬프트: Colorize this grayscale lake photograph with natural blue sky and water, green forests and neutral rocky mountains. Preserve the composition and all objects. No text or added elements.
+## 합성곱과 퀴즈
 
-## RGB 합치기와 학습 버튼
+`RgbConvolutionView`의 고정 가중치는 R/G/B 모두 다음과 같다.
 
-RGB 값 관찰 화면은 세 색 성분을 서로 다른 깊이의 숫자 타일로 보여준다. RGB 합쳐 보기를 누르면 세 층이 1.2초 동안 같은 위치로 모이고 원본 샘플의 RGB 색으로 바뀐다. RGB 다시 펼치기로 비교할 수 있다. 각 채널의 실제 색 세기로 표시하며 최종 컬러는 동일한 원본 픽셀에서 가져온다. 이 애니메이션은 색 채널 재구성을 설명한다.
+```text
+-1  0  1
+-1  0  1
+-1  0  1
+```
 
-확대 후 조작 버튼은 로컬 높이 0.8m에 배치한다. 픽셀 전환이 끝나면 가운데 다음으로 버튼이 합성곱 연산 원리 알아보기로 바뀐다. 더 자세히 보기는 RGB 값 관찰로 유지한다. R 학습 화면의 첫 진행 버튼은 R 계산 시작으로 표시한다.
+입력은 채널별 0~255 정수다. 각 채널의 9개 곱을 더하고, 세 채널 합에 편향 0을 한 번 더해 해당 위치의 출력 하나를 구한다. 결과는 음수나 255 초과 값도 그대로 유지한다.
 
+`ConvolutionExercise.Begin()`은 입력·가중치 배열을 복사하고 합과 진행 상태를 초기화한다. `Run()` 코루틴은 공간 상호작용의 완료와 다음 버튼을 기다리며 아래 순서를 진행한다.
 
-## 2026-10-12 공간 체험 변경
+| 계산 단계 | 구현 |
+|---|---|
+| 필터 구조 확인 | `PrepareVolume()`이 RGB 가중치 전체의 정렬을 기다리고, `PullColour()`가 해당 채널을 꺼내는 동작을 기다린다. |
+| R 설명 | `Focus()`로 채널을 배치하고 가중치를 정렬한다. `MultiplyAndAccumulate()`로 입력·가중치 사본, 곱, 누적 합을 표시한다. 줄별 합을 거쳐 9개 곱의 합을 구한다. |
+| G 퀴즈 | 첫 줄의 세 곱의 합과 전체 9개 곱의 합을 각각 묻는다. |
+| B 퀴즈 | 전체 9개 곱의 합을 묻는다. |
+| RGB 합산 | R·G·B 합과 편향을 더한 값을 묻고 `CombineSums()`로 채널 합을 결합한다. |
 
-- 전체 화면을 가리는 큰 배경판과 평면 계산표를 제거하고 실제 두께가 있는 3D 타일을 사용한다. 조작 버튼과 짧은 설명은 World Space UI를 유지한다.
-- R 고정 가중치 묶음은 Grip으로 이동한다. R 입력 앞의 정렬 위치 근처에서 놓으면 고정된다. 자동 정렬 버튼도 제공한다. 가중치 숫자 자체는 변경할 수 없다.
-- 작은 가중치 타일을 입력 칸의 오른쪽 위와 앞쪽에 배치해 앞뒤 두 값을 구별한다. 뒤쪽 G/B 가중치도 필터 하나의 구성 부분이다.
-- R은 한 줄씩 진행하며 각 픽셀과 가중치 사본 → 곱 → 결과 칸 → 누적 합 순서를 보여준다.
-- G 첫 줄, G 전체, B 전체, RGB 최종 합을 숫자 블록 또는 버튼으로 답한다. 오답은 기존 계산 힌트와 재시도를 유지한다.
-- 관찰/학습 닫기 시 잡힌 블록의 선택을 취소하고 콘텐츠 부모로 회수한다. 공통 XR 리그 아래에 오브젝트가 남지 않도록 한다.
-- 피처 맵 쓰기는 구현하지 않는다. 초기 RGB 관찰과 확대/픽셀 전환, 합성곱 진입은 별도 단계로 유지한다.
-- 이번 변경은 소스 편집만 수행했다. AGENTS.md에 따라 Unity 실행, 컴파일, 테스트, 빌드 및 Quest 기기 검증은 실행하지 않았다.
+`Ask()`는 정답과 오답 후보에서 중복을 제거해 선택지 3개를 만들고 순서를 섞는다. 숫자 블록과 UI 버튼은 모두 `Choose()`로 연결된다. 오답은 힌트를 표시하고 같은 문제에서 기다린다. 정답은 입력을 잠그고 다음 진행을 허용한다.
 
-### 팀 공장 화면 확인
+최종 정답 이후 결과 정리 단계까지 진행하면 `RgbConvolutionView.CompleteExercise()`가 `CNNPixelLabManager.MarkConvolutionCompleted()`를 호출한다. 공장 흐름은 이 완료 상태를 읽어 다음 체험을 연다. `ResetLab()`은 완료 상태와 선택·확대·상세 화면을 초기화한다. 이 씬의 출력값을 다음 [특징 맵 씬](cnn-feature-map-explorer.md)의 계산 입력으로 전달하지는 않는다.
 
-확인 시점 origin/main과 작업 브랜치의 HEAD는 `673530f`로 같았다. 원격 브랜치는 main만 확인됐다. `QuestMain.unity`에는 공통 XRPlayerRig, Directional Light, Floor, CNN Model Design Entrance가 있다. 사진 속 공장 건물과 한국어 조작 안내판은 현재 추적 파일에서 확인되지 않았다. 공통 태블릿은 main에 있지만 사진과 같은 전체 공장 씬이 포함됐다고 볼 근거는 없다. 팀원의 미푸시 로컬 파일 유무는 이 저장소에서 확인할 수 없다.
+## 공간 표시와 상호작용
 
+`SpatialConvolutionController.Initialize()`는 ViewBuilder와 InteractionController를 만들고 `SpatialVolumeInteractionController`를 추가한다. ViewBuilder는 렌더링용 타일의 기본 콜라이더를 제거하고, 잡기용 콜라이더는 각 상호작용 담당 클래스가 묶음 단위로 구성한다.
 
-## 노트북 마우스 미리보기
+- `SpatialVolumeInteractionController`는 영역·필터 전체·RGB 층의 놓기 시점에 꺼내기 거리, 정렬 위치·회전, 층 이동 범위를 판정한다. 현재 단계에서 필요한 대상만 잡을 수 있게 하고 채널 이동 중 대응 가중치를 함께 이동시킨다.
+- `SpatialConvolutionInteractionController`는 계산용 가중치가 정렬 위치 근처에 놓이면 고정한다. 답 블록은 답 칸 안에 놓인 경우에만 선택 콜백을 호출하고 원위치로 돌린다.
+- `SpatialConvolutionController`는 계산 단계의 입력–가중치–곱 연결선과 RGB 대응 위치를 표시한다. 측면 숫자는 정면 숫자와 값을 동기화하고 카메라 방향에 따라 표시한다.
+- RGB 합치기는 원본 세 채널로 컬러를 재구성하는 표시 동작이다. 합성곱의 가중합 계산과 별도로 처리한다.
 
-Unity 메뉴 `Tools > CNN > Mouse Preview (This Computer Only)`에서 전환한다. 켜짐 여부는 프로젝트 경로를 포함하는 EditorPrefs 키에만 저장된다. 다른 팀원의 설정이나 씬/프리팹에는 저장하지 않는다. 기본값은 꺼짐이다. CNNPixelLab이 Play 중일 때만 활성화하며 실제 XR 기기가 활성화돼 있으면 진입하지 않는다.
+상세 화면을 닫거나 비활성화할 때는 잡기 선택을 취소하고 물체를 콘텐츠 부모로 회수한다. `PixelLabUIController`는 관찰·계산 전에 보관한 이미지·필터·조작판 활성 상태를 복원한다. Manager는 생성한 텍스처와 재질을, ViewBuilder는 공간 표시용 공유 재질을 해제한다.
 
-- 왼쪽 클릭: 버튼 / 확대된 이미지 선택.
-- 왼쪽 드래그: 필터, 가중치 묶음, 답 숫자 블록. 필터는 이미지 면을 따라 움직인다.
-- 오른쪽 드래그: 현재 체험 주위를 회전하며 옆면 관찰.
-- 휠: 확대/축소. 숫자 블록을 잡은 동안에는 앞뒤 거리 조절.
-- 휠 버튼 드래그: 화면 평행 이동.
-- 상단 정면으로 돌아가기: 현재 단계에 맞는 카메라 위치 복구.
-- Quest 조작으로 복귀: 임시 카메라 제거, 원래 리그 및 입력 복구.
+## 에디터 도구와 연결 참조
 
-에디터 전용 카메라와 입력 어댑터를 사용한다. 미리보기 동안 XR 리그(태블릿/컨트롤러 포함), 시뮬레이터와 기존 UI 입력 모듈을 잠시 비활성화하고 종료 시 기존 상태를 복구한다. 계산 화면을 볼 때는 뒤의 이미지와 원래 조작판을 잠시 숨긴다. 컨트롤러와 필터의 기존 설정 파일은 변경하지 않는다. 런타임 어댑터와 기존 클래스의 보조 메서드는 UNITY_EDITOR 조건으로 빌드에서 제외한다.
+| 파일·클래스 | 역할 |
+|---|---|
+| [SpatialPixelLabBuilder.cs](../client/Assets/Editor/SpatialPixelLabBuilder.cs) | `Create()`가 대상 씬이 없을 때 원본 이미지·필터·렌즈·UI·공용 리그를 만들고 Manager의 참조와 버튼을 연결한다. 씬을 저장한 뒤 PixelRevealStage 설치와 Build Settings 등록까지 수행해 런타임 초기화에 필요한 구성을 남긴다. 기존 씬은 새로 덮어쓰지 않는다. |
+| [PixelRevealStageBuilder.cs](../client/Assets/Editor/PixelRevealStageBuilder.cs) | 활성 CNNPixelLab에서 이미지 보드·조작판·Manager를 찾아 확대·픽셀 전환 컴포넌트와 다음 버튼을 구성한다. 폰트·UI·보드 참조를 연결하고 버튼이 Manager의 단계 전환을 호출하도록 만들어, 런타임의 확대 완료와 픽셀 전환 이벤트가 씬 흐름에 이어지게 한다. |
+| [CNNMousePreviewMenu.cs](../client/Assets/Editor/CNNMousePreviewMenu.cs) | 메뉴 선택을 현재 프로젝트 경로별 EditorPrefs에 저장하고 Play 중인 Manager에 미리보기 컴포넌트를 추가하거나 제거한다. 카메라·드래그 동작은 `CNNMousePreviewController`가 담당하며 이 클래스는 에디터 설정과 컴포넌트 설치를 연결한다. |
 
+씬의 Manager에는 원본 사진, 이미지 Transform·Renderer, 필터, 렌즈, 선택 프레임, 상세 UI, 버튼과 PixelRevealStage를 연결한다. 초기화에서 `_values[0].font`를 RGB 관찰·학습 UI의 폰트로 사용한다. 원본 이미지는 CPU에서 샘플링하므로 Read/Write가 활성화되어 있어야 한다.
 
-## 직접 조작하는 RGB 입체 체험 (2026-10-12)
+마우스 미리보기는 `UNITY_EDITOR` 안에서만 구현된다. 별도 카메라를 생성하고 기존 리그·시뮬레이터·입력 모듈을 비활성화한 뒤, 종료 시 이전 상태를 복원한다. 필터 드래그는 SelectionController에, 공간 물체 드래그와 놓기는 SpatialConvolutionController에 전달한다. 실제 XR 기기가 활성화되면 미리보기를 종료한다.
 
-1. 이미지 위의 필터로 영역을 선택하고 더 자세히 보기를 누른다. 선택 위치의 작은 컬러 영역을 Grip으로 잡아 15cm 이상 꺼내 놓으면 확대되고 RGB가 분리된다. 마우스 미리보기에서는 왼쪽 드래그로 같은 동작을 수행한다.
-2. RGB 층 전체를 직접 잡아 앞뒤·좌우로 벌린다. 이동 범위는 원래 위치에서 1.2m로 제한하며 회전은 유지한다. 옆면에도 R/G/B 이름이 표시된다. 펼친 깊이는 사진의 두께가 아니라 색 성분을 구분하는 교육용 표현이다.
-3. 같은 칸을 가리키면 세 층의 같은 위치가 강조된다. RGB 대응 위치를 연결하는 선과, 계산 단계의 각 입력–가중치 쌍을 잇는 선만 표시한다.
-4. 기존 확대 → 이미지 선택 → 숫자 전환 단계를 거쳐 합성곱 연산 원리 알아보기로 들어간다. 세 가중치 층은 단일 XRGrabInteractable 부모에 묶여 하나의 3×3×3 필터로 움직인다. RGB 입력 기준점에서 22cm 이내에 놓으면 정렬된다. 잘못 놓으면 시작 위치로 돌아가 다시 맞춘다.
-5. 대응 관계 확인 후 R 층을 16cm 이상 직접 꺼내 놓으면 R 학습으로 이어진다. G/B도 해당 단계에서 해당 색 층을 직접 꺼내야 퀴즈로 이어진다. 색 성분을 꺼내는 동안 해당 가중치 층도 같이 움직인다. 가중치 값은 고정이다.
-6. R의 곱과 누적 합 애니메이션, G 첫 줄/G 전체/B 전체/최종 RGB 합 숫자 퀴즈를 거쳐 결과 하나를 만든다. 피처 맵 기록은 포함하지 않는다.
-
-`SpatialVolumeInteractionController`는 꺼내기·층 이동·필터 전체 정렬·대응 위치 표시를 담당한다. `SpatialConvolutionController`는 연산 애니메이션과 표시 갱신을, `SpatialConvolutionViewBuilder`는 숫자 타일·라벨 생성을, `SpatialConvolutionInteractionController`는 계산 단계의 가중치와 답 블록 상호작용을, `ConvolutionExercise`는 R→G→B 학습 순서를 담당한다. 측면 숫자의 카메라 조회는 갱신 프레임마다 한 번만 수행한다. 공통 XR 리그와 입력 바인딩은 변경하지 않는다.
-
-관찰이 끝나거나 계산 화면에 들어가면 원본 이미지와 원래 버튼을 잠시 숨긴다. 이미지로 돌아가기에서 이전 활성 상태를 복구한다. 잡은 상태로 화면을 닫을 때는 선택을 취소하고 물체를 콘텐츠 부모로 회수한다. 재시작 시 물체 위치와 단계 상태를 초기화한다.
-
-### 2026-10-12 사용자 요청에 따른 Editor 검증
-
-- Unity 6000.3.24f1 스크립트 컴파일 통과. 테스트 파일이나 빌드는 생성하지 않았다.
-- Play Mode에서 필터 선택, 영역 꺼내기 최소 거리, RGB 층 이동 제한, 필터 전체의 정렬 성공/실패를 확인했다.
-- 실제 진행 코루틴과 버튼/놓기 핸들러를 통해 R 설명 → G 첫 줄 → G 전체 → B 전체 → RGB 최종 합을 끝까지 진행했다. 네 퀴즈 모두 별도로 계산한 가중합과 일치하고, 오답을 먼저 넣으면 재시도할 수 있었다. 선택 영역의 R/G/B 합은 23/4/-30, 최종 합은 -3이었다.
-- XRInteractionManager의 실제 SelectEnter로 컬러 영역, 필터 전체, 숫자 답을 각각 잡고 닫았다. 발견된 부모 비활성화 중 재부모화 오류를 수정했다. 수정 후 선택 취소, 부모 회수, 비활성화가 모두 확인됐다.
-- 공간 숫자 글자를 확대하고 URP 미리보기 카메라의 불필요한 stereoTargetEye 경고를 제거했다.
-- Game View에서 계산 숫자와 깊이 배치를 확인했다. RGB 층이 합쳐지는 각도에서는 일부 층 제목이 겹쳐 보인다. 기능 검증 통과와 별개로 제목 배치의 가독성 개선은 남아 있다.
-- 물리 컨트롤러 입력이나 Quest 착용 검증은 수행하지 않았다. 실기기의 잡기 거리, 정렬 허용 범위, 이동 시 편안함과 가독성은 별도 확인이 필요하다. 위 진행 검증은 Editor에서 프로덕션 메서드를 호출한 결과이며 실제 손 조작의 대체 검증이 아니다.
-
-
-## 2026-10-18 입체 블록 가독성 수정
-
-- 입력과 곱 블록의 두께를 12cm로 늘리고 RGB 층 간격을 65cm로 확대했다. 전체 계산 구조를 비스듬히 배치해 시작 위치에서도 깊이가 보이도록 했다.
-- 블록은 불투명도 90%의 무광 Lit 재질을 사용한다. 숫자는 투명하게 만들지 않는다. 옆면 숫자는 해당 면을 바라볼 때 표시한다.
-- 곱 결과와 합을 앞쪽 깊이에 분리하고 현재 계산하는 입력–가중치–곱을 연결한다. 가중치와 학습 계산식은 유지한다.
-- Unity 컴파일 및 Play 화면을 확인했다. Quest 실기기 조작은 확인하지 않았다.
+입력 사진은 `client/Assets/Textures/CNNPixelLab/ColorPhoto.png`, 공용 리그는 `client/Assets/Prefabs/XR/XRPlayerRig.prefab`을 사용한다. 시각 에셋 구성은 [Neon UI 프리팹](neon-ui-prefabs.md)을 참고한다.

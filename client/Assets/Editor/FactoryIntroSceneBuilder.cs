@@ -73,7 +73,10 @@ namespace FactoryScenes.Editor
                 Assign(view, "_corruption", fault);
                 Assign(view, "_audio", audio);
                 view.ApplyModifiedPropertiesWithoutUndo();
-                EditorSceneManager.SaveScene(scene, ScenePath);
+                if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                {
+                    throw new IOException("Could not save the intro scene: " + ScenePath);
+                }
             }
             finally
             {

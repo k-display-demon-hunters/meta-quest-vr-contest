@@ -1,5 +1,6 @@
 using System.Collections;
 using CNNFeatureMaps;
+using FactoryTutorial;
 using ModelDesignScene;
 using Tablet;
 using UI;
@@ -13,6 +14,8 @@ namespace FactoryEnvironment
     // Owns this factory session; calculations and interaction stay in the lesson scenes.
     public sealed class FactoryLearningFlowManager : MonoBehaviour
     {
+        private const string TutorialSceneName = "FactoryTutorial";
+
         [SerializeField] private Transform[] _contentAnchors;
         [SerializeField] private Font _font;
         [SerializeField] private Transform _entrance;
@@ -33,15 +36,12 @@ namespace FactoryEnvironment
         private float _nextCheckTime;
         private TabletManager _tablet;
         private TabletMapData _mapData;
-        private FactoryTutorialController _entranceGuide;
+        private Scene _tutorialScene;
+        private bool _tutorialComplete;
         private FactoryFlowPortalController _portal;
-        private XR.XRPlayerInputController _guidePlayerInput;
-        private bool _previousForcedRay;
 
         private void OnEnable()
         {
-            if (_guidePlayerInput != null && _entranceGuide != null && !_entranceGuide.IsComplete)
-                _guidePlayerInput.TutorialRayForcedOn = true;
             if (_mapData != null)
             {
                 PublishMap();
@@ -65,39 +65,87 @@ namespace FactoryEnvironment
             }
             _routeGuide.Bind(rig.Camera.transform);
             PublishMap();
-            FactoryFlowPortalController portal = new GameObject("Factory route instruction")
-                .AddComponent<FactoryFlowPortalController>();
-            portal.transform.SetParent(transform, false);
-            portal.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.4f,
-                _entrance.rotation);
-            portal.Initialize(_font);
-            _portal = portal;
-            _portal.gameObject.SetActive(false);
+            CreateRouteInstruction();
             FactoryRoomSignController signs = gameObject.AddComponent<FactoryRoomSignController>();
             signs.Initialize(_font);
             SceneManager.SetActiveScene(gameObject.scene);
-            GameObject guideObject = new GameObject("Factory entrance guide");
-            guideObject.transform.SetParent(transform, false);
-            guideObject.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.65f,
+            // Keep the UI input module in the factory scene when the guide scene is unloaded.
+            rig.GetComponent<XR.XRPlayerInputController>()?.EnsureRayReady();
+            StartCoroutine(LoadEntranceGuide(rig));
+        }
+
+        private void CreateRouteInstruction()
+        {
+            _portal = new GameObject("Factory route instruction")
+                .AddComponent<FactoryFlowPortalController>();
+            _portal.transform.SetParent(transform, false);
+            _portal.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.4f,
                 _entrance.rotation);
-            FactoryTutorialPanelController panel = guideObject.AddComponent<FactoryTutorialPanelController>();
-            panel.Initialize(_font, rig.Camera);
-            _entranceGuide = gameObject.AddComponent<FactoryTutorialController>();
-            _entranceGuide.OnCompleted += HandleEntranceGuideCompleted;
-            _routeGuide.SetDestination(-1);
-            _guidePlayerInput = rig.GetComponent<XR.XRPlayerInputController>();
-            if (_guidePlayerInput != null)
+            _portal.Initialize(_font);
+            _portal.gameObject.SetActive(false);
+        }
+
+        private IEnumerator LoadEntranceGuide(XROrigin rig)
+        {
+            if (!Application.CanStreamedLevelBeLoaded(TutorialSceneName)
+                || SceneManager.GetSceneByName(TutorialSceneName).isLoaded)
             {
-                _guidePlayerInput.EnsureRayReady();
-                _previousForcedRay = _guidePlayerInput.TutorialRayForcedOn;
-                _guidePlayerInput.TutorialRayForcedOn = true;
+                Debug.LogError("[FactoryFlow] FactoryTutorial 씬의 빌드 등록과 중복 로드 여부를 확인해 주세요.", this);
+                enabled = false;
+                yield break;
             }
-            _entranceGuide.BeginGuide(panel);
+            AsyncOperation loading = null;
+            try
+            {
+                loading = SceneManager.LoadSceneAsync(TutorialSceneName, LoadSceneMode.Additive);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+            if (loading == null)
+            {
+                Debug.LogError("[FactoryFlow] 공장 입구 안내 씬을 열지 못했습니다.", this);
+                enabled = false;
+                yield break;
+            }
+            yield return loading;
+            _tutorialScene = SceneManager.GetSceneByName(TutorialSceneName);
+            FactoryTutorialManager tutorial = null;
+            foreach (GameObject root in _tutorialScene.GetRootGameObjects())
+            {
+                tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
+                if (tutorial != null)
+                {
+                    break;
+                }
+            }
+            if (tutorial == null || !tutorial.Initialize(rig, _entrance))
+            {
+                Debug.LogError("[FactoryFlow] FactoryTutorial의 Manager·안내 패널 연결을 확인해 주세요.", this);
+                yield return SceneManager.UnloadSceneAsync(_tutorialScene);
+                enabled = false;
+                yield break;
+            }
+            while (tutorial != null && !tutorial.IsComplete)
+            {
+                yield return null;
+            }
+            if (tutorial == null)
+            {
+                Debug.LogError("[FactoryFlow] 완료 전에 공장 입구 안내가 제거되었습니다.", this);
+                enabled = false;
+                yield break;
+            }
+            yield return SceneManager.UnloadSceneAsync(_tutorialScene);
+            _tutorialComplete = true;
+            _portal.gameObject.SetActive(true);
+            _routeGuide.SetDestination(0);
         }
 
         private void Update()
         {
-            if (_entranceGuide == null || !_entranceGuide.IsComplete || _loading || _leaving || Time.time < _nextCheckTime)
+            if (!_tutorialComplete || _loading || _leaving || Time.time < _nextCheckTime)
             {
                 return;
             }
@@ -124,13 +172,6 @@ namespace FactoryEnvironment
             {
                 StartCoroutine(LoadLesson(destination));
             }
-        }
-
-        private void HandleEntranceGuideCompleted()
-        {
-            if (_guidePlayerInput != null) _guidePlayerInput.TutorialRayForcedOn = _previousForcedRay;
-            _portal.gameObject.SetActive(true);
-            _routeGuide.SetDestination(0);
         }
 
         private bool HasValidConfiguration()
@@ -335,7 +376,6 @@ namespace FactoryEnvironment
 
         private void OnDisable()
         {
-            if (_guidePlayerInput != null) _guidePlayerInput.TutorialRayForcedOn = _previousForcedRay;
             if (_tablet != null)
             {
                 _tablet.ClearMapData(_mapData);
@@ -348,7 +388,10 @@ namespace FactoryEnvironment
 
         private void OnDestroy()
         {
-            if (_entranceGuide != null) _entranceGuide.OnCompleted -= HandleEntranceGuideCompleted;
+            if (!_leaving && _tutorialScene.IsValid() && _tutorialScene.isLoaded && Application.isPlaying)
+            {
+                SceneManager.UnloadSceneAsync(_tutorialScene);
+            }
             if (!_leaving && _lesson.IsValid() && _lesson.isLoaded && Application.isPlaying)
             {
                 SceneManager.UnloadSceneAsync(_lesson);

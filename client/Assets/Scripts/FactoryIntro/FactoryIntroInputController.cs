@@ -31,6 +31,7 @@ namespace FactoryIntro
         private bool _previousUIInteraction;
         private bool _moveWasEnabled;
         private bool _inputWasSuppressed;
+        private bool _rayWasForcedOn;
         private bool _rayWasEnabled;
         private bool _lineVisualWasEnabled;
         private bool _lineWasEnabled;
@@ -60,6 +61,7 @@ namespace FactoryIntro
 
             _moveWasEnabled = _moveProvider != null && _moveProvider.enabled;
             _inputWasSuppressed = _playerInput != null && _playerInput.TutorialInputSuppressed;
+            _rayWasForcedOn = _playerInput != null && _playerInput.TutorialRayForcedOn;
             _previousGripInput = _rightRay != null ? _rightRay.selectInput : null;
             _lineVisual = _rightRay != null ? _rightRay.GetComponent<XRInteractorLineVisual>() : null;
             _line = _rightRay != null ? _rightRay.GetComponent<LineRenderer>() : null;
@@ -111,7 +113,7 @@ namespace FactoryIntro
             if (_playerInput != null)
             {
                 _playerInput.TutorialInputSuppressed = _inputWasSuppressed;
-                _playerInput.TutorialRayForcedOn = false;
+                _playerInput.TutorialRayForcedOn = _rayWasForcedOn;
             }
             else
             {

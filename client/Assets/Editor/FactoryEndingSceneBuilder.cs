@@ -44,12 +44,8 @@ namespace FactoryScenes.Editor
             try
             {
                 EnsureMaterialsFolder();
-                Material structure = MaterialAsset("FactoryStructure", shader, new Color(0.14f, 0.62f, 0.65f));
-                Material floor = MaterialAsset("FactoryFloor", shader, new Color(0.11f, 0.16f, 0.2f));
-                Material metal = MaterialAsset("MachineMetal", shader, new Color(0.35f, 0.45f, 0.52f));
                 Material landscape = MaterialAsset("RestoredLandscape", shader, new Color(0.22f, 0.56f, 0.3f));
                 Material light = MaterialAsset("RestoredLights", shader, new Color(0.84f, 0.72f, 0.35f));
-                Material debris = MaterialAsset("DamagedFragments", shader, new Color(0.24f, 0.16f, 0.23f));
 
                 scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
                 SceneManager.SetActiveScene(scene);
@@ -59,7 +55,7 @@ namespace FactoryScenes.Editor
                 GameObject ending = new GameObject("Factory Ending");
                 FactoryEndingManager manager = ending.AddComponent<FactoryEndingManager>();
                 FactoryRestorationController restoration = ending.AddComponent<FactoryRestorationController>();
-                BuildFactory(ending.transform, restoration, structure, floor, metal, landscape, light, debris);
+                BuildFactory(ending.transform, restoration, landscape, light);
                 FactoryEndingPanelController panel = BuildPanel(ending.transform, font, rig.GetComponentInChildren<Camera>());
                 Transform arrival = Child(ending.transform, "Ending floor start");
 
@@ -89,7 +85,7 @@ namespace FactoryScenes.Editor
         }
 
         private static void BuildFactory(Transform parent, FactoryRestorationController controller,
-            Material structure, Material floor, Material metal, Material landscape, Material lights, Material debrisMaterial)
+            Material landscape, Material lights)
         {
             GameObject hallAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/KdyFactoryHall.prefab");
             GameObject wraithAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/kdy_scene2/PixelWraith.prefab");

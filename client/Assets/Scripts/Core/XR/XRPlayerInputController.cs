@@ -1,6 +1,7 @@
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -103,6 +104,7 @@ namespace XR
 
         private void OnEnable()
         {
+            SceneManager.sceneLoaded += HandleSceneLoaded;
             _look.Enable();
             _recenter.Enable();
             _laser.Enable();
@@ -122,6 +124,7 @@ namespace XR
         {
             if (_bound)
             {
+                RestoreUIRegistration();
                 return;
             }
             foreach (XRRayInteractor ray in GetComponentsInChildren<XRRayInteractor>(true))
@@ -215,6 +218,25 @@ namespace XR
             _rightRay.selectExited.AddListener(HandleReleased);
             _bound = true;
             SetLaserEnabled(_tutorialRayForcedOn || _laserEnabled);
+            RestoreUIRegistration();
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            RestoreUIRegistration();
+        }
+
+        private void RestoreUIRegistration()
+        {
+            if (!_bound || _rightRay == null || !_rightRay.isActiveAndEnabled ||
+                !_rightRay.enableUIInteraction || _rightRay.TryGetUIModel(out _))
+            {
+                return;
+            }
+            // The rig survives scene loads, but the EventSystem it registered with may belong to the old scene.
+            // Reconnect UI without disabling the interactor or cancelling its held selection.
+            _rightRay.enableUIInteraction = false;
+            _rightRay.enableUIInteraction = true;
         }
 
         private void RotateView(Vector2 stick)
@@ -306,6 +328,7 @@ namespace XR
 
         private void OnDisable()
         {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
             _look?.Disable();
             _recenter?.Disable();
             _laser?.Disable();

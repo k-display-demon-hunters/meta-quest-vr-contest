@@ -13,6 +13,7 @@ namespace UI
         private Outline _outline;
         private bool _hovered;
         private bool _pressed;
+        private bool _wasInteractable;
 
         private void Awake()
         {
@@ -27,17 +28,44 @@ namespace UI
             Refresh();
         }
 
-        public void OnPointerEnter(PointerEventData data) { _hovered = true; Refresh(); }
-        public void OnPointerExit(PointerEventData data) { _hovered = false; _pressed = false; Refresh(); }
-        public void OnPointerDown(PointerEventData data) { _pressed = true; Refresh(); }
-        public void OnPointerUp(PointerEventData data) { _pressed = false; Refresh(); }
+        public void OnPointerEnter(PointerEventData data)
+        {
+            _hovered = true;
+            Refresh();
+        }
+
+        public void OnPointerExit(PointerEventData data)
+        {
+            _hovered = false;
+            _pressed = false;
+            Refresh();
+        }
+
+        public void OnPointerDown(PointerEventData data)
+        {
+            if (data.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+            _pressed = true;
+            Refresh();
+        }
+
+        public void OnPointerUp(PointerEventData data)
+        {
+            if (data.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+            _pressed = false;
+            Refresh();
+        }
 
         private void LateUpdate()
         {
-            if (!_button.IsInteractable() && (_hovered || _pressed))
+            bool interactable = _button.isActiveAndEnabled && _button.IsInteractable();
+            if (interactable != _wasInteractable)
             {
-                _hovered = false;
-                _pressed = false;
                 Refresh();
             }
         }
@@ -48,7 +76,13 @@ namespace UI
             {
                 return;
             }
-            _outline.enabled = _button.IsInteractable() && (_hovered || _pressed);
+            _wasInteractable = _button.isActiveAndEnabled && _button.IsInteractable();
+            if (!_wasInteractable)
+            {
+                _pressed = false;
+            }
+            // Availability can change while the ray stays over the button without another pointer-enter event.
+            _outline.enabled = _wasInteractable && (_hovered || _pressed);
             _outline.effectColor = _pressed ? Color.white : SceneUIStyle.Accent;
         }
 

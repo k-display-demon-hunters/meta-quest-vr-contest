@@ -6,7 +6,7 @@
 
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
-| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 최초 입구 배치, 학습 순서·완료 조건, 목적지와 태블릿 지도 게시를 조율한다. 목적지 영역에 플레이어가 머물면 잡기·로딩 상태를 확인하고 체험을 Additive로 불러온다. 다음 체험 준비 후 이전 체험을 닫으며, 완료 후 출구 진입은 엔딩 Single 로드로 연결한다. |
+| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 최초 입구 배치와 튜토리얼 Additive 로드·완료 대기·언로드, 학습 순서·완료 조건, 목적지와 태블릿 지도 게시를 조율한다. 목적지 영역에 플레이어가 머물면 잡기·로딩 상태를 확인하고 체험을 Additive로 불러온다. 다음 체험 준비 후 이전 체험을 닫으며, 완료 후 출구 진입은 엔딩 Single 로드로 연결한다. |
 | [FactoryAreaEntryController](../client/Assets/Scripts/FactoryEnvironment/FactoryAreaEntryController.cs) | `Bind()`로 전달된 플레이어 카메라가 BoxCollider 영역 안에 있는지 로컬 좌표로 판정한다. 리그의 물리 충돌이나 Rigidbody·Trigger 이벤트에 의존하지 않으며 손·잡은 물체의 진입은 판정하지 않는다. |
 | [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | 씬에 저장한 네 개의 고정 바닥 경로 중 현재 단계의 오브젝트를 표시한다. 플레이어 이동에 따라 경로의 위치나 형태를 다시 계산하지 않는다. |
 | [FactoryFlowPortalController](../client/Assets/Scripts/FactoryEnvironment/FactoryFlowPortalController.cs) | 입구에 `바닥의 안내선을 따라 이동하세요.`라는 고정 안내판을 생성한다. 다음 버튼이나 상호작용 컴포넌트는 생성하지 않는다. |
@@ -22,13 +22,14 @@
 ```text
 FactoryIntro
   → FactoryEnvironment
+      → FactoryTutorial (안내 완료 후 언로드)
       → CNNPixelLab
       → CNNFeatureMapLab
       → CNNModelDesignLab
       → 뒤쪽 출구 → FactoryEnding
 ```
 
-`FactoryLearningFlowManager.Start`는 유지된 XR 리그를 씬의 `_entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. 진입 영역을 연결하고 지도를 태블릿에 게시한다. 실제 입구에서 수행 판정 없는 다섯 페이지 조작 안내를 한 번 표시한 뒤 첫 경로를 켠다. 안내가 끝나기 전에는 방 진입에 따른 체험 로드를 보류한다. 이후 체험은 다음 순서로 진행한다.
+`FactoryLearningFlowManager.Start`는 유지된 XR 리그를 씬의 `_entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. 진입 영역을 연결하고 지도를 태블릿에 게시한 뒤 `FactoryTutorial`을 Additive로 한 번 불러온다. `FactoryTutorialManager.IsComplete`가 될 때까지 방 진입에 따른 학습 로드를 보류하고, 완료 후 안내 씬을 언로드한 다음 첫 경로를 켠다. 안내는 공장 배경을 유지한 입구에서 수행 판정 없는 다섯 페이지로 진행한다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
 
 1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
 2. 플레이어가 허용된 다음 영역에 머물고 물체를 잡지 않았으면 대상 씬 등록 여부를 확인하고 Additive로 로드한다. 영역 안에서 물체를 놓아도 전환할 수 있다. 로딩 중 중복 요청은 차단한다.
@@ -40,7 +41,7 @@ FactoryIntro
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | Pixel Lab에 들어가면 `CNNPixelLab`을 불러온다. |
+| 공장 진입 | `FactoryTutorial`의 안내 완료·언로드 후 Pixel Lab에 들어가면 `CNNPixelLab`을 불러온다. |
 | 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 Feature Map Lab을 안내한다. |
 | 피처맵 | `CNNFeatureMapGuide.ReadyForModelDesign`이 참이면 Model Design Lab을 안내한다. |
 | 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 재학습 시작 시 완료 상태를 초기화한다. |
@@ -116,4 +117,4 @@ FactoryMapReader.Read(공장 루트)
 
 ## 이번 변경의 확인 범위
 
-방 진입·고정 바닥선·입구 안내·간판·출구 엔딩 연결과 속도는 소스 및 씬·에셋 참조만 정적으로 검토했다. 사용자 지시에 따라 Unity 실행, 테스트, 빌드, 컴파일은 수행하지 않았다. 안내선의 실제 표시와 컨트롤러 조작·씬 진행은 실행 확인 전이다.
+방 진입·고정 바닥선·튜토리얼 Additive 로드와 완료 대기·언로드·간판·출구 엔딩 연결과 속도는 소스 및 씬·에셋 참조만 정적으로 검토했다. 사용자 지시에 따라 Unity 실행, 테스트, 빌드, 컴파일은 수행하지 않았다. 안내선의 실제 표시와 안내 버튼 입력 복구·컨트롤러 조작·씬 진행은 실행 확인 전이다.

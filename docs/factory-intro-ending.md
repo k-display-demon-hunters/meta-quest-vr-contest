@@ -1,6 +1,6 @@
 # 공장 오프닝·입구 안내와 엔딩
 
-실제 실행 흐름은 `FactoryIntro → FactoryEnvironment → CNNPixelLab → CNNFeatureMapLab → CNNModelDesignLab → FactoryEnding`이다. 세 학습 씬은 공장을 유지한 채 Additive로 실행한다. 방의 표시 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며 실제 씬 파일명과 완료 조건은 유지한다.
+실제 실행 흐름은 `FactoryIntro → FactoryEnvironment → FactoryTutorial → CNNPixelLab → CNNFeatureMapLab → CNNModelDesignLab → FactoryEnding`이다. 튜토리얼과 세 학습 씬은 공장을 유지한 채 Additive로 실행한다. 방의 표시 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며 학습 씬 파일명과 완료 조건은 유지한다.
 
 ## 시작 화면과 악령 연출
 
@@ -16,11 +16,19 @@
 
 ## 실제 공장 입구에서 한 번 안내
 
-`FactoryLearningFlowManager.Start()`가 실제 공장 입구에 플레이어를 배치한 뒤 `FactoryTutorialController`와 `FactoryTutorialPanelController`를 연결한다. 이동·선택·잡기·정면 복원·태블릿 설명의 다섯 페이지를 이전/다음/안내 마치기로 넘긴다. 고개 회전, 이동 목표 도착, 잡기 성공, 태블릿 입력 순서 등 수행 판정은 없다. 안내 중에는 ray 버튼을 유지하고 학습 씬 진입만 보류한다. 이동·잡기·태블릿 조작을 페이지별로 제한하지 않는다.
+`FactoryLearningFlowManager`는 실제 공장 입구에 플레이어를 배치한 뒤 `FactoryTutorial`을 Additive로 한 번 불러온다. 공장 배경과 공용 리그는 그대로 유지하며, 튜토리얼 씬에는 별도 리그·카메라·배경·EventSystem을 두지 않는다.
 
-안내를 끝내면 패널을 숨기고 첫 바닥 경로와 고정 표지판을 표시한다. 완료 상태는 공장 Manager 인스턴스에 남으므로 방 재방문·Additive 학습 전환으로 안내가 반복되지 않는다. 엔딩 후 처음부터 새 체험을 시작하면 다시 한 번 표시한다. 별도 저장 키나 전역 상태는 추가하지 않았다.
+| 파일·클래스 | 책임 |
+| --- | --- |
+| `Scenes/FactoryTutorial.unity` | 공장 입구에 추가로 표시하는 안내 씬이다. 공장과 공용 리그가 로드된 상태에서 실행한다. |
+| `Scripts/FactoryTutorial/FactoryTutorialManager.cs` | 안내 페이지 순서·시작·완료와 안내 중 ray 유지를 담당한다. `IsComplete`로 공장 진행 코드에 완료 여부를 제공한다. |
+| `Scripts/FactoryTutorial/FactoryTutorialPanelController.cs` | 안내 Canvas와 이전/다음/안내 마치기 버튼을 구성하고 페이지 내용을 표시한다. |
 
-기존 `FactoryTutorialController.cs`와 `.meta`는 `Scripts/FactoryIntro`에서 `Scripts/FactoryEnvironment`로 옮기고 GUID를 보존했다. 태블릿 코드·프리팹·폰트·저장 형식은 변경하지 않았다.
+이동·선택·잡기·정면 복원·태블릿 설명의 다섯 페이지를 이전/다음/안내 마치기로 넘긴다. 고개 회전, 이동 목표 도착, 잡기 성공, 태블릿 입력 순서 등 수행 판정은 없다. 안내 중에는 ray를 켠 상태로 유지하고 학습 씬 진입을 보류한다. 이동·잡기·태블릿 조작을 페이지별로 제한하지 않는다.
+
+공장 Manager는 `FactoryTutorialManager.IsComplete`를 기다린 뒤 튜토리얼 씬을 언로드하고 첫 바닥 경로와 고정 표지판을 표시한다. 공장의 공용 EventSystem은 안내 씬과 함께 언로드되지 않으므로 이후 학습 UI에도 사용한다. 공장 세션 안에서는 방 재방문·Additive 학습 전환으로 안내를 다시 열지 않는다. 엔딩 후 처음부터 새 체험을 시작하면 다시 한 번 표시한다. 별도 저장 키나 전역 상태는 추가하지 않았다.
+
+기존 `FactoryTutorialController.cs`는 `FactoryTutorialManager.cs`로 이름을 바꾸고 Panel 코드와 함께 `Scripts/FactoryTutorial`로 옮겼으며 각 `.meta` GUID를 보존했다. 태블릿 코드·프리팹·폰트·저장 형식은 변경하지 않았다.
 
 ## 공장 복구와 엔딩
 
@@ -32,8 +40,10 @@
 
 공통 표시 값은 `Scripts/Core/SceneUIStyle.cs`, uGUI hover/누름 외곽선은 `SceneButtonFeedbackController.cs`가 담당한다. 버튼은 어두운 공장 패널·청록 강조·흰 글자로 맞췄다. XRI 3D 버튼은 각 씬 Controller에서 같은 상태 색상을 사용한다. 계산과 학습 데이터의 의미 색상은 유지한다. 태블릿에는 이 스타일을 적용하지 않는다.
 
+`XRPlayerInputController`는 `sceneLoaded`와 `EnsureRayReady()`에서 오른손 ray의 UI 모듈 등록을 확인하고, 이전 씬의 모듈이 사라져 등록이 끊겼으면 복원한다. persistent 리그와 씬별 EventSystem의 수명이 달라 생기는 입력 누락을 공용 입력 코드에서 처리한다.
+
 `FactoryIntroSceneBuilder`와 `FactoryEndingSceneBuilder`도 새 프리팹과 현재 클래스 참조에 맞췄다. 기존 씬을 덮어쓰거나 열 때 자동 재생성하지 않는다. 수정한 두 연출 스크립트와 악령 프리팹만 파일 이름의 이니셜을 제거했고, GUID는 보존했다. 기타 참고 씬·에셋을 일괄 개명하지 않았다.
 
 ## 확인 범위
 
-2026-10-22: 최신 main에서 작업 브랜치를 만들고 참고 브랜치를 일반 Merge했다. 기존 방 진입, 학습 완료 조건, 이동 속도 3m/s, XR 설정, 씬 등록과 태블릿 파일이 유지되는지 정적으로 대조했다. 씬 로컬 참조·프리팹 GUID·변경 내용을 정적으로 검토했다. 사용자 지시에 따라 Unity 실행·Play·테스트·빌드·컴파일·프로젝트 복사본은 수행하지 않았다. 실제 장면 표시와 Quest 컨트롤러 동작은 실행 확인 전이다.
+2026-10-22: 최신 main에서 작업 브랜치를 만들고 참고 브랜치를 일반 Merge했다. 기존 방 진입, 학습 완료 조건, 이동 속도 3m/s, XR 설정과 태블릿 파일이 유지되는지 정적으로 대조했다. 안내 버튼 문제를 검토하면서 Single 씬 전환으로 UI 모듈이 사라진 뒤 persistent ray가 새 모듈에 등록되지 않는 경로를 소스에서 확인했다. 튜토리얼은 별도 Additive 씬으로 분리하고 공용 입력 코드에 등록 복원을 반영했다. 씬 로컬 참조·프리팹 GUID·변경 내용을 정적으로 검토했으며, 사용자 지시에 따라 Unity 실행·Play·테스트·빌드·컴파일·프로젝트 복사본은 수행하지 않았다. 실제 장면 표시와 버튼 입력 복구·Quest 컨트롤러 동작은 실행 확인 전이다.

@@ -1,0 +1,103 @@
+using UnityEngine;
+
+namespace FactoryIntro
+{
+    [DisallowMultipleComponent]
+    public sealed class FactoryVillageDisplayController : MonoBehaviour
+    {
+        private enum BroadcastChannel { News, Football, Film }
+
+        private static readonly int PlaybackTimeId = Shader.PropertyToID("_PlaybackTime");
+        private static readonly int SignalTimeId = Shader.PropertyToID("_SignalTime");
+        private static readonly int DamageId = Shader.PropertyToID("_Damage");
+        private static readonly int InterferenceId = Shader.PropertyToID("_Interference");
+        private static readonly int PhaseId = Shader.PropertyToID("_Phase");
+        private static readonly int ChannelId = Shader.PropertyToID("_Channel");
+
+        [SerializeField] private Renderer _surface;
+        [SerializeField, Min(0f)] private float _failureTime = 10.5f;
+        [SerializeField, Range(0f, 1f)] private float _phase;
+        [SerializeField] private BroadcastChannel _channel;
+
+        private MaterialPropertyBlock _originalProperties;
+        private MaterialPropertyBlock _properties;
+        private float _storyPlaybackOffset;
+
+        private void Awake()
+        {
+            CacheProperties();
+        }
+
+        public void ResetDisplay()
+        {
+            _storyPlaybackOffset = 0f;
+            EvaluateIdle(0f);
+        }
+
+        public void EvaluateIdle(float elapsed)
+        {
+            float time = Mathf.Max(0f, elapsed);
+            ApplyFrame(time, time, 0f, 0f);
+        }
+
+        public void BeginStory(float ambientTime)
+        {
+            _storyPlaybackOffset = Mathf.Max(0f, ambientTime);
+            Evaluate(0f);
+        }
+
+        public void Evaluate(float elapsed)
+        {
+            float time = Mathf.Max(0f, elapsed);
+            float failureAge = Mathf.Max(0f, time - _failureTime);
+            float damage = Mathf.SmoothStep(0f, 1f, failureAge / 1.2f);
+            float interference = time < _failureTime ? 0f : Mathf.Lerp(0.85f, 0.12f, Mathf.Clamp01(failureAge / 2f));
+
+            // Continue the programme that was already playing on the title screen, then freeze its last frame.
+            ApplyFrame(_storyPlaybackOffset + Mathf.Min(time, _failureTime),
+                _storyPlaybackOffset + time, damage, interference);
+        }
+
+        private void ApplyFrame(float playbackTime, float signalTime, float damage, float interference)
+        {
+            if (!CacheProperties())
+            {
+                return;
+            }
+
+            _properties.SetFloat(PlaybackTimeId, playbackTime);
+            _properties.SetFloat(SignalTimeId, signalTime);
+            _properties.SetFloat(DamageId, damage);
+            _properties.SetFloat(InterferenceId, interference);
+            _properties.SetFloat(PhaseId, _phase);
+            _properties.SetFloat(ChannelId, (float)_channel);
+            _surface.SetPropertyBlock(_properties);
+        }
+
+        private bool CacheProperties()
+        {
+            if (_surface == null)
+            {
+                return false;
+            }
+            if (_properties != null)
+            {
+                return true;
+            }
+
+            _originalProperties = new MaterialPropertyBlock();
+            _properties = new MaterialPropertyBlock();
+            _surface.GetPropertyBlock(_originalProperties);
+            _surface.GetPropertyBlock(_properties);
+            return true;
+        }
+
+        private void OnDisable()
+        {
+            if (_surface != null && _originalProperties != null)
+            {
+                _surface.SetPropertyBlock(_originalProperties);
+            }
+        }
+    }
+}

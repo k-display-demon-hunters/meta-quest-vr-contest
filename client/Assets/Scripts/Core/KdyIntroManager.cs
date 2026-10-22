@@ -12,9 +12,9 @@ namespace KdyIntro
         [SerializeField] private Text _continueLabel;
         [SerializeField] private KdyRigController _rig;
         [SerializeField] private KdyTabletController _tablet;
-        [SerializeField] private KdyWraithController _wraith;
+        [SerializeField] private FactoryIntro.FactoryWraithController _wraith;
         [SerializeField] private GameObject _corruption;
-        private KdyTransitionController _transition;
+        private UI.SceneTransitionController _transition;
         private int _page;
         private bool _tabletPracticed;
         private bool _completed;
@@ -48,12 +48,12 @@ namespace KdyIntro
                 yield break;
             }
             Transform rigRoot = _rig.ViewCamera.transform.root;
-            _transition = rigRoot.GetComponentInChildren<KdyTransitionController>();
+            _transition = rigRoot.GetComponentInChildren<UI.SceneTransitionController>();
             if (_transition == null)
             {
                 GameObject fade = new GameObject("Kdy Scene Transition", typeof(RectTransform));
                 fade.transform.SetParent(rigRoot, false);
-                _transition = fade.AddComponent<KdyTransitionController>();
+                _transition = fade.AddComponent<UI.SceneTransitionController>();
                 _transition.Initialize(_rig.ViewCamera);
             }
             _storyStarted = Time.time;
@@ -128,7 +128,7 @@ namespace KdyIntro
                 _subtitle.text = "먼저 태블릿 탭을 한 번 바꿔 보세요. 오른손으로 화살표를 선택하거나 왼손 X / Y 버튼을 눌러요.";
                 return;
             }
-            if (KdyTransitionController.CanLoad("kdy_scene4"))
+            if (UI.SceneTransitionController.CanLoad("kdy_scene4"))
             {
                 _transition.Load("kdy_scene4");
                 return;

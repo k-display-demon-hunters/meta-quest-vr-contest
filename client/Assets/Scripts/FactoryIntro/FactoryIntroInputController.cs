@@ -1,4 +1,3 @@
-using Tablet;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -20,7 +19,6 @@ namespace FactoryIntro
             "Factory Intro Grip Lock", inputSourceMode: XRInputButtonReader.InputSourceMode.Unused);
 
         private ContinuousMoveProvider _moveProvider;
-        private TabletManager _tablet;
         private XRPlayerInputController _playerInput;
         private XRRayInteractor _rightRay;
         private XRInteractorLineVisual _lineVisual;
@@ -32,7 +30,6 @@ namespace FactoryIntro
         private XRUIInputModule _addedInputModule;
         private bool _previousUIInteraction;
         private bool _moveWasEnabled;
-        private bool _tabletWasEnabled;
         private bool _inputWasSuppressed;
         private bool _rayWasEnabled;
         private bool _lineVisualWasEnabled;
@@ -45,12 +42,11 @@ namespace FactoryIntro
             Release();
             if (rig == null)
             {
-                Debug.LogError("[FactoryIntro] An XR rig is required to control tutorial input.", this);
+                Debug.LogError("[FactoryIntro] An XR rig is required to control story input.", this);
                 return;
             }
 
             _moveProvider = rig.GetComponentInChildren<ContinuousMoveProvider>(true);
-            _tablet = rig.GetComponentInChildren<TabletManager>(true);
             _playerInput = rig.GetComponentInChildren<XRPlayerInputController>(true);
             _playerInput?.EnsureRayReady();
             foreach (XRRayInteractor ray in rig.GetComponentsInChildren<XRRayInteractor>(true))
@@ -63,7 +59,6 @@ namespace FactoryIntro
             }
 
             _moveWasEnabled = _moveProvider != null && _moveProvider.enabled;
-            _tabletWasEnabled = _tablet != null && _tablet.enabled;
             _inputWasSuppressed = _playerInput != null && _playerInput.TutorialInputSuppressed;
             _previousGripInput = _rightRay != null ? _rightRay.selectInput : null;
             _lineVisual = _rightRay != null ? _rightRay.GetComponent<XRInteractorLineVisual>() : null;
@@ -91,40 +86,9 @@ namespace FactoryIntro
             {
                 _line.enabled = true;
             }
-            ApplyPermissions(false, false, false);
+            if (_moveProvider != null) _moveProvider.enabled = false;
+            if (_rightRay != null) _rightRay.selectInput = _blockedGripInput;
             BindUIInput();
-        }
-
-        public void SetTutorialStep(TutorialStep step)
-        {
-            if (!IsBound)
-            {
-                return;
-            }
-            if (step == TutorialStep.Complete)
-            {
-                // The ready screen still needs its ray button. Restore the previous laser
-                // state only when the player actually leaves this scene.
-                if (_tablet != null)
-                {
-                    _tablet.enabled = false;
-                }
-                ApplyPermissions(true, true, true);
-                if (_playerInput != null)
-                {
-                    _playerInput.TutorialInputSuppressed = _inputWasSuppressed;
-                }
-                return;
-            }
-
-            if (_playerInput != null)
-            {
-                _playerInput.TutorialInputSuppressed = true;
-            }
-            ApplyPermissions(
-                step == TutorialStep.Movement,
-                step == TutorialStep.Tablet,
-                step == TutorialStep.Grab);
         }
 
         public void Release()
@@ -136,12 +100,6 @@ namespace FactoryIntro
 
             ReleaseUIInput();
 
-            // Disabling the tablet releases any left-stick override it owns.
-            if (_tablet != null)
-            {
-                _tablet.enabled = false;
-                _tablet.enabled = _tabletWasEnabled;
-            }
             if (_moveProvider != null)
             {
                 _moveProvider.enabled = _moveWasEnabled;
@@ -172,7 +130,6 @@ namespace FactoryIntro
             }
 
             _moveProvider = null;
-            _tablet = null;
             _playerInput = null;
             _rightRay = null;
             _lineVisual = null;
@@ -236,22 +193,6 @@ namespace FactoryIntro
                 _addedInputModule.enabled = false;
                 Destroy(_addedInputModule);
                 _addedInputModule = null;
-            }
-        }
-
-        private void ApplyPermissions(bool allowMovement, bool allowTablet, bool allowGrab)
-        {
-            if (_tablet != null)
-            {
-                _tablet.enabled = allowTablet && _tabletWasEnabled;
-            }
-            if (_moveProvider != null)
-            {
-                _moveProvider.enabled = allowMovement && _moveWasEnabled;
-            }
-            if (_rightRay != null)
-            {
-                _rightRay.selectInput = allowGrab ? _previousGripInput : _blockedGripInput;
             }
         }
 

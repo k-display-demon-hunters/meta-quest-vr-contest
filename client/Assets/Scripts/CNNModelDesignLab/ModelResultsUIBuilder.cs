@@ -6,11 +6,11 @@ namespace ModelDesignScene
 {
     internal sealed class ModelResultsUIBuilder
     {
-        internal static readonly Color SurfaceColor = new Color(0.065f, 0.085f, 0.12f);
-        internal static readonly Color MutedColor = new Color(0.69f, 0.75f, 0.83f);
+        internal static readonly Color SurfaceColor = UI.SceneUIStyle.Surface;
+        internal static readonly Color MutedColor = UI.SceneUIStyle.Muted;
         internal static readonly Color TrainingColor = new Color(0.27f, 0.81f, 0.91f);
         internal static readonly Color ValidationColor = new Color(1f, 0.72f, 0.29f);
-        internal static readonly Color ButtonColor = new Color(0.16f, 0.21f, 0.29f);
+        internal static readonly Color ButtonColor = UI.SceneUIStyle.Button;
 
         private readonly Font _font;
 
@@ -98,6 +98,7 @@ namespace ModelDesignScene
             navigation.mode = Navigation.Mode.None;
             button.navigation = navigation;
             button.onClick.AddListener(action);
+            UI.SceneUIStyle.Apply(button);
             return button;
         }
     }

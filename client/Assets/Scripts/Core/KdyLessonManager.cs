@@ -67,7 +67,7 @@ namespace KdyLearning
         [SerializeField] private KdyFactoryInspectionController _inspection;
         [SerializeField] private KdySignComparisonController _comparison;
         [SerializeField] private KdyFactoryEndingController _ending;
-        private KdyTransitionController _transition;
+        private UI.SceneTransitionController _transition;
         private KdyLessonProgressController _progress;
         private bool _ready;
 
@@ -107,12 +107,12 @@ namespace KdyLearning
             {
                 _progress = player.gameObject.AddComponent<KdyLessonProgressController>();
             }
-            _transition = player.GetComponentInChildren<KdyTransitionController>();
+            _transition = player.GetComponentInChildren<UI.SceneTransitionController>();
             if (_transition == null)
             {
                 GameObject fade = new GameObject("Kdy Scene Transition", typeof(RectTransform));
                 fade.transform.SetParent(player, false);
-                _transition = fade.AddComponent<KdyTransitionController>();
+                _transition = fade.AddComponent<UI.SceneTransitionController>();
                 _transition.Initialize(_rig.ViewCamera);
             }
             _tablet.Initialize(_progress, _rig.ViewCamera, _sceneNumber);
@@ -349,7 +349,7 @@ namespace KdyLearning
             _progress.Collect(index);
             _tablet.Refresh();
             string nextScene = "kdy_scene" + (index + 6);
-            if (KdyTransitionController.CanLoad(nextScene))
+            if (UI.SceneTransitionController.CanLoad(nextScene))
             {
                 _transition.Load(nextScene);
                 return;
@@ -439,7 +439,7 @@ namespace KdyLearning
                 _subtitle.text = _training.Hint;
                 string resultScene = _training.DidPass ? "kdy_scene15" :
                     (_progress.FailureCount >= 3 ? "kdy_scene14" : "kdy_scene13");
-                bool resultSceneExists = KdyTransitionController.CanLoad(resultScene);
+                bool resultSceneExists = UI.SceneTransitionController.CanLoad(resultScene);
                 _primaryAction.SetAvailable(_training.IsComplete && resultSceneExists);
                 _primaryLabel.text = resultSceneExists ? "결과 확인" : "다음 구역 제작 예정";
                 _replayAction.SetAvailable(_training.CanReplay);
@@ -460,7 +460,7 @@ namespace KdyLearning
                 _redesignAction.SetAvailable(!_success.IsSignGrabbed);
                 _tablet.SetHint(_success.Hint);
                 if (_ready && _success.HasPassedResult && _success.IsSignGrabbed &&
-                    KdyTransitionController.CanLoad("kdy_scene16") && !IsTransitioning)
+                    UI.SceneTransitionController.CanLoad("kdy_scene16") && !IsTransitioning)
                 {
                     _transition.Load("kdy_scene16");
                 }
@@ -489,7 +489,7 @@ namespace KdyLearning
             }
             string destination = _training.DidPass ? "kdy_scene15" :
                 (_progress.FailureCount >= 3 ? "kdy_scene14" : "kdy_scene13");
-            if (KdyTransitionController.CanLoad(destination))
+            if (UI.SceneTransitionController.CanLoad(destination))
             {
                 _transition.Load(destination);
             }

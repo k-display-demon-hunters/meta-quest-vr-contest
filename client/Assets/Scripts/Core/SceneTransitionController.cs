@@ -8,10 +8,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 
-namespace KdyIntro
+namespace UI
 {
     // Lives on the existing persistent rig, with no static/global instance or project setting changes.
-    public sealed class KdyTransitionController : MonoBehaviour
+    public sealed class SceneTransitionController : MonoBehaviour
     {
         private Image _blackout;
         public bool IsLoading { get; private set; }
@@ -33,7 +33,6 @@ namespace KdyIntro
             _blackout = overlay.GetComponent<Image>();
             _blackout.raycastTarget = false;
             _blackout.color = new Color(0f, 0f, 0f, 0f);
-            SceneManager.sceneLoaded += HandleSceneLoaded;
         }
 
         public static bool CanLoad(string sceneName)
@@ -85,6 +84,10 @@ namespace KdyIntro
             }
             yield return Fade(1f, 0f);
             IsLoading = false;
+            if (operation != null && !sceneName.StartsWith("kdy_scene", StringComparison.Ordinal))
+            {
+                Destroy(gameObject);
+            }
         }
 
         private IEnumerator Fade(float from, float to)
@@ -100,17 +103,5 @@ namespace KdyIntro
             _blackout.color = new Color(0f, 0f, 0f, to);
         }
 
-        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (!scene.name.StartsWith("kdy_scene", StringComparison.Ordinal))
-            {
-                Destroy(gameObject);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            SceneManager.sceneLoaded -= HandleSceneLoaded;
-        }
     }
 }

@@ -3556,7 +3556,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af9c0a7bcea8534c8091d2021d1a6c7c, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::KdyIntro.KdyWraithController
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryWraithController
 --- !u!114 &10002
 MonoBehaviour:
   m_ObjectHideFlags: 0

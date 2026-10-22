@@ -1395,7 +1395,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.018, g: 0.035, b: 0.055, a: 1}
+  m_Color: {r: 0.025, g: 0.065, b: 0.09, a: 0.98}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1491,7 +1491,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "BLOCK SETTINGS"
+  m_Text: "\ube14\ub85d \uc124\uc815"
 --- !u!222 &1402
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1533,7 +1533,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Select a block to edit its settings."
+  m_Text: "\uc124\uc815\uc744 \ubc14\uafc0 \ube14\ub85d\uc744 \uc120\ud0dd\ud558\uc138\uc694."
 --- !u!222 &1602
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1575,7 +1575,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Parameter"
+  m_Text: "\ub9e4\uac1c\ubcc0\uc218"
 --- !u!222 &1702
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1907,7 +1907,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Parameter"
+  m_Text: "\ub9e4\uac1c\ubcc0\uc218"
 --- !u!222 &2402
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2239,7 +2239,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Parameter"
+  m_Text: "\ub9e4\uac1c\ubcc0\uc218"
 --- !u!222 &3102
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2571,7 +2571,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Activation"
+  m_Text: "\ud65c\uc131\ud654 \ud568\uc218"
 --- !u!222 &3802
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2985,7 +2985,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Done"
+  m_Text: "\uc644\ub8cc"
 --- !u!114 &1004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3221,4 +3221,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Delete"
+  m_Text: "\uc0ad\uc81c"

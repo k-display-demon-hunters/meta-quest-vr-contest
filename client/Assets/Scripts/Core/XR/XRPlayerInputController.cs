@@ -45,6 +45,9 @@ namespace XR
         private Pose _handAttachPose;
         private Transform _gazeAttach;
         private bool _followingGaze;
+        private Transform _previousLineOrigin;
+        private bool _previousLineOriginOverride;
+        private float _previousLineBend;
         private bool _bound;
 
         public bool TutorialInputSuppressed
@@ -266,6 +269,15 @@ namespace XR
             _gazeAttach.SetPositionAndRotation(_handAttach.position, _handAttach.rotation);
             _rightRay.attachTransform = _gazeAttach;
             _rightRay.rayOriginTransform = _rig.Camera.transform;
+            if (_lineVisual != null)
+            {
+                _previousLineOrigin = _lineVisual.lineOriginTransform;
+                _previousLineOriginOverride = _lineVisual.overrideInteractorLineOrigin;
+                _previousLineBend = _lineVisual.lineBendRatio;
+                _lineVisual.lineOriginTransform = _handRayOrigin;
+                _lineVisual.overrideInteractorLineOrigin = true;
+                _lineVisual.lineBendRatio = 0f;
+            }
             _followingGaze = true;
         }
 
@@ -283,6 +295,12 @@ namespace XR
             _rightRay.attachTransform = _handAttach;
             _handAttach.SetLocalPositionAndRotation(_handAttachPose.position, _handAttachPose.rotation);
             _rightRay.rayOriginTransform = _handRayOrigin;
+            if (_lineVisual != null)
+            {
+                _lineVisual.lineOriginTransform = _previousLineOrigin;
+                _lineVisual.overrideInteractorLineOrigin = _previousLineOriginOverride;
+                _lineVisual.lineBendRatio = _previousLineBend;
+            }
             _followingGaze = false;
         }
 

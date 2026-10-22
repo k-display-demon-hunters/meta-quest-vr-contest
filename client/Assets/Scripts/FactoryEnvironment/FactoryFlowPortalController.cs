@@ -15,7 +15,7 @@ namespace FactoryEnvironment
             // This sign displays instructions without blocking movement or accepting input.
             Destroy(face.GetComponent<Collider>());
             _material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            _material.color = new Color(0.16f, 0.22f, 0.28f);
+            _material.color = UI.SceneUIStyle.Surface;
             face.GetComponent<Renderer>().sharedMaterial = _material;
             TextMesh label = new GameObject("Instruction").AddComponent<TextMesh>();
             label.transform.SetParent(transform, false);
@@ -25,7 +25,7 @@ namespace FactoryEnvironment
             label.characterSize = 0.01f;
             label.anchor = TextAnchor.MiddleCenter;
             label.alignment = TextAlignment.Center;
-            label.color = Color.white;
+            label.color = UI.SceneUIStyle.Accent;
             label.text = "바닥의 안내선을 따라 이동하세요.";
             label.GetComponent<MeshRenderer>().sharedMaterial = font.material;
         }

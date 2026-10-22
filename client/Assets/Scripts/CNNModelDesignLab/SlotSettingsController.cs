@@ -20,6 +20,8 @@ namespace ModelDesignScene
 
         private MaterialPropertyBlock _properties;
         private int _slotIndex;
+        private bool _hovered;
+        private float _pressedUntil;
 
         public event Action<SlotSettingsController, IXRActivateInteractor> OnSettingsRequested;
 
@@ -30,6 +32,8 @@ namespace ModelDesignScene
         {
             _properties = new MaterialPropertyBlock();
             _interactable.activated.AddListener(HandleActivated);
+            _interactable.hoverEntered.AddListener(HandleHoverEntered);
+            _interactable.hoverExited.AddListener(HandleHoverExited);
         }
 
         public void Initialize(int slotIndex)
@@ -43,16 +47,46 @@ namespace ModelDesignScene
             Block = block;
             bool occupied = block != null;
             _interactable.enabled = occupied;
-            _label.text = $"SLOT {_slotIndex + 1}\n" + (occupied ? "SETTINGS" : "EMPTY");
+            _label.text = $"슬롯 {_slotIndex + 1}\n" + (occupied ? "설정" : "비어 있음");
+            if (!occupied) _hovered = false;
+            RefreshSurface();
+        }
+
+        private void RefreshSurface()
+        {
             _body.GetPropertyBlock(_properties);
-            _properties.SetColor(BaseColor, occupied ? _readyColor : _emptyColor);
+            Color color = Block == null ? _emptyColor : Time.unscaledTime < _pressedUntil ? Color.white
+                : _hovered ? UI.SceneUIStyle.Accent : UI.SceneUIStyle.Button;
+            _properties.SetColor(BaseColor, color);
+            _properties.SetColor("_EmissionColor", Block != null && _hovered ? color * 0.4f : Color.black);
             _body.SetPropertyBlock(_properties);
+        }
+
+        private void HandleHoverEntered(HoverEnterEventArgs args) { _hovered = true; RefreshSurface(); }
+        private void HandleHoverExited(HoverExitEventArgs args) { _hovered = _interactable.isHovered; RefreshSurface(); }
+
+        private void Update()
+        {
+            if (_pressedUntil > 0f && Time.unscaledTime >= _pressedUntil)
+            {
+                _pressedUntil = 0f;
+                RefreshSurface();
+            }
+        }
+
+        private void OnDisable()
+        {
+            _hovered = false;
+            _pressedUntil = 0f;
+            if (_properties != null) RefreshSurface();
         }
 
         private void HandleActivated(ActivateEventArgs args)
         {
             if (isActiveAndEnabled && Block != null)
             {
+                _pressedUntil = Time.unscaledTime + 0.12f;
+                RefreshSurface();
                 OnSettingsRequested?.Invoke(this, args.interactorObject);
             }
         }
@@ -60,6 +94,8 @@ namespace ModelDesignScene
         private void OnDestroy()
         {
             _interactable.activated.RemoveListener(HandleActivated);
+            _interactable.hoverEntered.RemoveListener(HandleHoverEntered);
+            _interactable.hoverExited.RemoveListener(HandleHoverExited);
         }
     }
 }

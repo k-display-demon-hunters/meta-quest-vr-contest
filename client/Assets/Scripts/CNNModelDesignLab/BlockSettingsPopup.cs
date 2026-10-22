@@ -33,6 +33,7 @@ namespace ModelDesignScene
 
         private void Awake()
         {
+            UI.SceneUIStyle.ApplyButtons(transform);
             _isConfigured = HasRequiredReferences();
             if (!_isConfigured)
             {
@@ -108,7 +109,7 @@ namespace ModelDesignScene
                 return;
             }
 
-            _title.text = _layer.Type + " settings";
+            _title.text = _layer.Type + " 설정";
             _deleteButton.interactable = _layer.Type != LayerType.Input && _layer.Type != LayerType.Output;
             int visibleNumberRowCount = 0;
             bool hasActivation = _layer.Type == LayerType.Conv2D || _layer.Type == LayerType.Dense;
@@ -122,30 +123,30 @@ namespace ModelDesignScene
             {
                 case LayerType.Conv2D:
                     visibleNumberRowCount = 3;
-                    _summary.text = "Extract features with convolution filters.";
-                    ShowNumber(0, "Filters", NumberSetting.Filters, _layer.Filters);
-                    ShowNumber(1, "Kernel height", NumberSetting.KernelHeight, _layer.Height);
-                    ShowNumber(2, "Kernel width", NumberSetting.KernelWidth, _layer.Width);
+                    _summary.text = "합성곱 필터로 특징을 추출합니다.";
+                    ShowNumber(0, "필터 수", NumberSetting.Filters, _layer.Filters);
+                    ShowNumber(1, "커널 높이", NumberSetting.KernelHeight, _layer.Height);
+                    ShowNumber(2, "커널 너비", NumberSetting.KernelWidth, _layer.Width);
                     break;
                 case LayerType.MaxPooling2D:
                     visibleNumberRowCount = 2;
-                    _summary.text = "Reduce feature map size with max pooling.";
-                    ShowNumber(0, "Pool height", NumberSetting.PoolHeight, _layer.Height);
-                    ShowNumber(1, "Pool width", NumberSetting.PoolWidth, _layer.Width);
+                    _summary.text = "최댓값 풀링으로 특징 맵의 크기를 줄입니다.";
+                    ShowNumber(0, "풀링 높이", NumberSetting.PoolHeight, _layer.Height);
+                    ShowNumber(1, "풀링 너비", NumberSetting.PoolWidth, _layer.Width);
                     break;
                 case LayerType.Dense:
                     visibleNumberRowCount = 1;
-                    _summary.text = "Combine features with connected neurons.";
-                    ShowNumber(0, "Units", NumberSetting.Units, _layer.Units);
+                    _summary.text = "연결된 뉴런으로 특징을 결합합니다.";
+                    ShowNumber(0, "뉴런 수", NumberSetting.Units, _layer.Units);
                     break;
                 case LayerType.Flatten:
-                    _summary.text = "Convert feature maps to a flat vector.\nNo adjustable settings.";
+                    _summary.text = "특징 맵을 일차원 벡터로 펼칩니다.\n변경할 설정이 없습니다.";
                     break;
                 case LayerType.Input:
-                    _summary.text = "Model input.\nThis block has fixed settings.";
+                    _summary.text = "모델 입력입니다.\n이 블록의 설정은 고정되어 있습니다.";
                     break;
                 case LayerType.Output:
-                    _summary.text = "10 classes / Softmax.\nThis block has fixed settings.";
+                    _summary.text = "10개 클래스 / Softmax.\n이 블록의 설정은 고정되어 있습니다.";
                     break;
             }
 

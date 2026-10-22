@@ -17,6 +17,8 @@ namespace UI
         {
             _detailButton = detailButton;
             _nextButton = nextButton;
+            SceneUIStyle.Apply(_detailButton);
+            SceneUIStyle.Apply(_nextButton);
             _background = new[] { board, filter, detailButton.transform.parent.gameObject };
             RectTransform hint = new GameObject("Interaction hint", typeof(RectTransform)).GetComponent<RectTransform>();
             hint.SetParent(_detailButton.transform.parent, false);

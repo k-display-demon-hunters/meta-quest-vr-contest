@@ -29,6 +29,7 @@ namespace ModelDesignScene
 
         private void Awake()
         {
+            UI.SceneUIStyle.ApplyButtons(transform);
             _workspace = new ModelWorkspace();
         }
 

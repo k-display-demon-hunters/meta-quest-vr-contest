@@ -33,9 +33,15 @@ namespace FactoryEnvironment
         private float _nextCheckTime;
         private TabletManager _tablet;
         private TabletMapData _mapData;
+        private FactoryTutorialController _entranceGuide;
+        private FactoryFlowPortalController _portal;
+        private XR.XRPlayerInputController _guidePlayerInput;
+        private bool _previousForcedRay;
 
         private void OnEnable()
         {
+            if (_guidePlayerInput != null && _entranceGuide != null && !_entranceGuide.IsComplete)
+                _guidePlayerInput.TutorialRayForcedOn = true;
             if (_mapData != null)
             {
                 PublishMap();
@@ -65,13 +71,33 @@ namespace FactoryEnvironment
             portal.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.4f,
                 _entrance.rotation);
             portal.Initialize(_font);
+            _portal = portal;
+            _portal.gameObject.SetActive(false);
+            FactoryRoomSignController signs = gameObject.AddComponent<FactoryRoomSignController>();
+            signs.Initialize(_font);
             SceneManager.SetActiveScene(gameObject.scene);
-            _routeGuide.SetDestination(0);
+            GameObject guideObject = new GameObject("Factory entrance guide");
+            guideObject.transform.SetParent(transform, false);
+            guideObject.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.65f,
+                _entrance.rotation);
+            FactoryTutorialPanelController panel = guideObject.AddComponent<FactoryTutorialPanelController>();
+            panel.Initialize(_font, rig.Camera);
+            _entranceGuide = gameObject.AddComponent<FactoryTutorialController>();
+            _entranceGuide.OnCompleted += HandleEntranceGuideCompleted;
+            _routeGuide.SetDestination(-1);
+            _guidePlayerInput = rig.GetComponent<XR.XRPlayerInputController>();
+            if (_guidePlayerInput != null)
+            {
+                _guidePlayerInput.EnsureRayReady();
+                _previousForcedRay = _guidePlayerInput.TutorialRayForcedOn;
+                _guidePlayerInput.TutorialRayForcedOn = true;
+            }
+            _entranceGuide.BeginGuide(panel);
         }
 
         private void Update()
         {
-            if (_loading || _leaving || Time.time < _nextCheckTime)
+            if (_entranceGuide == null || !_entranceGuide.IsComplete || _loading || _leaving || Time.time < _nextCheckTime)
             {
                 return;
             }
@@ -98,6 +124,13 @@ namespace FactoryEnvironment
             {
                 StartCoroutine(LoadLesson(destination));
             }
+        }
+
+        private void HandleEntranceGuideCompleted()
+        {
+            if (_guidePlayerInput != null) _guidePlayerInput.TutorialRayForcedOn = _previousForcedRay;
+            _portal.gameObject.SetActive(true);
+            _routeGuide.SetDestination(0);
         }
 
         private bool HasValidConfiguration()
@@ -302,6 +335,7 @@ namespace FactoryEnvironment
 
         private void OnDisable()
         {
+            if (_guidePlayerInput != null) _guidePlayerInput.TutorialRayForcedOn = _previousForcedRay;
             if (_tablet != null)
             {
                 _tablet.ClearMapData(_mapData);
@@ -314,6 +348,7 @@ namespace FactoryEnvironment
 
         private void OnDestroy()
         {
+            if (_entranceGuide != null) _entranceGuide.OnCompleted -= HandleEntranceGuideCompleted;
             if (!_leaving && _lesson.IsValid() && _lesson.isLoaded && Application.isPlaying)
             {
                 SceneManager.UnloadSceneAsync(_lesson);

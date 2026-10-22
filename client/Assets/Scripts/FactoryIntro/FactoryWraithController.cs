@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace KdyIntro
+namespace FactoryIntro
 {
-    public sealed class KdyWraithController : MonoBehaviour
+    public sealed class FactoryWraithController : MonoBehaviour
     {
         [SerializeField] private Transform _body;
         [SerializeField] private Transform[] _shards;
@@ -12,6 +12,7 @@ namespace KdyIntro
         private GameObject _corruption;
         private float _started;
         private LineRenderer _attackRay;
+        public bool IsComplete => Time.time - _started >= 8f;
 
         private void Awake()
         {

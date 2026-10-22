@@ -57,15 +57,15 @@ namespace FactoryEnvironment
             }
             if (objectName.StartsWith("Inspection", System.StringComparison.Ordinal))
             {
-                return "합성곱 실습실";
+                return "Pixel Lab";
             }
             if (objectName.StartsWith("Feature", System.StringComparison.Ordinal))
             {
-                return "CNN 실습실";
+                return "Feature Map Lab";
             }
             if (objectName.StartsWith("Assembly", System.StringComparison.Ordinal))
             {
-                return "MLP 실습실";
+                return "Model Design Lab";
             }
             if (objectName.StartsWith("Outbound", System.StringComparison.Ordinal))
             {

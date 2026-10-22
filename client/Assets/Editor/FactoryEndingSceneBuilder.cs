@@ -73,7 +73,7 @@ namespace FactoryScenes.Editor
                 {
                     throw new IOException("Could not save the ending scene: " + ScenePath);
                 }
-                Debug.Log("[FactoryEnding] Created editable ending scene. Factory geometry is a placeholder; existing scenes and build settings were not changed.");
+                Debug.Log("[FactoryEnding] Created editable ending scene. Existing shared factory assets are connected; existing scenes and build settings were not changed.");
             }
             finally
             {
@@ -91,85 +91,37 @@ namespace FactoryScenes.Editor
         private static void BuildFactory(Transform parent, FactoryRestorationController controller,
             Material structure, Material floor, Material metal, Material landscape, Material lights, Material debrisMaterial)
         {
-            Transform factory = Child(parent, "Editable Factory Placeholder");
-            List<Renderer> factorySurfaces = new List<Renderer>();
-            List<Renderer> landscapeSurfaces = new List<Renderer>();
-            List<Transform> rotors = new List<Transform>();
-            List<Light> factoryLights = new List<Light>();
-
-            Cube(factory, "Factory ground", new Vector3(0f, -0.15f, 4f), new Vector3(18f, 0.3f, 20f), floor);
-            Cube(factory, "Rear wall", new Vector3(0f, 2.5f, 10f), new Vector3(15f, 5f, 0.3f), floor);
-            for (int side = -1; side <= 1; side += 2)
+            GameObject hallAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/KdyFactoryHall.prefab");
+            GameObject wraithAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/kdy_scene2/PixelWraith.prefab");
+            if (hallAsset == null || wraithAsset == null) throw new InvalidOperationException("The shared factory and wraith prefabs are required.");
+            Transform set = Child(parent, "Restoring factory set");
+            GameObject hall = (GameObject)PrefabUtility.InstantiatePrefab(hallAsset, set);
+            GameObject spirit = (GameObject)PrefabUtility.InstantiatePrefab(wraithAsset, set);
+            spirit.transform.localPosition = new Vector3(0f, 2.7f, 9f);
+            spirit.GetComponent<FactoryIntro.FactoryWraithController>().enabled = false;
+            List<Renderer> lamps = new List<Renderer>();
+            List<Renderer> windows = new List<Renderer>();
+            for (int index = 0; index < 8; index++)
             {
-                factorySurfaces.Add(Cube(factory, "Factory pillar " + side, new Vector3(side * 6f, 2.3f, 6f),
-                    new Vector3(0.5f, 4.6f, 0.5f), structure));
-                factorySurfaces.Add(Cube(factory, "Restored beam " + side, new Vector3(side * 3.1f, 4.4f, 6f),
-                    new Vector3(6.1f, 0.3f, 0.5f), structure));
-                for (int row = 0; row < 2; row++)
-                {
-                    Transform machine = Child(factory, "Machine " + side + " " + row);
-                    machine.localPosition = new Vector3(side * 3.8f, 0f, 4f + row * 3f);
-                    factorySurfaces.Add(Cube(machine, "Machine housing", new Vector3(0f, 1.1f, 0f),
-                        new Vector3(1.6f, 2.2f, 1.2f), structure));
-                    Cube(machine, "Machine base", new Vector3(0f, 0.15f, 0f), new Vector3(2f, 0.3f, 1.5f), metal);
-                    Transform rotor = Child(machine, "Restoration rotor");
-                    rotor.localPosition = new Vector3(0f, 1.3f, -0.68f);
-                    Cube(rotor, "Rotor horizontal", Vector3.zero, new Vector3(1.1f, 0.13f, 0.1f), metal);
-                    Cube(rotor, "Rotor vertical", Vector3.zero, new Vector3(0.13f, 1.1f, 0.1f), metal);
-                    rotors.Add(rotor);
-                }
-
-                landscapeSurfaces.Add(Cube(factory, "Garden strip " + side, new Vector3(side * 7f, 0.02f, 4f),
-                    new Vector3(1.8f, 0.16f, 14f), landscape));
-                for (int treeIndex = 0; treeIndex < 3; treeIndex++)
-                {
-                    Vector3 treePosition = new Vector3(side * 7f, 0f, treeIndex * 3.5f);
-                    Cube(factory, "Garden trunk", treePosition + Vector3.up * 0.6f, new Vector3(0.2f, 1.2f, 0.2f), metal);
-                    landscapeSurfaces.Add(Cube(factory, "Restored tree", treePosition + Vector3.up * 1.6f,
-                        new Vector3(1.1f, 1.4f, 1.1f), landscape));
-                }
-
-                Light lamp = new GameObject("Restoring lamp " + side, typeof(Light)).GetComponent<Light>();
-                lamp.transform.SetParent(factory, false);
-                lamp.transform.localPosition = new Vector3(side * 3f, 3.2f, 4f);
-                lamp.type = LightType.Point;
-                lamp.range = 7f;
-                lamp.intensity = 1.4f;
-                lamp.color = new Color(0.65f, 0.95f, 1f);
-                lamp.shadows = LightShadows.None;
-                factoryLights.Add(lamp);
+                lamps.Add(Cube(set, "Restored light " + (index + 1),
+                    new Vector3(index % 2 == 0 ? -4.8f : 4.8f, 2.7f, 5.5f + index / 2 * 3f),
+                    new Vector3(0.17f, 0.44f, 0.12f), lights));
             }
-
-            Transform damaged = Child(factory, "Damaged fragments - removed during restoration");
-            for (int index = 0; index < 7; index++)
+            for (int index = 0; index < 3; index++)
             {
-                Renderer fragment = Cube(damaged, "Fragment " + index,
-                    new Vector3(-2.1f + index * 0.7f, 0.35f, 5.5f + (index % 2) * 0.5f),
-                    new Vector3(0.35f, 0.7f, 0.45f), debrisMaterial);
-                fragment.transform.localRotation = Quaternion.Euler(15f * index, 23f * index, 12f * index);
+                windows.Add(Cube(set, "Restored outside view " + (index + 1),
+                    new Vector3((index - 1) * 3.7f, 3.1f, 14f), new Vector3(3.2f, 2.1f, 0.05f), landscape));
             }
-            Transform restored = Child(factory, "Restored factory details");
-            for (int index = 0; index < 9; index++)
-            {
-                Cube(restored, "Restored window " + index, new Vector3(-5.2f + index * 1.3f, 3f, 9.8f),
-                    new Vector3(0.8f, 1.4f, 0.05f), lights);
-            }
-
             Light daylight = new GameObject("Factory daylight", typeof(Light)).GetComponent<Light>();
-            daylight.transform.SetParent(factory, false);
+            daylight.transform.SetParent(set, false);
             daylight.type = LightType.Directional;
             daylight.intensity = 1f;
-            daylight.color = new Color(0.9f, 0.95f, 1f);
-            daylight.shadows = LightShadows.None;
             daylight.transform.localRotation = Quaternion.Euler(45f, -30f, 0f);
-
             SerializedObject fields = new SerializedObject(controller);
-            AssignArray(fields, "_factorySurfaces", factorySurfaces);
-            AssignArray(fields, "_landscapeSurfaces", landscapeSurfaces);
-            AssignArray(fields, "_rotors", rotors);
-            AssignArray(fields, "_factoryLights", factoryLights);
-            Assign(fields, "_debris", damaged.gameObject);
-            Assign(fields, "_restoredDetails", restored.gameObject);
+            Assign(fields, "_factoryRoot", hall.transform);
+            Assign(fields, "_spiritRoot", spirit.transform);
+            AssignArray(fields, "_restoredLights", lamps);
+            AssignArray(fields, "_windowSurfaces", windows);
             fields.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -187,9 +139,9 @@ namespace FactoryScenes.Editor
             panelRoot.GetComponent<CanvasScaler>().dynamicPixelsPerUnit = 4f;
             FactoryEndingPanelController panel = panelRoot.AddComponent<FactoryEndingPanelController>();
 
-            Color ink = new Color(0.14f, 0.2f, 0.25f);
-            Color cyan = new Color(0.08f, 0.45f, 0.51f);
-            Color parchment = new Color(0.95f, 0.89f, 0.72f);
+            Color ink = UI.SceneUIStyle.Muted;
+            Color cyan = UI.SceneUIStyle.Accent;
+            Color parchment = UI.SceneUIStyle.Surface;
             Box(panelRoot.transform, "Title backdrop", new Vector2(0f, 450f), new Vector2(1660f, 245f), new Color(0.04f, 0.09f, 0.14f, 0.96f));
             Text title = Label(panelRoot.transform, font, "Ending title", "축하합니다! 공장에 빛이 돌아왔어요",
                 new Vector2(0f, 510f), new Vector2(1570f, 85f), 50, Color.white);
@@ -212,8 +164,8 @@ namespace FactoryScenes.Editor
             {
                 Vector2 position = new Vector2((index % 3 - 1) * 550f, index < 3 ? 160f : -180f);
                 RectTransform card = Box(cards, "Parchment " + (index + 1), position, new Vector2(520f, 310f), parchment);
-                Box(card, "Upper rolled edge", new Vector2(0f, 145f), new Vector2(538f, 20f), new Color(0.68f, 0.49f, 0.27f));
-                Box(card, "Lower rolled edge", new Vector2(0f, -145f), new Vector2(538f, 20f), new Color(0.68f, 0.49f, 0.27f));
+                Box(card, "Upper rolled edge", new Vector2(0f, 145f), new Vector2(538f, 20f), UI.SceneUIStyle.Button);
+                Box(card, "Lower rolled edge", new Vector2(0f, -145f), new Vector2(538f, 20f), UI.SceneUIStyle.Button);
                 Label(card, font, "Concept title", headings[index], new Vector2(0f, 94f), new Vector2(474f, 65f), 32, cyan);
                 Label(card, font, "Concept summary", summaries[index], new Vector2(0f, -25f), new Vector2(474f, 172f), 27, ink);
             }
@@ -323,6 +275,7 @@ namespace FactoryScenes.Editor
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             Label(rect, font, "Button label", label, Vector2.zero, new Vector2(420f, 90f), 36, Color.white);
+            UI.SceneUIStyle.Apply(button);
             return button;
         }
 

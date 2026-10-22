@@ -214,6 +214,7 @@ namespace UI
                 label.alignment = TextAnchor.MiddleCenter;
                 label.color = Color.black;
                 label.raycastTarget = false;
+                UI.SceneUIStyle.Apply(button);
             }
             SetChannel(0);
             _channelControls.SetActive(false);

@@ -1,4 +1,3 @@
-using System.Collections;
 using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -13,10 +12,17 @@ namespace FactoryIntro
         [SerializeField] private Text _instruction;
         [SerializeField] private Text _continueLabel;
         [SerializeField] private Button _continueButton;
-        [SerializeField] private FactoryWraithController _wraith;
-        [SerializeField] private GameObject _corruption;
-        [SerializeField] private AudioSource _audio;
-        [SerializeField] private AudioClip _alarmClip;
+
+        private CanvasGroup _canvasGroup;
+
+        private void Awake()
+        {
+            _canvasGroup = _canvas.GetComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = _canvas.gameObject.AddComponent<CanvasGroup>();
+            }
+        }
 
         public void BindPlayer(XROrigin rig)
         {
@@ -31,27 +37,21 @@ namespace FactoryIntro
             _continueLabel.text = button;
             _continueButton.gameObject.SetActive(!string.IsNullOrEmpty(button));
             _continueButton.interactable = canContinue;
+            _canvas.enabled = true;
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.blocksRaycasts = true;
+            _canvasGroup.interactable = true;
         }
 
-        public void ResetFactory()
+        public void BeginCinematic()
         {
-            _corruption.SetActive(false);
-            _wraith.gameObject.SetActive(false);
-        }
-
-        public IEnumerator PlayAttack()
-        {
-            if (_alarmClip != null && _audio != null)
-            {
-                _audio.PlayOneShot(_alarmClip);
-            }
-            _canvas.transform.position += Vector3.down * 0.65f;
-            _canvas.transform.localScale *= 0.65f;
-            _wraith.gameObject.SetActive(true);
-            _wraith.BindCorruption(_corruption);
-            _wraith.Restart();
-            while (!_wraith.IsComplete) yield return null;
-            _wraith.gameObject.SetActive(false);
+            // Hide the whole guide immediately, including its invisible raycast targets.
+            _continueButton.interactable = false;
+            _continueButton.gameObject.SetActive(false);
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.interactable = false;
+            _canvasGroup.alpha = 0f;
+            _canvas.enabled = false;
         }
 
         public void ReleasePlayer()
@@ -62,6 +62,9 @@ namespace FactoryIntro
             }
         }
 
-        private void OnDisable() => ReleasePlayer();
+        private void OnDisable()
+        {
+            ReleasePlayer();
+        }
     }
 }

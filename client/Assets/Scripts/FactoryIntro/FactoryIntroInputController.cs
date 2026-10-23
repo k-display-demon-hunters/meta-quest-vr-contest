@@ -35,8 +35,24 @@ namespace FactoryIntro
         private bool _rayWasEnabled;
         private bool _lineVisualWasEnabled;
         private bool _lineWasEnabled;
+        private bool _hasPendingUIVisibility;
+        private bool _uiVisible;
 
         public bool IsBound { get; private set; }
+
+        private void LateUpdate()
+        {
+            if (!IsBound || !_hasPendingUIVisibility)
+            {
+                return;
+            }
+            _hasPendingUIVisibility = false;
+            if (_rightRay != null)
+            {
+                // XRI writes its pointer state back after onClick. Unregister only after that callback has finished.
+                _rightRay.enabled = _uiVisible;
+            }
+        }
 
         public void Bind(XROrigin rig)
         {
@@ -93,8 +109,27 @@ namespace FactoryIntro
             BindUIInput();
         }
 
+        public void SetUIVisible(bool visible)
+        {
+            if (!IsBound)
+            {
+                return;
+            }
+            _uiVisible = visible;
+            _hasPendingUIVisibility = true;
+            if (_lineVisual != null)
+            {
+                _lineVisual.enabled = visible;
+            }
+            if (_line != null)
+            {
+                _line.enabled = visible;
+            }
+        }
+
         public void Release()
         {
+            _hasPendingUIVisibility = false;
             if (!IsBound)
             {
                 return;
@@ -115,20 +150,17 @@ namespace FactoryIntro
                 _playerInput.TutorialInputSuppressed = _inputWasSuppressed;
                 _playerInput.TutorialRayForcedOn = _rayWasForcedOn;
             }
-            else
+            if (_rightRay != null)
             {
-                if (_rightRay != null)
-                {
-                    _rightRay.enabled = _rayWasEnabled;
-                }
-                if (_lineVisual != null)
-                {
-                    _lineVisual.enabled = _lineVisualWasEnabled;
-                }
-                if (_line != null)
-                {
-                    _line.enabled = _lineWasEnabled;
-                }
+                _rightRay.enabled = _rayWasEnabled;
+            }
+            if (_lineVisual != null)
+            {
+                _lineVisual.enabled = _lineVisualWasEnabled;
+            }
+            if (_line != null)
+            {
+                _line.enabled = _lineWasEnabled;
             }
 
             _moveProvider = null;

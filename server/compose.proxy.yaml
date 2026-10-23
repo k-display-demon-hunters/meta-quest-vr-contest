@@ -1,0 +1,17 @@
+# Optional override for a TLS-inspecting cloud/corporate proxy.
+services:
+  server:
+    build:
+      secrets:
+        - ca_cert
+    secrets:
+      - ca_cert
+    environment:
+      SSL_CERT_FILE: /run/secrets/ca_cert
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
+
+secrets:
+  ca_cert:
+    file: ${SSL_CERT_FILE:?Set SSL_CERT_FILE to the trusted proxy CA bundle}

@@ -46,6 +46,7 @@ namespace UI.Editor
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
             board.localPosition = new Vector3(0, 1.65f, 1.8f);
+            board.localScale = Vector3.one * 2f;
             MeshRenderer image = Quad(board, "Low resolution image", Vector3.zero, new Vector2(2.4f, 1.35f), _white);
             Transform selection = new GameObject("Selected source pixels").transform;
             selection.SetParent(board, false);

@@ -37,12 +37,14 @@ namespace FactoryEnding
             _completeButton.onClick.AddListener(HandleComplete);
             _restartButton.onClick.AddListener(HandleRestart);
             _exitButton.onClick.AddListener(HandleExit);
+            UI.SceneUIStyle.ApplyButtons(_canvas.transform);
             PrepareUIInput();
             BindRightHand();
         }
 
         public void ShowRestoration()
         {
+            _canvas.enabled = false;
             _title.text = "공장이 다시 깨어납니다";
             _description.text = "빛이 돌아오고 기계가 제자리를 찾습니다.\n잠시 주변을 둘러보며 복원되는 공장을 확인해 보세요.";
             _message.text = "공장의 불빛이 돌아오고 있습니다.";
@@ -54,6 +56,7 @@ namespace FactoryEnding
 
         public void ShowRecap()
         {
+            _canvas.enabled = true;
             _title.text = "축하합니다! 공장에 빛이 돌아왔어요";
             _description.text = "CNN은 작은 영역의 특징을 찾고, 여러 층을 거쳐 결과를 만듭니다.\n여섯 장의 개념 두루마리로 체험을 돌아보세요.";
             _message.text = "여섯 개 개념을 읽고 체험을 마무리해 보세요.";
@@ -63,7 +66,7 @@ namespace FactoryEnding
 
         public void ShowCompletion()
         {
-            _title.text = "GAME COMPLETE";
+            _title.text = "체험 완료";
             _description.text = "체험이 끝났습니다.\n픽셀에서 특징을 찾고 결과를 만드는 CNN의 흐름을 기억해 주세요.\n공장에 다시 방문하고 싶다면 처음으로 돌아갈 수 있습니다.";
             _message.text = "오른손 레이로 버튼을 가리킨 뒤 Trigger를 누르세요.";
             _recapCards.SetActive(false);

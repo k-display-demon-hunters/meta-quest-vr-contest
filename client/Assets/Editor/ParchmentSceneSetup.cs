@@ -71,7 +71,7 @@ namespace Education.Editor
             {
                 throw new InvalidOperationException("Could not save the learning parchments in FactoryEnvironment.");
             }
-            Debug.Log("[Education] Placed five learning parchments: #1 in Convolution Room, #2–5 in MLP Room.");
+            Debug.Log("[Education] Placed five learning parchments: #1 in Pixel Lab, #2–5 in Model Design Lab.");
         }
 
         private static Sprite LoadParchmentSprite()
@@ -194,7 +194,7 @@ namespace Education.Editor
                 font, new Vector2(0f, 90f), new Vector2(420f, 170f), 54);
             AddText(labelObject.transform, "Department", lesson.Department + " 작성",
                 font, new Vector2(0f, -50f), new Vector2(420f, 65f), 30);
-            AddText(labelObject.transform, "Collection room", lesson.Room,
+            AddText(labelObject.transform, "Collection room", index == 0 ? "Pixel Lab" : "Model Design Lab",
                 font, new Vector2(0f, -120f), new Vector2(420f, 50f), 27);
             AddText(labelObject.transform, "Collect instruction", "오른손 Trigger / Grip · 수집\n3 m 이내에서 선택",
                 font, new Vector2(0f, -225f), new Vector2(470f, 85f), 27);

@@ -41,6 +41,11 @@ namespace XR
 
         private void ConfigureMovement()
         {
+            // Body movement is axis speed multiplied by bodyTranslateMultiplier (0.2 * 25 = 5 m/s).
+            _simulator.translateXSpeed = 0.2f;
+            _simulator.translateYSpeed = 0.2f;
+            _simulator.translateZSpeed = 0.2f;
+            _simulator.bodyTranslateMultiplier = 25f;
             _simulator.translateXInput = Axis("Move X", "a", "d");
             _simulator.translateYInput = Axis("Move Y", "q", "e");
             _simulator.translateZInput = Axis("Move Z", "s", "w");

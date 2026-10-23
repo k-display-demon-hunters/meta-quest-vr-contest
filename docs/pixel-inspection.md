@@ -6,11 +6,11 @@
 
 | 파일·클래스 | 역할과 처리 방식 |
 |---|---|
-| [CNNPixelLabManager.cs](../client/Assets/Scripts/CNNPixelLab/CNNPixelLabManager.cs) | 원본 사진을 표시·계산용 데이터로 만들고 선택·UI Controller와 RGB 화면을 초기화한다. 필터 선택 확정, 픽셀 전환 완료, 상세 보기 요청을 받아 관찰·확대·계산 화면 사이의 전환을 조율한다. 결과 정리까지 끝나면 `ConvolutionCompleted`를 제공하고, 재시작 시 완료 상태와 선택·화면을 함께 초기화한다. |
+| [CNNPixelLabManager.cs](../client/Assets/Scripts/CNNPixelLab/CNNPixelLabManager.cs) | 원본 사진을 표시·계산용 데이터로 만들고 선택·UI Controller와 RGB 화면을 초기화한다. 필터 선택 확정, 픽셀 전환 완료, 상세 보기 요청을 받아 관찰·픽셀 전환·계산 화면 사이의 전환을 조율한다. 결과 정리까지 끝나면 `ConvolutionCompleted`를 제공하고, 재시작 시 완료 상태와 선택·화면을 함께 초기화한다. |
 | [PixelImageFactory.cs](../client/Assets/Scripts/CNNPixelLab/PixelImageFactory.cs) | 원본 Texture2D를 축소하고 평균 블러를 적용해 사진 표시용 이미지를 만든다. 여기서 다시 RGB 픽셀 배열을 샘플링하고, 배열을 Point 필터링 텍스처로 바꿔 렌즈에 표시한다. Manager가 이 결과를 보관하므로 화면에 보이는 선택과 계산에 사용하는 색상 데이터가 같은 원본에서 나온다. |
 | [PixelSelectionController.cs](../client/Assets/Scripts/CNNPixelLab/PixelSelectionController.cs) | 이미지 보드·필터·선택 프레임을 연결받아 필터 위치를 3×3 영역의 원점으로 변환한다. 잡는 중에는 미리보기를 표시하고, 놓은 뒤 이미지와의 거리·방향이 유효하면 격자에 맞춰 선택을 확정한다. Manager에는 선택 유무·배열 좌표·월드 위치와 갱신 여부를 제공한다. |
 | [PixelLabUIController.cs](../client/Assets/Scripts/CNNPixelLab/PixelLabUIController.cs) | 선택 가능 여부와 픽셀 전환 상태를 받아 상세 보기·다음 버튼의 활성 상태와 안내 문구를 바꾼다. 상세 관찰에 들어갈 때 원본 이미지·필터·조작판의 활성 상태를 보관하고 숨긴 뒤, 돌아오면 그 상태대로 복원한다. 실제 선택 좌표나 계산값은 변경하지 않는다. |
-| [PixelRevealStage.cs](../client/Assets/Scripts/CNNPixelLab/PixelRevealStage.cs) | 원본 이미지 확대를 진행한 뒤 이미지 선택을 기다리고, 선택되면 픽셀·숫자를 열별로 드러낸다. 전환 중에는 입력을 제한하고 완료 시 `PixelsRevealed`를 발생시켜 Manager가 합성곱 진입을 허용하게 한다. 완료 후에는 선택한 R/G/B 채널의 표시를 갱신한다. |
+| [PixelRevealStage.cs](../client/Assets/Scripts/CNNPixelLab/PixelRevealStage.cs) | 이미지 크기와 조작판 위치를 유지한 채 이미지 선택을 기다리고, 선택되면 픽셀·숫자를 열별로 드러낸다. 전환 중에는 입력을 제한하고 완료 시 `PixelsRevealed`를 발생시켜 Manager가 합성곱 진입을 허용하게 한다. 완료 후에는 선택한 R/G/B 채널의 표시를 갱신한다. |
 | [RgbConvolutionView.cs](../client/Assets/Scripts/CNNPixelLab/RgbConvolutionView.cs) | 선택 좌표와 전체 픽셀 배열에서 채널별 3×3 정수 입력을 추출하고 고정 가중치를 연결한다. 관찰 모드에서는 공간 RGB 화면을, 계산 모드에서는 `ConvolutionExercise`를 실행한다. 계산 완료 콜백을 받으면 채널 합과 최종 결과를 표시하고 Manager에 체험 완료를 알린다. |
 | [ConvolutionExercise.cs](../client/Assets/Scripts/CNNPixelLab/ConvolutionExercise.cs) | 입력·가중치 배열을 복사해 채널별 정답을 계산하고 코루틴으로 필터 정렬 → R 설명 → G/B 퀴즈 → RGB 합산을 진행한다. 각 구간에서 공간 상호작용이나 다음 버튼을 기다리며, 숫자 블록과 UI 답변을 같은 정답 판정으로 처리한다. 오답은 힌트를 표시하고 재입력을 기다리며 결과 정리 단계에서 완료 콜백을 호출한다. |
 | [SpatialConvolutionController.cs](../client/Assets/Scripts/CNNPixelLab/SpatialConvolutionController.cs) | 입력·가중치 데이터를 받아 공간 표시용 View와 상호작용 객체를 준비한다. 학습 단계의 요청에 따라 RGB 층 배치, 곱·누적 합 애니메이션, 연결선·숫자·강조를 갱신한다. 계산 진행 코드는 이 클래스의 정렬·채널 꺼내기 완료 상태를 기다려 다음 단계로 넘어간다. |
@@ -33,15 +33,15 @@ UI 입력은 `OnEnable()`에서 준비한다. EventSystem이 없으면 씬 하�
 
 ## 선택과 단계 전환
 
-`PixelSelectionController`의 선택값은 32×18 배열 안에서 3×3 영역의 원점을 나타낸다. 필터의 위치·깊이·방향으로 미리보기 유효성을 판단하고, 영역이 이미지 밖으로 나가지 않도록 원점을 제한한다. 레이로 잡은 필터는 이미지 평면과 레이의 교점을 따라 이동한다. 놓기 이벤트는 `_snapPending`을 설정하고 다음 갱신에서 유효한 선택을 확정한다.
+`PixelSelectionController`의 선택값은 32×18 배열 안에서 3×3 영역의 원점을 나타낸다. 필터의 위치·깊이·방향으로 미리보기 유효성을 판단하고, 영역이 이미지 밖으로 나가지 않도록 원점을 제한한다. 필터는 상세 보기의 물체와 같은 공용 XR 잡기를 사용하며 시선 부착점을 따라 이동한다. 별도 레이–이미지 평면 교점 계산으로 이동을 제한하지 않는다. 놓으면 이미지 앞 0.22 로컬 단위 위치로 정렬한다. 놓기 이벤트는 `_snapPending`을 설정하고 다음 갱신에서 유효한 선택을 확정한다.
 
 `PixelRevealStage.Phase`는 다음 순서로 진행한다.
 
 ```text
-Inactive → Enlarging → AwaitingClick → Revealing → Revealed
+Inactive → AwaitingClick → Revealing → Revealed
 ```
 
-확대 완료 후에만 이미지의 `XRSimpleInteractable`과 콜라이더를 활성화한다. 이미지 Activate가 픽셀 전환을 시작하고, 열별 `CanvasGroup` 표시가 끝나면 `PixelsRevealed` 이벤트를 발생시킨다. Manager는 이 이벤트를 받아 필터와 선택을 복원하고 합성곱 진입 버튼을 활성화한다. `IsReadyForConvolution`은 `Revealed` 상태에서만 참이다.
+다음으로를 누르면 이미지의 `XRSimpleInteractable`과 콜라이더를 활성화한다. 보드는 씬 시작부터 원래 크기의 2배(4.8×2.7m)로 고정되며, 다음으로를 눌러도 추가 확대나 조작판 이동은 수행하지 않는다. 이미지 Activate가 픽셀 전환을 시작하고, 열별 `CanvasGroup` 표시가 끝나면 `PixelsRevealed` 이벤트를 발생시킨다. Manager는 이 이벤트를 받아 필터와 선택을 복원하고 합성곱 진입 버튼을 활성화한다. 색 선택은 Trigger, 필터 이동은 Grip으로 안내한다. `IsReadyForConvolution`은 `Revealed` 상태에서만 참이다.
 
 `RgbConvolutionView.Show()`는 선택한 3×3 영역을 위에서 아래 순서로 읽어 `int[3, 9]` 입력 배열을 채운다. 관찰 모드에서는 `SpatialConvolutionController.Observe()`를 통해 영역 꺼내기와 RGB 층 표시를 진행한다. 계산 모드에서는 `ConvolutionExercise.Begin()`으로 입력과 고정 가중치를 전달한다.
 
@@ -69,7 +69,7 @@ Inactive → Enlarging → AwaitingClick → Revealing → Revealed
 
 `Ask()`는 정답과 오답 후보에서 중복을 제거해 선택지 3개를 만들고 순서를 섞는다. 숫자 블록과 UI 버튼은 모두 `Choose()`로 연결된다. 오답은 힌트를 표시하고 같은 문제에서 기다린다. 정답은 입력을 잠그고 다음 진행을 허용한다.
 
-최종 정답 이후 결과 정리 단계까지 진행하면 `RgbConvolutionView.CompleteExercise()`가 `CNNPixelLabManager.MarkConvolutionCompleted()`를 호출한다. 공장 흐름은 이 완료 상태를 읽어 다음 체험을 연다. `ResetLab()`은 완료 상태와 선택·확대·상세 화면을 초기화한다. 이 씬의 출력값을 다음 [특징 맵 씬](cnn-feature-map-explorer.md)의 계산 입력으로 전달하지는 않는다.
+최종 정답 이후 결과 정리 단계까지 진행하면 `RgbConvolutionView.CompleteExercise()`가 `CNNPixelLabManager.MarkConvolutionCompleted()`를 호출한다. 공장 흐름은 이 완료 상태를 읽어 다음 체험을 연다. `ResetLab()`은 완료 상태와 선택·픽셀 전환·상세 화면을 초기화한다. 이 씬의 출력값을 다음 [특징 맵 씬](cnn-feature-map-explorer.md)의 계산 입력으로 전달하지는 않는다.
 
 ## 공간 표시와 상호작용
 
@@ -87,7 +87,7 @@ Inactive → Enlarging → AwaitingClick → Revealing → Revealed
 | 파일·클래스 | 역할 |
 |---|---|
 | [SpatialPixelLabBuilder.cs](../client/Assets/Editor/SpatialPixelLabBuilder.cs) | `Create()`가 대상 씬이 없을 때 원본 이미지·필터·렌즈·UI·공용 리그를 만들고 Manager의 참조와 버튼을 연결한다. 씬을 저장한 뒤 PixelRevealStage 설치와 Build Settings 등록까지 수행해 런타임 초기화에 필요한 구성을 남긴다. 기존 씬은 새로 덮어쓰지 않는다. |
-| [PixelRevealStageBuilder.cs](../client/Assets/Editor/PixelRevealStageBuilder.cs) | 활성 CNNPixelLab에서 이미지 보드·조작판·Manager를 찾아 확대·픽셀 전환 컴포넌트와 다음 버튼을 구성한다. 폰트·UI·보드 참조를 연결하고 버튼이 Manager의 단계 전환을 호출하도록 만들어, 런타임의 확대 완료와 픽셀 전환 이벤트가 씬 흐름에 이어지게 한다. |
+| [PixelRevealStageBuilder.cs](../client/Assets/Editor/PixelRevealStageBuilder.cs) | 활성 CNNPixelLab에서 이미지 보드·조작판·Manager를 찾아 픽셀 전환 컴포넌트와 다음 버튼을 구성한다. 폰트·UI·보드 참조를 연결하고 버튼이 Manager의 단계 전환을 호출하도록 만들어, 런타임의 이미지 선택과 픽셀 전환 이벤트가 씬 흐름에 이어지게 한다. |
 | [CNNMousePreviewMenu.cs](../client/Assets/Editor/CNNMousePreviewMenu.cs) | 메뉴 선택을 현재 프로젝트 경로별 EditorPrefs에 저장하고 Play 중인 Manager에 미리보기 컴포넌트를 추가하거나 제거한다. 카메라·드래그 동작은 `CNNMousePreviewController`가 담당하며 이 클래스는 에디터 설정과 컴포넌트 설치를 연결한다. |
 
 씬의 Manager에는 원본 사진, 이미지 Transform·Renderer, 필터, 렌즈, 선택 프레임, 상세 UI, 버튼과 PixelRevealStage를 연결한다. 초기화에서 `_values[0].font`를 RGB 관찰·학습 UI의 폰트로 사용한다. 원본 이미지는 CPU에서 샘플링하므로 Read/Write가 활성화되어 있어야 한다.

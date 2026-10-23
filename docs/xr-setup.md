@@ -7,7 +7,7 @@
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
 | [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
-| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 입력을 시점 회전·정면 복원·레이 전환으로 바꾸고 Trigger를 uGUI 클릭에 연결한다. 물체를 잡으면 부착점과 레이 원점을 카메라 쪽으로 전환해 시선을 따라 이동시키고, 놓으면 손 기준으로 복원한다. 튜토리얼의 입력 제한도 반영하며 비활성화 시 변경한 레이 설정을 반환한다. |
+| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 입력을 시점 회전·정면 복원·레이 전환으로 바꾸고 Trigger를 uGUI 클릭에 연결한다. 씬 전환이나 `EnsureRayReady()` 호출 시 UI 모듈 등록이 끊겼으면 복원한다. 물체를 잡으면 부착점과 레이 원점을 카메라 쪽으로 전환해 시선을 따라 이동시키고, 놓으면 손 기준으로 복원한다. 이야기 중 입력 제한과 입구 안내의 ray 유지도 반영하며 비활성화 시 변경한 레이 설정을 반환한다. |
 | [XREditorSimulator](../client/Assets/Scripts/Core/XR/XREditorSimulator.cs) | 에디터에서 가상 HMD·컨트롤러를 생성하고 키보드·마우스 액션을 XRI 시뮬레이터에 연결한다. 위치·회전과 버튼·스틱 입력을 가상 XR 기기 상태로 바꾸므로 공용 리그가 실제 컨트롤러와 같은 입력 경로로 읽는다. 컴포넌트의 활성·비활성·파괴에 맞춰 기기와 액션의 수명을 관리한다. |
 
 ### 리그 초기화와 수명
@@ -16,6 +16,7 @@
 2. 유지할 리그는 부모에서 분리하고 `DontDestroyOnLoad`로 등록한다. `XRPlayerInputController`가 없으면 추가한다.
 3. `XRPlayerInputController.Awake()`는 `XROrigin`, Camera Offset, 시작 정면과 입력 액션을 준비한다. `EnsureRayReady()`는 오른손 `XRRayInteractor`와 카메라를 찾아 연결한다.
 4. 새 씬의 리그가 제거되어도 기존 카메라·추적·태블릿 상태는 유지된다. 리그 위치 변경은 각 씬의 진행 코드에서 처리한다.
+5. `sceneLoaded`와 `EnsureRayReady()`는 오른손 ray가 현재 UI 모듈에 등록되어 있는지 확인한다. 이전 씬의 EventSystem이 파괴되어 등록을 잃었으면 다시 연결한다. 공장 안내는 공용 EventSystem을 사용하며 `FactoryTutorial` 언로드 시 이 EventSystem은 유지한다.
 
 `SubsystemRegistration`에서 정적 리그 참조를 초기화하므로 도메인 재로드를 끈 에디터 실행에서도 이전 참조를 재사용하지 않는다.
 
@@ -23,7 +24,7 @@
 
 `XRPlayerRig`는 `XROrigin`, Camera Offset, Main Camera, 양손 추적 오브젝트와 `XRInteractionManager`로 구성된다. `TrackedPoseDriver`가 HMD와 컨트롤러의 위치·회전을 갱신한다. 컨트롤러 레이는 OpenXR의 aim pose를 우선 읽고, 해당 입력이 없으면 device pose로 대체한다. 손에 표시되는 오브젝트는 grip pose를 사용한다.
 
-수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 3m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력·CharacterController 충돌은 사용하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 WASD 가상 기기 이동 속도는 별개이며 기존 설정을 유지한다.
+수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 5m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력·CharacterController 충돌은 사용하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다. 시뮬레이터의 축 이동 속도 0.2에 몸 이동 배율 25을 적용하며, 손 조작 모드의 축 이동 속도는 0.2로 유지한다.
 
 `XRPlayerInputController`는 수평 회전을 리그에, 수직 회전을 Camera Offset에 적용한다. `_turnSpeed`는 회전 속도, `_maximumPitch`는 스틱으로 추가하는 수직 회전의 한계다. `RestoreFrontView()`는 카메라 위치를 유지하며 시작 정면과 초기 Camera Offset 회전을 복원한다.
 
@@ -31,11 +32,13 @@
 
 - `BindRay()`는 오른손 레이에 Trigger 기반 UI 입력을 연결하고, 가까운 대상 우선 처리와 `StateChange` 선택 방식을 설정한다.
 - `XRGrabInteractable`을 잡으면 현재 부착점의 위치·회전을 카메라 자식인 `Gaze Grab Anchor`에 복사한다. 레이 원점도 카메라로 바꿔 잡은 물체가 시선을 따라가게 한다.
-- 해제 시 손 레이와 부착점을 복원한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
+- 계산용 원점과 별도로 선 표시의 원점은 저장한 오른손 위치로 고정하고 잡은 지점을 향해 이어지게 한다. 해제 시 손 레이·부착점과 이전 선 표시 원점·굽힘 설정을 복원한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
 - 레이 비활성화는 선 표시와 인터랙터를 함께 끄므로 현재 선택도 해제된다.
 - `TutorialInputSuppressed`는 공통 시점·레이 전환·종료 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 사용 흐름은 [오프닝·엔딩 구현](factory-intro-ending.md)에 있다.
 
 `OnDisable()`은 입력 액션과 선택 이벤트를 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction과 시선 부착점을 해제한다.
+
+안내 버튼 입력 누락은 정적 검토에서 persistent ray가 파괴된 이전 씬의 UI 모듈을 참조하는 경로로 진단했다. 등록 복원 코드는 반영했으나 사용자 지시에 따라 Unity 실행·테스트·빌드·컴파일 없이 소스만 검토했으므로 실제 컨트롤러에서의 복구 여부는 실행 확인 전이다.
 
 ## 태블릿 파일과 역할
 

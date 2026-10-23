@@ -45,7 +45,7 @@ namespace UI
                     () => Choose(option));
             }
             _next = MakeButton(transform, "다음", 900, -300, 420, () => _advance = true);
-            Image side = Box(transform, "Side explanation", 900, 20, 480, 770, new Color(0.1f, 0.12f, 0.15f));
+            Image side = Box(transform, "Side explanation", 900, 20, 480, 770, UI.SceneUIStyle.Surface);
             Label(side.transform, "Heading", "계산 원리", 0, 325, 440, 50, 30);
             _guide = Label(side.transform, "Guide", "", 0, 100, 420, 350, 23);
             _feedback.transform.SetAsLastSibling();
@@ -317,6 +317,7 @@ namespace UI
             Button button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image; button.onClick.AddListener(action);
             Label(image.transform, "Label", label, 0, 0, width, 58, 26).color = Color.black;
+            UI.SceneUIStyle.Apply(button);
             return button;
         }
     }

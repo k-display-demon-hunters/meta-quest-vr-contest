@@ -58,6 +58,7 @@ namespace CNNFeatureMaps
             }
             CreateSizeButton("확대", CNNFeatureMapAction.Enlarge, 6);
             CreateSizeButton("축소", CNNFeatureMapAction.Shrink, 7);
+            _help.color = UI.SceneUIStyle.Muted;
             SetText(_help, _help.text, 2.8f, .08f);
             SetText(_padding, _padding.text, .68f, .07f);
             SetText(_inputCaption, _inputCaption.text, .65f, .06f);

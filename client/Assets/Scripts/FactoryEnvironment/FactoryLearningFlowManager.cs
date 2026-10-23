@@ -1,5 +1,6 @@
 using System.Collections;
 using CNNFeatureMaps;
+using FactoryTutorial;
 using ModelDesignScene;
 using Tablet;
 using UI;
@@ -13,6 +14,8 @@ namespace FactoryEnvironment
     // Owns this factory session; calculations and interaction stay in the lesson scenes.
     public sealed class FactoryLearningFlowManager : MonoBehaviour
     {
+        private const string TutorialSceneName = "FactoryTutorial";
+
         [SerializeField] private Transform[] _contentAnchors;
         [SerializeField] private Font _font;
         [SerializeField] private Transform _entrance;
@@ -33,6 +36,12 @@ namespace FactoryEnvironment
         private float _nextCheckTime;
         private TabletManager _tablet;
         private TabletMapData _mapData;
+        private Scene _tutorialScene;
+        private bool _tutorialComplete;
+        private FactoryFlowPortalController _portal;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private int _skippedStage = -1;
+#endif
 
         private void OnEnable()
         {
@@ -59,19 +68,91 @@ namespace FactoryEnvironment
             }
             _routeGuide.Bind(rig.Camera.transform);
             PublishMap();
-            FactoryFlowPortalController portal = new GameObject("Factory route instruction")
-                .AddComponent<FactoryFlowPortalController>();
-            portal.transform.SetParent(transform, false);
-            portal.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.4f,
-                _entrance.rotation);
-            portal.Initialize(_font);
+            CreateRouteInstruction();
+            FactoryRoomSignController signs = gameObject.AddComponent<FactoryRoomSignController>();
+            signs.Initialize(_font);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            FactoryDebugController debugController = gameObject.AddComponent<FactoryDebugController>();
+            debugController.Initialize(this, _font);
+#endif
             SceneManager.SetActiveScene(gameObject.scene);
+            // Keep the UI input module in the factory scene when the guide scene is unloaded.
+            rig.GetComponent<XR.XRPlayerInputController>()?.EnsureRayReady();
+            StartCoroutine(LoadEntranceGuide(rig));
+        }
+
+        private void CreateRouteInstruction()
+        {
+            _portal = new GameObject("Factory route instruction")
+                .AddComponent<FactoryFlowPortalController>();
+            _portal.transform.SetParent(transform, false);
+            _portal.transform.SetPositionAndRotation(_entrance.position + _entrance.forward * 3f + Vector3.up * 1.4f,
+                _entrance.rotation);
+            _portal.Initialize(_font);
+            _portal.gameObject.SetActive(false);
+        }
+
+        private IEnumerator LoadEntranceGuide(XROrigin rig)
+        {
+            if (!Application.CanStreamedLevelBeLoaded(TutorialSceneName)
+                || SceneManager.GetSceneByName(TutorialSceneName).isLoaded)
+            {
+                Debug.LogError("[FactoryFlow] FactoryTutorial 씬의 빌드 등록과 중복 로드 여부를 확인해 주세요.", this);
+                enabled = false;
+                yield break;
+            }
+            AsyncOperation loading = null;
+            try
+            {
+                loading = SceneManager.LoadSceneAsync(TutorialSceneName, LoadSceneMode.Additive);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+            if (loading == null)
+            {
+                Debug.LogError("[FactoryFlow] 공장 입구 안내 씬을 열지 못했습니다.", this);
+                enabled = false;
+                yield break;
+            }
+            yield return loading;
+            _tutorialScene = SceneManager.GetSceneByName(TutorialSceneName);
+            FactoryTutorialManager tutorial = null;
+            foreach (GameObject root in _tutorialScene.GetRootGameObjects())
+            {
+                tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
+                if (tutorial != null)
+                {
+                    break;
+                }
+            }
+            if (tutorial == null || !tutorial.Initialize(rig, _entrance))
+            {
+                Debug.LogError("[FactoryFlow] FactoryTutorial의 Manager·안내 패널 연결을 확인해 주세요.", this);
+                yield return SceneManager.UnloadSceneAsync(_tutorialScene);
+                enabled = false;
+                yield break;
+            }
+            while (tutorial != null && !tutorial.IsComplete)
+            {
+                yield return null;
+            }
+            if (tutorial == null)
+            {
+                Debug.LogError("[FactoryFlow] 완료 전에 공장 입구 안내가 제거되었습니다.", this);
+                enabled = false;
+                yield break;
+            }
+            yield return SceneManager.UnloadSceneAsync(_tutorialScene);
+            _tutorialComplete = true;
+            _portal.gameObject.SetActive(true);
             _routeGuide.SetDestination(0);
         }
 
         private void Update()
         {
-            if (_loading || _leaving || Time.time < _nextCheckTime)
+            if (!_tutorialComplete || _loading || _leaving || Time.time < _nextCheckTime)
             {
                 return;
             }
@@ -131,11 +212,32 @@ namespace FactoryEnvironment
             {
                 return 0;
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_skippedStage == _stage)
+            {
+                return _stage + 1;
+            }
+#endif
             bool completed = _stage == 0 ? _pixels != null && _pixels.ConvolutionCompleted
                 : _stage == 1 ? _maps != null && _maps.ReadyForModelDesign
                 : _model != null && _model.ReadyForFactoryExit;
             return completed ? _stage + 1 : _stage;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public bool TrySkipCurrentLesson()
+        {
+            if (!isActiveAndEnabled || !_tutorialComplete || _loading || _leaving
+                || _stage < 0 || _stage >= _scenes.Length)
+            {
+                return false;
+            }
+            _skippedStage = _stage;
+            _nextCheckTime = 0f;
+            Debug.Log($"[FactoryFlow] 개발자 건너뛰기: {_scenes[_stage]} 완료 조건 우회. 다음 방 또는 출구로 이동하세요.", this);
+            return true;
+        }
+#endif
 
         private bool HasSelection()
         {
@@ -221,6 +323,9 @@ namespace FactoryEnvironment
             _maps = content.GetComponentInChildren<CNNFeatureMapGuide>(true);
             _model = content.GetComponentInChildren<CNNModelDesignLabManager>(true);
             _stage = index;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _skippedStage = -1;
+#endif
             SceneManager.SetActiveScene(gameObject.scene);
             _loading = false;
         }
@@ -314,6 +419,10 @@ namespace FactoryEnvironment
 
         private void OnDestroy()
         {
+            if (!_leaving && _tutorialScene.IsValid() && _tutorialScene.isLoaded && Application.isPlaying)
+            {
+                SceneManager.UnloadSceneAsync(_tutorialScene);
+            }
             if (!_leaving && _lesson.IsValid() && _lesson.isLoaded && Application.isPlaying)
             {
                 SceneManager.UnloadSceneAsync(_lesson);

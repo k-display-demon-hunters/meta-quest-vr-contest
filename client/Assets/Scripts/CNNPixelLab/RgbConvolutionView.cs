@@ -179,6 +179,7 @@ namespace UI
             button.targetGraphic = image;
             button.onClick.AddListener(action);
             Label(image.transform, "Label", label, 0, 0, width, 54, 25).color = Color.black;
+            UI.SceneUIStyle.Apply(button);
             return button;
         }
     }

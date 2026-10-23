@@ -1,6 +1,7 @@
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -45,6 +46,9 @@ namespace XR
         private Pose _handAttachPose;
         private Transform _gazeAttach;
         private bool _followingGaze;
+        private Transform _previousLineOrigin;
+        private bool _previousLineOriginOverride;
+        private float _previousLineBend;
         private bool _bound;
 
         public bool TutorialInputSuppressed
@@ -100,6 +104,7 @@ namespace XR
 
         private void OnEnable()
         {
+            SceneManager.sceneLoaded += HandleSceneLoaded;
             _look.Enable();
             _recenter.Enable();
             _laser.Enable();
@@ -119,6 +124,7 @@ namespace XR
         {
             if (_bound)
             {
+                RestoreUIRegistration();
                 return;
             }
             foreach (XRRayInteractor ray in GetComponentsInChildren<XRRayInteractor>(true))
@@ -212,6 +218,25 @@ namespace XR
             _rightRay.selectExited.AddListener(HandleReleased);
             _bound = true;
             SetLaserEnabled(_tutorialRayForcedOn || _laserEnabled);
+            RestoreUIRegistration();
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            RestoreUIRegistration();
+        }
+
+        private void RestoreUIRegistration()
+        {
+            if (!_bound || _rightRay == null || !_rightRay.isActiveAndEnabled ||
+                !_rightRay.enableUIInteraction || _rightRay.TryGetUIModel(out _))
+            {
+                return;
+            }
+            // The rig survives scene loads, but the EventSystem it registered with may belong to the old scene.
+            // Reconnect UI without disabling the interactor or cancelling its held selection.
+            _rightRay.enableUIInteraction = false;
+            _rightRay.enableUIInteraction = true;
         }
 
         private void RotateView(Vector2 stick)
@@ -266,6 +291,15 @@ namespace XR
             _gazeAttach.SetPositionAndRotation(_handAttach.position, _handAttach.rotation);
             _rightRay.attachTransform = _gazeAttach;
             _rightRay.rayOriginTransform = _rig.Camera.transform;
+            if (_lineVisual != null)
+            {
+                _previousLineOrigin = _lineVisual.lineOriginTransform;
+                _previousLineOriginOverride = _lineVisual.overrideInteractorLineOrigin;
+                _previousLineBend = _lineVisual.lineBendRatio;
+                _lineVisual.lineOriginTransform = _handRayOrigin;
+                _lineVisual.overrideInteractorLineOrigin = true;
+                _lineVisual.lineBendRatio = 0f;
+            }
             _followingGaze = true;
         }
 
@@ -283,11 +317,18 @@ namespace XR
             _rightRay.attachTransform = _handAttach;
             _handAttach.SetLocalPositionAndRotation(_handAttachPose.position, _handAttachPose.rotation);
             _rightRay.rayOriginTransform = _handRayOrigin;
+            if (_lineVisual != null)
+            {
+                _lineVisual.lineOriginTransform = _previousLineOrigin;
+                _lineVisual.overrideInteractorLineOrigin = _previousLineOriginOverride;
+                _lineVisual.lineBendRatio = _previousLineBend;
+            }
             _followingGaze = false;
         }
 
         private void OnDisable()
         {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
             _look?.Disable();
             _recenter?.Disable();
             _laser?.Disable();

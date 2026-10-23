@@ -186,7 +186,7 @@ namespace XR.Editor
             }
             ContinuousMoveProvider movement = rig.AddComponent<ContinuousMoveProvider>();
             movement.mediator = mediator;
-            movement.moveSpeed = 3f;
+            movement.moveSpeed = 5f;
             movement.enableStrafe = true;
             movement.enableFly = false;
             // XRI still has a legacy gravity fallback when no GravityProvider exists.

@@ -1,0 +1,6 @@
+{
+    "name": "CNNTraining.Tests",
+    "references": ["CNNTraining"],
+    "includePlatforms": ["Editor"],
+    "optionalUnityReferences": ["TestAssemblies"]
+}

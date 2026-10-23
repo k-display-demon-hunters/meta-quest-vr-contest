@@ -33,9 +33,6 @@ namespace ModelDesignScene
             _trainingStopButton.interactable = canCancel;
             switch (state)
             {
-                case ModelExecutionState.Connecting:
-                    _trainingStatus.text = "서버 연결 중";
-                    break;
                 case ModelExecutionState.StartingTraining:
                     _trainingStatus.text = "학습 준비 중";
                     break;

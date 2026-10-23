@@ -1,5 +1,6 @@
 using System;
 using ModelDesign;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -159,7 +160,7 @@ namespace ModelDesignScene
         private void ShowNumber(int index, string label, NumberSetting setting, int value)
         {
             _numberSettings[index] = setting;
-            _numberRows[index].Show(label, value);
+            _numberRows[index].Show(label, value, GetMaximum(setting));
         }
 
         private void AdjustNumber(int index, int direction)
@@ -172,34 +173,44 @@ namespace ModelDesignScene
             switch (_numberSettings[index])
             {
                 case NumberSetting.Filters:
-                    _layer.SetFilters(StepPositiveNumber(_layer.Filters, direction));
+                    _layer.SetFilters(StepPositiveNumber(_layer.Filters, direction, ModelExecutionDefinition.MaxFilters));
                     break;
                 case NumberSetting.KernelHeight:
-                    _layer.SetKernelSize(StepPositiveNumber(_layer.Height, direction), _layer.Width);
+                    _layer.SetKernelSize(StepPositiveNumber(_layer.Height, direction, 28), _layer.Width);
                     break;
                 case NumberSetting.KernelWidth:
-                    _layer.SetKernelSize(_layer.Height, StepPositiveNumber(_layer.Width, direction));
+                    _layer.SetKernelSize(_layer.Height, StepPositiveNumber(_layer.Width, direction, 28));
                     break;
                 case NumberSetting.PoolHeight:
-                    _layer.SetPoolSize(StepPositiveNumber(_layer.Height, direction), _layer.Width);
+                    _layer.SetPoolSize(StepPositiveNumber(_layer.Height, direction, 28), _layer.Width);
                     break;
                 case NumberSetting.PoolWidth:
-                    _layer.SetPoolSize(_layer.Height, StepPositiveNumber(_layer.Width, direction));
+                    _layer.SetPoolSize(_layer.Height, StepPositiveNumber(_layer.Width, direction, 28));
                     break;
                 case NumberSetting.Units:
-                    _layer.SetUnits(StepPositiveNumber(_layer.Units, direction));
+                    _layer.SetUnits(StepPositiveNumber(_layer.Units, direction, ModelExecutionDefinition.MaxDenseUnits));
                     break;
             }
         }
 
-        private static int StepPositiveNumber(int value, int direction)
+        private static int GetMaximum(NumberSetting setting)
+        {
+            switch (setting)
+            {
+                case NumberSetting.Filters: return ModelExecutionDefinition.MaxFilters;
+                case NumberSetting.Units: return ModelExecutionDefinition.MaxDenseUnits;
+                default: return 28;
+            }
+        }
+
+        private static int StepPositiveNumber(int value, int direction, int maximum)
         {
             if (direction < 0)
             {
                 return value > 1 ? value - 1 : 1;
             }
 
-            return value < int.MaxValue ? value + 1 : int.MaxValue;
+            return value < maximum ? value + 1 : maximum;
         }
 
         private void ChangeActivation(int direction)
@@ -303,12 +314,12 @@ namespace ModelDesignScene
                 _increase.onClick.RemoveListener(_onIncrease);
             }
 
-            public void Show(string label, int value)
+            public void Show(string label, int value, int maximum)
             {
                 _label.text = label;
                 _value.text = value.ToString();
                 _decrease.interactable = value > 1;
-                _increase.interactable = value < int.MaxValue;
+                _increase.interactable = value < maximum;
                 _root.SetActive(true);
             }
 

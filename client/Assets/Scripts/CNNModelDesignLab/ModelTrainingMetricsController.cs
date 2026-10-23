@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,7 +46,7 @@ namespace ModelDesignScene
         {
             _accuracyGraph.Clear();
             _lossGraph.Clear();
-            _epochText.text = "에포크 — / — · 서버의 진행 정보를 기다리는 중";
+            _epochText.text = "에포크 — / — · 학습 준비 중";
             SetBarWidth(_epochBar, 0);
             _trainingMetrics.text = "학습  정확도 —   손실 —";
             _validationMetrics.text = "검증  정확도 —   손실 —";
@@ -70,7 +70,7 @@ namespace ModelDesignScene
             {
                 return;
             }
-            // The server sends the final epoch only in training_completed, including one-epoch runs.
+            // Completion includes the last epoch and the held-out test evaluation.
             ShowEpoch(result.Epoch, result.Epoch, result.Logs);
             _evaluationMetrics.text = "최종 테스트  정확도 " + FormatMetric(result.Evaluation, "accuracy", true)
                 + "   손실 " + FormatMetric(result.Evaluation, "loss", false);

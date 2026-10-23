@@ -1,12 +1,117 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using CNNTraining;
 using NUnit.Framework;
 
 namespace ModelDesign.Tests
 {
     public sealed class ModelDesignTests
     {
+        [Test]
+        public void LocalCnnBuildFollowsInputDirectionAndExcludesDetachedBlocks()
+        {
+            using (ModelWorkspace workspace = new ModelWorkspace())
+            {
+                LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 5, ActivationType.Tanh);
+                LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
+                LayerDefinition flatten = LayerDefinition.Flatten();
+                LayerDefinition dense = LayerDefinition.Dense(12, ActivationType.Sigmoid);
+                foreach (LayerDefinition layer in new[] { conv, pool, flatten, dense })
+                {
+                    workspace.AddLayer(layer);
+                }
+                // Physical chains may be stored backwards; execution must always start at Input.
+                workspace.Connect(workspace.Output, dense);
+                workspace.Connect(dense, flatten);
+                workspace.Connect(flatten, pool);
+                workspace.Connect(pool, conv);
+                workspace.Connect(conv, workspace.Input);
+                workspace.AddLayer(LayerDefinition.Conv2D(999, 99, 99, ActivationType.Linear));
+
+                Assert.AreSame(workspace.Output, workspace.InputModel.Layers[0]);
+                Assert.IsEmpty(ModelValidator.ValidateForExecution(workspace));
+                ModelExecutionDefinition definition = ModelExecutionDefinitionBuilder.Build(workspace);
+                Assert.AreEqual(28 * 28, definition.InputSize);
+                Assert.AreEqual(1, definition.Channels);
+                Assert.AreEqual(5, definition.Layers.Count);
+                Assert.AreEqual(LayerKind.Conv2D, definition.Layers[0].Kind);
+                Assert.AreEqual(4, definition.Layers[0].Units);
+                Assert.AreEqual(3, definition.Layers[0].Height);
+                Assert.AreEqual(5, definition.Layers[0].Width);
+                Assert.AreEqual(CnnActivation.Tanh, definition.Layers[0].Activation);
+                Assert.AreEqual(LayerKind.MaxPooling2D, definition.Layers[1].Kind);
+                Assert.AreEqual(LayerKind.Flatten, definition.Layers[2].Kind);
+                Assert.AreEqual(12, definition.Layers[3].Units);
+                Assert.AreEqual(CnnActivation.Sigmoid, definition.Layers[3].Activation);
+                Assert.AreEqual(LayerKind.Dense, definition.Layers[4].Kind);
+                Assert.AreEqual(10, definition.Layers[4].Units);
+                Assert.AreEqual(CnnActivation.Softmax, definition.Layers[4].Activation);
+            }
+        }
+
+        [Test]
+        public void LocalCnnExecutionRejectsInvalidLayoutsAndResourceLimits()
+        {
+            LayerDefinition[][] invalidLayouts =
+            {
+                new[] { LayerDefinition.Dense(12, ActivationType.ReLU) },
+                new[] { LayerDefinition.MaxPooling2D(2, 2), LayerDefinition.Flatten() },
+                new[] { LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU) },
+                new[] { LayerDefinition.Conv2D(4, 29, 3, ActivationType.ReLU), LayerDefinition.Flatten() }
+            };
+            foreach (LayerDefinition[] layout in invalidLayouts)
+            {
+                using (ModelWorkspace workspace = CreateChain(layout))
+                {
+                    Assert.IsFalse(ModelExecutionDefinitionBuilder.TryBuild(workspace, null,
+                        out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues));
+                    Assert.IsNull(definition);
+                    Assert.IsNotEmpty(issues);
+                    Assert.Throws<InvalidOperationException>(() => ModelExecutionDefinitionBuilder.Build(workspace));
+                }
+            }
+            LayerDefinition flatten = LayerDefinition.Flatten();
+            using (ModelWorkspace workspace = CreateChain(
+                LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU), flatten))
+            {
+                Assert.IsEmpty(ModelValidator.ValidateForExecution(workspace));
+                Assert.IsNotEmpty(ModelValidator.ValidateForExecution(workspace,
+                    new CnnTrainingOptions(maxParameters: 100)));
+                workspace.Disconnect(flatten, workspace.Output);
+                Assert.IsNotEmpty(ModelValidator.ValidateForExecution(workspace));
+            }
+        }
+
+        [Test]
+        public void LocalCnnSnapshotSurvivesEditsAndMatchesOnlyConnectedConfiguration()
+        {
+            LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
+            using (ModelWorkspace workspace = CreateChain(conv, LayerDefinition.Flatten()))
+            {
+                ModelExecutionDefinition submitted = ModelExecutionDefinitionBuilder.Build(workspace);
+                workspace.AddLayer(LayerDefinition.Dense(20, ActivationType.Linear));
+                Assert.IsTrue(ModelExecutionDefinitionBuilder.Matches(submitted,
+                    ModelExecutionDefinitionBuilder.Build(workspace)));
+
+                conv.SetFilters(8);
+                ModelExecutionDefinition edited = ModelExecutionDefinitionBuilder.Build(workspace);
+                Assert.AreEqual(4, submitted.Layers[0].Units);
+                Assert.AreEqual(8, edited.Layers[0].Units);
+                Assert.IsFalse(ModelExecutionDefinitionBuilder.Matches(submitted, edited));
+                Assert.IsFalse(ModelExecutionDefinitionBuilder.Matches(submitted, null));
+                Assert.Throws<NotSupportedException>(() =>
+                    ((IList<CnnLayerDefinition>)submitted.Layers).Clear());
+
+                conv.SetFilters(4);
+                Assert.IsTrue(ModelExecutionDefinitionBuilder.Matches(submitted,
+                    ModelExecutionDefinitionBuilder.Build(workspace)));
+                workspace.Dispose();
+                conv.SetKernelSize(5, 5);
+                Assert.AreEqual(3, submitted.Layers[0].Height);
+                Assert.AreEqual(3, submitted.Layers[0].Width);
+            }
+        }
+
         private static ModelWorkspace CreateChain(params LayerDefinition[] layers)
         {
             ModelWorkspace workspace = new ModelWorkspace();
@@ -35,108 +140,6 @@ namespace ModelDesign.Tests
             }
             Assert.IsTrue(seen.Contains(workspace.Input));
             Assert.IsTrue(seen.Contains(workspace.Output));
-        }
-
-        [Test]
-        public void WorkspaceStartsWithTwoFixedDetachedBlocks()
-        {
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                Assert.AreEqual(2, workspace.Models.Count);
-                Assert.AreEqual(LayerType.Input, workspace.Input.Type);
-                Assert.AreEqual(LayerType.Output, workspace.Output.Type);
-                Assert.AreEqual(10, workspace.Output.Units);
-                Assert.AreEqual(ActivationType.Softmax, workspace.Output.Activation);
-                Assert.IsEmpty(workspace.ValidationIssues);
-                Assert.IsFalse(ModelJsonSerializer.TrySerialize(workspace, out string json,
-                    out IReadOnlyList<ValidationIssue> issues));
-                Assert.IsNull(json);
-                Assert.IsNotEmpty(issues);
-                AssertOwnership(workspace);
-            }
-        }
-
-        [Test]
-        public void MlpSerializesInputAndOutputIntoExistingSchema()
-        {
-            using (ModelWorkspace workspace = CreateChain(LayerDefinition.Dense(32, ActivationType.ReLU)))
-            {
-                Assert.AreEqual("{\"modelType\":\"mlp\",\"input\":{\"shape\":[28,28,1]},\"layers\":[" +
-                    "{\"type\":\"dense\",\"units\":32,\"activation\":\"relu\"}," +
-                    "{\"type\":\"dense\",\"units\":10,\"activation\":\"softmax\"}]}", ModelJsonSerializer.Serialize(workspace));
-                AssertOwnership(workspace);
-            }
-        }
-
-        [Test]
-        public void CnnPreservesSizesAndIncludesFlatten()
-        {
-            using (ModelWorkspace workspace = CreateChain(
-                LayerDefinition.Conv2D(8, 3, 5, ActivationType.Tanh),
-                LayerDefinition.MaxPooling2D(2, 3), LayerDefinition.Flatten()))
-            {
-                Assert.AreEqual("{\"modelType\":\"cnn\",\"input\":{\"shape\":[28,28,1]},\"layers\":[" +
-                    "{\"type\":\"conv2d\",\"filters\":8,\"kernelSize\":[3,5],\"activation\":\"tanh\"}," +
-                    "{\"type\":\"max_pooling2d\",\"poolSize\":[2,3]},{\"type\":\"flatten\"}," +
-                    "{\"type\":\"dense\",\"units\":10,\"activation\":\"softmax\"}]}", ModelJsonSerializer.Serialize(workspace));
-            }
-        }
-
-        [Test]
-        public void InputConnectedDirectlyToOutputIsAValidMlp()
-        {
-            using (ModelWorkspace workspace = CreateChain())
-            {
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-                StringAssert.DoesNotContain("flatten", ModelJsonSerializer.Serialize(workspace));
-            }
-        }
-
-        [Test]
-        public void DetachedInvalidChainDoesNotAffectTransmissionOrModelType()
-        {
-            using (ModelWorkspace workspace = CreateChain(LayerDefinition.Dense(32, ActivationType.ReLU)))
-            {
-                LayerDefinition dense = LayerDefinition.Dense(4, ActivationType.Tanh);
-                LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
-                workspace.AddLayer(dense);
-                workspace.AddLayer(conv);
-                workspace.Connect(dense, conv);
-                Assert.IsNotEmpty(workspace.ValidationIssues);
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-                string json = ModelJsonSerializer.Serialize(workspace);
-                StringAssert.Contains("\"modelType\":\"mlp\"", json);
-                StringAssert.DoesNotContain("conv2d", json);
-            }
-        }
-
-        [Test]
-        public void DisconnectReconnectAndDeleteSplitChainsWithoutLosingBlocks()
-        {
-            LayerDefinition a = LayerDefinition.Dense(8, ActivationType.ReLU);
-            LayerDefinition b = LayerDefinition.Dense(4, ActivationType.Tanh);
-            using (ModelWorkspace workspace = CreateChain(a, b))
-            {
-                ModelDefinition oldChain = workspace.InputModel;
-                workspace.Disconnect(a, b);
-                Assert.AreEqual(2, workspace.Models.Count);
-                Assert.AreEqual(2, workspace.InputModel.Layers.Count);
-                Assert.AreEqual(2, workspace.GetModel(b).Layers.Count);
-                Assert.IsEmpty(workspace.ValidationIssues);
-                Assert.IsNotEmpty(ModelValidator.ValidateForTransmission(workspace));
-                Assert.AreEqual(4, oldChain.Layers.Count);
-                AssertOwnership(workspace);
-                workspace.Connect(a, b);
-                Assert.AreEqual(1, workspace.Models.Count);
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-                workspace.RemoveLayer(a);
-                Assert.AreEqual(2, workspace.Models.Count);
-                Assert.AreEqual(1, workspace.InputModel.Layers.Count);
-                Assert.Throws<ArgumentException>(() => workspace.GetModel(a));
-                AssertOwnership(workspace);
-                workspace.Connect(workspace.Input, b);
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-            }
         }
 
         [Test]
@@ -237,56 +240,6 @@ namespace ModelDesign.Tests
         }
 
         [Test]
-        public void ReversedInputOutputChainSerializesInInputDirection()
-        {
-            LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-            LayerDefinition flatten = LayerDefinition.Flatten();
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                workspace.AddAndConnect(workspace.Output, flatten);
-                workspace.AddAndConnect(flatten, conv);
-                workspace.Connect(conv, workspace.Input);
-                Assert.AreSame(workspace.Output, workspace.InputModel.Layers[0]);
-                Assert.AreSame(workspace.Input, workspace.InputModel.Layers[3]);
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-                string json = ModelJsonSerializer.Serialize(workspace);
-                Assert.Less(json.IndexOf("conv2d", StringComparison.Ordinal),
-                    json.IndexOf("flatten", StringComparison.Ordinal));
-                workspace.Disconnect(workspace.Input, conv);
-                workspace.Connect(workspace.Input, conv);
-                Assert.IsEmpty(ModelValidator.ValidateForTransmission(workspace));
-                AssertOwnership(workspace);
-            }
-        }
-
-        [TestCase(false, false, false)]
-        [TestCase(false, false, true)]
-        [TestCase(false, true, false)]
-        [TestCase(false, true, true)]
-        [TestCase(true, false, false)]
-        [TestCase(true, false, true)]
-        [TestCase(true, true, false)]
-        [TestCase(true, true, true)]
-        public void ConnectionArgumentOrderDoesNotChangeExport(bool reverseFragment, bool reverseInput, bool reverseOutput)
-        {
-            LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-            LayerDefinition flatten = LayerDefinition.Flatten();
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            using (ModelWorkspace expected = CreateChain(
-                LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU), LayerDefinition.Flatten()))
-            {
-                workspace.AddLayer(conv);
-                workspace.AddLayer(flatten);
-                workspace.Connect(reverseFragment ? flatten : conv, reverseFragment ? conv : flatten);
-                workspace.Connect(reverseInput ? conv : workspace.Input, reverseInput ? workspace.Input : conv);
-                workspace.Connect(reverseOutput ? workspace.Output : flatten, reverseOutput ? flatten : workspace.Output);
-                Assert.AreEqual(ModelJsonSerializer.Serialize(expected), ModelJsonSerializer.Serialize(workspace));
-                Assert.IsEmpty(workspace.ValidationIssues);
-                AssertOwnership(workspace);
-            }
-        }
-
-        [Test]
         public void AddAndConnectIsAtomicAndNotifiesOnce()
         {
             using (ModelWorkspace workspace = new ModelWorkspace())
@@ -382,32 +335,6 @@ namespace ModelDesign.Tests
             workspace.Dispose();
         }
 
-        [TestCase(ActivationType.Linear, "linear")]
-        [TestCase(ActivationType.ReLU, "relu")]
-        [TestCase(ActivationType.Sigmoid, "sigmoid")]
-        [TestCase(ActivationType.Tanh, "tanh")]
-        [TestCase(ActivationType.Softmax, "softmax")]
-        public void SettingsUpdateReferencesEventsAndJson(ActivationType activation, string token)
-        {
-            LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-            LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
-            LayerDefinition dense = LayerDefinition.Dense(32, ActivationType.ReLU);
-            using (ModelWorkspace workspace = CreateChain(conv, pool, LayerDefinition.Flatten(), dense))
-            {
-                conv.SetFilters(16);
-                conv.SetKernelSize(5, 7);
-                conv.SetActivation(activation);
-                pool.SetPoolSize(3, 4);
-                dense.SetUnits(64);
-                dense.SetActivation(activation);
-                Assert.AreSame(conv, workspace.InputModel.Layers[1]);
-                string json = ModelJsonSerializer.Serialize(workspace);
-                StringAssert.Contains("\"filters\":16,\"kernelSize\":[5,7],\"activation\":\"" + token + "\"", json);
-                StringAssert.Contains("\"poolSize\":[3,4]", json);
-                StringAssert.Contains("\"units\":64,\"activation\":\"" + token + "\"", json);
-            }
-        }
-
         [Test]
         public void InvalidSettingsRemainAtomicAndDoNotNotify()
         {
@@ -427,48 +354,5 @@ namespace ModelDesign.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => LayerDefinition.MaxPooling2D(2, 0));
         }
 
-        [Test]
-        public void IncompleteAndInvalidInputChainsReturnNoJson()
-        {
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
-                workspace.AddLayer(conv);
-                workspace.Connect(workspace.Input, conv);
-                Assert.IsEmpty(workspace.ValidationIssues);
-                Assert.IsFalse(ModelJsonSerializer.TrySerialize(workspace, out string json,
-                    out IReadOnlyList<ValidationIssue> issues));
-                Assert.IsNull(json);
-                workspace.Connect(conv, workspace.Output);
-                Assert.IsNotEmpty(workspace.ValidationIssues);
-                Assert.Throws<InvalidOperationException>(() => ModelJsonSerializer.Serialize(workspace));
-                workspace.Disconnect(conv, workspace.Output);
-                LayerDefinition flatten = LayerDefinition.Flatten();
-                workspace.AddLayer(flatten);
-                workspace.Connect(conv, flatten);
-                workspace.Connect(flatten, workspace.Output);
-                Assert.IsEmpty(workspace.ValidationIssues);
-                Assert.IsTrue(ModelJsonSerializer.TrySerialize(workspace, out json, out issues));
-            }
-        }
-
-        [Test]
-        public void SerializationIsCultureIndependent()
-        {
-            CultureInfo original = CultureInfo.CurrentCulture;
-            using (ModelWorkspace workspace = CreateChain(LayerDefinition.Dense(32, ActivationType.ReLU)))
-            {
-                try
-                {
-                    string expected = ModelJsonSerializer.Serialize(workspace);
-                    CultureInfo.CurrentCulture = new CultureInfo("ar-SA");
-                    Assert.AreEqual(expected, ModelJsonSerializer.Serialize(workspace));
-                }
-                finally
-                {
-                    CultureInfo.CurrentCulture = original;
-                }
-            }
-        }
     }
 }

@@ -1,5 +1,5 @@
 using System;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -95,17 +95,14 @@ namespace ModelDesignScene
         {
             switch (state)
             {
-                case ModelExecutionState.Connecting:
-                    _stateText.text = "학습 서버에 연결하는 중…";
-                    break;
                 case ModelExecutionState.StartingTraining:
-                    _stateText.text = "모델을 전달했습니다. 학습 시작을 기다리는 중…";
+                    _stateText.text = "모델 학습을 준비하는 중…";
                     break;
                 case ModelExecutionState.Training:
-                    _stateText.text = "학습 중 · 수신한 에포크의 지표를 표시합니다.";
+                    _stateText.text = "학습 중 · 완료된 에포크의 지표를 표시합니다.";
                     break;
                 case ModelExecutionState.CancellingTraining:
-                    _stateText.text = "학습 취소를 요청했습니다. 서버 응답을 기다리는 중…";
+                    _stateText.text = "학습을 취소하는 중…";
                     break;
                 case ModelExecutionState.Completed:
                     _stateText.text = "학습 완료 · MNIST 샘플을 선택해 예측을 확인하세요.";
@@ -135,7 +132,7 @@ namespace ModelDesignScene
 
         public void ShowCancelled()
         {
-            _stateText.text = "학습 취소됨 · 그래프에는 취소 전 수신한 지표만 남아 있습니다.";
+            _stateText.text = "학습 취소됨 · 그래프에는 취소 전 완료된 에포크만 남아 있습니다.";
             _errorText.text = string.Empty;
             _inference.ResetTraining();
         }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using ModelDesign;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -201,7 +201,8 @@ namespace ModelDesignScene
             {
                 return;
             }
-            if (!ModelJsonSerializer.TrySerialize(_workspace, out string json,
+            if (!ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+                out ModelExecutionDefinition definition,
                 out IReadOnlyList<ValidationIssue> issues))
             {
                 _results.ShowError("모델 구성을 확인하세요.\n" + issues[0].Message);
@@ -210,7 +211,7 @@ namespace ModelDesignScene
             _settings.Close();
             _results.ResetTraining();
             _trainingCompleted = false;
-            await _execution.StartTrainingAsync(json);
+            await _execution.StartTrainingAsync(definition);
         }
 
         private async void HandleTrainingStopRequested()
@@ -265,10 +266,11 @@ namespace ModelDesignScene
 
         private void HandleWorkspaceChanged()
         {
-            string submitted = _execution.SubmittedModelJson;
+            ModelExecutionDefinition submitted = _execution.SubmittedModel;
             bool changed = submitted != null &&
-                (!ModelJsonSerializer.TrySerialize(_workspace, out string current, out _) ||
-                 !string.Equals(submitted, current, System.StringComparison.Ordinal));
+                (!ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+                    out ModelExecutionDefinition current, out _) ||
+                 !ModelExecutionDefinitionBuilder.Matches(submitted, current));
             _results.SetModelChanged(changed);
         }
 

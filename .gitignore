@@ -31,39 +31,6 @@
 /client/sysinfo.txt
 
 # ============================================================
-# Python / Server
-# ============================================================
-
-# Python cache
-/server/**/__pycache__/
-/server/**/*.py[cod]
-
-# Virtual environments
-/server/.venv/
-/server/venv/
-/server/env/
-
-# Environment variables / secrets
-/server/.env
-/server/.env.*
-!/server/.env.example
-
-# Testing / linting / type checking
-/server/.pytest_cache/
-/server/.mypy_cache/
-/server/.ruff_cache/
-/server/.coverage
-/server/htmlcov/
-
-# Python build artifacts
-/server/build/
-/server/dist/
-/server/*.egg-info/
-
-# Jupyter
-/server/.ipynb_checkpoints/
-
-# ============================================================
 # IDE / Editor
 # ============================================================
 

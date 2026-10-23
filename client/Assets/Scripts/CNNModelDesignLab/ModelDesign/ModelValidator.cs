@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CNNTraining;
 
 namespace ModelDesign
 {
@@ -37,6 +38,11 @@ namespace ModelDesign
                 int blockIndex = reverse ? model.Layers.Count - 1 - i : i;
                 LayerDefinition layer = model.Layers[blockIndex];
                 string path = "/blocks/" + blockIndex;
+                if (i == 1 && model.Layers[reverse ? model.Layers.Count - 1 : 0].Type == LayerType.Input
+                    && layer.Type != LayerType.Conv2D)
+                {
+                    issues.Add(new ValidationIssue(model, path, "Input 다음에는 Conv2D를 연결하세요."));
+                }
                 switch (layer.Type)
                 {
                     case LayerType.Input:
@@ -53,8 +59,7 @@ namespace ModelDesign
                         }
                         goto case LayerType.Dense;
                     case LayerType.Dense:
-                        bool autoFlatten = i == 1 && model.Layers[reverse ? model.Layers.Count - 1 : 0].Type == LayerType.Input;
-                        if (isVector == false && !autoFlatten)
+                        if (isVector == false)
                         {
                             issues.Add(new ValidationIssue(model, path, "Spatial layers require Flatten before Dense or Output."));
                         }
@@ -80,7 +85,14 @@ namespace ModelDesign
             return issues.AsReadOnly();
         }
 
-        public static IReadOnlyList<ValidationIssue> ValidateForTransmission(ModelWorkspace workspace)
+        public static IReadOnlyList<ValidationIssue> ValidateForExecution(ModelWorkspace workspace,
+            CnnTrainingOptions options = null)
+        {
+            ModelExecutionDefinitionBuilder.TryBuild(workspace, options, out _, out IReadOnlyList<ValidationIssue> issues);
+            return issues;
+        }
+
+        internal static IReadOnlyList<ValidationIssue> ValidateConnectedChain(ModelWorkspace workspace)
         {
             if (workspace == null)
             {
@@ -97,7 +109,7 @@ namespace ModelDesign
             LayerDefinition oppositeEndpoint = model.Layers[inputAtStart ? model.Layers.Count - 1 : 0];
             if (!ReferenceEquals(oppositeEndpoint, workspace.Output))
             {
-                issues.Add(new ValidationIssue(model, "/blocks", "Connect the Input chain to the fixed Output block before sending."));
+                issues.Add(new ValidationIssue(model, "/blocks", "학습 전에 Input에서 고정 Output까지 연결하세요."));
             }
             return issues.AsReadOnly();
         }

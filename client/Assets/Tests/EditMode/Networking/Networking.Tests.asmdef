@@ -1,8 +1,0 @@
-{
-    "name": "Networking.Tests",
-    "references": ["Networking"],
-    "includePlatforms": ["Editor"],
-    "overrideReferences": true,
-    "precompiledReferences": ["nunit.framework.dll", "Newtonsoft.Json.dll"],
-    "optionalUnityReferences": ["TestAssemblies"]
-}

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -103,7 +103,7 @@ namespace ModelDesignScene
                 {
                     predicted = i;
                 }
-                // Preserve the server's Softmax output. Only the bar's drawing bounds are limited.
+                // Preserve the model's Softmax output. Only the bar's drawing bounds are limited.
                 _probabilityLabels[i].text = i + "  " + FormatPercentage(result.Output[i]);
                 SetBarWidth(_probabilityBars[i], 232 * Mathf.Clamp01((float)result.Output[i]));
             }

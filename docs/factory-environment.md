@@ -50,6 +50,12 @@ FactoryIntro
 
 공용 [XRPlayerRig](../client/Assets/Prefabs/XR/XRPlayerRig.prefab)는 `PersistentXRPlayerRig`가 유지한다. 공장 Manager가 파괴되면 자신이 로드한 체험 씬을 언로드하되, 엔딩 Single 전환은 해당 전환이 정리를 담당한다.
 
+## 개발자용 완료 조건 우회
+
+에디터와 Development Build에서는 `Ctrl + Shift + F8`로 현재 체험의 완료 조건을 우회할 수 있다. `FactoryDebugController`가 키보드 입력을 받아 `FactoryLearningFlowManager.TrySkipCurrentLesson()`을 호출하며, 적용 시 3초간 화면 안내와 Console 로그를 남긴다. Manager가 시작할 때 Controller를 생성하고 자신과 폰트를 전달한다. 일반 빌드에서는 입력·우회 코드가 제외된다.
+
+우회는 현재 단계에만 적용한다. 다음 방 안내선을 따라 직접 이동하면 기존 Additive 로드 절차가 실행되며, 마지막 방에서는 출구가 허용된다. 튜토리얼 중·로딩 중·엔딩 전환 중에는 요청을 받지 않고, 물체를 잡은 동안에는 기존처럼 전환을 기다린다. 다음 체험 로드 성공 후 우회 상태를 지우며 바로 다시 단축키를 사용할 수 있다. 별도의 재사용 대기시간이나 사용 횟수 제한은 없다. 로드 실패 시에는 재시도를 위해 현재 단계의 우회 상태를 유지한다. 체험의 정답·학습 완료 데이터는 수정하지 않고 우회 상태는 저장하지 않는다.
+
 ## 바닥 안내선과 이동
 
 바닥 안내는 씬에 배치한 네 개의 고정 경로 오브젝트다. 입구→Pixel Lab, Pixel Lab→Feature Map Lab, Feature Map Lab→Model Design Lab, Model Design Lab→출구 순서이며 기존 경유점의 안전한 복도·출입구 동선을 사용한다. Model Design Lab의 랙 북쪽과 출하 구역 서쪽 입구를 우회한다. 선과 화살표는 고정 위치에 있고 사용자 이동으로 시작점이나 형태가 바뀌지 않는다. 현재 목적지 영역에서는 숨기고, 영역 밖이나 다음 단계에서는 해당 경로를 표시한다. 경로를 벗어난 사용자 위치와 연결하는 자동 재탐색은 제공하지 않는다.
@@ -58,7 +64,7 @@ FactoryIntro
 
 `FactoryRoomSignController`는 기존 간판 프레임과 위치를 유지하고 인쇄 면을 공통 어두운 배경과 새 방 이름으로 표시한다. 기존 간판 PNG/GUID나 공장 내부 탐색용 오브젝트명을 바꾸지 않는다. `FactoryMapReader`는 같은 새 방 이름을 지도 데이터로 전달한다. 태블릿 구현은 변경하지 않아 양피지 인벤토리의 기존 `ParchmentLesson.Room` 문구는 이번 수정 범위에서 제외한다.
 
-공용 스틱 이동 속도는 3m/s다. 플레이어의 벽 충돌은 이번 변경에 포함하지 않는다. 에디터 WASD 가상 기기 이동은 기존 방식과 속도를 유지한다.
+공용 스틱 이동 속도는 5m/s다. 플레이어의 벽 충돌은 이번 변경에 포함하지 않는다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다.
 
 ## 공장 지도 데이터
 

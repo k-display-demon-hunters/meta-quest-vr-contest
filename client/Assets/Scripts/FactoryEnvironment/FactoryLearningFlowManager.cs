@@ -39,6 +39,9 @@ namespace FactoryEnvironment
         private Scene _tutorialScene;
         private bool _tutorialComplete;
         private FactoryFlowPortalController _portal;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private int _skippedStage = -1;
+#endif
 
         private void OnEnable()
         {
@@ -68,6 +71,10 @@ namespace FactoryEnvironment
             CreateRouteInstruction();
             FactoryRoomSignController signs = gameObject.AddComponent<FactoryRoomSignController>();
             signs.Initialize(_font);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            FactoryDebugController debugController = gameObject.AddComponent<FactoryDebugController>();
+            debugController.Initialize(this, _font);
+#endif
             SceneManager.SetActiveScene(gameObject.scene);
             // Keep the UI input module in the factory scene when the guide scene is unloaded.
             rig.GetComponent<XR.XRPlayerInputController>()?.EnsureRayReady();
@@ -205,11 +212,32 @@ namespace FactoryEnvironment
             {
                 return 0;
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_skippedStage == _stage)
+            {
+                return _stage + 1;
+            }
+#endif
             bool completed = _stage == 0 ? _pixels != null && _pixels.ConvolutionCompleted
                 : _stage == 1 ? _maps != null && _maps.ReadyForModelDesign
                 : _model != null && _model.ReadyForFactoryExit;
             return completed ? _stage + 1 : _stage;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public bool TrySkipCurrentLesson()
+        {
+            if (!isActiveAndEnabled || !_tutorialComplete || _loading || _leaving
+                || _stage < 0 || _stage >= _scenes.Length)
+            {
+                return false;
+            }
+            _skippedStage = _stage;
+            _nextCheckTime = 0f;
+            Debug.Log($"[FactoryFlow] 개발자 건너뛰기: {_scenes[_stage]} 완료 조건 우회. 다음 방 또는 출구로 이동하세요.", this);
+            return true;
+        }
+#endif
 
         private bool HasSelection()
         {
@@ -295,6 +323,9 @@ namespace FactoryEnvironment
             _maps = content.GetComponentInChildren<CNNFeatureMapGuide>(true);
             _model = content.GetComponentInChildren<CNNModelDesignLabManager>(true);
             _stage = index;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _skippedStage = -1;
+#endif
             SceneManager.SetActiveScene(gameObject.scene);
             _loading = false;
         }

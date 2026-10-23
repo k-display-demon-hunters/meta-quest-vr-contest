@@ -11,13 +11,9 @@ namespace ModelDesignScene
 {
     public sealed class ModelBlockController : MonoBehaviour, IXRSelectFilter
     {
-        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-
         [SerializeField] private XRGrabInteractable _grabInteractable;
-        [SerializeField] private Renderer _body;
         [SerializeField] private Text _label;
 
-        private MaterialPropertyBlock _properties;
         private Rigidbody _rigidbody;
         private bool _interactionEnabled;
 
@@ -32,7 +28,6 @@ namespace ModelDesignScene
 
         private void Awake()
         {
-            _properties = new MaterialPropertyBlock();
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.useGravity = false;
             _rigidbody.isKinematic = true;
@@ -57,7 +52,6 @@ namespace ModelDesignScene
             IsPalette = isPalette;
             name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
             Layer.OnChanged += RefreshLabel;
-            SetColor(_body, GetLayerColor(layer.Type));
             RefreshLabel();
         }
 
@@ -94,12 +88,6 @@ namespace ModelDesignScene
             }
         }
 
-        private void SetColor(Renderer target, Color color)
-        {
-            _properties.SetColor(BaseColor, color);
-            target.SetPropertyBlock(_properties);
-        }
-
         private void RefreshLabel()
         {
             switch (Layer.Type)
@@ -122,18 +110,6 @@ namespace ModelDesignScene
                 case LayerType.Output:
                     _label.text = "OUTPUT\n10 classes / Softmax";
                     break;
-            }
-        }
-
-        private static Color GetLayerColor(LayerType type)
-        {
-            switch (type)
-            {
-                case LayerType.Conv2D: return new Color(0.1f, 0.3f, 0.48f);
-                case LayerType.MaxPooling2D: return new Color(0.32f, 0.19f, 0.48f);
-                case LayerType.Flatten: return new Color(0.42f, 0.24f, 0.08f);
-                case LayerType.Dense: return new Color(0.12f, 0.36f, 0.29f);
-                default: return new Color(0.2f, 0.26f, 0.33f);
             }
         }
 

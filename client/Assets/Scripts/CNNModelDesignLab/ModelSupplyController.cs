@@ -7,18 +7,21 @@ namespace ModelDesignScene
 {
     public sealed class ModelSupplyController : MonoBehaviour
     {
-        [SerializeField] private ModelBlockController _blockPrefab;
         [SerializeField] private Transform _paletteRoot;
         [SerializeField] private PaletteBlock[] _paletteBlocks;
 
         private readonly Dictionary<ModelBlockController, Pose> _paletteSlots = new Dictionary<ModelBlockController, Pose>();
+        private readonly Dictionary<LayerType, ModelBlockController> _prefabs = new Dictionary<LayerType, ModelBlockController>();
 
         public event Action<ModelBlockController> OnBlockCreated;
 
         public void Initialize()
         {
+            _paletteSlots.Clear();
+            _prefabs.Clear();
             foreach (PaletteBlock entry in _paletteBlocks)
             {
+                _prefabs.Add(entry.Type, entry.Prefab);
                 InitializeBlock(entry.Block, entry.Type);
             }
         }
@@ -33,7 +36,7 @@ namespace ModelDesignScene
             _paletteSlots.Remove(block);
             block.TakeFromPalette();
             // Refill the fixed supply position with a fresh block of the same type.
-            ModelBlockController replacement = Instantiate(_blockPrefab, _paletteRoot);
+            ModelBlockController replacement = Instantiate(_prefabs[block.Layer.Type], _paletteRoot);
             replacement.transform.SetLocalPositionAndRotation(slot.position, slot.rotation);
             InitializeBlock(replacement, block.Layer.Type);
             return true;
@@ -63,9 +66,11 @@ namespace ModelDesignScene
         {
             [SerializeField] private LayerType _type;
             [SerializeField] private ModelBlockController _block;
+            [SerializeField] private ModelBlockController _prefab;
 
             public LayerType Type => _type;
             public ModelBlockController Block => _block;
+            public ModelBlockController Prefab => _prefab;
         }
     }
 }

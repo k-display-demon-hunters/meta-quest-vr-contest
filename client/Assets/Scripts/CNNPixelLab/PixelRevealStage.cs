@@ -9,19 +9,15 @@ namespace UI
 {
     public sealed class PixelRevealStage : MonoBehaviour
     {
-        public enum RevealPhase { Inactive, Enlarging, AwaitingClick, Revealing, Revealed }
+        public enum RevealPhase { Inactive, AwaitingClick, Revealing, Revealed }
 
         [SerializeField] private Transform _board;
         [SerializeField] private Transform _controls;
         [SerializeField] private Camera _camera;
         [SerializeField] private Font _font;
         [SerializeField] private Vector2 _boardSize = new Vector2(2.4f, 1.35f);
-        [SerializeField] private float _enlargement = 2f;
-        [SerializeField] private float _enlargeDuration = 0.65f;
         [SerializeField] private float _revealDuration = 2f;
         [SerializeField] private UnityEvent _onPixelsRevealed = new UnityEvent();
-        private Vector3 _originalScale;
-        private Vector3 _originalControlsPosition;
         private CanvasGroup[] _columns;
         private GameObject _pixelCanvas;
         private BoxCollider _clickCollider;
@@ -38,7 +34,7 @@ namespace UI
         public RevealPhase Phase { get; private set; }
         public bool IsReadyForConvolution => Phase == RevealPhase.Revealed;
 
-        public void ShowEnlargedImage(Color32[] pixels, int columns, int rows)
+        public void ShowImage(Color32[] pixels, int columns, int rows)
         {
             if (Phase != RevealPhase.Inactive) { return; }
             _camera = Camera.main;
@@ -49,8 +45,6 @@ namespace UI
             }
             if (!_initialized)
             {
-                _originalScale = _board.localScale;
-                _originalControlsPosition = _controls.localPosition;
                 BuildPixels(pixels, columns, rows);
                 _instruction = Rect(_controls, "Reveal instruction", 0, -70, 1200, 70).gameObject.AddComponent<Text>();
                 _instruction.font = _font;
@@ -58,7 +52,7 @@ namespace UI
                 _instruction.alignment = TextAnchor.MiddleCenter;
                 _instruction.color = Color.white;
                 _instruction.raycastTarget = false;
-                // The collider becomes interactive only after enlargement, so it cannot intercept filter dragging.
+                // Enable image selection only during this step so it cannot intercept filter dragging.
                 _clickCollider = _board.gameObject.AddComponent<BoxCollider>();
                 _clickCollider.size = new Vector3(_boardSize.x, _boardSize.y, 0.04f);
                 _clickCollider.enabled = false;
@@ -71,10 +65,11 @@ namespace UI
             }
             _pixelCanvas.SetActive(true);
             foreach (CanvasGroup column in _columns) { column.alpha = 0; }
-            Phase = RevealPhase.Enlarging;
+            Phase = RevealPhase.AwaitingClick;
             _instruction.gameObject.SetActive(true);
-            _instruction.text = "이미지를 확대하고 있어요";
-            StartCoroutine(EnlargeImage());
+            _instruction.text = "이미지를 선택하세요\n오른손: 이미지를 가리키고 Trigger를 누르세요";
+            _clickCollider.enabled = true;
+            _clickTarget.enabled = true;
         }
 
         public void RevealPixels()
@@ -96,28 +91,6 @@ namespace UI
             _pixelCanvas.SetActive(false);
             _channelControls.SetActive(false);
             _instruction.gameObject.SetActive(false);
-            _board.localScale = _originalScale;
-            _controls.localPosition = _originalControlsPosition;
-        }
-
-        private IEnumerator EnlargeImage()
-        {
-            float elapsed = 0;
-            Vector3 controlsPosition = new Vector3(_originalControlsPosition.x, 0.8f, 1.05f);
-            while (elapsed < _enlargeDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float progress = Mathf.SmoothStep(0, 1, Mathf.Clamp01(elapsed / Mathf.Max(0.01f, _enlargeDuration)));
-                _board.localScale = Vector3.Lerp(_originalScale, _originalScale * _enlargement, progress);
-                _controls.localPosition = Vector3.Lerp(_originalControlsPosition, controlsPosition, progress);
-                yield return null;
-            }
-            _board.localScale = _originalScale * _enlargement;
-            _controls.localPosition = controlsPosition;
-            _clickCollider.enabled = true;
-            _clickTarget.enabled = true;
-            Phase = RevealPhase.AwaitingClick;
-            _instruction.text = "확대된 이미지를 선택하세요\n오른손: 이미지를 가리키고 Trigger를 누르세요";
         }
 
         private IEnumerator RevealColumns()
@@ -192,7 +165,7 @@ namespace UI
             Text hint = Rect(_channelControls.transform, "Channel help", 0, 75, 1100, 45).gameObject.AddComponent<Text>();
             hint.font = _font;
             hint.fontSize = 26;
-            hint.text = "색을 골라 보세요 · 숫자는 그 색의 세기예요 (0~255)";
+            hint.text = "색 선택: Trigger · 필터 이동: Grip · 숫자는 색의 세기 (0~255)";
             hint.alignment = TextAnchor.MiddleCenter;
             hint.color = Color.white;
             hint.raycastTarget = false;

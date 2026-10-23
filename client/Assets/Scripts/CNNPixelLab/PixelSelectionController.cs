@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace UI
 {
     public sealed class PixelSelectionController
     {
+        private const float FilterDepth = 0.22f;
         private readonly Transform _board;
         private readonly Vector2 _boardSize;
         private readonly XRGrabInteractable _filter;
@@ -22,7 +22,6 @@ namespace UI
         private bool _previewValid;
         private Vector2Int _selected;
         private Vector2Int _preview;
-        private XRRayInteractor _rayInteractor;
 
         public bool HasSelection => _hasSelection;
         public Vector2Int SelectedPixel => _selected;
@@ -39,6 +38,10 @@ namespace UI
             _lensMaterial = lensMaterial;
             _columns = columns;
             _rows = rows;
+            // Use the same gaze-following grab movement as the detail-view objects.
+            _filter.trackPosition = true;
+            _filter.trackRotation = false;
+            _filter.movementType = XRBaseInteractable.MovementType.Instantaneous;
             _dockPosition = filter.transform.position;
             _dockRotation = filter.transform.rotation;
         }
@@ -81,19 +84,6 @@ namespace UI
 
         public bool UpdateSelection()
         {
-            if (_rayInteractor != null && _filter.isSelected)
-            {
-                Transform origin = _rayInteractor.rayOriginTransform;
-                Ray ray = new Ray(origin.position, origin.forward);
-                Plane plane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
-                if (plane.Raycast(ray, out float distance) && distance < 5)
-                {
-                    _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
-                    Rigidbody body = _filter.GetComponent<Rigidbody>();
-                    body.position = _filter.transform.position;
-                    body.rotation = _filter.transform.rotation;
-                }
-            }
             if (_filter.isSelected)
             {
                 UpdatePreview();
@@ -147,7 +137,7 @@ namespace UI
         private void PlaceFilter()
         {
             Vector3 position = _hasSelection
-                ? _board.TransformPoint(SelectionCenter(_selected) + Vector3.back * 0.22f) : _dockPosition;
+                ? _board.TransformPoint(SelectionCenter(_selected) + Vector3.back * FilterDepth) : _dockPosition;
             Quaternion rotation = _hasSelection ? _board.rotation : _dockRotation;
             _filter.transform.SetPositionAndRotation(position, rotation);
             Rigidbody body = _filter.GetComponent<Rigidbody>();
@@ -163,23 +153,18 @@ namespace UI
 
         public void HandleReleased(SelectExitEventArgs args)
         {
-            _rayInteractor = null;
-            _filter.trackPosition = true;
-            _filter.trackRotation = true;
             _snapPending = true;
         }
 
         public void HandleGrabbed(SelectEnterEventArgs args)
         {
-            _rayInteractor = args.interactorObject as XRRayInteractor;
-            _filter.trackPosition = _rayInteractor == null;
-            _filter.trackRotation = _rayInteractor == null;
+            _snapPending = false;
         }
 
 #if UNITY_EDITOR
         public void EditorDragFilter(Ray ray)
         {
-            Plane plane = new Plane(_board.forward, _board.position - _board.forward * 0.3f);
+            Plane plane = new Plane(_board.forward, _board.TransformPoint(Vector3.back * FilterDepth));
             if (!plane.Raycast(ray, out float distance)) { return; }
             _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
             Rigidbody body = _filter.GetComponent<Rigidbody>();

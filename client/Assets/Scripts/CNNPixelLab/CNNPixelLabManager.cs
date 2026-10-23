@@ -199,7 +199,7 @@ namespace UI
             _selection.SuspendSelection();
             _detail.SetActive(false);
             _filter.gameObject.SetActive(false);
-            _revealStage.ShowEnlargedImage(_pixels, Columns, Rows);
+            _revealStage.ShowImage(_pixels, Columns, Rows);
         }
 
         private void HandleReleased(SelectExitEventArgs args)

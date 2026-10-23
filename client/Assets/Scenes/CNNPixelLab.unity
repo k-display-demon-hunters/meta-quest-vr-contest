@@ -3866,7 +3866,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.65, z: 1.8}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 712224472}
@@ -4050,8 +4050,6 @@ MonoBehaviour:
   _camera: {fileID: 0}
   _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   _boardSize: {x: 2.4, y: 1.35}
-  _enlargement: 2
-  _enlargeDuration: 0.65
   _revealDuration: 2
   _onPixelsRevealed:
     m_PersistentCalls:

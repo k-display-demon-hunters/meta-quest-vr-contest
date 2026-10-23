@@ -27,7 +27,7 @@
 | `Scripts/FactoryIntro/FactoryVillageDisplayController.cs` | 대기/이야기 중 방송 시간을 이어서 전달하며 디스플레이별 고장 시점과 재생 정지·화질 손실·노이즈 값을 셰이더에 전달한다. |
 | `Scripts/FactoryIntro/FactoryWraithController.cs` | 기존 악령의 부유·파편 회전·공격선을 담당하며, 오프닝에서는 외부에서 전달한 시간과 공격 목표로 동작한다. 시작 화면에서는 악령이 비활성이다. |
 | `Scripts/FactoryIntro/FactoryIntroInputController.cs` | 이야기 중 이동·잡기를 잠시 보류한다. 시작·완료·재시도 패널에서만 오른손 UI ray를 표시하고 연출 중에는 숨긴다. 씬 전환 전에 원래 입력 상태를 복원한다. 태블릿 컴포넌트나 입력은 변경하지 않는다. |
-| `Scripts/Core/SceneTransitionController.cs` | persistent 리그에서 페이드아웃 → Single 로드 → 페이드인을 수행한다. 일반 씬 전환은 페이드인 후 자신을 정리한다. 기존 참고 씬 연결은 유지한다. |
+| `Scripts/Core/SceneTransitionController.cs` | persistent 리그에서 페이드아웃 → Single 로드 → 페이드인을 수행한다. 씬 로드에 성공하면 페이드인 후 자신을 정리한다. 제거한 Kdy 참고 씬에 대한 전환 예외도 정리했다. |
 
 `FactoryIntro.unity`는 공용 XR 리그와 시작 UI, 기존 `PixelWraith`를 유지하고, 배경을 `Prefabs/FactoryIntro/VillageOpening.prefab`으로 교체한다. 마을은 씬에서 참조하는 직렬화된 프리팹이며, 실행 중에 마을 전체를 새로 생성하지 않는다. 고정 배경은 재질별 메시로 묶고 움직이는 부품은 따로 배치한다. 씬 전용 메시·재질·셰이더는 각각 `Meshes/FactoryIntro`, `Materials/FactoryIntro`, `Shaders/FactoryIntro`에 둔다. 화면과 조명은 캐시한 `MaterialPropertyBlock`으로 표시 값을 갱신하고, 충격 파편은 작은 메시 하나와 기존 효과 재질을 공유한다. 성능 측정이나 Quest 실행 확인은 아직 수행하지 않았다.
 
@@ -45,7 +45,7 @@
 
 `Audio/FactoryIntro/VillageOpening.wav`는 직접 합성한 18초 스테레오 효과음이다. 32kHz·16-bit PCM이며, 따뜻한 차임에서 불길한 저음·충전음으로 이어지고 8.2초 타격, 10.5초 화면 이상, 마지막 복구 요청의 여운에 맞춘다. `AudioSource.playOnAwake`는 끄고 시작 버튼 뒤에 재생한다. 발화와 외부 제공 음원은 없다.
 
-입력 잠금과 복원은 기존 `FactoryIntroInputController`가 담당한다. 이동·잡기를 보류하되 머리·손 추적은 유지한다. `SetUIVisible()`은 연출 중 UI ray와 선을 함께 숨겨 보이지 않는 클릭도 차단하며, 패널을 다시 표시하면 ray를 활성화한다. 공장을 열기 전에 저장해 둔 입력 상태를 복원한다. 연출용 하늘·주변광은 이전 값을 보관하고, 같은 씬에서 비활성화될 때 복원한다. 다음 씬이 활성화된 뒤에는 그 씬의 환경 설정을 덮어쓰지 않는다. 기존 `kdy_scene1~17`과 학습 흐름은 변경하지 않는다.
+입력 잠금과 복원은 기존 `FactoryIntroInputController`가 담당한다. 이동·잡기를 보류하되 머리·손 추적은 유지한다. `SetUIVisible()`은 연출 중 UI ray와 선을 함께 숨겨 보이지 않는 클릭도 차단하며, 패널을 다시 표시하면 ray를 활성화한다. 공장을 열기 전에 저장해 둔 입력 상태를 복원한다. 연출용 하늘·주변광은 이전 값을 보관하고, 같은 씬에서 비활성화될 때 복원한다. 다음 씬이 활성화된 뒤에는 그 씬의 환경 설정을 덮어쓰지 않는다. 현재 학습 흐름은 유지하며, 사용하지 않는 `kdy_scene1~17`은 아래 정리 범위에 따라 제거했다.
 
 ## 실제 공장 입구에서 한 번 안내
 
@@ -88,7 +88,21 @@
 
 `FactoryIntroSceneBuilder`는 마을 프리팹과 악령, 연출 Controller, 하늘·효과 재질, 오디오와 UI 참조를 연결한다. `FactoryEndingSceneBuilder`는 같은 마을 프리팹과 복구 Controller, 하늘·효과 재질을 연결한다. 필수 자산을 확인한 뒤 새 씬을 만들며, 기존 씬이 있으면 덮어쓰지 않는다. 씬을 열 때 자동 재생성하지 않는다. 기존 에셋의 경로와 GUID를 유지하며 기타 참고 씬·에셋을 일괄 개명하지 않는다.
 
+## Kdy 참고 파일 정리
+
+2026-10-24: 현재 실행 흐름과 별개인 `Scenes/kdy_scene1~17.unity`, `Prefabs/Common/KdyLessonTablet.prefab`·`KdyFactoryHall.prefab`·`KdyCoreFault.prefab`, `Materials/Common/KdyLessonFilter.mat`·`KdyLessonPhoto.mat`·`KdyBlack.mat`·`KdyCyan.mat`·`KdyFloor.mat`·`KdySteelEdge.mat`·`KdyLessonPixel.mat`, `Textures/Common/KdyFactoryInput.png`를 해당 `.meta`와 함께 제거했다. 스크립트는 아래 보존 대상 9개를 제외한 Kdy 스크립트 23개를 제거했다. 비게 된 `Scripts/kdy_scene*` 폴더 11개와 `Prefabs/Common` 폴더 및 각 폴더 `.meta`도 제거했다. `Textures/Common`에는 태블릿에서 사용하는 `LearningParchment.png`가 있으므로 유지한다. 전체 삭제 범위는 원본 파일 51개와 `.meta` 63개다.
+
+현재 오프닝에서 사용하는 에셋 6개는 경로·내용·GUID를 유지한다. 프리팹은 `Prefabs/kdy_scene2/PixelWraith.prefab`이며, 재질은 `Materials/Common`의 `KdyAmber.mat`, `KdySteel.mat`, `KdyViolet.mat`, `KdyWraith.mat`와 `Materials/kdy_scene2/KdyAttackRay.mat`다. 이전 공장 배경과 그 전용 재질은 현재 씬 및 보존 코드의 의존성이 없어 제거했다.
+
+재사용 후보는 `kdy_scene6/KdyConvolutionController.cs`의 패딩 전후 비교, `kdy_scene9/KdyActivationLeverController.cs`의 ReLU/Sigmoid 비교, `kdy_scene16/KdySignComparisonController.cs`의 이미지 전후 비교·확대 표시다. 이 세 파일과 필요한 보조 코드 6개, 각 `.meta`를 보존한다. 보조 코드는 `Core/KdyLessonGrabController.cs`, `KdyLessonProgressController.cs`, `KdyNetworkConfiguration.cs`, `KdyFactorySignExampleData.cs`, `KdyTrainingExampleData.cs`, `KdySignExampleData.cs`다. 세 후보의 내용과 보존 파일의 경로·GUID는 유지한다.
+
+`KdyLessonManager`는 현재 Factory 실행 흐름이 아닌 이전 `kdy_scene4~17`의 진행을 담당하므로 제거했다. `KdyLessonGrabController`에서 이 Manager 필드, Manager를 받는 `Initialize`, 전환 중 여부 검사를 제거해 불필요한 학습 Controller 의존을 끊었다. 초기 잡기 위치 저장은 기존 `Awake`와 `ResetPose`에서 계속 수행하며, 오른손 선택 제한과 `SetInteractionEnabled`는 유지한다. 이 연결 때문에 남아 있던 Controller들도 함께 제거했고, 공용 `SceneTransitionController`에서는 Kdy 씬 이름에 따른 자기 정리 예외만 제거했다.
+
+보존한 코드는 현재 실행 흐름에 새로 연결하지 않은 재사용 참고 자료다. 이전 씬과 Inspector 연결은 제거했으므로 기존 17개 씬 체험을 그대로 실행할 수는 없다. 실제 재사용 시 필요한 표시·입력과 현재 진행 흐름을 연결해야 한다. `KdyLessonProgressController`에는 Kdy 외 씬을 로드할 때 자신을 제거하는 이전 수명 처리가 남아 있으며, 예제 데이터의 사전 지정 학습 결과는 실제 서버 학습·추론 결과로 취급하지 않는다.
+
 ## 확인 범위
+
+2026-10-24 Kdy 정리: 최신 `main`에서 별도 브랜치와 워크트리를 만들고 코드 타입 참조와 Unity GUID 참조를 정적으로 검토했다. 삭제 대상 타입·GUID를 유지 파일에서 참조하지 않는지, 보존한 9개 스크립트의 의존성이 연결되는지, 지정한 에셋과 재사용 후보의 내용 및 보존 파일의 `.meta`가 유지되는지 확인했다. Unity 실행·Play·테스트·빌드·컴파일은 수행하지 않았다.
 
 2026-10-23 후속 변경: Quaternius 무료 Standard 원본의 동봉 CC0 표기와 실제 7개 동작 데이터를 확인해 기존 주민 관절에 연결했다. 관람 공간·벤치·키오스크·주민 경로를 수정하고 시작 UI 즉시 숨김, 같은 마을의 23초 복구 엔딩을 반영했다. 코드·직렬화 참조·정적 배치 그림을 검토했다. 정적 배치 그림의 화면 색은 자리 표시이며 Unity 렌더링 결과가 아니다. Unity 실행·Play·테스트·빌드·컴파일·프로젝트 복사본 생성은 수행하지 않았다. 동작 전환의 실제 표시, Quest 성능과 입력은 실행 확인 전이다.
 

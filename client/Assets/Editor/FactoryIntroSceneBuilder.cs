@@ -67,7 +67,7 @@ namespace FactoryScenes.Editor
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
                 RenderSettings.ambientLight = new Color(0.72f, 0.8f, 0.83f);
                 Canvas canvas = CreateCanvas(root.transform, player.GetComponentInChildren<Camera>());
-                Image background = Panel(canvas.transform, "Guide background", Vector2.zero, new Vector2(1000f, 620f), UI.SceneUIStyle.Surface);
+                Panel(canvas.transform, "Guide background", Vector2.zero, new Vector2(1000f, 620f), UI.SceneUIStyle.Surface);
                 Text heading = Label(canvas.transform, font, "Heading", "뭉개진 세상을 구해라!", new Vector2(0f, 225f), new Vector2(930f, 100f), 42, Color.white);
                 Text instruction = Label(canvas.transform, font, "Instruction", "오른손 ray로 시작하기를 선택하세요.", new Vector2(0f, 50f), new Vector2(900f, 235f), 31, UI.SceneUIStyle.Muted);
                 Button next = Button(canvas.transform, font, "Continue", "시작하기", new Vector2(0f, -150f), new Vector2(630f, 80f));
@@ -83,7 +83,6 @@ namespace FactoryScenes.Editor
                 Assign(view, "_instruction", instruction);
                 Assign(view, "_continueLabel", next.GetComponentInChildren<Text>());
                 Assign(view, "_continueButton", next);
-                Assign(view, "_background", background);
                 view.ApplyModifiedPropertiesWithoutUndo();
                 SerializedObject opening = new SerializedObject(cinematic);
                 Assign(opening, "_village", village.GetComponent<FactoryVillageController>());

@@ -1,7 +1,8 @@
 using System.Collections;
+using FactoryIntro;
+using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace FactoryEnding
 {
@@ -12,92 +13,100 @@ namespace FactoryEnding
         [SerializeField] private Transform _entryPoint;
         [SerializeField] private string _restartSceneName = "FactoryIntro";
 
-        private enum EndingStage { Restoration, Recap, Complete, Leaving }
-
+        private enum EndingStage { Restoration, Complete, Leaving }
         private EndingStage _stage;
-        private Coroutine _sequence;
+        private XROrigin _rig;
+        private FactoryIntroInputController _input;
+        private SceneTransitionController _transition;
+        private float _elapsed;
+        private bool _isReady;
 
         private void OnEnable()
         {
-            _panel.OnCompleteRequested += HandleCompleteRequested;
             _panel.OnRestartRequested += HandleRestartRequested;
             _panel.OnExitRequested += HandleExitRequested;
         }
 
         private void Start()
         {
-            XROrigin rig = FindFirstObjectByType<XROrigin>();
-            if (rig != null && rig.Camera != null)
-            {
-                float height = Vector3.Dot(rig.Camera.transform.position - rig.Origin.transform.position, rig.Origin.transform.up);
-                rig.MatchOriginUpCameraForward(Vector3.up, _entryPoint.forward);
-                rig.MoveCameraToWorldLocation(_entryPoint.position + Vector3.up * height);
-            }
-            _sequence = StartCoroutine(PlayEnding());
-        }
-
-        private IEnumerator PlayEnding()
-        {
-            _stage = EndingStage.Restoration;
             _panel.ShowRestoration();
-            yield return _restoration.RestoreFactory();
-            _stage = EndingStage.Recap;
-            _panel.ShowRecap();
-            _sequence = null;
-        }
-
-        private void HandleCompleteRequested()
-        {
-            if (_stage != EndingStage.Recap)
+            _rig = FindFirstObjectByType<XROrigin>();
+            if (_rig == null || _rig.Camera == null || _entryPoint == null || _restoration == null || !_restoration.IsReady)
             {
+                Debug.LogError("[FactoryEnding] The village, sky, XR rig and arrival point must be assigned.", this);
                 return;
             }
 
-            _stage = EndingStage.Complete;
-            _panel.ShowCompletion();
+            // Keep head tracking; only the origin is placed at the familiar opening viewpoint.
+            float height = Vector3.Dot(_rig.Camera.transform.position - _rig.Origin.transform.position,
+                _rig.Origin.transform.up);
+            _rig.MatchOriginUpCameraForward(Vector3.up, _entryPoint.forward);
+            _rig.MoveCameraToWorldLocation(_entryPoint.position + Vector3.up * height);
+            _input = GetComponent<FactoryIntroInputController>();
+            if (_input == null) _input = gameObject.AddComponent<FactoryIntroInputController>();
+            _input.Bind(_rig);
+            _input.SetUIVisible(false);
+            _panel.BindCamera(_rig.Camera);
+            _restoration.BindCamera(_rig.Camera);
+            _restoration.BeginRestoration();
+            _stage = EndingStage.Restoration;
+            _elapsed = 0f;
+            _isReady = true;
+        }
+
+        private void Update()
+        {
+            if (!_isReady || _stage == EndingStage.Leaving) return;
+            _elapsed += Time.deltaTime;
+            _restoration.Evaluate(_elapsed);
+            if (_stage == EndingStage.Restoration && _elapsed >= FactoryRestorationController.Duration)
+            {
+                _stage = EndingStage.Complete;
+                _panel.ShowCompletion();
+                _input.SetUIVisible(true);
+            }
         }
 
         private void HandleRestartRequested()
         {
-            if (_stage != EndingStage.Complete)
+            if (_stage != EndingStage.Complete) return;
+            if (!SceneTransitionController.CanLoad(_restartSceneName))
             {
+                _panel.ShowMessage("시작 화면을 열지 못했습니다. 다시 시도해 주세요.");
                 return;
             }
-            if (!Application.CanStreamedLevelBeLoaded(_restartSceneName))
-            {
-                _panel.ShowMessage("시작 씬이 빌드 목록에 없습니다. FactoryIntro 씬을 등록한 뒤 다시 시작해 주세요.");
-                return;
-            }
-
             _stage = EndingStage.Leaving;
             _panel.SetNavigationAvailable(false);
-            _sequence = StartCoroutine(Restart());
+            StartCoroutine(Restart());
         }
 
         private IEnumerator Restart()
         {
-            // Finish the XR UI callback before unloading its button and restoring ray input.
+            // Leave the XR button callback before unloading its input and scene.
             yield return null;
-            _panel.enabled = false;
-            AsyncOperation loading = SceneManager.LoadSceneAsync(_restartSceneName, LoadSceneMode.Single);
-            if (loading == null)
+            GameObject overlay = new GameObject("Ending scene transition", typeof(RectTransform));
+            overlay.transform.SetParent(_rig.transform, false);
+            _transition = overlay.AddComponent<SceneTransitionController>();
+            _transition.Initialize(_rig.Camera);
+            _input.Release();
+            _transition.Load(_restartSceneName);
+            while (_transition != null && _transition.IsLoading) yield return null;
+            if (_transition != null)
             {
+                Destroy(_transition.gameObject);
+                _input.Bind(_rig);
+                _input.SetUIVisible(true);
                 _stage = EndingStage.Complete;
-                _panel.enabled = true;
                 _panel.SetNavigationAvailable(true);
-                _panel.ShowMessage("시작 씬을 열지 못했습니다. 다시 시도해 주세요.");
+                _panel.ShowMessage("시작 화면을 열지 못했습니다. 다시 시도해 주세요.");
             }
-            _sequence = null;
         }
 
         private void HandleExitRequested()
         {
-            if (_stage != EndingStage.Complete)
-            {
-                return;
-            }
+            if (_stage != EndingStage.Complete) return;
 #if UNITY_EDITOR
-            _panel.ShowMessage("에디터에서는 앱을 종료하지 않습니다. Play를 종료하면 체험이 끝납니다.");
+            _panel.ShowMessage("에디터에서는 Play를 종료하면 체험이 끝납니다.");
 #else
             Application.Quit();
 #endif
@@ -105,14 +114,10 @@ namespace FactoryEnding
 
         private void OnDisable()
         {
-            _panel.OnCompleteRequested -= HandleCompleteRequested;
             _panel.OnRestartRequested -= HandleRestartRequested;
             _panel.OnExitRequested -= HandleExitRequested;
-            if (_sequence != null)
-            {
-                StopCoroutine(_sequence);
-                _sequence = null;
-            }
+            StopAllCoroutines();
+            _input?.Release();
         }
     }
 }

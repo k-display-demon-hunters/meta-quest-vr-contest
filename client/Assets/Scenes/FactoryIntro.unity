@@ -500,7 +500,6 @@ MonoBehaviour:
   _instruction: {fileID: 1465028339}
   _continueLabel: {fileID: 1907318634}
   _continueButton: {fileID: 1826757092}
-  _background: {fileID: 694754010}
 --- !u!114 &1413934374
 MonoBehaviour:
   m_ObjectHideFlags: 0

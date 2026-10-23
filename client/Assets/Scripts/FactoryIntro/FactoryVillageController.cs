@@ -12,7 +12,9 @@ namespace FactoryIntro
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+        private static readonly float[] WalkArcDistances = BuildWalkArcDistances();
 
+        [SerializeField] private VillageResidentMotionLibrary _residentMotions;
         [SerializeField] private Transform _core;
         [SerializeField] private Renderer _coreSurface;
         [SerializeField] private Transform[] _rotors = Array.Empty<Transform>();
@@ -37,15 +39,7 @@ namespace FactoryIntro
         private LocalPose[] _rotorPoses;
         private LocalPose[] _cloudPoses;
         private LocalPose[] _citizenPoses;
-        private LocalPose[] _headPoses;
-        private LocalPose[] _leftArmPoses;
-        private LocalPose[] _rightArmPoses;
-        private LocalPose[] _leftHipPoses;
-        private LocalPose[] _rightHipPoses;
-        private LocalPose[] _leftKneePoses;
-        private LocalPose[] _rightKneePoses;
-        private LocalPose[] _leftFootPoses;
-        private LocalPose[] _rightFootPoses;
+        private VillageResidentMotionController[] _residentControllers;
         private LocalPose[] _debrisPoses;
         private LocalPose[] _smokePoses;
         private MaterialPropertyBlock _propertyBlock;
@@ -107,15 +101,14 @@ namespace FactoryIntro
             _rotorPoses = Capture(_rotors);
             _cloudPoses = Capture(_clouds);
             _citizenPoses = Capture(_citizens);
-            _headPoses = Capture(_heads);
-            _leftArmPoses = Capture(_leftArms);
-            _rightArmPoses = Capture(_rightArms);
-            _leftHipPoses = Capture(_leftHips);
-            _rightHipPoses = Capture(_rightHips);
-            _leftKneePoses = Capture(_leftKnees);
-            _rightKneePoses = Capture(_rightKnees);
-            _leftFootPoses = Capture(_leftFeet);
-            _rightFootPoses = Capture(_rightFeet);
+            _residentControllers = new VillageResidentMotionController[_citizens.Length];
+            for (int i = 0; i < _citizens.Length; i++)
+            {
+                VillageResidentMotionController resident = _citizens[i].gameObject.AddComponent<VillageResidentMotionController>();
+                resident.Bind(_residentMotions, _heads[i], _leftArms[i], _rightArms[i],
+                    _leftHips[i], _rightHips[i], _leftKnees[i], _rightKnees[i], _leftFeet[i], _rightFeet[i]);
+                _residentControllers[i] = resident;
+            }
             _debrisPoses = Capture(_debris);
             _smokePoses = Capture(_smoke);
             _beaconScale = _entranceBeacon.localScale;
@@ -141,123 +134,192 @@ namespace FactoryIntro
 
         private void AnimateVillage(float ambientTime, float elapsed, bool isStory)
         {
-            for (int i = 0; i < _clouds.Length; i++)
-            {
-                _clouds[i].localPosition = _cloudPoses[i].Position +
-                    Vector3.right * (Mathf.Sin(ambientTime * .09f + i) - Mathf.Sin(i)) * 1.5f;
-            }
+            AnimateClouds(ambientTime);
             for (int i = 0; i < _citizens.Length; i++)
             {
                 AnimateResident(i, ambientTime, elapsed, isStory);
             }
         }
 
+        private void AnimateClouds(float ambientTime)
+        {
+            for (int i = 0; i < _clouds.Length; i++)
+            {
+                _clouds[i].localPosition = _cloudPoses[i].Position +
+                    Vector3.right * (Mathf.Sin(ambientTime * .09f + i) - Mathf.Sin(i)) * 1.5f;
+            }
+        }
+
         private void AnimateResident(int index, float ambientTime, float elapsed, bool isStory)
         {
             float noticedAt = WraithArrivalTime + index * .12f;
-            float notice = isStory ? SmoothRange(noticedAt, noticedAt + 1.1f, elapsed) : 0f;
+            float age = elapsed - noticedAt;
+            float notice = isStory ? SmoothRange(noticedAt, noticedAt + WalkStopDuration, elapsed) : 0f;
             float dismay = isStory ? SmoothRange(10.5f + index / 2 * .3f, 11.8f + index / 2 * .3f, elapsed) : 0f;
-            float protect = isStory
-                ? SmoothRange(ImpactTime - .02f, ImpactTime + .24f, elapsed) *
-                    (1f - .65f * SmoothRange(9.1f, 10.2f, elapsed)) * (1f - dismay)
-                : 0f;
-
-            // Decelerate the path before freezing it, independently of the arm/head reaction.
+            float protect = isStory ? SmoothRange(ImpactTime, ImpactTime + .3f, elapsed) *
+                (1f - SmoothRange(9.1f, 10.3f, elapsed)) : 0f;
             float movementTime = ambientTime;
-            if (isStory && elapsed > noticedAt)
+            if (isStory && age > 0f)
             {
-                float stopAge = Mathf.Clamp(elapsed - noticedAt, 0f, WalkStopDuration);
+                float stopAge = Mathf.Clamp(age, 0f, WalkStopDuration);
                 movementTime = _ambientStartTime + noticedAt + stopAge - stopAge * stopAge / (2f * WalkStopDuration);
             }
-            bool strolls = index == 0 || index == 2 || index == 5;
-            float stride = Mathf.Sin(movementTime * 4.8f + index * 1.3f);
-            float walking = strolls ? 1f - notice : 0f;
-            Vector3 position = _citizenPoses[index].Position;
-            Quaternion rotation = _citizenPoses[index].Rotation;
-            if (strolls)
-            {
-                float routePhase = movementTime * .62f + index * 1.3f;
-                float initialPhase = index * 1.3f;
-                Vector3 offset = new Vector3(
-                    .68f * (Mathf.Sin(routePhase) - Mathf.Sin(initialPhase)),
-                    0f,
-                    .38f * (Mathf.Cos(routePhase) - Mathf.Cos(initialPhase)));
-                Vector3 tangent = new Vector3(.68f * Mathf.Cos(routePhase), 0f, -.38f * Mathf.Sin(routePhase));
-                position += rotation * offset;
-                rotation *= Quaternion.LookRotation(tangent, Vector3.up);
-            }
-
+            GetResidentPath(index, movementTime, out Vector3 position, out Quaternion rotation);
             Vector3 portalDirection = WraithArrivalPosition - position;
             portalDirection.y = 0f;
-            position -= portalDirection.normalized * (notice * .62f);
-            Quaternion portalFacing = Quaternion.LookRotation(portalDirection, Vector3.up);
-            rotation = Quaternion.Slerp(rotation, portalFacing, notice);
+            position -= portalDirection.normalized * notice * .42f;
+            if (Strolls(index)) position.x = Mathf.Clamp(position.x, -2.85f, 2.85f);
+            rotation = Quaternion.Slerp(rotation, Quaternion.LookRotation(portalDirection, Vector3.up), notice);
             Vector3 screenPosition = transform.InverseTransformPoint(_screenTargets[index].position);
             Vector3 screenDirection = screenPosition - position;
             screenDirection.y = 0f;
             rotation = Quaternion.Slerp(rotation, Quaternion.LookRotation(screenDirection, Vector3.up), dismay);
 
-            float idleSway = Mathf.Sin(ambientTime * 1.5f + index * 1.7f);
-            float flinch = isStory && elapsed >= ImpactTime
-                ? Mathf.Sin((elapsed - ImpactTime) * 24f) * Mathf.Exp(-(elapsed - ImpactTime) * 3.5f)
-                : 0f;
-            position.y += Mathf.Abs(stride) * .035f * walking - protect * .14f;
-            position += rotation * Vector3.back * (flinch * .06f);
-            rotation *= Quaternion.Euler(protect * 3f, idleSway * 2f * (1f - notice), idleSway * 1.5f * (1f - protect));
-            _citizens[index].localPosition = position;
-            _citizens[index].localRotation = rotation;
-
-            Quaternion idleHead = _headPoses[index].Rotation * Quaternion.Euler(0f, idleSway * (strolls ? 10f : 18f), 0f);
-            Vector3 headPosition = position + rotation * _headPoses[index].Position;
-            Quaternion portalHead = Quaternion.Inverse(rotation) * Quaternion.LookRotation(WraithArrivalPosition - headPosition, Vector3.up);
-            Quaternion screenHead = Quaternion.Inverse(rotation) * Quaternion.LookRotation(screenPosition - headPosition, Vector3.up);
-            Quaternion headRotation = Quaternion.Slerp(idleHead, portalHead, notice);
-            headRotation = Quaternion.Slerp(headRotation, Quaternion.Euler(28f, 0f, 0f), protect);
-            headRotation = Quaternion.Slerp(headRotation, screenHead * Quaternion.Euler(9f, Mathf.Sin(ambientTime * 5f + index) * 13f, 0f), dismay);
-            _heads[index].localRotation = headRotation;
-
-            AnimateArms(index, stride, idleSway, walking, notice, protect, dismay, ambientTime);
-            AnimateLegs(index, stride, walking, notice, protect, elapsed - noticedAt);
+            VillageResidentMotionController resident = _residentControllers[index];
+            resident.Sample(Strolls(index) ? VillageResidentMotionLibrary.Motion.Walk : VillageResidentMotionLibrary.Motion.Idle,
+                Strolls(index) ? WalkSampleTime(index, movementTime) : movementTime + index * .31f);
+            resident.Blend(VillageResidentMotionLibrary.Motion.Idle, ambientTime + index * .53f, notice);
+            if (isStory && age > 0f)
+            {
+                // Standard has no dedicated Surprise clip. Its real chest recoil becomes the apparition reaction.
+                float recoil = SmoothRange(0f, .12f, age) * (1f - SmoothRange(.6f, 1.35f, age));
+                resident.Blend(VillageResidentMotionLibrary.Motion.HitChest, age * .36f, recoil, false);
+            }
+            resident.Blend(VillageResidentMotionLibrary.Motion.Crouch, ambientTime + index * .23f, protect);
+            float impactAge = Mathf.Max(0f, elapsed - ImpactTime);
+            float headHit = isStory ? SmoothRange(0f, .08f, impactAge) * (1f - SmoothRange(.45f, .9f, impactAge)) : 0f;
+            resident.Blend(VillageResidentMotionLibrary.Motion.HitHead, impactAge * .65f, headHit * .65f, false);
+            resident.Blend(VillageResidentMotionLibrary.Motion.Talking, ambientTime + index * .47f, dismay * .8f);
+            Vector3 lookTarget = Vector3.Lerp(_screenTargets[index].position, transform.TransformPoint(WraithArrivalPosition), notice);
+            lookTarget = Vector3.Lerp(lookTarget, _screenTargets[index].position, dismay);
+            float watching = Strolls(index) ? 0f : (1f - notice) * .8f;
+            float lookWeight = Mathf.Max(watching, Mathf.Max(notice * (1f - protect) * .8f, dismay * .8f));
+            resident.Apply(position, rotation, lookTarget, lookWeight);
         }
 
-        private void AnimateArms(int index, float stride, float idleSway, float walking, float notice, float protect, float dismay, float ambientTime)
+        private static bool Strolls(int index) => index == 0 || index == 2 || index == 5;
+
+        private static float[] BuildWalkArcDistances()
         {
-            float conversation = index % 2 == 1 ? Mathf.Max(0f, idleSway) : 0f;
-            Quaternion left = Quaternion.Euler(stride * 25f * walking - conversation * 35f, 0f, -6f - conversation * 15f);
-            Quaternion right = Quaternion.Euler(-stride * 25f * walking - conversation * 18f, 0f, 6f + conversation * 12f);
-            // Alternating residents point at the apparition or throw both hands up in surprise.
-            bool points = index % 2 == 0;
-            left = Quaternion.Slerp(left, Quaternion.Euler(points ? -68f : -105f, -12f, points ? -20f : -38f), notice);
-            right = Quaternion.Slerp(right, Quaternion.Euler(points ? -125f : -105f, 10f, points ? 7f : 38f), notice);
-            left = Quaternion.Slerp(left, Quaternion.Euler(-154f, -12f, -23f), protect);
-            right = Quaternion.Slerp(right, Quaternion.Euler(-154f, 12f, 23f), protect);
-            float gesture = Mathf.Sin(ambientTime * 3.5f + index) * 14f;
-            left = Quaternion.Slerp(left, Quaternion.Euler(-58f + gesture, -10f, -48f), dismay);
-            right = Quaternion.Slerp(right, Quaternion.Euler(-58f - gesture, 10f, 48f), dismay);
-            _leftArms[index].localRotation = _leftArmPoses[index].Rotation * left;
-            _rightArms[index].localRotation = _rightArmPoses[index].Rotation * right;
+            const int segments = 64;
+            float[] distances = new float[segments + 1];
+            Vector2 previous = new Vector2(0f, 1.1f);
+            for (int i = 1; i <= segments; i++)
+            {
+                float phase = i * (2f * Mathf.PI / segments);
+                Vector2 point = new Vector2(.38f * Mathf.Sin(phase), 1.1f * Mathf.Cos(phase));
+                distances[i] = distances[i - 1] + Vector2.Distance(previous, point);
+                previous = point;
+            }
+            return distances;
         }
 
-        private void AnimateLegs(int index, float stride, float walking, float notice, float protect, float noticeAge)
+        private static float RouteDistance(float phase)
         {
-            float retreatStep = noticeAge > 0f && noticeAge < 1.1f
-                ? Mathf.Sin(noticeAge / 1.1f * Mathf.PI * 2f) * notice
-                : 0f;
-            float step = stride * walking - retreatStep * .8f;
-            float leftHip = -step * 30f;
-            float rightHip = step * 30f;
-            float leftKnee = Mathf.Max(0f, step) * 42f;
-            float rightKnee = Mathf.Max(0f, -step) * 42f;
-            leftHip = Mathf.Lerp(leftHip, -52f, protect);
-            rightHip = Mathf.Lerp(rightHip, -52f, protect);
-            leftKnee = Mathf.Lerp(leftKnee, 100f, protect);
-            rightKnee = Mathf.Lerp(rightKnee, 100f, protect);
-            _leftHips[index].localRotation = _leftHipPoses[index].Rotation * Quaternion.Euler(leftHip, 0f, 0f);
-            _rightHips[index].localRotation = _rightHipPoses[index].Rotation * Quaternion.Euler(rightHip, 0f, 0f);
-            _leftKnees[index].localRotation = _leftKneePoses[index].Rotation * Quaternion.Euler(leftKnee, 0f, 0f);
-            _rightKnees[index].localRotation = _rightKneePoses[index].Rotation * Quaternion.Euler(rightKnee, 0f, 0f);
-            _leftFeet[index].localRotation = _leftFootPoses[index].Rotation * Quaternion.Euler(-leftHip - leftKnee, 0f, 0f);
-            _rightFeet[index].localRotation = _rightFootPoses[index].Rotation * Quaternion.Euler(-rightHip - rightKnee, 0f, 0f);
+            float turns = phase / (2f * Mathf.PI);
+            float completeTurns = Mathf.Floor(turns);
+            float sample = (turns - completeTurns) * 64f;
+            int first = Mathf.Min(63, Mathf.FloorToInt(sample));
+            return completeTurns * WalkArcDistances[64] +
+                Mathf.Lerp(WalkArcDistances[first], WalkArcDistances[first + 1], sample - first);
+        }
+
+        private static float WalkSampleTime(int index, float movementTime)
+        {
+            // Advance the authored gait by distance, so the narrow turns also slow the footsteps.
+            float phase = index * 1.3f;
+            float distance = RouteDistance(phase + movementTime * .55f) - RouteDistance(phase);
+            return distance * (1.3333333f / .9f) + index * .31f;
+        }
+
+        private void GetResidentPath(int index, float time, out Vector3 position, out Quaternion rotation)
+        {
+            position = _citizenPoses[index].Position;
+            rotation = _citizenPoses[index].Rotation;
+            if (!Strolls(index)) return;
+            // Narrow walking loops stay on the central paved paths and outside the viewing benches.
+            float phase = time * .55f + index * 1.3f;
+            position.x = Mathf.Clamp(position.x, -2.4f, 2.4f);
+            position += new Vector3(.38f * Mathf.Sin(phase), 0f, 1.1f * Mathf.Cos(phase));
+            Vector3 tangent = new Vector3(.38f * Mathf.Cos(phase), 0f, -1.1f * Mathf.Sin(phase));
+            rotation = Quaternion.LookRotation(tangent, Vector3.up);
+        }
+
+        public void BeginRestoration()
+        {
+            Initialize();
+            _ambientStartTime = 0f;
+            EvaluateRestoration(0f);
+        }
+
+        public void EvaluateRestoration(float elapsed)
+        {
+            Initialize();
+            float coreRecovery = SmoothRange(3f, 8f, elapsed);
+            AnimateClouds(elapsed);
+            AnimateDamage(16f);
+            _entranceBeacon.gameObject.SetActive(false);
+            Color cyan = new Color(.08f, .9f, .82f);
+            SetLightColor(_coreSurface, Color.Lerp(new Color(.15f, .025f, .05f), cyan, coreRecovery),
+                Mathf.Lerp(.15f, 1.4f + Mathf.Sin(elapsed * 3f) * .2f, coreRecovery));
+            for (int i = 0; i < _factoryLights.Length; i++)
+            {
+                float restored = SmoothRange(3.4f + i * .14f, 7.8f + i * .14f, elapsed);
+                SetLightColor(_factoryLights[i], Color.Lerp(new Color(.2f, .035f, .025f), cyan, restored), Mathf.Lerp(.06f, 1.1f, restored));
+            }
+            for (int i = 0; i < _supplyLights.Length; i++)
+            {
+                float restored = SmoothRange(7f + i * .12f, 8.5f + i * .12f, elapsed);
+                SetLightColor(_supplyLights[i], Color.Lerp(new Color(.035f, .07f, .09f), cyan, restored), 1.2f * restored);
+            }
+            // Integral of the acceleration curve keeps the restarted rotors continuous at both ends.
+            float ramp = Mathf.Clamp01((elapsed - 3f) / 5f);
+            float rotorTime = ImpactTime + 5f * (ramp * ramp * ramp - .5f * ramp * ramp * ramp * ramp) + Mathf.Max(0f, elapsed - 8f);
+            for (int i = 0; i < _rotors.Length; i++)
+            {
+                _rotors[i].localPosition = _rotorPoses[i].Position;
+                _rotors[i].localRotation = _rotorPoses[i].Rotation * Quaternion.Euler(0f, rotorTime * (65f + i * 16f), 0f);
+            }
+            for (int i = 0; i < _debris.Length; i++)
+            {
+                float repair = SmoothRange(3.2f + i * .08f, 6.2f + i * .08f, elapsed);
+                _debris[i].localPosition = Vector3.Lerp(_debris[i].localPosition, _debrisPoses[i].Position, repair);
+                _debris[i].localRotation = Quaternion.Slerp(_debris[i].localRotation, _debrisPoses[i].Rotation, repair);
+            }
+            for (int i = 0; i < _smoke.Length; i++)
+            {
+                float smokeFade = 1f - SmoothRange(3f, 7f, elapsed);
+                _smoke[i].gameObject.SetActive(smokeFade > .001f);
+                _smoke[i].localScale *= smokeFade;
+            }
+            for (int i = 0; i < _citizens.Length; i++) AnimateRestoredResident(i, elapsed);
+        }
+
+        private void AnimateRestoredResident(int index, float elapsed)
+        {
+            float recovery = SmoothRange(10f + index * .15f, 13.4f + index * .15f, elapsed);
+            float celebration = SmoothRange(13f + index * .14f, 14.4f + index * .14f, elapsed) *
+                (1f - SmoothRange(18f, 20f, elapsed));
+            float peaceful = SmoothRange(19f, 21f, elapsed);
+            float noticedAt = WraithArrivalTime + index * .12f;
+            GetResidentPath(index, noticedAt + WalkStopDuration * .5f, out Vector3 damagedPosition, out Quaternion ignored);
+            Vector3 away = WraithArrivalPosition - damagedPosition;
+            away.y = 0f;
+            damagedPosition -= away.normalized * .42f;
+            if (Strolls(index)) damagedPosition.x = Mathf.Clamp(damagedPosition.x, -2.85f, 2.85f);
+            Vector3 screenDirection = transform.InverseTransformPoint(_screenTargets[index].position) - damagedPosition;
+            screenDirection.y = 0f;
+            Quaternion screenFacing = Quaternion.LookRotation(screenDirection, Vector3.up);
+            GetResidentPath(index, Mathf.Max(0f, elapsed - 19f), out Vector3 peacefulPosition, out Quaternion peacefulFacing);
+            Vector3 position = Vector3.Lerp(damagedPosition, peacefulPosition, peaceful);
+            Quaternion facing = Quaternion.Slerp(screenFacing, peacefulFacing, peaceful);
+            VillageResidentMotionController resident = _residentControllers[index];
+            resident.Sample(VillageResidentMotionLibrary.Motion.Talking, elapsed + index * .47f);
+            resident.Blend(VillageResidentMotionLibrary.Motion.Idle, elapsed + index * .53f, recovery);
+            resident.Blend(VillageResidentMotionLibrary.Motion.Dance, (elapsed - 13f) * .85f + index * .17f, celebration);
+            resident.Blend(Strolls(index) ? VillageResidentMotionLibrary.Motion.Walk : VillageResidentMotionLibrary.Motion.Idle,
+                Strolls(index) ? WalkSampleTime(index, Mathf.Max(0f, elapsed - 19f)) : elapsed + index * .31f, peaceful);
+            resident.Apply(position, facing, _screenTargets[index].position, (1f - peaceful) * (1f - celebration) * .8f);
         }
 
         private static float SmoothRange(float from, float to, float value)

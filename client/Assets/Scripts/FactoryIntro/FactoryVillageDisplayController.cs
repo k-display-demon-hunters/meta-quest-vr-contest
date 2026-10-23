@@ -58,6 +58,23 @@ namespace FactoryIntro
                 _storyPlaybackOffset + time, damage, interference);
         }
 
+        public void BeginRestoration()
+        {
+            _storyPlaybackOffset = 0f;
+            EvaluateRestoration(0f);
+        }
+
+        public void EvaluateRestoration(float elapsed)
+        {
+            float time = Mathf.Max(0f, elapsed);
+            float recoveryStart = 8f + (float)_channel * 1.35f;
+            float recovery = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(recoveryStart, recoveryStart + 2.1f, time));
+            // Each damaged broadcast clears and resumes in turn as power reaches its display.
+            float playback = _failureTime + Mathf.Max(0f, time - recoveryStart) * recovery;
+            float interference = (1f - recovery) * (time < recoveryStart ? 0.12f : 0.3f);
+            ApplyFrame(playback, time + _failureTime, 1f - recovery, interference);
+        }
+
         private void ApplyFrame(float playbackTime, float signalTime, float damage, float interference)
         {
             if (!CacheProperties())

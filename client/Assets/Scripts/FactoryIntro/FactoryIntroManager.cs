@@ -78,17 +78,16 @@ namespace FactoryIntro
         private IEnumerator PlayStory()
         {
             _presentation.BeginCinematic();
+            _input.SetUIVisible(false);
             _cinematic.BeginOpening(_ambientTime);
             float elapsed = 0f;
             while (elapsed < FactoryIntroCinematicController.Duration)
             {
                 _cinematic.Evaluate(elapsed);
-                _presentation.ShowCinematicCaption(elapsed);
                 yield return null;
                 elapsed += Time.deltaTime;
             }
             _cinematic.Evaluate(FactoryIntroCinematicController.Duration);
-            _presentation.ShowCinematicCaption(FactoryIntroCinematicController.Duration);
             yield return EnterFactory();
         }
 
@@ -125,6 +124,7 @@ namespace FactoryIntro
         private void ShowRetry()
         {
             _stage = IntroStage.Retry;
+            _input.SetUIVisible(true);
             _presentation.Show("공장을 열지 못했습니다", "씬 등록 상태를 확인한 뒤 다시 시도해 주세요.", "다시 시도", true);
         }
 

@@ -1,329 +1,223 @@
-using System.Collections;
-using System.Collections.Generic;
+using FactoryIntro;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace FactoryEnding
 {
+    [DisallowMultipleComponent]
     public sealed class FactoryRestorationController : MonoBehaviour
     {
-        private const int LandscapeWidth = 32;
-        private const int LandscapeHeight = 24;
-        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId = Shader.PropertyToID("_Color");
-        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-        [SerializeField] private Transform _factoryRoot;
-        [SerializeField] private Transform _spiritRoot;
-        [SerializeField] private Renderer[] _restoredLights;
-        [SerializeField] private Renderer[] _windowSurfaces;
-        [SerializeField, Min(0.5f)] private float _duration = 5f;
-        private RendererState[] _factoryStates;
-        private RendererState[] _lightStates;
-        private Material[] _originalWindowMaterials;
-        private Material[] _windowMaterials;
-        private Texture2D[] _windowTextures;
-        private Color[][] _sharpLandscapes;
-        private Color[][] _blurredLandscapes;
-        private Color[] _landscapePixels;
-        private Vector3 _originalSpiritScale;
-        private bool _originalSpiritActive;
-        private bool _hasSpiritSnapshot;
+        public const float Duration = 23f;
+        private const int SparkCount = 32;
+        private const int RingSegments = 64;
+        private static readonly int DuskId = Shader.PropertyToID("_Dusk");
 
-        private sealed class RendererState
+        [SerializeField] private FactoryVillageController _village;
+        [SerializeField] private Material _effectMaterial;
+        [SerializeField] private Material _skyMaterial;
+        [SerializeField] private Light _sun;
+
+        private FactoryVillageDisplayController[] _displays;
+        private Material _skyInstance;
+        private Material _glowInstance;
+        private Mesh _sparkMesh;
+        private GameObject _effectsRoot;
+        private Transform[] _sparks;
+        private LineRenderer _coreRing;
+        private LineRenderer _powerWave;
+        private Camera _camera;
+        private CameraClearFlags _previousClearFlags;
+        private Material _previousSky;
+        private Color _previousAmbient;
+        private AmbientMode _previousAmbientMode;
+        private bool _hasEnvironmentSnapshot;
+
+        public bool IsReady => _village != null && _effectMaterial != null && _skyMaterial != null;
+
+        private void Awake()
         {
-            public Renderer Target;
-            public MaterialPropertyBlock Original;
-            public MaterialPropertyBlock Working;
-            public Color OriginalColor;
-            public bool HasBaseColor;
-            public bool HasColor;
-            public bool HasEmission;
+            if (!IsReady) return;
+            _skyInstance = new Material(_skyMaterial) { name = "Ending village sky" };
+            _glowInstance = new Material(_effectMaterial) { name = "Restoration glow" };
+            _glowInstance.EnableKeyword("_EMISSION");
+            _glowInstance.SetColor("_BaseColor", new Color(0.55f, 1f, 0.86f));
+            _glowInstance.SetColor("_EmissionColor", new Color(0.7f, 2f, 1.45f));
+            _displays = _village.GetComponentsInChildren<FactoryVillageDisplayController>(true);
+            _effectsRoot = new GameObject("Village restoration light");
+            _effectsRoot.transform.SetParent(transform, false);
+            _coreRing = CreateRing("Core gathering ring");
+            _powerWave = CreateRing("Restored power wave");
+            CreateSparks();
+            _effectsRoot.SetActive(false);
         }
 
-        public IEnumerator RestoreFactory()
+        public void BindCamera(Camera camera)
         {
-            if (_factoryRoot == null || _spiritRoot == null || _restoredLights == null || _windowSurfaces == null)
+            if (_camera == camera) return;
+            if (_camera != null) _camera.clearFlags = _previousClearFlags;
+            _camera = camera;
+            if (_camera == null) return;
+            _previousClearFlags = _camera.clearFlags;
+            _camera.clearFlags = CameraClearFlags.Skybox;
+        }
+
+        public void BeginRestoration()
+        {
+            if (!IsReady) return;
+            if (!_hasEnvironmentSnapshot)
             {
-                Debug.LogError("[FactoryEnding] 복구 연출의 공장·악령·조명·창문 참조를 확인해 주세요.", this);
-                yield break;
+                _previousSky = RenderSettings.skybox;
+                _previousAmbient = RenderSettings.ambientLight;
+                _previousAmbientMode = RenderSettings.ambientMode;
+                _hasEnvironmentSnapshot = true;
             }
-            CacheRendererStates();
-            CreateWindowLandscapes();
-            _originalSpiritScale = _spiritRoot.localScale;
-            _originalSpiritActive = _spiritRoot.gameObject.activeSelf;
-            _hasSpiritSnapshot = true;
-            ApplyRestoredLights(0);
-            int previousStep = -1;
-            for (float elapsed = 0f; elapsed < _duration; elapsed += Time.deltaTime)
+            RenderSettings.skybox = _skyInstance;
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            _effectsRoot.SetActive(true);
+            _village.BeginRestoration();
+            foreach (FactoryVillageDisplayController display in _displays) display.BeginRestoration();
+            Evaluate(0f);
+        }
+
+        public void Evaluate(float elapsed)
+        {
+            if (!IsReady) return;
+            float time = Mathf.Max(0f, elapsed);
+            _village.EvaluateRestoration(time);
+            foreach (FactoryVillageDisplayController display in _displays) display.EvaluateRestoration(time);
+            float daylight = Smooth(4f, 15f, time);
+            _skyInstance.SetFloat(DuskId, 1f - daylight);
+            RenderSettings.ambientLight = Color.Lerp(new Color(0.22f, 0.17f, 0.31f), new Color(0.72f, 0.8f, 0.83f), daylight);
+            if (_sun != null)
             {
-                float fraction = Mathf.Clamp01(elapsed / _duration);
-                int step = Mathf.FloorToInt(fraction * 20f);
-                if (step != previousStep)
+                _sun.intensity = Mathf.Lerp(0.32f, 1.25f, daylight);
+                _sun.color = Color.Lerp(new Color(0.53f, 0.48f, 0.8f), new Color(1f, 0.87f, 0.68f), daylight);
+            }
+            AnimateLight(time);
+        }
+
+        private void AnimateLight(float time)
+        {
+            Vector3 core = _village.CorePosition;
+            float ringEnvelope = Smooth(1.1f, 2.5f, time) * (1f - Smooth(6f, 8f, time));
+            DrawRing(_coreRing, core, Mathf.Lerp(3f, 0.72f, Smooth(1.5f, 5f, time)),
+                0.065f * ringEnvelope, time * 0.6f, false);
+            float wave = Smooth(6.4f, 13.2f, time);
+            Vector3 ground = new Vector3(core.x, _village.transform.position.y + 0.13f, core.z);
+            DrawRing(_powerWave, ground, Mathf.Lerp(0.4f, 17f, wave),
+                0.11f * Smooth(6.3f, 7.1f, time) * (1f - Smooth(11f, 13.2f, time)), 0f, true);
+
+            for (int i = 0; i < _sparks.Length; i++)
+            {
+                Transform spark = _sparks[i];
+                float phase = i * 2.399963f;
+                if (time < 7f)
                 {
-                    ApplyFactoryBrightness(Mathf.SmoothStep(0f, 1f, step / 20f));
-                    ApplyRestoredLights(Mathf.FloorToInt(fraction * _lightStates.Length));
-                    ApplyWindowClarity(fraction);
-                    previousStep = step;
+                    float progress = Smooth(0.8f + i * 0.035f, 4.8f + i * 0.035f, time);
+                    float radius = Mathf.Lerp(4.4f, 0.15f, progress);
+                    float angle = phase + time * 0.9f;
+                    spark.position = core + new Vector3(Mathf.Cos(angle) * radius,
+                        Mathf.Sin(phase * 1.7f) * radius * 0.65f, Mathf.Sin(angle) * radius * 0.65f);
+                    float size = 0.07f * Smooth(0.1f + i * 0.02f, 1.4f + i * 0.02f, time)
+                        * (1f - Smooth(4.7f + i * 0.035f, 5.8f + i * 0.035f, time));
+                    spark.localScale = Vector3.one * size;
+                    spark.gameObject.SetActive(size > 0.001f);
                 }
-                float disappearance = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.15f, 0.85f, fraction));
-                _spiritRoot.localScale = _originalSpiritScale * (1f - disappearance);
-                yield return null;
-            }
-            ApplyFactoryBrightness(1f);
-            ApplyRestoredLights(_lightStates.Length);
-            ApplyWindowClarity(1f);
-            _spiritRoot.gameObject.SetActive(false);
-        }
-
-        private void CacheRendererStates()
-        {
-            HashSet<Renderer> specialRenderers = new HashSet<Renderer>(_restoredLights);
-            specialRenderers.UnionWith(_windowSurfaces);
-            Renderer[] renderers = _factoryRoot.GetComponentsInChildren<Renderer>(true);
-            List<RendererState> factoryStates = new List<RendererState>(renderers.Length);
-            foreach (Renderer renderer in renderers)
-            {
-                if (!specialRenderers.Contains(renderer) && renderer.sharedMaterial != null)
+                else
                 {
-                    factoryStates.Add(CaptureRenderer(renderer));
+                    // A gentle release of light above the park; no camera shake or flashes.
+                    float rise = Smooth(11.5f + i * 0.09f, 19.5f + i * 0.05f, time);
+                    float radius = 2f + i % 7 * 1.15f;
+                    Vector3 local = new Vector3(Mathf.Cos(phase) * radius,
+                        1.2f + rise * 5.5f, 10f + Mathf.Sin(phase) * radius * 0.7f);
+                    local.x += Mathf.Sin(time * 0.7f + phase) * 0.25f;
+                    spark.position = _village.transform.TransformPoint(local);
+                    float size = 0.06f * Smooth(11.5f + i * 0.09f, 13f + i * 0.09f, time)
+                        * (1f - Smooth(18.5f, 22f, time));
+                    spark.localScale = new Vector3(size, size * 1.5f, size);
+                    spark.gameObject.SetActive(size > 0.001f);
                 }
-            }
-            _factoryStates = factoryStates.ToArray();
-            _lightStates = new RendererState[_restoredLights.Length];
-            for (int i = 0; i < _restoredLights.Length; i++)
-            {
-                _lightStates[i] = CaptureRenderer(_restoredLights[i]);
-            }
-        }
-
-        private RendererState CaptureRenderer(Renderer renderer)
-        {
-            Material material = renderer.sharedMaterial;
-            RendererState state = new RendererState
-            {
-                Target = renderer,
-                Original = new MaterialPropertyBlock(),
-                Working = new MaterialPropertyBlock(),
-                HasBaseColor = material.HasProperty(BaseColorId),
-                HasColor = material.HasProperty(ColorId),
-                HasEmission = material.HasProperty(EmissionColorId)
-            };
-            renderer.GetPropertyBlock(state.Original);
-            renderer.GetPropertyBlock(state.Working);
-            state.OriginalColor = state.HasBaseColor ? material.GetColor(BaseColorId) :
-                state.HasColor ? material.GetColor(ColorId) : Color.white;
-            return state;
-        }
-
-        private void ApplyFactoryBrightness(float fraction)
-        {
-            foreach (RendererState state in _factoryStates)
-            {
-                Color original = state.OriginalColor;
-                Color restored = new Color(
-                    Mathf.Clamp01(original.r * 1.3f + .025f),
-                    Mathf.Clamp01(original.g * 1.3f + .03f),
-                    Mathf.Clamp01(original.b * 1.3f + .035f), original.a);
-                ApplyColor(state, Color.Lerp(original, restored, fraction));
-            }
-        }
-
-        private void ApplyRestoredLights(int count)
-        {
-            for (int i = 0; i < _lightStates.Length; i++)
-            {
-                bool restored = i < count;
-                Color color = restored
-                    ? (i % 2 == 0 ? new Color(.16f, .95f, .74f) : new Color(1f, .72f, .22f))
-                    : new Color(.035f, .065f, .08f);
-                RendererState state = _lightStates[i];
-                ApplyColor(state, color);
-                if (state.HasEmission)
-                {
-                    state.Working.SetColor(EmissionColorId, restored ? color * 2f : Color.black);
-                    state.Target.SetPropertyBlock(state.Working);
-                }
+                spark.localRotation = Quaternion.Euler(time * 24f + i * 17f, time * 31f, i * 29f);
             }
         }
 
-        private void ApplyColor(RendererState state, Color color)
+        private LineRenderer CreateRing(string objectName)
         {
-            if (state.Target == null)
-            {
-                return;
-            }
-            if (state.HasBaseColor)
-            {
-                state.Working.SetColor(BaseColorId, color);
-            }
-            if (state.HasColor)
-            {
-                state.Working.SetColor(ColorId, color);
-            }
-            state.Target.SetPropertyBlock(state.Working);
+            LineRenderer ring = new GameObject(objectName, typeof(LineRenderer)).GetComponent<LineRenderer>();
+            ring.transform.SetParent(_effectsRoot.transform, false);
+            ring.sharedMaterial = _glowInstance;
+            ring.positionCount = RingSegments;
+            ring.loop = true;
+            ring.useWorldSpace = true;
+            ring.shadowCastingMode = ShadowCastingMode.Off;
+            ring.receiveShadows = false;
+            ring.numCornerVertices = 2;
+            ring.enabled = false;
+            return ring;
         }
 
-        private void CreateWindowLandscapes()
+        private static void DrawRing(LineRenderer ring, Vector3 center, float radius, float width,
+            float rotation, bool horizontal)
         {
-            int count = _windowSurfaces.Length;
-            _originalWindowMaterials = new Material[count];
-            _windowMaterials = new Material[count];
-            _windowTextures = new Texture2D[count];
-            _sharpLandscapes = new Color[count][];
-            _blurredLandscapes = new Color[count][];
-            _landscapePixels = new Color[LandscapeWidth * LandscapeHeight];
-            for (int i = 0; i < count; i++)
+            ring.enabled = width > 0.001f;
+            if (!ring.enabled) return;
+            ring.startWidth = ring.endWidth = width;
+            for (int i = 0; i < RingSegments; i++)
             {
-                _sharpLandscapes[i] = CreateLandscape(i);
-                _blurredLandscapes[i] = BlurLandscape(_sharpLandscapes[i]);
-                _windowTextures[i] = new Texture2D(LandscapeWidth, LandscapeHeight, TextureFormat.RGBA32, false)
-                {
-                    name = "Restored Window " + (i + 1),
-                    filterMode = FilterMode.Point,
-                    wrapMode = TextureWrapMode.Clamp
-                };
-                _originalWindowMaterials[i] = _windowSurfaces[i].sharedMaterial;
-                Material material = new Material(_originalWindowMaterials[i])
-                {
-                    name = "Ending Window Material " + (i + 1),
-                    mainTexture = _windowTextures[i]
-                };
-                if (material.HasProperty("_BaseMap"))
-                {
-                    material.SetTexture("_BaseMap", _windowTextures[i]);
-                }
-                if (material.HasProperty("_MainTex"))
-                {
-                    material.SetTexture("_MainTex", _windowTextures[i]);
-                }
-                if (material.HasProperty(BaseColorId))
-                {
-                    material.SetColor(BaseColorId, Color.white);
-                }
-                if (material.HasProperty(ColorId))
-                {
-                    material.SetColor(ColorId, Color.white);
-                }
-                _windowMaterials[i] = material;
-                _windowSurfaces[i].sharedMaterial = material;
-            }
-            ApplyWindowClarity(0f);
-        }
-
-        private Color[] CreateLandscape(int windowIndex)
-        {
-            Color[] pixels = new Color[LandscapeWidth * LandscapeHeight];
-            for (int y = 0; y < LandscapeHeight; y++)
-            {
-                for (int x = 0; x < LandscapeWidth; x++)
-                {
-                    int offsetX = x + windowIndex * 9;
-                    int distantRidge = 11 + Mathf.RoundToInt(4f * Mathf.Abs(Mathf.Sin(offsetX * .14f)));
-                    int nearRidge = 7 + Mathf.RoundToInt(3f * Mathf.Abs(Mathf.Sin(offsetX * .18f + 1f)));
-                    Color color = Color.Lerp(new Color(.68f, .86f, .93f), new Color(.16f, .46f, .76f), y / 23f);
-                    if ((x - 24) * (x - 24) + (y - 19) * (y - 19) <= 6)
-                    {
-                        color = new Color(1f, .9f, .58f);
-                    }
-                    if (y < distantRidge)
-                    {
-                        color = new Color(.24f, .46f, .5f);
-                    }
-                    if (y < nearRidge)
-                    {
-                        color = new Color(.12f, .34f, .31f);
-                    }
-                    if (y < 5)
-                    {
-                        color = (x + y + windowIndex) % 5 == 0
-                            ? new Color(.52f, .72f, .3f) : new Color(.29f, .55f, .25f);
-                    }
-                    pixels[y * LandscapeWidth + x] = color;
-                }
-            }
-            return pixels;
-        }
-
-        private Color[] BlurLandscape(Color[] sharp)
-        {
-            Color[] blurred = new Color[sharp.Length];
-            for (int y = 0; y < LandscapeHeight; y++)
-            {
-                for (int x = 0; x < LandscapeWidth; x++)
-                {
-                    Color sum = Color.clear;
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        for (int dx = -1; dx <= 1; dx++)
-                        {
-                            int sampleX = Mathf.Clamp(x + dx, 0, LandscapeWidth - 1);
-                            int sampleY = Mathf.Clamp(y + dy, 0, LandscapeHeight - 1);
-                            sum += sharp[sampleY * LandscapeWidth + sampleX];
-                        }
-                    }
-                    blurred[y * LandscapeWidth + x] = sum / 9f;
-                }
-            }
-            return blurred;
-        }
-
-        private void ApplyWindowClarity(float fraction)
-        {
-            for (int window = 0; window < _windowTextures.Length; window++)
-            {
-                for (int pixel = 0; pixel < _landscapePixels.Length; pixel++)
-                {
-                    _landscapePixels[pixel] = Color.Lerp(
-                        _blurredLandscapes[window][pixel], _sharpLandscapes[window][pixel], fraction);
-                }
-                _windowTextures[window].SetPixels(_landscapePixels);
-                _windowTextures[window].Apply(false, false);
+                float angle = i * Mathf.PI * 2f / RingSegments + rotation;
+                Vector3 direction = horizontal
+                    ? new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle))
+                    : new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
+                ring.SetPosition(i, center + direction * radius);
             }
         }
 
-        private void RestoreRendererStates(RendererState[] states)
+        private void CreateSparks()
         {
-            if (states == null)
+            _sparkMesh = new Mesh { name = "Restoration light mesh" };
+            _sparkMesh.vertices = new[] { Vector3.up, Vector3.right, Vector3.forward, Vector3.left, Vector3.back, Vector3.down };
+            _sparkMesh.triangles = new[] { 0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4, 5, 1, 2, 5, 2, 3, 5, 3, 4, 5, 4, 1 };
+            _sparkMesh.RecalculateNormals();
+            _sparkMesh.RecalculateBounds();
+            _sparks = new Transform[SparkCount];
+            for (int i = 0; i < SparkCount; i++)
             {
-                return;
+                GameObject spark = new GameObject("Restored light " + i, typeof(MeshFilter), typeof(MeshRenderer));
+                spark.transform.SetParent(_effectsRoot.transform, false);
+                spark.GetComponent<MeshFilter>().sharedMesh = _sparkMesh;
+                MeshRenderer renderer = spark.GetComponent<MeshRenderer>();
+                renderer.sharedMaterial = _glowInstance;
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                spark.SetActive(false);
+                _sparks[i] = spark.transform;
             }
-            foreach (RendererState state in states)
+        }
+
+        private static float Smooth(float from, float to, float time)
+            => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, time));
+
+        private void OnDisable()
+        {
+            if (_camera != null)
             {
-                if (state.Target != null)
-                {
-                    state.Target.SetPropertyBlock(state.Original);
-                }
+                _camera.clearFlags = _previousClearFlags;
+                _camera = null;
+            }
+            if (_hasEnvironmentSnapshot && SceneManager.GetActiveScene() == gameObject.scene)
+            {
+                RenderSettings.skybox = _previousSky;
+                RenderSettings.ambientLight = _previousAmbient;
+                RenderSettings.ambientMode = _previousAmbientMode;
             }
         }
 
         private void OnDestroy()
         {
-            StopAllCoroutines();
-            RestoreRendererStates(_factoryStates);
-            RestoreRendererStates(_lightStates);
-            if (_hasSpiritSnapshot && _spiritRoot != null)
-            {
-                _spiritRoot.localScale = _originalSpiritScale;
-                _spiritRoot.gameObject.SetActive(_originalSpiritActive);
-            }
-            if (_windowMaterials == null)
-            {
-                return;
-            }
-            for (int i = 0; i < _windowMaterials.Length; i++)
-            {
-                if (_windowSurfaces[i] != null && _windowSurfaces[i].sharedMaterial == _windowMaterials[i])
-                {
-                    _windowSurfaces[i].sharedMaterial = _originalWindowMaterials[i];
-                }
-                if (_windowMaterials[i] != null)
-                {
-                    Destroy(_windowMaterials[i]);
-                }
-                if (_windowTextures[i] != null)
-                {
-                    Destroy(_windowTextures[i]);
-                }
-            }
+            if (_skyInstance != null) Destroy(_skyInstance);
+            if (_glowInstance != null) Destroy(_glowInstance);
+            if (_sparkMesh != null) Destroy(_sparkMesh);
         }
     }
 }

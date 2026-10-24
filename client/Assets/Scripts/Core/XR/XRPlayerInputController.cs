@@ -2,9 +2,7 @@ using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 
@@ -41,14 +39,6 @@ namespace XR
         private bool _tutorialInputSuppressed;
         private bool _tutorialRayForcedOn;
         private bool _laserStateBeforeTutorial;
-        private Transform _handRayOrigin;
-        private Transform _handAttach;
-        private Pose _handAttachPose;
-        private Transform _gazeAttach;
-        private bool _followingGaze;
-        private Transform _previousLineOrigin;
-        private bool _previousLineOriginOverride;
-        private float _previousLineBend;
         private bool _bound;
 
         public bool TutorialInputSuppressed
@@ -143,11 +133,6 @@ namespace XR
             }
             _lineVisual = _rightRay.GetComponent<XRInteractorLineVisual>();
             _line = _rightRay.GetComponent<LineRenderer>();
-            if (_gazeAttach == null)
-            {
-                _gazeAttach = new GameObject("Gaze Grab Anchor").transform;
-                _gazeAttach.SetParent(_rig.Camera.transform, false);
-            }
             if (_uiPress == null)
             {
                 _uiPress = new XRInputButtonReader("Right Trigger UI",
@@ -213,9 +198,9 @@ namespace XR
             _rightRay.hitClosestOnly = true;
             // The right stick controls the view, including while an object is held.
             _rightRay.manipulateAttachTransform = false;
-            _rightRay.selectActionTrigger = XRBaseInputInteractor.InputTriggerType.StateChange;
-            _rightRay.selectEntered.AddListener(HandleGrabbed);
-            _rightRay.selectExited.AddListener(HandleReleased);
+            // Keep XRI's hand-relative ray and attach point so held objects follow the controller.
+            // Holding Grip should also acquire a target reached after the initial button press.
+            _rightRay.selectActionTrigger = XRBaseInputInteractor.InputTriggerType.State;
             _bound = true;
             SetLaserEnabled(_tutorialRayForcedOn || _laserEnabled);
             RestoreUIRegistration();
@@ -278,54 +263,6 @@ namespace XR
             }
         }
 
-        private void HandleGrabbed(SelectEnterEventArgs args)
-        {
-            if (_followingGaze || args.interactableObject is not XRGrabInteractable)
-            {
-                return;
-            }
-            _handRayOrigin = _rightRay.rayOriginTransform;
-            _handAttach = _rightRay.attachTransform;
-            _handAttachPose = _rightRay.GetLocalAttachPoseOnSelect(args.interactableObject);
-            // Preserve the picked point and distance so switching to gaze does not snap the object.
-            _gazeAttach.SetPositionAndRotation(_handAttach.position, _handAttach.rotation);
-            _rightRay.attachTransform = _gazeAttach;
-            _rightRay.rayOriginTransform = _rig.Camera.transform;
-            if (_lineVisual != null)
-            {
-                _previousLineOrigin = _lineVisual.lineOriginTransform;
-                _previousLineOriginOverride = _lineVisual.overrideInteractorLineOrigin;
-                _previousLineBend = _lineVisual.lineBendRatio;
-                _lineVisual.lineOriginTransform = _handRayOrigin;
-                _lineVisual.overrideInteractorLineOrigin = true;
-                _lineVisual.lineBendRatio = 0f;
-            }
-            _followingGaze = true;
-        }
-
-        private void HandleReleased(SelectExitEventArgs args)
-        {
-            RestoreHandRay();
-        }
-
-        private void RestoreHandRay()
-        {
-            if (!_followingGaze)
-            {
-                return;
-            }
-            _rightRay.attachTransform = _handAttach;
-            _handAttach.SetLocalPositionAndRotation(_handAttachPose.position, _handAttachPose.rotation);
-            _rightRay.rayOriginTransform = _handRayOrigin;
-            if (_lineVisual != null)
-            {
-                _lineVisual.lineOriginTransform = _previousLineOrigin;
-                _lineVisual.overrideInteractorLineOrigin = _previousLineOriginOverride;
-                _lineVisual.lineBendRatio = _previousLineBend;
-            }
-            _followingGaze = false;
-        }
-
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
@@ -337,9 +274,6 @@ namespace XR
             {
                 return;
             }
-            RestoreHandRay();
-            _rightRay.selectEntered.RemoveListener(HandleGrabbed);
-            _rightRay.selectExited.RemoveListener(HandleReleased);
             _rightRay.uiPressInput = _previousUIPress;
             _rightRay.enableUIInteraction = _previousUIInteraction;
             _rightRay.allowHoveredActivate = _previousHoveredActivate;
@@ -357,10 +291,6 @@ namespace XR
             _quit?.Dispose();
             _uiPress?.inputActionPerformed.Dispose();
             _uiPress?.inputActionValue.Dispose();
-            if (_gazeAttach != null)
-            {
-                Destroy(_gazeAttach.gameObject);
-            }
         }
     }
 }

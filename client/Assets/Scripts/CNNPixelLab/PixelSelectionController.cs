@@ -38,7 +38,7 @@ namespace UI
             _lensMaterial = lensMaterial;
             _columns = columns;
             _rows = rows;
-            // Use the same gaze-following grab movement as the detail-view objects.
+            // Use the same right-hand ray grab movement as the detail-view objects.
             _filter.trackPosition = true;
             _filter.trackRotation = false;
             _filter.movementType = XRBaseInteractable.MovementType.Instantaneous;

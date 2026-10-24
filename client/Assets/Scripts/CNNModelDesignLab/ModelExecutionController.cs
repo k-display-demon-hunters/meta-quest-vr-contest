@@ -352,23 +352,68 @@ namespace ModelDesignScene
 
         private static string GetServerErrorMessage(ModelServerError error)
         {
-            switch (error.Code)
+            string detail = error?.Message?.Trim() ?? string.Empty;
+            string headline;
+            switch (error?.Code)
             {
                 case "training_failed":
-                    return "서버에서 학습 또는 평가에 실패했습니다. 모델을 확인하고 다시 학습하세요.";
+                    headline = detail == "Training worker failed." || detail == "Model training failed. Check the server log."
+                        ? "학습 또는 평가에 실패했습니다. 서버가 상세 원인을 보내지 않아 서버 로그 확인이 필요합니다."
+                        : "학습 또는 평가를 완료하지 못했습니다. 아래 서버 설명을 확인하고 다시 시도하세요.";
+                    break;
                 case "no_model":
-                    return "서버에 학습된 모델이 없습니다. 다시 학습하세요.";
+                    headline = "서버에 학습된 모델이 없습니다. 다시 학습하세요.";
+                    break;
                 case "image_not_found":
-                    return "서버에 같은 ID의 샘플 이미지가 없습니다. 이미지 파일명을 확인하세요.";
+                    headline = "서버에 같은 ID의 샘플 이미지가 없습니다. 이미지 파일명을 확인하세요.";
+                    break;
                 case "inference_failed":
-                    return "이미지 예측에 실패했습니다. 다른 샘플을 선택하거나 다시 시도하세요.";
+                    headline = "이미지 예측에 실패했습니다. 다른 샘플을 선택하거나 다시 시도하세요.";
+                    break;
                 case "no_training":
-                    return "서버에 진행 중인 학습이 없습니다. 다시 학습하세요.";
+                    headline = "서버에 진행 중인 학습이 없습니다. 다시 학습하세요.";
+                    break;
                 case "invalid_request":
-                    return "서버가 요청을 거절했습니다. 모델과 샘플 설정을 확인하세요.";
+                    headline = "서버가 요청을 거절했습니다. 아래 설명에 해당하는 모델 또는 샘플 설정을 수정하세요.";
+                    // Pydantic prefixes these authored model-validation messages; retain the original below.
+                    const string ValidationPrefix = "Value error, ";
+                    string reason = detail.StartsWith(ValidationPrefix, StringComparison.Ordinal)
+                        ? detail.Substring(ValidationPrefix.Length) : detail;
+                    switch (reason)
+                    {
+                        case "Kernel/pool size produces an empty spatial dimension":
+                            headline = "Conv 커널이나 Pooling 크기 때문에 특징 맵의 높이·너비가 1보다 작아졌습니다. 커널·풀 크기나 앞의 축소 단계 수를 줄이세요.";
+                            break;
+                        case "A layer exceeds the 200000 activation limit":
+                            headline = "한 층의 특징값 수가 200,000개를 넘었습니다. Conv 필터 수나 특징 맵 크기를 줄이세요.";
+                            break;
+                        case "Model exceeds the 2000000 parameter limit":
+                            headline = "학습 파라미터가 2,000,000개를 넘었습니다. Conv 필터 수·Dense 뉴런 수를 줄이거나 Dense 앞에서 Pooling으로 특징 맵을 줄이세요.";
+                            break;
+                        case "Insert Flatten between spatial layers and Dense":
+                            headline = "Conv·Pooling과 Dense 사이에 Flatten이 필요합니다. 마지막 공간 처리 블록 뒤에 FLATTEN을 놓으세요.";
+                            break;
+                        case "Only Dense may follow Dense or Flatten":
+                            headline = "Dense·Flatten 뒤에는 Dense만 연결할 수 있습니다. Conv·Pooling을 앞으로 옮기고 중복 Flatten을 제거하세요.";
+                            break;
+                        case "input.shape must be [28, 28, 1]":
+                            headline = "입력 이미지 형식이 맞지 않습니다. 모델은 28 × 28 크기의 단일 채널 입력을 사용해야 합니다.";
+                            break;
+                        case "modelType must match the presence of Conv2D or Pooling":
+                            headline = "모델 종류와 블록 구성이 일치하지 않습니다. Conv·Pooling이 있으면 CNN, 없으면 MLP로 전달되어야 합니다.";
+                            break;
+                        case "The final layer must be Dense(10, softmax)":
+                            headline = "마지막 출력 형식이 맞지 않습니다. 고정 OUTPUT은 뉴런 10개와 Softmax 설정을 사용해야 합니다.";
+                            break;
+                    }
+                    break;
                 default:
-                    return "서버에서 작업을 처리하지 못했습니다. 다시 시도하세요.";
+                    headline = "서버에서 작업을 처리하지 못했습니다. 아래 설명을 확인하고 다시 시도하세요.";
+                    break;
             }
+            return string.IsNullOrWhiteSpace(detail)
+                ? headline + "\n서버가 추가 설명을 보내지 않았습니다."
+                : headline + "\n서버 설명: " + detail;
         }
 
         private void HandleProtocolError(Exception exception)

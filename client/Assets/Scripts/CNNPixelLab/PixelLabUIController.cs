@@ -40,7 +40,7 @@ namespace UI
 
         public void ShowFilterGrabbed()
         {
-            _instruction.text = "시선으로 필터를 옮기고 원하는 부분에서 Grip을 놓으세요";
+            _instruction.text = "오른손 레이로 필터를 옮기고 원하는 부분에서 Grip을 놓으세요";
             _detailButton.interactable = false;
         }
 
@@ -81,7 +81,7 @@ namespace UI
             }
             _instruction.text = hasSelection
                 ? "‘더 자세히 보기’를 눌러 RGB 값을 살펴보세요"
-                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip을 누른 채 시선으로 이동 · 클릭: Trigger";
+                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip을 누른 채 레이로 이동 · 클릭: Trigger";
         }
 
         public void SetBackgroundHidden(bool hidden)

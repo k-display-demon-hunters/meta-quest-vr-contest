@@ -183,6 +183,8 @@ namespace Tablet
 
         internal void ShowDetail(string title, string body, bool showImage)
         {
+            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(false);
+            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "완료";
             _ui.Shell.FactoryMapView.SetActive(false);
             _ui.Shell.DetailBody.gameObject.SetActive(true);
             _detailReturnFocusIndex = _input.FocusIndex;
@@ -200,6 +202,27 @@ namespace Tablet
         {
             _ui.Shell.DetailOverlay.SetActive(false);
             _input.ResetFocus(_detailReturnFocusIndex);
+        }
+
+        internal void RequestApplicationQuit()
+        {
+            ShowDetail("앱 종료", "체험을 종료하고 Quest 홈으로 돌아갈까요?\n\n현재 체험 진행과 학습 결과는 유지되지 않습니다.", false);
+            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "취소";
+            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(true);
+            _input.ResetFocus(0);
+        }
+
+        internal void ConfirmApplicationQuit()
+        {
+            if (!_ui.Shell.DetailOverlay.activeSelf || !_ui.Shell.ConfirmQuitButton.gameObject.activeSelf)
+            {
+                return;
+            }
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         internal void ToggleSettings()

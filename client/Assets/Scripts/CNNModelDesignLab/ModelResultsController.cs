@@ -1,7 +1,7 @@
 using System;
+using CNNTraining;
 using System.Collections.Generic;
 using ModelDesign;
-using Networking;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -162,22 +162,19 @@ namespace ModelDesignScene
 
         public void ShowState(ModelExecutionState state, bool hasTrainedModel, bool canInfer, bool canCancel)
         {
-            _isBusy = state == ModelExecutionState.Connecting || state == ModelExecutionState.StartingTraining
+            _isBusy = state == ModelExecutionState.StartingTraining
                 || state == ModelExecutionState.Training || state == ModelExecutionState.CancellingTraining
                 || state == ModelExecutionState.Inferring;
             switch (state)
             {
-                case ModelExecutionState.Connecting:
-                    _stateText.text = "학습 서버에 연결하고 있습니다…";
-                    break;
                 case ModelExecutionState.StartingTraining:
-                    _stateText.text = "모델을 전달했습니다. 학습 시작을 기다립니다…";
+                    _stateText.text = "모델 학습을 준비하는 중…";
                     break;
                 case ModelExecutionState.Training:
-                    _stateText.text = "학습 중 · 학습과 검증 지표의 변화를 비교해 보세요.";
+                    _stateText.text = "학습 중 · 완료된 에포크의 지표를 표시합니다.";
                     break;
                 case ModelExecutionState.CancellingTraining:
-                    _stateText.text = "학습 중지 요청을 보냈습니다. 응답을 기다립니다…";
+                    _stateText.text = "학습을 취소하는 중…";
                     break;
                 case ModelExecutionState.Completed:
                     _stateText.text = "학습 완료 · 숫자 예측 화면에서 새로운 이미지를 확인하세요.";
@@ -212,7 +209,7 @@ namespace ModelDesignScene
 
         public void ShowCancelled()
         {
-            _stateText.text = "학습 중지됨 · 그래프에는 중지 전까지 받은 지표가 남아 있습니다.";
+            _stateText.text = "학습 취소됨 · 그래프에는 취소 전 완료된 에포크만 남아 있습니다.";
             DismissError();
             _inference.ResetTraining();
         }

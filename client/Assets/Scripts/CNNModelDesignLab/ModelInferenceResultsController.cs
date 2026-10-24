@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -131,7 +131,7 @@ namespace ModelDesignScene
                 {
                     predicted = index;
                 }
-                // Preserve Softmax values from the server; only the drawing range is clamped.
+                // Preserve Softmax values from the model; only the drawing range is clamped.
                 _probabilityLabels[index].text = index + "  " + FormatPercentage(result.Output[index]);
                 SetProgress(_probabilityBars[index], (float)Math.Max(0, Math.Min(1, result.Output[index])));
             }

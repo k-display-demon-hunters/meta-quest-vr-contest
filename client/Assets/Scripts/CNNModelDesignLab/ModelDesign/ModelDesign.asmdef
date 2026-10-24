@@ -1,5 +1,6 @@
 {
     "name": "ModelDesign",
     "rootNamespace": "ModelDesign",
+    "references": ["CNNTraining"],
     "noEngineReferences": true
 }

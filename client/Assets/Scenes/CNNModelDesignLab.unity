@@ -956,6 +956,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccb432a438284673bc48c1e54a365b3f, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelExecutionController
+  _trainingSettings: {fileID: 11400000, guid: 0fe0e7abe05e443fadb14de959181432, type: 2}
 --- !u!1001 &50000
 PrefabInstance:
   m_ObjectHideFlags: 0

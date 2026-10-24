@@ -105,7 +105,7 @@ namespace ModelDesignScene
                 _statusAccent.color = _readyColor;
                 _title.text = "블록 순서 확인 완료";
                 _location.text = $"INPUT → {occupiedCount}개 블록 → OUTPUT";
-                _reason.text = "블록 순서 검사를 통과했습니다. 모델 크기와 학습 가능 여부는 학습을 시작한 뒤 추가로 확인합니다.";
+                _reason.text = "블록 순서와 모델 크기 검사를 통과했습니다. 학습 결과는 학습·검증 지표에서 확인하세요.";
                 _action.text = "학습 시작을 누르세요. Conv·Pooling 뒤에 Dense·Output을 둘 때는 Flatten이 필요합니다.";
                 return;
             }

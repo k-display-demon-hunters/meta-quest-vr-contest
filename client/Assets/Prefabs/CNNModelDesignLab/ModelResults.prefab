@@ -15102,7 +15102,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "연결 안내라면 서버 상태를 확인해 주세요. 모델 설정 안내라면 해당 블록의 설정을 바꾼 뒤 다시 학습하세요."
+  m_Text: "표시된 오류 내용을 확인해 주세요. 모델 설정 안내라면 해당 블록의 설정을 바꾼 뒤 다시 학습하세요."
 --- !u!1 &3810
 GameObject:
   m_ObjectHideFlags: 0

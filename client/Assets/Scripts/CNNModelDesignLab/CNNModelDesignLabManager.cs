@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using ModelDesign;
-using Networking;
+using CNNTraining;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -218,9 +218,10 @@ namespace ModelDesignScene
             {
                 return;
             }
-            bool valid = ModelJsonSerializer.TrySerialize(_workspace, out string json,
+            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+                out ModelExecutionDefinition definition,
                 out IReadOnlyList<ValidationIssue> issues);
-            PublishWorkspaceUI(valid, json, issues, !valid);
+            PublishWorkspaceUI(valid, definition, issues, !valid);
             if (!valid)
             {
                 return;
@@ -228,7 +229,7 @@ namespace ModelDesignScene
             _settings.Close();
             _results.ResetTraining();
             _trainingCompleted = false;
-            await _execution.StartTrainingAsync(json);
+            await _execution.StartTrainingAsync(definition);
         }
 
         private async void HandleTrainingStopRequested()
@@ -288,12 +289,13 @@ namespace ModelDesignScene
 
         private void RefreshWorkspaceUI()
         {
-            bool valid = ModelJsonSerializer.TrySerialize(_workspace, out string json,
+            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+                out ModelExecutionDefinition definition,
                 out IReadOnlyList<ValidationIssue> issues);
-            PublishWorkspaceUI(valid, json, issues, false);
+            PublishWorkspaceUI(valid, definition, issues, false);
         }
 
-        private void PublishWorkspaceUI(bool valid, string json, IReadOnlyList<ValidationIssue> issues, bool focus)
+        private void PublishWorkspaceUI(bool valid, ModelExecutionDefinition definition, IReadOnlyList<ValidationIssue> issues, bool focus)
         {
             _workspaceUIIsDirty = false;
             LayerDefinition[] slotLayers = new LayerDefinition[_conveyor.SlotCount];
@@ -303,9 +305,9 @@ namespace ModelDesignScene
                 slotLayers[index] = block != null ? block.Layer : null;
             }
             _results.ShowModelValidation(issues, slotLayers, _grabbedBlock != null, focus);
-            string submitted = _execution.SubmittedModelJson;
+            ModelExecutionDefinition submitted = _execution.SubmittedModel;
             bool changed = submitted != null &&
-                (!valid || !string.Equals(submitted, json, System.StringComparison.Ordinal));
+                (!valid || !ModelExecutionDefinitionBuilder.Matches(submitted, definition));
             _results.SetModelChanged(changed);
         }
 

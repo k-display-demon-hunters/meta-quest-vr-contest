@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e61fcf312166462795cfdd667b8deb07, type: 3}
+  m_Name: LocalTrainingSettings
+  m_EditorClassIdentifier:
+  _trainingDataset: {fileID: 4900000, guid: 5a04c8f9769741b9855446a7af689444, type: 3}
+  _testDataset: {fileID: 4900000, guid: f90a39b09e1d49f992eb79195aea5899, type: 3}
+  _epochs: 3
+  _batchSize: 16
+  _learningRate: 0.001
+  _seed: 42
+  _maxParameters: 100000
+  _maxMultiplyAdds: 2000000
+  _maxActivationElements: 32768
+  _maxLayers: 16

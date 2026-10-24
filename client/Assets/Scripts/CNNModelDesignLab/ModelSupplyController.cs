@@ -53,7 +53,7 @@ namespace ModelDesignScene
         {
             switch (type)
             {
-                case LayerType.Conv2D: return LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
+                case LayerType.Conv2D: return LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
                 case LayerType.MaxPooling2D: return LayerDefinition.MaxPooling2D(2, 2);
                 case LayerType.Flatten: return LayerDefinition.Flatten();
                 case LayerType.Dense: return LayerDefinition.Dense(32, ActivationType.ReLU);

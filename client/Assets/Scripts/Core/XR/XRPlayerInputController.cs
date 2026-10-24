@@ -24,7 +24,6 @@ namespace XR
         private InputAction _look;
         private InputAction _recenter;
         private InputAction _laser;
-        private InputAction _quit;
         private XRRayInteractor _rightRay;
         private XRInteractorLineVisual _lineVisual;
         private LineRenderer _line;
@@ -88,8 +87,6 @@ namespace XR
                 "<XRController>{RightHand}/primaryButton");
             _laser = new InputAction("Toggle laser", InputActionType.Button,
                 "<XRController>{RightHand}/secondaryButton");
-            _quit = new InputAction("Quit application", InputActionType.Button,
-                "<XRController>{LeftHand}/gripPressed");
         }
 
         private void OnEnable()
@@ -98,7 +95,6 @@ namespace XR
             _look.Enable();
             _recenter.Enable();
             _laser.Enable();
-            _quit.Enable();
             if (_rightRay != null)
             {
                 BindRay();
@@ -151,15 +147,6 @@ namespace XR
         {
             if (_tutorialInputSuppressed)
             {
-                return;
-            }
-            if (_quit.WasPressedThisFrame())
-            {
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#else
-                Application.Quit();
-#endif
                 return;
             }
             if (_rig.Camera == null)
@@ -269,7 +256,6 @@ namespace XR
             _look?.Disable();
             _recenter?.Disable();
             _laser?.Disable();
-            _quit?.Disable();
             if (!_bound || _rightRay == null)
             {
                 return;
@@ -288,7 +274,6 @@ namespace XR
             _look?.Dispose();
             _recenter?.Dispose();
             _laser?.Dispose();
-            _quit?.Dispose();
             _uiPress?.inputActionPerformed.Dispose();
             _uiPress?.inputActionValue.Dispose();
         }

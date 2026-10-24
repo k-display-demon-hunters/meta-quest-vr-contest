@@ -34,7 +34,7 @@
 - `XRGrabInteractable`은 XRI의 오른손 레이와 부착점으로 잡는다. 잡은 물체는 잡기 시작한 거리에서 오른손의 위치·방향 변화를 따라 이동한다.
 - 레이 계산과 선 표시 모두 오른손을 기준으로 유지한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
 - 레이 비활성화는 선 표시와 인터랙터를 함께 끄므로 현재 선택도 해제된다.
-- `TutorialInputSuppressed`는 공통 시점·레이 전환·종료 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 사용 흐름은 [오프닝·엔딩 구현](factory-intro-ending.md)에 있다.
+- `TutorialInputSuppressed`는 공통 시점·레이 전환 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 왼손 Grip은 앱을 종료하지 않으며, 태블릿 설정의 앱 종료 확인창에서 종료한다. 사용 흐름은 [오프닝·엔딩 구현](factory-intro-ending.md)에 있다.
 
 `OnDisable()`은 씬 로드 이벤트 구독과 입력 액션을 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction을 해제한다.
 

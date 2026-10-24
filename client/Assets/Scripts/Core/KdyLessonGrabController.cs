@@ -14,7 +14,6 @@ namespace KdyLearning
         [SerializeField] private bool _trackRotation = true;
         [SerializeField] private bool _returnHome;
 
-        private KdyLessonManager _manager;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
         private Vector3 _homePosition;
@@ -57,12 +56,6 @@ namespace KdyLearning
             _grab.enabled = _interactionEnabled;
         }
 
-        public void Initialize(KdyLessonManager manager)
-        {
-            _manager = manager;
-            CaptureHomePose();
-        }
-
         private void CaptureHomePose()
         {
             if (_homeCaptured)
@@ -91,8 +84,7 @@ namespace KdyLearning
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
         {
-            return interactor.transform.name == "RightHand Controller" &&
-                (_manager == null || !_manager.IsTransitioning);
+            return interactor.transform.name == "RightHand Controller";
         }
 
         public void ResetPose()

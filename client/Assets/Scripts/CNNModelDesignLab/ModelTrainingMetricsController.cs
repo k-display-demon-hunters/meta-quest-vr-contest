@@ -7,39 +7,26 @@ using UnityEngine.UI;
 
 namespace ModelDesignScene
 {
-    internal sealed class ModelTrainingMetricsController
+    public sealed class ModelTrainingMetricsController : MonoBehaviour
     {
-        private readonly ModelResultsUIBuilder _ui;
-        private Text _epochText;
-        private Text _trainingMetrics;
-        private Text _validationMetrics;
-        private Text _evaluationMetrics;
-        private Text _accuracyAxis;
-        private Text _lossAxis;
-        private RectTransform _epochBar;
-        private ModelMetricGraph _accuracyGraph;
-        private ModelMetricGraph _lossGraph;
+        [SerializeField] private Text _epochText;
+        [SerializeField] private Text _trainingMetrics;
+        [SerializeField] private Text _validationMetrics;
+        [SerializeField] private Text _evaluationMetrics;
+        [SerializeField] private Text _accuracyAxis;
+        [SerializeField] private Text _lossAxis;
+        [SerializeField] private Text _learningHint;
+        [SerializeField] private Image _epochBar;
+        [SerializeField] private ModelMetricGraph _accuracyGraph;
+        [SerializeField] private ModelMetricGraph _lossGraph;
+        [SerializeField] private Color _trainingColor = new Color(0.27f, 0.81f, 0.91f);
+        [SerializeField] private Color _validationColor = new Color(1f, 0.72f, 0.29f);
 
-        public ModelTrainingMetricsController(RectTransform root, ModelResultsUIBuilder ui)
+        public void Initialize()
         {
-            _ui = ui;
-            _epochText = _ui.Label(root, "Epoch", string.Empty, 30, 204, 1140, 28, 22);
-            Image progressTrack = _ui.Box(root, "Epoch progress", 30, 242, 1140, 10, ModelResultsUIBuilder.ButtonColor);
-            _epochBar = _ui.Box(progressTrack.transform, "Progress", 0, 0, 0, 10, ModelResultsUIBuilder.TrainingColor).rectTransform;
-            _trainingMetrics = _ui.Label(root, "Training metrics", string.Empty, 30, 270, 555, 36, 24);
-            _trainingMetrics.color = ModelResultsUIBuilder.TrainingColor;
-            _validationMetrics = _ui.Label(root, "Validation metrics", string.Empty, 615, 270, 555, 36, 24);
-            _validationMetrics.color = ModelResultsUIBuilder.ValidationColor;
-            _evaluationMetrics = _ui.Label(root, "Final test metrics", string.Empty, 30, 320, 1140, 40, 27);
-            _ui.Label(root, "Accuracy title", "정확도", 30, 376, 280, 28, 23);
-            _ui.Label(root, "Loss title", "손실", 618, 376, 280, 28, 23);
-            _ui.Label(root, "Training legend", "━ 학습", 877, 376, 130, 28, 21).color = ModelResultsUIBuilder.TrainingColor;
-            _ui.Label(root, "Validation legend", "━ 검증", 1020, 376, 150, 28, 21).color = ModelResultsUIBuilder.ValidationColor;
-            _accuracyGraph = CreateGraph(root, "Accuracy chart", 30, true);
-            _lossGraph = CreateGraph(root, "Loss chart", 618, false);
-            _accuracyAxis = _ui.Label(root, "Accuracy axis", string.Empty, 30, 582, 555, 28, 18);
-            _lossAxis = _ui.Label(root, "Loss axis", string.Empty, 618, 582, 552, 28, 18);
-            _accuracyAxis.color = _lossAxis.color = ModelResultsUIBuilder.MutedColor;
+            _accuracyGraph.Initialize(true, _trainingColor, _validationColor);
+            _lossGraph.Initialize(false, _trainingColor, _validationColor);
+            ResetTraining();
         }
 
         public void ResetTraining()
@@ -47,12 +34,13 @@ namespace ModelDesignScene
             _accuracyGraph.Clear();
             _lossGraph.Clear();
             _epochText.text = "에포크 — / — · 학습 준비 중";
-            SetBarWidth(_epochBar, 0);
-            _trainingMetrics.text = "학습  정확도 —   손실 —";
-            _validationMetrics.text = "검증  정확도 —   손실 —";
-            _evaluationMetrics.text = "최종 테스트  정확도 —   손실 —";
+            SetProgress(_epochBar, 0f);
+            _trainingMetrics.text = "정확도 —\n손실 —";
+            _validationMetrics.text = "정확도 —\n손실 —";
+            _evaluationMetrics.text = "정확도 —\n손실 —";
             _accuracyAxis.text = "0–100% · 에포크 —";
             _lossAxis.text = "손실 범위 — · 에포크 —";
+            _learningHint.text = "정확도는 맞힌 비율, 손실은 예측 오차를 나타냅니다. 학습과 검증 곡선의 변화를 함께 살펴보세요.";
         }
 
         public void ShowProgress(TrainingProgress progress)
@@ -72,31 +60,47 @@ namespace ModelDesignScene
             }
             // Completion includes the last epoch and the held-out test evaluation.
             ShowEpoch(result.Epoch, result.Epoch, result.Logs);
-            _evaluationMetrics.text = "최종 테스트  정확도 " + FormatMetric(result.Evaluation, "accuracy", true)
-                + "   손실 " + FormatMetric(result.Evaluation, "loss", false);
+            _evaluationMetrics.text = "정확도 " + FormatMetric(result.Evaluation, "accuracy", true)
+                + "\n손실 " + FormatMetric(result.Evaluation, "loss", false);
+            double? accuracy = ReadMetric(result.Evaluation, "accuracy");
+            _learningHint.text = accuracy.HasValue
+                ? "테스트 이미지에서 " + FormatPercentage(accuracy.Value) + "를 맞혔습니다. 샘플 예측도 확인하고, 필터 수나 뉴런 수를 한 항목씩 바꿔 재학습 결과를 비교해 보세요."
+                : "학습이 끝났지만 테스트 정확도를 받지 못했습니다. 수신한 학습·검증 곡선과 샘플 예측을 확인하세요.";
         }
 
         private void ShowEpoch(int epoch, int totalEpochs, IReadOnlyDictionary<string, double> logs)
         {
             _epochText.text = "에포크 " + epoch + " / " + totalEpochs;
-            SetBarWidth(_epochBar, totalEpochs > 0 ? 1140 * Mathf.Clamp01((float)epoch / totalEpochs) : 0);
-            _trainingMetrics.text = "학습  정확도 " + FormatMetric(logs, "accuracy", true)
-                + "   손실 " + FormatMetric(logs, "loss", false);
-            _validationMetrics.text = "검증  정확도 " + FormatMetric(logs, "val_accuracy", true)
-                + "   손실 " + FormatMetric(logs, "val_loss", false);
-            _accuracyGraph.AddPoint(epoch, totalEpochs, ReadMetric(logs, "accuracy"), ReadMetric(logs, "val_accuracy"));
+            SetProgress(_epochBar, totalEpochs > 0 ? (float)epoch / totalEpochs : 0f);
+            _trainingMetrics.text = "정확도 " + FormatMetric(logs, "accuracy", true)
+                + "\n손실 " + FormatMetric(logs, "loss", false);
+            _validationMetrics.text = "정확도 " + FormatMetric(logs, "val_accuracy", true)
+                + "\n손실 " + FormatMetric(logs, "val_loss", false);
+            double? training = ReadMetric(logs, "accuracy");
+            double? validation = ReadMetric(logs, "val_accuracy");
+            _accuracyGraph.AddPoint(epoch, totalEpochs, training, validation);
             _lossGraph.AddPoint(epoch, totalEpochs, ReadMetric(logs, "loss"), ReadMetric(logs, "val_loss"));
             _accuracyAxis.text = "0–100% · 가로축 에포크 0–" + totalEpochs;
             _lossAxis.text = FormatNumber(_lossGraph.Minimum) + "–" + FormatNumber(_lossGraph.Maximum)
                 + " · 가로축 에포크 0–" + totalEpochs;
+            if (training.HasValue && validation.HasValue)
+            {
+                double gap = (training.Value - validation.Value) * 100;
+                string comparison = gap == 0 ? "학습과 검증 정확도가 같습니다."
+                    : "학습 정확도가 검증보다 " + Math.Abs(gap).ToString("0.0", CultureInfo.InvariantCulture)
+                        + "%p " + (gap > 0 ? "높습니다." : "낮습니다.");
+                _learningHint.text = "현재 에포크: " + comparison
+                    + " 한 시점의 차이만으로 원인을 단정할 수 없습니다. 검증 정확도와 손실의 추이를 함께 비교하세요.";
+            }
+            else
+            {
+                _learningHint.text = "수신한 지표만 표시합니다. 학습과 검증 지표가 함께 있어야 두 결과를 비교할 수 있습니다.";
+            }
         }
 
-        private ModelMetricGraph CreateGraph(Transform parent, string name, float x, bool accuracy)
+        private static void SetProgress(Image bar, float value)
         {
-            RectTransform rect = _ui.Rect(parent, name, x, 414, 552, 160);
-            ModelMetricGraph graph = rect.gameObject.AddComponent<ModelMetricGraph>();
-            graph.Initialize(accuracy, ModelResultsUIBuilder.TrainingColor, ModelResultsUIBuilder.ValidationColor);
-            return graph;
+            bar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
         }
 
         private static double? ReadMetric(IReadOnlyDictionary<string, double> metrics, string key)
@@ -125,11 +129,6 @@ namespace ModelDesignScene
             double magnitude = Math.Abs(value);
             string format = magnitude > 0 && (magnitude < 0.0001 || magnitude >= 10000) ? "G5" : "0.####";
             return value.ToString(format, CultureInfo.InvariantCulture);
-        }
-
-        private static void SetBarWidth(RectTransform bar, float width)
-        {
-            bar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
         }
     }
 }

@@ -10,33 +10,41 @@
 | --- | --- |
 | `CNNModelDesignLabManager` | Workspace·Input·Output 준비, Controller 이벤트 연결, 배치 순서 갱신, 검증 후 학습 요청, 결과와 편집 모델 비교, 엔딩 진입 조율 |
 | `ModelSupplyController` | 공급 블록 보충 및 꺼내기 |
-| `ModelConveyorController` | 슬롯 생성·배치 판정·정렬 |
+| `ModelConveyorController` | 저장된 슬롯 앵커의 배치 판정·정렬과 점유 상태 표시 |
 | `ModelBlockController` | 개별 블록의 잡기 상태·표시 및 레이어 연결 |
 | `ModelXRInputController` | 씬의 XR 입력·슬롯 활성화 조건 |
 | `ModelSettingsController` / `BlockSettingsPopup` | 슬롯 팝업 수명, 레이어 설정 입력과 변경 |
-| `ModelTrainingController` | 시작·중지 버튼과 실행 상태 표시 |
 | `ModelExecutionController` | 설정·데이터 준비, 재사용하는 로컬 세션 소유, 실행·취소 요청, 메인 스레드 결과 전달, 종료된 실행 결과 차단 |
 | `CnnTrainingSettings` | 데이터 TextAsset 참조와 학습·자원 한도. `CreateOptions()`와 `LoadDataset()` 제공 |
 | `MnistDataset` | 바이너리 데이터 해석·정규화·학습/검증 분리 및 UI 샘플 ID 조회. `Data`는 엔진용 `TrainingData` |
-| `ModelResultsController` | 결과 UI 수명과 상태, 학습 당시 구성 여부 표시 |
+| `ModelResultsController` | 저장된 구성 검사·학습·예측 페이지, 시작·중지 버튼, 실행 상태와 학습 당시 구성 여부 표시 |
+| `ModelValidationController` | 구성 문제의 원인·수정 방법·실제 슬롯 위치와 이전/다음 문제 표시 |
 | `ModelTrainingMetricsController` | 실제 학습·검증 지표의 epoch별 그래프와 최종 평가 표시 |
 | `ModelInferenceResultsController` | 샘플 선택·예측 결과 표시. 요청 ID와 결과 ID 비교 |
-| `ModelResultsUIBuilder` / `ModelMetricGraph` | 결과 uGUI 구성과 전달받은 지표 시각화 |
+| `ModelMetricGraph` | 전달받은 지표를 학습·검증 선 그래프로 시각화 |
 
-Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 담당한다. 계산 구현과 가중치는 씬에 노출하지 않는다. Metrics·InferenceResults·UIBuilder는 ResultsController가 소유하는 일반 C# 객체다.
+Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 담당한다. 계산 구현과 가중치는 씬에 노출하지 않는다. Validation·Metrics·InferenceResults는 프리팹에 저장된 MonoBehaviour이며 ResultsController가 연결한다. UI 계층과 배치는 런타임에 생성하지 않는다.
 
 ## 블록 배치와 설정
 
 1. Manager가 Workspace와 고정 Input·Output을 준비하고 공급소·슬롯·이벤트를 연결한다.
-2. 공급소에서 꺼낸 블록의 레이어를 Workspace에 추가한다. 공급소는 기본 블록을 보충한다.
+2. 공급소에서 꺼낸 블록의 레이어를 Workspace에 추가한다. 공급소는 같은 종류의 전용 프리팹으로 기본 블록을 보충한다.
 3. 슬롯의 블록을 잡으면 팝업을 닫고 슬롯을 비운 뒤 순서를 갱신한다.
 4. 배치 미리보기는 벨트 로컬 좌표의 블록 중심과 슬롯별 `Placement Half Extents`를 비교한다.
 5. 정상 배치 시 빈 슬롯에 등록하고 위치·방향을 정렬한다. 점유 슬롯·슬롯 밖·취소된 잡기는 배치하지 않는다.
 6. 연결은 `Input → 슬롯 순서의 블록 → Output`으로 갱신한다. 빈 슬롯은 건너뛰며 다른 블록 위치를 옮기지 않는다.
 
-슬롯 밖 블록은 Workspace에 남아도 실행 정의에 포함되지 않는다. 미완성·잘못된 순서는 편집 상태로 보관할 수 있지만 학습 시작 전에 거절한다.
+점유 슬롯·슬롯 밖에 놓거나 잡기를 취소한 블록은 Workspace에서 제거하고 파괴한다. 미완성·잘못된 순서는 편집 상태로 보관할 수 있지만 학습 시작 전에 거절한다.
 
 설정 요청은 Manager가 잡기 상태와 `CanActivateSlot()`로 확인한다. 팝업은 해당 슬롯의 `Popup Anchor`에 하나만 열며 시점을 따라가지 않는다. 값 변경은 `LayerDefinition.Set*()`을 통해 재검증·표시 갱신으로 이어진다. 삭제는 슬롯 제거, 레이어 제거, 이벤트 해제, 블록 파괴 순이다. Input·Output은 삭제할 수 없다.
+
+## 구성 검사와 결과 콘솔
+
+구성 검사·학습·숫자 예측 페이지는 `ModelResults.prefab`에 저장한다. Workspace 변경은 Manager가 모아 `LateUpdate()`에서 실행 정의와 자원 한도를 검사하고, 문제 안내와 학습 당시 모델의 변경 여부를 함께 갱신한다. 연결 해제·재연결 중간 상태는 표시하지 않는다.
+
+학습 시작 시 즉시 다시 검사한다. 문제가 있으면 학습을 요청하지 않고 구성 검사 페이지에 초점을 맞춘다. 시작 버튼은 `구성 문제 확인하기`로 표시되며, 작업 중이나 블록을 잡는 동안에는 시작할 수 없다. 문제 위치는 모델 내부 레이어 참조를 실제 슬롯과 비교해 표시한다. 엔진의 모델 전체 자원 오류는 임의의 슬롯을 지목하지 않고 원문과 일반 수정 안내를 표시한다.
+
+빈 모델도 로컬 CNN 실행 규칙에 따라 Conv2D가 필요하다는 문제로 표시한다. 순서·자원 검사 통과는 학습 성공이나 정확도를 보장하지 않는다. 실행 오류는 별도 스크롤 패널에 표시한다.
 
 ## 로컬 학습·추론
 
@@ -57,15 +65,14 @@ Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 �
 | 에셋·필드 | 연결 |
 | --- | --- |
 | `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. `PersistentXRPlayerRig`가 추가 로드 시 중복 제거 |
-| `Prefabs/CNNModelDesignLab/ModelBlock.prefab` | 블록 Controller, Collider, XRI 잡기 |
+| `Prefabs/CNNModelDesignLab/ModelBlock.prefab` 및 종류별 블록 프리팹 | Conv·Pooling·Flatten·Dense와 고정 Input·Output의 외형, Controller, Collider, 잡기 설정 |
 | `PartsSupplyRack.prefab` | 공급소·기본 블록 |
 | `ModelConveyor.prefab` | 슬롯·설정 조작기기·Input/Output |
 | `SlotSettingsControl.prefab` | 설정 Controller와 `Popup Anchor` |
-| `TrainingControls.prefab` | 학습 버튼·상태. 벨트의 `Training Anchor`에 연결 |
-| `ModelResults.prefab` | 결과 화면의 `Font`·`Samples` 참조 |
+| `ModelResults.prefab` | 구성 검사·학습·예측 UI와 Controller, 시작·중지 버튼, `Samples` 참조 |
 | 씬 `ModelExecutionController._trainingSettings` | `Settings/CNNModelDesignLab/LocalTrainingSettings.asset` |
 
-벨트의 `Slot Count`, `Slot Spacing`, `Block Center Height`, `Placement Half Extents`는 초기화 때 적용하며 실행 중 슬롯 수 변경은 지원하지 않는다. 슬롯 판정은 로컬 좌표 기준이다. `Slot Visuals`는 직접 자식 Renderer로 구성하고 `Slot Template`에 복제할 Renderer를 연결한다.
+벨트의 `Block Anchors`에 저장된 슬롯 위치·방향을 사용한다. `Slot Visuals Root`와 `Settings Controls Root`의 자식 순서는 앵커 순서와 일치해야 한다. 각 앵커의 로컬 좌표와 `Placement Half Extents`로 배치를 판정하며 실행 중 슬롯 수 변경은 지원하지 않는다.
 
 공용 오른손 입력은 `Scripts/Core/XR/XRPlayerInputController.cs`가 담당하고 모델 씬은 레이 적중 여부를 검사한다. 서버 주소 설정은 필요하지 않다.
 

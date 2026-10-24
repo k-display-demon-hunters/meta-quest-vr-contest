@@ -13,7 +13,6 @@ namespace ModelDesignScene
         [SerializeField] private ModelSupplyController _supply;
         [SerializeField] private ModelConveyorController _conveyor;
         [SerializeField] private ModelSettingsController _settings;
-        [SerializeField] private ModelTrainingController _training;
         [SerializeField] private ModelExecutionController _execution;
         [SerializeField] private ModelResultsController _results;
         [SerializeField] private ModelXRInputController _xrInput;
@@ -24,17 +23,25 @@ namespace ModelDesignScene
         private ModelBlockController _grabbedBlock;
         private bool _initialized;
         private bool _trainingCompleted;
+        private bool _workspaceUIIsDirty;
 
         public bool ReadyForFactoryExit => _trainingCompleted && !_execution.IsBusy;
 
         private void Awake()
         {
-            UI.SceneUIStyle.ApplyButtons(transform);
+            foreach (UnityEngine.UI.Button button in GetComponentsInChildren<UnityEngine.UI.Button>(true))
+            {
+                if (!button.transform.IsChildOf(_results.transform))
+                {
+                    UI.SceneUIStyle.Apply(button);
+                }
+            }
             _workspace = new ModelWorkspace();
         }
 
         private void OnEnable()
         {
+            _workspaceUIIsDirty = true;
             _xrInput.EnableInput();
             foreach (ModelBlockController block in _blocks)
             {
@@ -46,8 +53,6 @@ namespace ModelDesignScene
         {
             _supply.OnBlockCreated += RegisterBlock;
             _settings.OnDeleteRequested += HandleDeleteRequested;
-            _training.OnStartRequested += HandleTrainingStartRequested;
-            _training.OnStopRequested += HandleTrainingStopRequested;
             _execution.OnStateChanged += HandleExecutionStateChanged;
             _execution.OnTrainingProgress += HandleTrainingProgress;
             _execution.OnTrainingCompleted += HandleTrainingCompleted;
@@ -55,6 +60,8 @@ namespace ModelDesignScene
             _execution.OnInferenceCompleted += HandleInferenceCompleted;
             _execution.OnError += HandleExecutionError;
             _results.OnInferenceRequested += HandleInferenceRequested;
+            _results.OnStartRequested += HandleTrainingStartRequested;
+            _results.OnStopRequested += HandleTrainingStopRequested;
 
             // All scene blocks have completed Awake before their model data is assigned.
             _inputBlock.Initialize(_workspace.Input, false);
@@ -62,7 +69,7 @@ namespace ModelDesignScene
             RegisterBlock(_inputBlock);
             RegisterBlock(_outputBlock);
             _supply.Initialize();
-            _conveyor.Initialize(_inputBlock, _outputBlock);
+            _conveyor.Initialize();
             foreach (SlotSettingsController control in _conveyor.SettingsControls)
             {
                 control.OnSettingsRequested += HandleSettingsRequested;
@@ -78,6 +85,10 @@ namespace ModelDesignScene
             if (_initialized)
             {
                 _conveyor.PreviewPlacement(_grabbedBlock);
+                if (_workspaceUIIsDirty)
+                {
+                    RefreshWorkspaceUI();
+                }
             }
         }
 
@@ -152,6 +163,7 @@ namespace ModelDesignScene
             }
             RemoveFromConveyor(block);
             _grabbedBlock = block;
+            _workspaceUIIsDirty = true;
         }
 
         private void HandleBlockReleased(ModelBlockController block, bool cancelled)
@@ -163,11 +175,16 @@ namespace ModelDesignScene
             // Taken blocks belong to the workspace, not the parts supply rack.
             block.transform.SetParent(transform, true);
             _conveyor.ClearPreview();
+            _grabbedBlock = null;
+            _workspaceUIIsDirty = true;
             if (!cancelled && _conveyor.TryPlaceBlock(block))
             {
                 RefreshModelOrder();
             }
-            _grabbedBlock = null;
+            else
+            {
+                HandleDeleteRequested(block);
+            }
         }
 
         private void HandleSettingsRequested(SlotSettingsController control, IXRActivateInteractor interactor)
@@ -201,11 +218,12 @@ namespace ModelDesignScene
             {
                 return;
             }
-            if (!ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
                 out ModelExecutionDefinition definition,
-                out IReadOnlyList<ValidationIssue> issues))
+                out IReadOnlyList<ValidationIssue> issues);
+            PublishWorkspaceUI(valid, definition, issues, !valid);
+            if (!valid)
             {
-                _results.ShowError("모델 구성을 확인하세요.\n" + issues[0].Message);
                 return;
             }
             _settings.Close();
@@ -232,9 +250,8 @@ namespace ModelDesignScene
 
         private void HandleExecutionStateChanged()
         {
-            _training.ShowState(_execution.State, _execution.IsBusy, _execution.CanCancel);
             _results.ShowState(_execution.State, _execution.HasTrainedModel,
-                !_execution.IsBusy && _execution.HasTrainedModel);
+                !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
             HandleWorkspaceChanged();
         }
 
@@ -266,11 +283,31 @@ namespace ModelDesignScene
 
         private void HandleWorkspaceChanged()
         {
+            // Disconnect/Connect emits intermediate chains; show their final state once per frame.
+            _workspaceUIIsDirty = true;
+        }
+
+        private void RefreshWorkspaceUI()
+        {
+            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
+                out ModelExecutionDefinition definition,
+                out IReadOnlyList<ValidationIssue> issues);
+            PublishWorkspaceUI(valid, definition, issues, false);
+        }
+
+        private void PublishWorkspaceUI(bool valid, ModelExecutionDefinition definition, IReadOnlyList<ValidationIssue> issues, bool focus)
+        {
+            _workspaceUIIsDirty = false;
+            LayerDefinition[] slotLayers = new LayerDefinition[_conveyor.SlotCount];
+            for (int index = 0; index < slotLayers.Length; index++)
+            {
+                ModelBlockController block = _conveyor.GetBlock(index);
+                slotLayers[index] = block != null ? block.Layer : null;
+            }
+            _results.ShowModelValidation(issues, slotLayers, _grabbedBlock != null, focus);
             ModelExecutionDefinition submitted = _execution.SubmittedModel;
             bool changed = submitted != null &&
-                (!ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
-                    out ModelExecutionDefinition current, out _) ||
-                 !ModelExecutionDefinitionBuilder.Matches(submitted, current));
+                (!valid || !ModelExecutionDefinitionBuilder.Matches(submitted, definition));
             _results.SetModelChanged(changed);
         }
 
@@ -311,11 +348,6 @@ namespace ModelDesignScene
             {
                 _settings.OnDeleteRequested -= HandleDeleteRequested;
             }
-            if (_training != null)
-            {
-                _training.OnStartRequested -= HandleTrainingStartRequested;
-                _training.OnStopRequested -= HandleTrainingStopRequested;
-            }
             if (_execution != null)
             {
                 _execution.OnStateChanged -= HandleExecutionStateChanged;
@@ -328,6 +360,8 @@ namespace ModelDesignScene
             if (_results != null)
             {
                 _results.OnInferenceRequested -= HandleInferenceRequested;
+                _results.OnStartRequested -= HandleTrainingStartRequested;
+                _results.OnStopRequested -= HandleTrainingStopRequested;
             }
             if (_conveyor != null)
             {

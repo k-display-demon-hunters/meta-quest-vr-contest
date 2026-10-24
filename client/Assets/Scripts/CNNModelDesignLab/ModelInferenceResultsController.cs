@@ -3,44 +3,50 @@ using System.Collections.Generic;
 using System.Globalization;
 using CNNTraining;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace ModelDesignScene
 {
-    internal sealed class ModelInferenceResultsController
+    public sealed class ModelInferenceResultsController : MonoBehaviour
     {
-        private const int SamplesPerPage = 10;
-        private readonly ModelResultsUIBuilder _ui;
-        private readonly Func<bool> _canInteract;
+        private const int ClassCount = 10;
+
+        [SerializeField] private Button[] _sampleButtons = Array.Empty<Button>();
+        [SerializeField] private RawImage[] _sampleThumbnails = Array.Empty<RawImage>();
+        [SerializeField] private Text[] _sampleLabels = Array.Empty<Text>();
+        [SerializeField] private Text[] _probabilityLabels = Array.Empty<Text>();
+        [SerializeField] private Image[] _probabilityBars = Array.Empty<Image>();
+        [SerializeField] private Text _sampleHint;
+        [SerializeField] private Text _pageText;
+        [SerializeField] private Text _selectedSampleText;
+        [SerializeField] private Text _predictionText;
+        [SerializeField] private Text _predictionHint;
+        [SerializeField] private RawImage _selectedPreview;
+        [SerializeField] private Button _previousPageButton;
+        [SerializeField] private Button _nextPageButton;
+        [SerializeField] private Color _sampleColor = new Color(0.12f, 0.18f, 0.24f);
+        [SerializeField] private Color _selectedSampleColor = new Color(0.14f, 0.43f, 0.51f);
+
         private readonly List<ModelResultsController.SampleImage> _availableSamples = new List<ModelResultsController.SampleImage>();
-        private readonly Button[] _sampleButtons = new Button[SamplesPerPage];
-        private readonly RawImage[] _sampleThumbnails = new RawImage[SamplesPerPage];
-        private readonly Text[] _sampleLabels = new Text[SamplesPerPage];
-        private readonly Text[] _probabilityLabels = new Text[10];
-        private readonly RectTransform[] _probabilityBars = new RectTransform[10];
-        private Text _sampleHint;
-        private Text _pageText;
-        private Text _selectedSampleText;
-        private Text _predictionText;
-        private RawImage _selectedPreview;
-        private Button _previousPageButton;
-        private Button _nextPageButton;
+        private UnityAction[] _sampleListeners;
         private ModelResultsController.SampleImage _selectedSample;
         private int _page;
         private bool _canInfer;
         private bool _hasTrainedModel;
         private bool _isAwaitingInference;
+        private bool _initialized;
 
         public event Action<string> OnInferenceRequested;
         public event Action<string> OnError;
 
-        public ModelInferenceResultsController(RectTransform root, ModelResultsUIBuilder ui,
-            ModelResultsController.SampleImage[] samples, Func<bool> canInteract)
+        public void Initialize(ModelResultsController.SampleImage[] samples)
         {
-            _ui = ui;
-            _canInteract = canInteract;
-            BuildSamples(root);
-            BuildPrediction(root);
+            if (_initialized)
+            {
+                return;
+            }
+            _initialized = true;
             foreach (ModelResultsController.SampleImage sample in samples ?? Array.Empty<ModelResultsController.SampleImage>())
             {
                 if (sample != null && sample.Image != null)
@@ -48,6 +54,17 @@ namespace ModelDesignScene
                     _availableSamples.Add(sample);
                 }
             }
+            _sampleListeners = new UnityAction[_sampleButtons.Length];
+            for (int index = 0; index < _sampleButtons.Length; index++)
+            {
+                int slot = index;
+                _sampleListeners[index] = () => SelectSample(slot);
+                _sampleButtons[index].onClick.AddListener(_sampleListeners[index]);
+            }
+            _previousPageButton.onClick.AddListener(ShowPreviousPage);
+            _nextPageButton.onClick.AddListener(ShowNextPage);
+            ResetTraining();
+            ResetSession();
         }
 
         public void ResetTraining()
@@ -65,6 +82,7 @@ namespace ModelDesignScene
             _selectedPreview.enabled = false;
             _selectedSampleText.text = "선택한 이미지 —\n정답 —";
             _page = 0;
+            ClearPrediction();
             RefreshSamples();
         }
 
@@ -79,8 +97,9 @@ namespace ModelDesignScene
         {
             if (_isAwaitingInference)
             {
-                _isAwaitingInference = false;
+                ClearPrediction();
                 _predictionText.text = "예측 결과 없음";
+                _predictionHint.text = "결과를 받지 못했습니다. 요청 상태를 확인한 뒤 이미지를 다시 선택하세요.";
             }
         }
 
@@ -91,95 +110,86 @@ namespace ModelDesignScene
             {
                 return false;
             }
-            if (result.Output == null || result.Output.Count != 10)
+            if (result.Output == null || result.Output.Count != ClassCount)
             {
-                OnError?.Invoke("숫자 0~9의 예측 결과를 모두 받지 못했습니다.");
+                RejectPrediction("숫자 0~9의 예측 결과를 모두 받지 못했습니다.");
                 return false;
             }
-            int predicted = 0;
-            for (int i = 0; i < result.Output.Count; i++)
+            // Validate the complete response before changing any chart or prediction label.
+            for (int index = 0; index < ClassCount; index++)
             {
-                if (result.Output[i] > result.Output[predicted])
+                if (double.IsNaN(result.Output[index]) || double.IsInfinity(result.Output[index]))
                 {
-                    predicted = i;
+                    RejectPrediction("예측 결과에 유효하지 않은 숫자가 포함되어 있습니다. 다시 예측해 주세요.");
+                    return false;
                 }
-                // Preserve the model's Softmax output. Only the bar's drawing bounds are limited.
-                _probabilityLabels[i].text = i + "  " + FormatPercentage(result.Output[i]);
-                SetBarWidth(_probabilityBars[i], 232 * Mathf.Clamp01((float)result.Output[i]));
             }
-            bool knownLabel = _selectedSample.Label >= 0 && _selectedSample.Label <= 9;
+            int predicted = 0;
+            for (int index = 0; index < ClassCount; index++)
+            {
+                if (result.Output[index] > result.Output[predicted])
+                {
+                    predicted = index;
+                }
+                // Preserve Softmax values from the model; only the drawing range is clamped.
+                _probabilityLabels[index].text = index + "  " + FormatPercentage(result.Output[index]);
+                SetProgress(_probabilityBars[index], (float)Math.Max(0, Math.Min(1, result.Output[index])));
+            }
+            bool knownLabel = _selectedSample.Label >= 0 && _selectedSample.Label < ClassCount;
             _predictionText.text = "예측 " + predicted + (knownLabel
                 ? (predicted == _selectedSample.Label ? " · 정답" : " · 오답") : string.Empty);
+            ShowPredictionHint(result, predicted, knownLabel);
             _isAwaitingInference = false;
             return true;
         }
 
-        private void BuildSamples(RectTransform root)
+        private void ShowPredictionHint(InferenceResult result, int predicted, bool knownLabel)
         {
-            _ui.Label(root, "Sample title", "MNIST 샘플", 30, 644, 550, 32, 25);
-            for (int i = 0; i < SamplesPerPage; i++)
+            string confidence = FormatPercentage(result.Output[predicted]);
+            if (!knownLabel)
             {
-                int slot = i;
-                float x = 30 + i % 5 * 112;
-                float y = 689 + i / 5 * 126;
-                Image surface = _ui.Box(root, "Sample " + i, x, y, 100, 112, ModelResultsUIBuilder.ButtonColor);
-                Button button = _ui.CreateButton(surface, () => SelectSample(slot));
-                _sampleButtons[i] = button;
-                _sampleThumbnails[i] = _ui.Rect(surface.transform, "Image", 16, 8, 68, 68).gameObject.AddComponent<RawImage>();
-                _sampleThumbnails[i].raycastTarget = false;
-                _sampleLabels[i] = _ui.Label(surface.transform, "Label", string.Empty, 4, 82, 92, 25, 18);
-                _sampleLabels[i].alignment = TextAnchor.MiddleCenter;
+                _predictionHint.text = "가장 큰 출력은 숫자 " + predicted + "의 " + confidence
+                    + "입니다. 이 이미지의 정답 정보가 없어 맞혔는지는 비교할 수 없습니다.";
+                return;
             }
-            _previousPageButton = _ui.TextButton(root, "이전", 30, 950, 100, () => ChangePage(-1));
-            _pageText = _ui.Label(root, "Page", string.Empty, 140, 950, 332, 36, 19);
-            _pageText.alignment = TextAnchor.MiddleCenter;
-            _nextPageButton = _ui.TextButton(root, "다음", 478, 950, 100, () => ChangePage(1));
-            _sampleHint = _ui.Label(root, "Sample hint", string.Empty, 30, 993, 565, 32, 18);
-            _sampleHint.color = ModelResultsUIBuilder.MutedColor;
+            if (predicted == _selectedSample.Label)
+            {
+                _predictionHint.text = "정답 " + predicted + "에 가장 큰 확률 " + confidence
+                    + "를 주었습니다. 다른 샘플도 확인해 모델의 전체 정확도와 함께 비교하세요.";
+                return;
+            }
+            string correctConfidence = FormatPercentage(result.Output[_selectedSample.Label]);
+            _predictionHint.text = "정답 " + _selectedSample.Label + "에 " + correctConfidence + ", 예측 " + predicted
+                + "에 " + confidence + "를 주었습니다.\n필터 수 또는 뉴런 수를 한 항목씩 바꾸고 재학습해 비교해 보세요.";
         }
 
-        private void BuildPrediction(RectTransform root)
+        private void RejectPrediction(string message)
         {
-            _ui.Label(root, "Prediction title", "선택 이미지 · 예측", 640, 644, 530, 32, 25);
-            _ui.Box(root, "Preview background", 640, 694, 128, 128, Color.black);
-            _selectedPreview = _ui.Rect(root, "Preview", 640, 694, 128, 128).gameObject.AddComponent<RawImage>();
-            _selectedPreview.raycastTarget = false;
-            _selectedSampleText = _ui.Label(root, "Selected sample", string.Empty, 788, 694, 382, 65, 22);
-            _selectedSampleText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _selectedSampleText.resizeTextForBestFit = true;
-            _selectedSampleText.resizeTextMinSize = 16;
-            _selectedSampleText.resizeTextMaxSize = 22;
-            _predictionText = _ui.Label(root, "Prediction", string.Empty, 788, 774, 382, 40, 29);
-            _predictionText.color = ModelResultsUIBuilder.TrainingColor;
-            _ui.Label(root, "Probability title", "숫자별 확률", 640, 833, 530, 28, 19).color = ModelResultsUIBuilder.MutedColor;
-            for (int i = 0; i < 10; i++)
-            {
-                float x = 640 + i / 5 * 282;
-                float y = 868 + i % 5 * 32;
-                _probabilityLabels[i] = _ui.Label(root, "Probability " + i, string.Empty, x, y, 248, 22, 18);
-                Image track = _ui.Box(root, "Probability track " + i, x, y + 23, 232, 4, ModelResultsUIBuilder.ButtonColor);
-                _probabilityBars[i] = _ui.Box(track.transform, "Value", 0, 0, 0, 4, ModelResultsUIBuilder.TrainingColor).rectTransform;
-            }
+            ClearPrediction();
+            _predictionText.text = "예측 결과 확인 필요";
+            _predictionHint.text = message;
+            OnError?.Invoke(message);
         }
 
         private void RefreshSamples()
         {
-            for (int i = 0; i < SamplesPerPage; i++)
+            int samplesPerPage = _sampleButtons.Length;
+            for (int index = 0; index < samplesPerPage; index++)
             {
-                int index = _page * SamplesPerPage + i;
-                bool available = index < _availableSamples.Count;
-                _sampleButtons[i].gameObject.SetActive(available);
+                int sampleIndex = _page * samplesPerPage + index;
+                bool available = sampleIndex < _availableSamples.Count;
+                _sampleButtons[index].gameObject.SetActive(available);
                 if (!available)
                 {
                     continue;
                 }
-                ModelResultsController.SampleImage sample = _availableSamples[index];
-                _sampleButtons[i].interactable = _canInfer;
-                _sampleButtons[i].image.color = sample == _selectedSample ? new Color(0.14f, 0.43f, 0.51f) : ModelResultsUIBuilder.ButtonColor;
-                _sampleThumbnails[i].texture = sample.Image;
-                _sampleLabels[i].text = "정답 " + FormatLabel(sample.Label);
+                ModelResultsController.SampleImage sample = _availableSamples[sampleIndex];
+                _sampleButtons[index].interactable = _canInfer;
+                _sampleButtons[index].image.color = sample == _selectedSample ? _selectedSampleColor : _sampleColor;
+                _sampleThumbnails[index].texture = sample.Image;
+                _sampleLabels[index].text = "정답 " + FormatLabel(sample.Label);
             }
-            int pages = Mathf.CeilToInt(_availableSamples.Count / (float)SamplesPerPage);
+            int pages = GetPageCount();
             _previousPageButton.interactable = _page > 0;
             _nextPageButton.interactable = _page + 1 < pages;
             _pageText.text = pages > 0 ? (_page + 1) + " / " + pages : "샘플 없음";
@@ -191,8 +201,8 @@ namespace ModelDesignScene
 
         private void SelectSample(int slot)
         {
-            int index = _page * SamplesPerPage + slot;
-            if (!_canInfer || index < 0 || index >= _availableSamples.Count || !_canInteract())
+            int index = _page * _sampleButtons.Length + slot;
+            if (!_canInfer || index < 0 || index >= _availableSamples.Count || !isActiveAndEnabled)
             {
                 return;
             }
@@ -202,16 +212,36 @@ namespace ModelDesignScene
             _selectedSampleText.text = "이미지 " + _selectedSample.Id + "\n정답 " + FormatLabel(_selectedSample.Label);
             ClearPrediction();
             _predictionText.text = "예측 대기 중…";
+            _predictionHint.text = "선택한 이미지에 대한 숫자별 확률을 기다리고 있습니다.";
             _isAwaitingInference = true;
             _canInfer = false;
             RefreshSamples();
             OnInferenceRequested?.Invoke(_selectedSample.Id);
         }
 
+        private int GetPageCount()
+        {
+            return _sampleButtons.Length > 0
+                ? Mathf.CeilToInt(_availableSamples.Count / (float)_sampleButtons.Length) : 0;
+        }
+
+        private void ShowPreviousPage()
+        {
+            ChangePage(-1);
+        }
+
+        private void ShowNextPage()
+        {
+            ChangePage(1);
+        }
+
         private void ChangePage(int offset)
         {
-            int pages = Mathf.CeilToInt(_availableSamples.Count / (float)SamplesPerPage);
-            _page = Mathf.Clamp(_page + offset, 0, Mathf.Max(0, pages - 1));
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+            _page = Mathf.Clamp(_page + offset, 0, Mathf.Max(0, GetPageCount() - 1));
             RefreshSamples();
         }
 
@@ -219,11 +249,17 @@ namespace ModelDesignScene
         {
             _isAwaitingInference = false;
             _predictionText.text = "예측 —";
-            for (int i = 0; i < 10; i++)
+            _predictionHint.text = "샘플을 선택하면 예측과 정답을 비교할 수 있습니다.";
+            for (int index = 0; index < ClassCount; index++)
             {
-                _probabilityLabels[i].text = i + "  —";
-                SetBarWidth(_probabilityBars[i], 0);
+                _probabilityLabels[index].text = index + "  —";
+                SetProgress(_probabilityBars[index], 0f);
             }
+        }
+
+        private static void SetProgress(Image bar, float value)
+        {
+            bar.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
         }
 
         private static string FormatPercentage(double value)
@@ -233,12 +269,30 @@ namespace ModelDesignScene
 
         private static string FormatLabel(int label)
         {
-            return label >= 0 && label <= 9 ? label.ToString(CultureInfo.InvariantCulture) : "—";
+            return label >= 0 && label < ClassCount ? label.ToString(CultureInfo.InvariantCulture) : "—";
         }
 
-        private static void SetBarWidth(RectTransform bar, float width)
+        private void OnDestroy()
         {
-            bar.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            if (!_initialized)
+            {
+                return;
+            }
+            for (int index = 0; index < _sampleListeners.Length; index++)
+            {
+                if (_sampleButtons[index] != null)
+                {
+                    _sampleButtons[index].onClick.RemoveListener(_sampleListeners[index]);
+                }
+            }
+            if (_previousPageButton != null)
+            {
+                _previousPageButton.onClick.RemoveListener(ShowPreviousPage);
+            }
+            if (_nextPageButton != null)
+            {
+                _nextPageButton.onClick.RemoveListener(ShowNextPage);
+            }
         }
     }
 }

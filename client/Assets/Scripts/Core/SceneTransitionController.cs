@@ -84,7 +84,7 @@ namespace UI
             }
             yield return Fade(1f, 0f);
             IsLoading = false;
-            if (operation != null && !sceneName.StartsWith("kdy_scene", StringComparison.Ordinal))
+            if (operation != null)
             {
                 Destroy(gameObject);
             }

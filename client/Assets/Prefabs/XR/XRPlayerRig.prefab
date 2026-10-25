@@ -3077,6 +3077,7 @@ GameObject:
   - component: {fileID: 7329342396295765634}
   - component: {fileID: 6589062952006240122}
   - component: {fileID: 830004}
+  - component: {fileID: 830005}
   m_Layer: 0
   m_Name: XRPlayerRig
   m_TagString: Untagged
@@ -3146,7 +3147,7 @@ MonoBehaviour:
   m_XROrigin: {fileID: 6150285176387121496}
   m_BodyPositionEvaluatorObject: {fileID: 0}
   m_ConstrainedBodyManipulatorObject: {fileID: 0}
-  m_UseCharacterControllerIfExists: 0
+  m_UseCharacterControllerIfExists: 1
 --- !u!114 &7329342396295765634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3229,3 +3230,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a79e53d091643a798a5b04756478cb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::XR.PersistentXRPlayerRig
+  _leftControllerModel: {fileID: 919132149155446097, guid: 2b1aaafc31655024394d83dc00911c1c, type: 3}
+  _rightControllerModel: {fileID: 919132149155446097, guid: deed68a7fd2e9234899298cf80fae7ad, type: 3}
+  _leftControllerAnimation: {fileID: 9100000, guid: 12e0d551f2089fc4380c1368a69a3512, type: 2}
+  _rightControllerAnimation: {fileID: 9100000, guid: fc948f57db734e74094dc532bdbbc3e8, type: 2}
+--- !u!143 &830005
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432992956094993694}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1.6
+  m_Radius: 0.2
+  m_SlopeLimit: 45
+  m_StepOffset: 0.2
+  m_SkinWidth: 0.02
+  m_MinMoveDistance: 0
+  m_Center: {x: 0, y: 0.82, z: 0}

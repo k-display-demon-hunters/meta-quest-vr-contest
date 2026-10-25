@@ -73,8 +73,11 @@ namespace XR
                 Destroy(marker.GetComponent<Collider>());
                 _marker = marker.transform;
                 _marker.SetParent(node, false);
-                _marker.localPosition = Vector3.up * 0.008f;
-                _marker.localScale = Vector3.one * 0.012f;
+                // The imported model uses centimetres; keep the cue visible at hand scale
+                // and let the tutorial parent enlarge it together with the controller.
+                float modelUnitsPerMetre = 1f / Mathf.Max(Mathf.Abs(transform.localScale.x), 0.0001f);
+                _marker.localPosition = Vector3.up * (0.008f * modelUnitsPerMetre);
+                _marker.localScale = Vector3.one * (0.012f * modelUnitsPerMetre);
                 if (_markerMaterial == null) { _markerMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit")); }
                 marker.GetComponent<Renderer>().sharedMaterial = _markerMaterial;
                 break;

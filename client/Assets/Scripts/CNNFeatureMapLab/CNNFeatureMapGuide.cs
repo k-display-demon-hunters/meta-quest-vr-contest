@@ -155,7 +155,8 @@ namespace CNNFeatureMaps
         public void UpdateButtons(int step, int spreadLayer, bool scanning)
         {
             _buttons[0].SetAvailable(step > 0);
-            _buttons[1].SetAvailable(step < 3);
+            _buttons[1].SetAvailable(true);
+            SetText(_buttonLabels[1], step == 3 ? "단계 마치기" : "다음으로", .27f, .042f);
             _buttons[2].SetAvailable(step < 2);
             _buttons[3].SetAvailable(step < 2);
             _buttons[4].SetAvailable(step > 0);
@@ -183,6 +184,12 @@ namespace CNNFeatureMaps
         public void ShowReleaseBeforeAction()
         {
             SetText(_readout, "잡은 물체를 놓은 뒤 체험 단계를 바꿔 주세요.", 2.8f, .11f);
+        }
+
+        public void ShowStepFinished(bool skipped)
+        {
+            SetText(_readout, (skipped ? "입력 변경 활동을 건너뛰었습니다. " : "현재 단계를 마쳤습니다. ") +
+                "바닥 안내선을 따라 모델 제작 방으로 이동하세요.", 2.8f, .11f);
         }
 
         public void ShowSelectScaleTarget()

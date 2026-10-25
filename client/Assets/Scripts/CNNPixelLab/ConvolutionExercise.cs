@@ -18,6 +18,7 @@ namespace UI
         private Font _font;
         private Text _title, _explanation, _equation, _feedback, _channelSums;
         private Button _next;
+        private Button _skip;
         private Text _guide;
 
 
@@ -45,11 +46,13 @@ namespace UI
                     () => Choose(option));
             }
             _next = MakeButton(transform, "다음", 900, -300, 420, () => _advance = true);
+            _skip = MakeButton(transform, "현재 단계 건너뛰기", 900, -370, 420, SkipCurrentStep);
             Image side = Box(transform, "Side explanation", 900, 20, 480, 770, UI.SceneUIStyle.Surface);
             Label(side.transform, "Heading", "계산 원리", 0, 325, 440, 50, 30);
             _guide = Label(side.transform, "Guide", "", 0, 100, 420, 350, 23);
             _feedback.transform.SetAsLastSibling();
             _next.transform.SetAsLastSibling();
+            _skip.transform.SetAsLastSibling();
             _guide.alignment = TextAnchor.UpperLeft;
             _spatial.ReleaseInteractions();
             gameObject.SetActive(false);
@@ -76,6 +79,26 @@ namespace UI
             StartCoroutine(Run());
         }
 
+        private void Update()
+        {
+            if (_spatial == null || _skip == null) { return; }
+            bool physical = _spatial.Volume.HasPendingAction;
+            _skip.gameObject.SetActive(physical || _waiting);
+            _skip.GetComponentInChildren<Text>().text = physical
+                ? "자동 맞추고 다음으로" : "정답 보고 다음으로";
+        }
+
+        private void SkipCurrentStep()
+        {
+            if (_spatial.Volume.CompletePendingAction()) { return; }
+            if (!_waiting || _answered) { return; }
+            _answered = true;
+            _waiting = false;
+            _equation.text = _solved;
+            _feedback.text = "이 문제는 건너뛰었어요. 계산 결과를 확인하세요.";
+            _spatial.ShowAnswer(_correct);
+        }
+
         private IEnumerator Run()
         {
             _title.text = "필터 하나의 입체 구조 맞추기";
@@ -92,7 +115,7 @@ namespace UI
             _channelSums.text = ChannelSummary(0);
             _equation.text = "R 합 = x₁w₁ + x₂w₂ + … + x₉w₉";
             _feedback.text = "가중치를 R 앞에 놓고 계속을 누르세요. 버튼으로 자동 정렬할 수도 있어요.";
-            yield return WaitForNext("가중치 맞추기 / 계속");
+            yield return WaitForNext("자동 맞추고 다음으로");
             _spatial.AlignKernel();
             while (!_spatial.IsAligned)
             {

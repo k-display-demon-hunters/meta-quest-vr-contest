@@ -23,9 +23,10 @@ namespace ModelDesignScene
         private ModelBlockController _grabbedBlock;
         private bool _initialized;
         private bool _trainingCompleted;
+        private bool _lessonSkipped;
         private bool _workspaceUIIsDirty;
 
-        public bool ReadyForFactoryExit => _trainingCompleted && !_execution.IsBusy;
+        public bool ReadyForFactoryExit => (_trainingCompleted || _lessonSkipped) && !_execution.IsBusy;
 
         private void Awake()
         {
@@ -62,6 +63,7 @@ namespace ModelDesignScene
             _results.OnInferenceRequested += HandleInferenceRequested;
             _results.OnStartRequested += HandleTrainingStartRequested;
             _results.OnStopRequested += HandleTrainingStopRequested;
+            _results.OnLessonSkipped += HandleLessonSkipped;
 
             // All scene blocks have completed Awake before their model data is assigned.
             _inputBlock.Initialize(_workspace.Input, false);
@@ -229,7 +231,16 @@ namespace ModelDesignScene
             _settings.Close();
             _results.ResetTraining();
             _trainingCompleted = false;
+            _lessonSkipped = false;
             await _execution.StartTrainingAsync(definition);
+        }
+
+        private void HandleLessonSkipped()
+        {
+            if (isActiveAndEnabled && !_execution.IsBusy && _grabbedBlock == null)
+            {
+                _lessonSkipped = true;
+            }
         }
 
         private async void HandleTrainingStopRequested()
@@ -313,6 +324,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _lessonSkipped = false;
             _trainingCompleted = false;
             _execution.CloseSession();
             if (_initialized)
@@ -362,6 +374,7 @@ namespace ModelDesignScene
                 _results.OnInferenceRequested -= HandleInferenceRequested;
                 _results.OnStartRequested -= HandleTrainingStartRequested;
                 _results.OnStopRequested -= HandleTrainingStopRequested;
+                _results.OnLessonSkipped -= HandleLessonSkipped;
             }
             if (_conveyor != null)
             {

@@ -57,6 +57,10 @@ namespace ModelDesignScene
         private bool _hasIssues;
         private bool _isDragging;
         private bool _isBusy;
+        private int _page;
+        private Button _nextStep;
+        private Text _nextStepLabel;
+        public event Action OnLessonSkipped;
 
         public event Action OnStartRequested;
         public event Action OnStopRequested;
@@ -76,6 +80,19 @@ namespace ModelDesignScene
             _inference.Initialize(_samples);
             _inference.OnInferenceRequested += HandleInferenceRequested;
             _inference.OnError += ShowError;
+            _nextStep = Instantiate(_startTrainingButton, transform);
+            _nextStep.name = "Next learning step";
+            _nextStep.onClick = new Button.ButtonClickedEvent();
+            _nextStep.onClick.AddListener(AdvanceStep);
+            RectTransform nextRect = (RectTransform)_nextStep.transform;
+            nextRect.anchorMin = nextRect.anchorMax = nextRect.pivot = new Vector2(0.5f, 0.5f);
+            nextRect.anchoredPosition = new Vector2(0f, -630f);
+            nextRect.sizeDelta = new Vector2(900f, 70f);
+            _nextStepLabel = _nextStep.GetComponentInChildren<Text>();
+            _nextStepLabel.rectTransform.anchorMin = Vector2.zero;
+            _nextStepLabel.rectTransform.anchorMax = Vector2.one;
+            _nextStepLabel.rectTransform.offsetMin = _nextStepLabel.rectTransform.offsetMax = Vector2.zero;
+            UI.SceneUIStyle.Apply(_nextStep);
             ResetSessionUI();
         }
 
@@ -261,11 +278,44 @@ namespace ModelDesignScene
 
         private void ShowPage(int page)
         {
+            _page = page;
+            if (_nextStepLabel != null)
+            {
+                _nextStepLabel.text = page == 0 ? "조립 단계 건너뛰고 학습 화면으로"
+                    : page == 1 ? "다음으로 · 숫자 예측 화면" : "현재 단계 마치기 / 건너뛰기";
+            }
             for (int index = 0; index < _pages.Length; index++)
             {
                 _pages[index].SetActive(index == page);
                 _tabAccents[index].enabled = index == page;
             }
+        }
+
+        private void AdvanceStep()
+        {
+            if (!isActiveAndEnabled) { return; }
+            if (_isDragging)
+            {
+                _stateText.text = "잡은 블록을 놓은 뒤 다음으로 진행해 주세요.";
+                return;
+            }
+            DismissError();
+            if (_page < _pages.Length - 1)
+            {
+                ShowPage(_page + 1);
+                if (!_isBusy)
+                {
+                    _stateText.text = "화면 단계를 넘겼습니다. 학습·예측 결과는 실제 실행한 경우에만 표시됩니다.";
+                }
+                return;
+            }
+            if (_isBusy)
+            {
+                _stateText.text = "계산 중입니다. 완료를 기다리거나 학습 중지 후 단계를 마쳐 주세요.";
+                return;
+            }
+            OnLessonSkipped?.Invoke();
+            _stateText.text = "현재 단계를 마쳤습니다. 수행하지 않은 학습·예측은 완료 처리하지 않습니다. 바닥 안내선을 따라 출구로 이동하세요.";
         }
 
         private void OnDestroy()

@@ -7,15 +7,25 @@ namespace FactoryTutorial
 {
     public sealed class FactoryTutorialManager : MonoBehaviour
     {
-        private static readonly string[] Titles = { "이동과 둘러보기", "선택", "잡기", "정면 복원", "태블릿" };
+        private static readonly string[] Titles = { "당신의 미션", "태블릿이 필요한 이유", "진행률과 지도", "양피지를 수집하세요!", "이동과 둘러보기", "버튼 선택", "물체 잡기", "정면 복원", "태블릿 조작 시작", "태블릿 항목 이동", "X · 선택", "Y · 뒤로", "Menu · 설정", "첫 번째 목적지" };
         private static readonly string[] Instructions =
         {
-            "고개를 돌려 주변을 둘러보세요.\n왼손 스틱으로 이동하고 오른손 스틱으로 시점을 회전합니다.\n이 안내에서는 동작을 수행하지 않아도 다음으로 넘어갈 수 있습니다.",
-            "오른손 ray로 버튼을 가리키면 테두리가 강조됩니다.\n오른손 Trigger를 눌러 선택하세요.\n흐리게 표시된 버튼은 아직 사용할 수 없습니다.",
-            "Grip을 누른 채 오른손 ray로 물체를 가리키면 잡힙니다.\n잡은 물체는 오른손 ray를 따라 이동하고 Grip을 놓으면 해제됩니다.\n물체를 잡는 동안 일부 화면 버튼은 사용할 수 없습니다.",
-            "현재 위치에서 정면을 다시 맞추려면 오른손 A를 누르세요.\n오른손 B로 ray를 켜거나 끌 수 있습니다.\nray를 끄면 잡고 있던 물체도 놓습니다.",
-            "왼손 태블릿에서 지도와 수집한 양피지를 확인할 수 있습니다.\n왼손 Trigger + 스틱으로 항목 이동, X로 선택, Y로 뒤로 갑니다.\nMenu로 설정을 엽니다. 안내를 마치고 Pixel Lab으로 이동하세요."
+            "당신은 이미지 복구 공장의 새 담당자입니다.\n양피지로 원리를 배우고 세 방의 체험을 완료하세요.\n픽셀·합성곱 → 피처맵 → 모델 제작 순서로 CNN을 이해합니다.",
+            "태블릿은 미션 수행을 돕는 보조 도구예요.\n할 일을 잊으면 현재 미션, 길을 잃으면 지도를 확인하세요.\n수집한 양피지는 언제든 다시 읽을 수 있어요.",
+            "진행률은 양피지 5개와 방 체험 3개,\n총 8개 목표 중 완료한 비율이에요.\n지도에는 방과 아직 수집하지 않은 양피지가 표시됩니다.",
+            "방으로 가는 길에서 양피지를 찾아보세요.\n3m 안에서 오른손으로 가리키고 Trigger를 누르면 수집됩니다.\n놓쳐도 입장할 수 있어요. 지도에서 찾아 다시 돌아오세요.",
+            "왼손 스틱을 움직여 걸어보세요.\n고개를 돌려 주변을 보고, 오른손 스틱으로 방향을 조절하세요.",
+            "오른손 앞쪽 검지 버튼이 Trigger예요.\n레이로 화면 버튼을 가리키고 눌러 선택하세요.",
+            "오른손 옆면 버튼이 Grip이에요.\nGrip을 누른 채 물체를 가리켜 잡고, 손을 움직여 옮기세요.\n놓으면 물체를 놓습니다.",
+            "오른손 A를 누르면 현재 위치에서 정면을 복원해요.\nB는 레이를 켜거나 끕니다.\n안내 중에는 버튼 선택을 위해 레이가 유지됩니다.",
+            "왼손 Trigger를 누르고 있어 보세요.\n태블릿을 조작하는 동안에는 이동 대신 항목을 고릅니다.",
+            "왼손 Trigger를 누른 채 스틱을 움직이세요.\n노란 선택 표시가 다른 항목으로 이동하는지 확인하세요.",
+            "왼손 X를 눌러 선택한 항목을 여세요.\n실제 태블릿과 왼쪽 연습 그림의 반응을 확인하세요.",
+            "왼손 Y를 누르면 이전 화면으로 돌아갑니다.\n문서를 읽은 후 체험을 계속할 때 사용하세요.",
+            "왼손 Menu로 설정을 열 수 있어요.\n밝기와 음량을 조절한 뒤 Y로 돌아오세요.",
+            "첫 미션: Pixel Lab으로 이동하세요.\n가는 길에서 ‘이미지와 픽셀’, ‘합성곱과 패딩’ 양피지를 수집하세요.\n방 입구에서 역할 설명을 읽고 체험을 시작합니다."
         };
+        private FactoryTutorialVisualController _visuals;
         [SerializeField] private FactoryTutorialPanelController _panel;
         [SerializeField] private Font _font;
 
@@ -59,6 +69,9 @@ namespace FactoryTutorial
             _panel.transform.SetPositionAndRotation(
                 entrance.position + entrance.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
             _panel.Initialize(_font, rig.Camera);
+            _panel.ConfigureVisualGuide();
+            _visuals = _panel.gameObject.AddComponent<FactoryTutorialVisualController>();
+            _visuals.Initialize(rig.GetComponent<PersistentXRPlayerRig>(), _font);
             _panel.OnPrevious += Previous;
             _panel.OnNext += Next;
             _panel.OnFinish += Finish;
@@ -96,6 +109,7 @@ namespace FactoryTutorial
         private void Refresh()
         {
             _panel.ShowPage(_page, Titles.Length, Titles[_page], Instructions[_page]);
+            _visuals.ShowPage(_page);
         }
 
         private void Finish()

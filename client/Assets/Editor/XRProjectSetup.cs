@@ -167,10 +167,16 @@ namespace XR.Editor
 
         private static void ConfigureMovement(GameObject rig)
         {
-            // Re-running this command preserves the user's existing movement tuning.
-            if (rig.GetComponent<ContinuousMoveProvider>() != null)
+            CharacterController body = rig.GetComponent<CharacterController>();
+            if (body == null)
             {
-                return;
+                body = rig.AddComponent<CharacterController>();
+                body.height = 1.6f;
+                body.radius = 0.2f;
+                body.center = new Vector3(0, 0.82f, 0);
+                body.stepOffset = 0.2f;
+                body.skinWidth = 0.02f;
+                body.minMoveDistance = 0;
             }
             XRBodyTransformer transformer = rig.GetComponent<XRBodyTransformer>();
             if (transformer == null)
@@ -178,7 +184,9 @@ namespace XR.Editor
                 transformer = rig.AddComponent<XRBodyTransformer>();
             }
             transformer.xrOrigin = rig.GetComponent<XROrigin>();
-            transformer.useCharacterControllerIfExists = false;
+            transformer.useCharacterControllerIfExists = true;
+            // Preserve existing movement tuning while enabling wall collision.
+            if (rig.GetComponent<ContinuousMoveProvider>() != null) { return; }
             LocomotionMediator mediator = rig.GetComponent<LocomotionMediator>();
             if (mediator == null)
             {

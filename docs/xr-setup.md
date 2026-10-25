@@ -24,7 +24,7 @@
 
 `XRPlayerRig`는 `XROrigin`, Camera Offset, Main Camera, 양손 추적 오브젝트와 `XRInteractionManager`로 구성된다. `TrackedPoseDriver`가 HMD와 컨트롤러의 위치·회전을 갱신한다. 컨트롤러 레이는 OpenXR의 aim pose를 우선 읽고, 해당 입력이 없으면 device pose로 대체한다. 손에 표시되는 오브젝트는 grip pose를 사용한다.
 
-수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 5m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력·CharacterController 충돌은 사용하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다. 시뮬레이터의 축 이동 속도 0.2에 몸 이동 배율 25을 적용하며, 손 조작 모드의 축 이동 속도는 0.2로 유지한다.
+수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 5m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력은 사용하지 않는다. 리그의 CharacterController와 XRBodyTransformer의 충돌 이동을 사용해 스틱 이동 중 벽을 통과하지 않게 한다. 캡슐 반경은 0.2m이며 높이와 중심은 XRI가 HMD 위치에 맞춰 갱신한다. 실제 사용자가 몸을 움직이는 물리적 이동은 제한하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다. 시뮬레이터의 축 이동 속도 0.2에 몸 이동 배율 25을 적용하며, 손 조작 모드의 축 이동 속도는 0.2로 유지한다.
 
 `XRPlayerInputController`는 수평 회전을 리그에, 수직 회전을 Camera Offset에 적용한다. `_turnSpeed`는 회전 속도, `_maximumPitch`는 스틱으로 추가하는 수직 회전의 한계다. `RestoreFrontView()`는 카메라 위치를 유지하며 시작 정면과 초기 Camera Offset 회전을 복원한다.
 
@@ -114,3 +114,17 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 | [QuestSetup.Configure](../client/Assets/Editor/QuestSetup.cs) | `Tools > CNN > Configure Quest VR`를 `XRProjectSetup.ConfigureProject()`에 연결한다. |
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.
+
+## Touch Plus 모델 패키지 설치 (2026-10-26)
+
+Meta 공식 registry `https://npm.developer.oculus.com`에서 `com.meta.xr.sdk.core` 207.0.1을 설치했다. registry 범위는 해당 패키지로 제한하며, 의존 패키지 XR Hands 1.7.3은 Unity가 해결했다. 기존 OpenXR/XRI 버전과 리그 입력 연결은 유지한다.
+
+모델은 `Packages/com.meta.xr.sdk.core/Meshes/MetaQuestTouchPlus/MetaQuestTouchPlus_Left.fbx`, `MetaQuestTouchPlus_Right.fbx`에 있고, Animation 하위 폴더에 좌·우 Animator Controller가 있다. 패키지 원본을 Assets에 복제하거나 수정하지 않는다. 출처·권리 조건은 ASSET_CREDITS.md에 기록했다.
+
+Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (`isCompiling=false`, `isUpdating=false`, `scriptCompilationFailed=false`). 좌·우 모델 로드 및 왼손 버튼·Grip·Trigger·8방향 스틱 애니메이션 목록을 확인했다. Unity는 공식 패키지의 서명 파일 부재 경고를 출력했다. 다운로드 원본의 SHA 검증값은 Meta registry 값과 일치했다. Play·APK 빌드·기기 검증은 수행하지 않았으며 실제 리그 모델 교체와 튜토리얼 연결은 후속 작업이다.
+
+## 컨트롤러 표시와 실제 미션 연결 (2026-10-26)
+
+`PersistentXRPlayerRig`의 직렬화된 좌·우 Touch Plus 모델 및 Animator 참조로 손의 grip pose 아래 실제 컨트롤러 모델을 생성한다. `TouchPlusHandController`가 Unity XR의 버튼·Grip·Trigger·스틱 값을 공식 Animator에 전달한다. 오른손 Meta 시스템 버튼은 앱 입력으로 가로채지 않는다. 패키지 모델·애니메이션 원본은 수정하지 않고 표시용 런타임 재질과 튜토리얼 표식만 별도로 생성·정리한다.
+
+`TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시한다. 단계 선택은 이동 안내이며 실제 걸어서 방에 들어간다. 기존 앱 실행 간 설정 저장과 미션 진행 저장은 별개이고 미션 진행은 세션 안에서 유지한다.

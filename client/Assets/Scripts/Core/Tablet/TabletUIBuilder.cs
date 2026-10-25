@@ -428,7 +428,7 @@ namespace Tablet
             Image actionShadow = PlaceImage(Shell.FeedbackRoot.transform, "Confirm Shadow", 452f, 823f, 658f, 115f,
                 new Color(0.18f, 0.36f, 0.59f, 0.28f));
             actionShadow.sprite = _resources.ShadowSprite;
-            Button confirm = PlaceButton(Shell.FeedbackRoot.transform, "Confirm Task", "작업 확인하기", 465f, 827f, 632f, 95f,
+            Button confirm = PlaceButton(Shell.FeedbackRoot.transform, "Confirm Task", "현재 미션 확인", 465f, 827f, 632f, 95f,
                 _learning.ConfirmCurrentTask, CardColor);
             confirm.GetComponent<Image>().sprite = _resources.PrimarySprite;
             AddOutline(confirm.GetComponent<Image>(), new Color(0.53f, 0.69f, 0.91f, 0.85f), new Vector2(2f, 2f));

@@ -95,6 +95,11 @@ namespace Tablet
         public bool HasParchment(int index) => _parchment.HasParchment(index);
         public bool CollectParchment(int index) => _parchment.CollectParchment(index);
 
+        public void SetFactoryMission(int phase, int collected, int completed, string mission)
+        {
+            _learning.SetFactoryMission(phase, collected, completed, mission);
+        }
+
         public void SetMapData(TabletMapData data)
         {
             MapData = data;
@@ -156,7 +161,7 @@ namespace Tablet
             _learning.RefreshProgress();
             _settings.RefreshSettingsValues();
             UpdateFeedback("교육 문서 수집",
-                "방 안에서 은은하게 빛나는 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
+                "방으로 가는 길에서 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
         }
 
         internal void ShowFactoryMap()
@@ -176,7 +181,7 @@ namespace Tablet
 
         internal void ShowLearningInfo()
         {
-            ShowDetail("학습 정보", "픽셀 구조와 CNN 필터\n미디어 · XR 디스플레이 교육\n\n" +
+            ShowDetail("태블릿은 미션 보조 도구", "할 일을 모를 때: 현재 미션\n길을 찾을 때: 지도\n원리를 복습할 때: 수집한 양피지\n진행률: 양피지 5개 + 방 체험 3개\n\n" +
                 "현재 단계: " + _learning.SelectedName + "\n선택한 양피지: " + TabletParchmentController.ItemName(_parchment.SelectedIndex) +
                 "\n\n케디헌", false);
         }

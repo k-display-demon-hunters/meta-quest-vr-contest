@@ -33,6 +33,12 @@ namespace UI
 
         private void Start()
         {
+            // The factory flow owns the shared XR rig and its entrance-facing view.
+            if (UnityEngine.SceneManagement.SceneManager.GetSceneByName("FactoryEnvironment").isLoaded)
+            {
+                Destroy(this);
+                return;
+            }
             _lab = GetComponent<CNNPixelLabManager>();
             Camera original = Camera.main;
             if (original == null || UnityEngine.XR.XRSettings.isDeviceActive)
@@ -80,7 +86,7 @@ namespace UI
         {
             _pivot = _lab.EditorPreviewFocus;
             _distance = _details ? 3.5f : 2.8f;
-            _yaw = 0;
+            _yaw = _lab.transform.eulerAngles.y;
             _pitch = 0;
             PositionCamera();
         }

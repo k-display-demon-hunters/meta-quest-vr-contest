@@ -2,6 +2,7 @@ using Tablet;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -46,6 +47,11 @@ namespace Education
 
         private void Start()
         {
+            foreach (Text label in GetComponentsInChildren<Text>(true))
+            {
+                if (label.name == "Collect instruction") { label.text = "양피지를 수집하세요!\n오른손 Trigger · 3 m 이내"; }
+                if (label.name == "Collection room") { label.text = ParchmentLesson.All[_lessonIndex].Room; }
+            }
             ResolveTablet(null);
             if (_tablet != null && _tablet.HasParchment(_lessonIndex))
             {

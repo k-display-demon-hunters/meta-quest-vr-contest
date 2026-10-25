@@ -12,6 +12,7 @@ namespace FactoryTutorial
         private Text _body;
         private Text _nextLabel;
         private Button _previous;
+        private Button _finish;
         public event Action OnPrevious;
         public event Action OnNext;
         public event Action OnFinish;
@@ -34,15 +35,37 @@ namespace FactoryTutorial
             _previous = MakeButton(panel.transform, font, "이전", new Vector2(-290f, -205f), () => OnPrevious?.Invoke());
             Button next = MakeButton(panel.transform, font, "다음", new Vector2(0f, -205f), () => OnNext?.Invoke());
             _nextLabel = next.GetComponentInChildren<Text>();
-            MakeButton(panel.transform, font, "안내 마치기", new Vector2(290f, -205f), () => OnFinish?.Invoke());
+            _finish = MakeButton(panel.transform, font, "건너뛰기", new Vector2(290f, -205f), () => OnFinish?.Invoke());
         }
 
         public void ShowPage(int page, int count, string title, string body)
         {
-            _title.text = $"조작 안내 {page + 1} / {count} · {title}";
+            _title.text = $"공장 안내 {page + 1} / {count} · {title}";
             _body.text = body;
             _previous.interactable = page > 0;
             _nextLabel.text = page == count - 1 ? "탐색 시작" : "다음";
+        }
+
+        public void ConfigureVisualGuide()
+        {
+            RectTransform panel = (RectTransform)_title.transform.parent;
+            panel.Find("Panel").GetComponent<RectTransform>().sizeDelta = new Vector2(1450, 750);
+            _title.rectTransform.anchoredPosition = new Vector2(0, 300);
+            _title.rectTransform.sizeDelta = new Vector2(1350, 80);
+            _body.rectTransform.anchoredPosition = new Vector2(300, 50);
+            _body.rectTransform.sizeDelta = new Vector2(650, 380);
+            _previous.GetComponent<RectTransform>().anchoredPosition = new Vector2(-290, -300);
+            _nextLabel.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
+            _finish.GetComponent<RectTransform>().anchoredPosition = new Vector2(290, -300);
+        }
+
+        public void ShowBriefing(string title, string body)
+        {
+            _title.text = title;
+            _body.text = body;
+            _previous.gameObject.SetActive(false);
+            _finish.gameObject.SetActive(false);
+            _nextLabel.text = "체험 시작";
         }
 
         private static RectTransform Rect(Transform parent, string name, Vector2 position, Vector2 size)

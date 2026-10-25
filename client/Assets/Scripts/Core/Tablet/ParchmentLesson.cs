@@ -12,7 +12,7 @@ namespace Tablet
         public string Topic { get; }
         public string Department { get; }
         public string[] Pages => (string[])_pages.Clone();
-        public string Room => _number == 1 ? "Convolution Room" : "MLP Room";
+        public string Room => _number <= 2 ? "Pixel Lab으로 가는 길" : _number <= 4 ? "Feature Map Lab으로 가는 길" : "Model Design Lab으로 가는 길";
 
         public static readonly ParchmentLesson[] All =
         {

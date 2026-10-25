@@ -25,6 +25,18 @@ namespace FactoryEnvironment
 
         private readonly string[] _scenes = { "CNNPixelLab", "CNNFeatureMapLab", "CNNModelDesignLab" };
         private Scene _lesson;
+        private Camera _camera;
+        private GameObject _briefing;
+        private XR.XRPlayerInputController _briefInput;
+        private bool _previousBriefRay;
+        private readonly bool[] _completed = new bool[3];
+        private readonly string[] _roomNames = { "Pixel Lab", "Feature Map Lab", "Model Design Lab" };
+        private readonly string[] _roomRoles = {
+            "CNN의 출발점: 이미지의 숫자와 합성곱\n픽셀의 RGB 값을 살펴보고, 같은 위치의 입력과 가중치를 곱해 더합니다.\n필터를 잡아 이미지 위로 옮기는 것부터 시작하세요.",
+            "CNN의 특징 추출: 계산을 반복해 피처맵 만들기\n앞 방에서 배운 합성곱을 여러 위치에 적용하면 특징 맵이 됩니다.\n필터를 움직이며 이미지의 어느 부분에 반응하는지 관찰하세요.",
+            "CNN의 모델 구성: 처리 단계를 연결하기\n합성곱과 활성화 등의 블록을 연결해 이미지 특징을 처리하는 모델을 구성합니다.\n모델을 제작하고 학습·결과를 확인하세요." };
+        private string _lastMission;
+        private int _lastProgress = -1;
         private CNNPixelLabManager _pixels;
         private CNNFeatureMapGuide _maps;
         private CNNModelDesignLabManager _model;
@@ -60,6 +72,7 @@ namespace FactoryEnvironment
                 enabled = false;
                 return;
             }
+            _camera = rig.Camera;
             PlaceAtEntrance(rig);
             _interactors = rig.GetComponentsInChildren<XRBaseInteractor>(true);
             foreach (FactoryAreaEntryController area in _areas)
@@ -68,6 +81,7 @@ namespace FactoryEnvironment
             }
             _routeGuide.Bind(rig.Camera.transform);
             PublishMap();
+            _tablet?.SetFactoryMission(0, 0, 0, "양피지 5개를 수집하고 세 방의 체험을 완료하세요. 먼저 공장 안내를 읽어보세요.");
             CreateRouteInstruction();
             FactoryRoomSignController signs = gameObject.AddComponent<FactoryRoomSignController>();
             signs.Initialize(_font);
@@ -148,6 +162,7 @@ namespace FactoryEnvironment
             _tutorialComplete = true;
             _portal.gameObject.SetActive(true);
             _routeGuide.SetDestination(0);
+            UpdateMission(0);
         }
 
         private void Update()
@@ -162,6 +177,8 @@ namespace FactoryEnvironment
                 _failedArea = null;
             }
             int destination = GetDestination();
+            if (_stage >= 0 && destination > _stage) { _completed[_stage] = true; }
+            UpdateMission(destination);
             FactoryAreaEntryController area = _areas[destination];
             _routeGuide.SetDestination(area.IsPlayerInside ? -1 : destination);
             if (destination == _stage || !area.IsPlayerInside || area == _failedArea || HasSelection())
@@ -177,8 +194,71 @@ namespace FactoryEnvironment
             }
             else
             {
-                StartCoroutine(LoadLesson(destination));
+                StartCoroutine(BriefThenLoad(destination));
             }
+        }
+
+        private void UpdateMission(int destination)
+        {
+            if (_tablet == null) { return; }
+            int collected = 0;
+            int completed = 0;
+            for (int i = 0; i < ParchmentLesson.All.Length; i++) { if (_tablet.HasParchment(i)) { collected++; } }
+            foreach (bool done in _completed) { if (done) { completed++; } }
+            int first = destination == 0 ? 0 : destination == 1 ? 2 : 4;
+            int last = destination == 0 ? 1 : destination == 1 ? 3 : 4;
+            string missing = "";
+            if (destination < 3)
+            {
+                for (int i = first; i <= last; i++)
+                {
+                    if (!_tablet.HasParchment(i)) { missing += "「" + ParchmentLesson.All[i].Title + "」 "; }
+                }
+            }
+            string mission = destination >= 3
+                ? (collected == 5 ? "모든 미션을 완료했어요. 출구로 이동하세요." : "세 방 체험 완료! 지도에서 남은 양피지를 찾아 수집하세요. 출구로 먼저 이동할 수도 있어요.")
+                : missing.Length > 0
+                    ? _roomNames[destination] + "으로 이동하며 양피지를 수집하세요!\n" + missing +
+                      "\n오른손으로 가리키고 Trigger를 누르세요. 놓쳐도 입장할 수 있고 지도에서 다시 찾을 수 있어요."
+                    : _stage == destination ? _roomNames[destination] + " 체험을 완료하세요.\n배운 원리는 태블릿의 양피지에서 다시 읽을 수 있어요."
+                    : "양피지 수집 완료! " + _roomNames[destination] + "에 들어가 체험을 시작하세요.";
+            int progress = collected + completed * 10;
+            if (_lastMission == mission && _lastProgress == progress) { return; }
+            _lastMission = mission;
+            _lastProgress = progress;
+            _tablet.SetFactoryMission(Mathf.Min(destination + 1, 4), collected, completed, mission);
+            _portal.SetInstruction(mission);
+        }
+
+        private IEnumerator BriefThenLoad(int index)
+        {
+            _briefInput = _camera.GetComponentInParent<XR.XRPlayerInputController>();
+            if (_briefInput != null)
+            {
+                _previousBriefRay = _briefInput.TutorialRayForcedOn;
+                _briefInput.TutorialRayForcedOn = true;
+                _briefInput.EnsureRayReady();
+            }
+            _briefing = new GameObject("Room mission briefing");
+            _briefing.transform.SetParent(transform, false);
+            Vector3 direction = Vector3.ProjectOnPlane(_contentAnchors[index].position - _camera.transform.position, Vector3.up).normalized;
+            if (direction.sqrMagnitude < 0.1f) { direction = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized; }
+            _briefing.transform.SetPositionAndRotation(_camera.transform.position + direction * 2f, Quaternion.LookRotation(direction));
+            FactoryTutorialPanelController panel = _briefing.AddComponent<FactoryTutorialPanelController>();
+            panel.Initialize(_font, _camera);
+            panel.ShowBriefing(_roomNames[index] + " · 이 방의 역할", _roomRoles[index]);
+            bool accepted = false;
+            panel.OnNext += () => accepted = true;
+            while (!accepted && _areas[index].IsPlayerInside) { yield return null; }
+            ReleaseBriefing();
+            if (!accepted) { _loading = false; yield break; }
+            yield return LoadLesson(index);
+        }
+
+        private void ReleaseBriefing()
+        {
+            if (_briefing != null) { Destroy(_briefing); _briefing = null; }
+            if (_briefInput != null) { _briefInput.TutorialRayForcedOn = _previousBriefRay; _briefInput = null; }
         }
 
         private bool HasValidConfiguration()
@@ -287,8 +367,10 @@ namespace FactoryEnvironment
             {
                 light.enabled = false;
             }
-            Vector3 offset = _contentAnchors[index].position - Vector3.forward * 1.5f;
-            content.transform.position += offset;
+            // Face the approach from the central corridor; do not rotate the user's head.
+            Quaternion facing = Quaternion.LookRotation(index < 2 ? Vector3.left : Vector3.right, Vector3.up);
+            Vector3 offset = _contentAnchors[index].position - facing * Vector3.forward * 1.5f;
+            content.transform.SetPositionAndRotation(offset, facing);
             foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
             {
                 body.position = body.transform.position;
@@ -297,7 +379,7 @@ namespace FactoryEnvironment
             CNNPixelLabManager nextPixels = content.GetComponentInChildren<CNNPixelLabManager>(true);
             if (nextPixels != null)
             {
-                nextPixels.RebaseDock(offset);
+                nextPixels.RebaseDock(offset, facing);
             }
             // Loading can finish while an old or newly loaded object is held. Never unload its scene mid-grab.
             while (HasSelection())
@@ -407,6 +489,7 @@ namespace FactoryEnvironment
 
         private void OnDisable()
         {
+            ReleaseBriefing();
             if (_tablet != null)
             {
                 _tablet.ClearMapData(_mapData);

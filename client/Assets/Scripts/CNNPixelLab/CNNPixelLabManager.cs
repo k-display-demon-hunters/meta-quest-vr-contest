@@ -186,6 +186,11 @@ namespace UI
 
         public void NextStage()
         {
+            if (_isRevealStage && _revealStage != null)
+            {
+                _revealStage.CompleteReveal();
+                return;
+            }
             if (_revealStage != null && _revealStage.IsReadyForConvolution)
             {
                 BeginConvolution();

@@ -48,7 +48,8 @@ namespace UI
         {
             _instruction.gameObject.SetActive(false);
             _detailButton.interactable = false;
-            _nextButton.interactable = false;
+            _nextButton.interactable = true;
+            _nextButton.GetComponentInChildren<Text>().text = "픽셀로 바꾸고 다음으로";
         }
 
         public void ResetControls()

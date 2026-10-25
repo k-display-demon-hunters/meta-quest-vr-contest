@@ -93,6 +93,14 @@ namespace UI
             _instruction.gameObject.SetActive(false);
         }
 
+        public void CompleteReveal()
+        {
+            if (Phase != RevealPhase.AwaitingClick && Phase != RevealPhase.Revealing) { return; }
+            StopAllCoroutines();
+            _channelControls.SetActive(true);
+            FinishReveal();
+        }
+
         private IEnumerator RevealColumns()
         {
             float elapsed = 0;
@@ -108,6 +116,11 @@ namespace UI
                 }
                 yield return null;
             }
+            FinishReveal();
+        }
+
+        private void FinishReveal()
+        {
             foreach (CanvasGroup column in _columns) { column.alpha = 1; }
             Phase = RevealPhase.Revealed;
             _instruction.gameObject.SetActive(false);

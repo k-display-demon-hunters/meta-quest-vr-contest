@@ -128,3 +128,5 @@ Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (
 `PersistentXRPlayerRig`의 직렬화된 좌·우 Touch Plus 모델 및 Animator 참조로 손의 grip pose 아래 실제 컨트롤러 모델을 생성한다. `TouchPlusHandController`가 Unity XR의 버튼·Grip·Trigger·스틱 값을 공식 Animator에 전달한다. 오른손 Meta 시스템 버튼은 앱 입력으로 가로채지 않는다. 패키지 모델·애니메이션 원본은 수정하지 않고 표시용 런타임 재질과 튜토리얼 표식만 별도로 생성·정리한다.
 
 `TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시한다. 단계 선택은 이동 안내이며 실제 걸어서 방에 들어간다. 기존 앱 실행 간 설정 저장과 미션 진행 저장은 별개이고 미션 진행은 세션 안에서 유지한다.
+
+후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 공장 씬이 함께 로드된 경우 `CNNMousePreviewController`는 실행하지 않아 공용 XR 리그를 유지한다. 단독 픽셀 씬의 로컬 마우스 미리보기 설정은 보존한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.

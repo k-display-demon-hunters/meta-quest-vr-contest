@@ -1,17 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.Interaction
 {
-    public sealed class CNNFeatureMapInteractionController
+    public sealed class InteractionController
     {
-        private readonly List<CNNFeatureMapGrabTarget> _heldTargets = new List<CNNFeatureMapGrabTarget>();
-        private CNNFeatureMapGrabTarget _scaleTarget;
+        private readonly List<GrabTarget> _heldTargets = new List<GrabTarget>();
+        private GrabTarget _scaleTarget;
         public bool HasHeldTargets => _heldTargets.Count > 0;
 
-        public bool CanGrab(CNNFeatureMapGrabTarget candidate)
+        public bool CanGrab(GrabTarget candidate)
         {
-            foreach (CNNFeatureMapGrabTarget held in _heldTargets)
+            foreach (GrabTarget held in _heldTargets)
             {
                 if (held != candidate && (held.transform.IsChildOf(candidate.transform) || candidate.transform.IsChildOf(held.transform)))
                 {
@@ -23,7 +23,7 @@ namespace CNNFeatureMaps
 
         public bool HasHeldDescendant(Transform ancestor)
         {
-            foreach (CNNFeatureMapGrabTarget held in _heldTargets)
+            foreach (GrabTarget held in _heldTargets)
             {
                 if (held.transform.IsChildOf(ancestor))
                 {
@@ -33,7 +33,7 @@ namespace CNNFeatureMaps
             return false;
         }
 
-        public void HoldTarget(CNNFeatureMapGrabTarget target)
+        public void HoldTarget(GrabTarget target)
         {
             if (!_heldTargets.Contains(target))
             {
@@ -41,7 +41,7 @@ namespace CNNFeatureMaps
             }
         }
 
-        public void ReleaseTarget(CNNFeatureMapGrabTarget target)
+        public void ReleaseTarget(GrabTarget target)
         {
             if (_heldTargets.Remove(target))
             {
@@ -49,7 +49,7 @@ namespace CNNFeatureMaps
             }
         }
 
-        public void SelectScaleTarget(CNNFeatureMapGrabTarget target)
+        public void SelectScaleTarget(GrabTarget target)
         {
             if (target.CanScale)
             {

@@ -1,25 +1,25 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
-    public sealed class CNNFeatureMapPanel : MonoBehaviour
+    public sealed class MapPanel : MonoBehaviour
     {
         [SerializeField] private Renderer _surface;
         [SerializeField] private int _channel;
         private int _layer = -1;
-        private CNNFeatureMapNode[] _nodes;
+        private MapNode[] _nodes;
         private bool _extracted;
         public bool IsExtracted => _extracted;
         public int Layer => _layer;
         public int Channel => _channel;
-        public System.Collections.Generic.IReadOnlyList<CNNFeatureMapNode> Nodes => _nodes;
+        public System.Collections.Generic.IReadOnlyList<MapNode> Nodes => _nodes;
 
         public void Initialize(CNNFeatureMapLabManager scene)
         {
-            CNNFeatureMapLayer layer = GetComponentInParent<CNNFeatureMapLayer>();
+            MapLayer layer = GetComponentInParent<MapLayer>();
             _layer = layer != null ? layer.Index : -1;
-            _nodes = GetComponentsInChildren<CNNFeatureMapNode>(true);
-            foreach (CNNFeatureMapNode node in _nodes)
+            _nodes = GetComponentsInChildren<MapNode>(true);
+            foreach (MapNode node in _nodes)
             {
                 node.Initialize(scene, _layer, _channel);
             }

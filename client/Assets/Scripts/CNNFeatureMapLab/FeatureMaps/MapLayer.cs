@@ -1,10 +1,10 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
-    public sealed class CNNFeatureMapLayer : MonoBehaviour
+    public sealed class MapLayer : MonoBehaviour
     {
-        [SerializeField] private CNNFeatureMapPanel[] _maps;
+        [SerializeField] private MapPanel[] _maps;
         [SerializeField] private int _layerIndex;
         [SerializeField] private float _spreadSpacing = .64f;
         private CNNFeatureMapLabManager _scene;
@@ -38,7 +38,7 @@ namespace CNNFeatureMaps
             float blend = 1f - Mathf.Exp(-9f * Time.deltaTime);
             for (int index = 0; index < _maps.Length; index++)
             {
-                CNNFeatureMapPanel map = _maps[index];
+                MapPanel map = _maps[index];
                 // Extracted maps and their free cell nodes remain where the user put them.
                 if (map.IsExtracted)
                 {

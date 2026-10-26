@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
-    public sealed class CNNFeatureMapExampleData
+    public sealed class ExampleData
     {
         public const int Size = 8;
         public static readonly int[] Channels = { 2, 3, 5 };
@@ -10,7 +10,7 @@ namespace CNNFeatureMaps
         private readonly float[][,,] _values = new float[3][,,];
         private readonly bool[][,] _affected = new bool[4][,];
 
-        public CNNFeatureMapExampleData(Texture2D image)
+        public ExampleData(Texture2D image)
         {
             Color[] pixels = image.GetPixels();
             for (int row = 0; row < Size; row++)

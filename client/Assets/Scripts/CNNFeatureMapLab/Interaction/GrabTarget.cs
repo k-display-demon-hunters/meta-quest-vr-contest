@@ -1,31 +1,32 @@
+using CNNFeatureMaps.FeatureMaps;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.Interaction
 {
-    public enum CNNFeatureMapGrabKind { Node, Map, Layer }
+    public enum GrabKind { Node, Map, Layer }
 
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class CNNFeatureMapGrabTarget : MonoBehaviour, IXRSelectFilter
+    public sealed class GrabTarget : MonoBehaviour, IXRSelectFilter
     {
-        [SerializeField] private CNNFeatureMapGrabKind _kind;
+        [SerializeField] private GrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
         [SerializeField] private bool _isFilter;
         private CNNFeatureMapLabManager _scene;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
-        private CNNFeatureMapNode _node;
-        private CNNFeatureMapPanel _panel;
-        private CNNFeatureMapLayer _layer;
+        private MapNode _node;
+        private MapPanel _panel;
+        private MapLayer _layer;
         private Vector3 _homePosition;
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
         private float _scaleFactor = 1f;
 
-        public CNNFeatureMapGrabKind Kind => _kind;
+        public GrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
         public bool CanScale => !_isFilter;
         internal Collider[] GrabColliders => _grabColliders;
@@ -41,14 +42,14 @@ namespace CNNFeatureMaps
             _homePosition = transform.localPosition;
             _homeRotation = transform.localRotation;
             _homeScale = transform.localScale;
-            _node = GetComponent<CNNFeatureMapNode>();
-            _panel = GetComponent<CNNFeatureMapPanel>();
-            _layer = GetComponent<CNNFeatureMapLayer>();
+            _node = GetComponent<MapNode>();
+            _panel = GetComponent<MapPanel>();
+            _layer = GetComponent<MapLayer>();
             _body = GetComponent<Rigidbody>();
             _body.isKinematic = true;
             _body.useGravity = false;
             // Explicit colliders prevent layer/map handles from also claiming child cells.
-            _grab = gameObject.AddComponent<CNNFeatureMapGrabInteractable>();
+            _grab = gameObject.AddComponent<GrabInteractable>();
             _grab.enabled = false;
             _grab.colliders.Clear();
             _grab.colliders.AddRange(_grabColliders);

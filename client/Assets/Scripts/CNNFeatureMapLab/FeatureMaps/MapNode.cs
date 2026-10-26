@@ -1,9 +1,9 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
     [RequireComponent(typeof(Renderer))]
-    public sealed class CNNFeatureMapNode : MonoBehaviour
+    public sealed class MapNode : MonoBehaviour
     {
         private CNNFeatureMapLabManager _scene;
         private int _layer = -1;
@@ -42,7 +42,7 @@ namespace CNNFeatureMaps
             _spotlight = spotlight;
         }
 
-        public void RefreshAppearance(CNNFeatureMapExampleData data)
+        public void RefreshAppearance(ExampleData data)
         {
             float value = data.ReadValue(_layer, _channel, _row, _column);
             Color color = _layer < 0 ? new Color(value, value, value) :

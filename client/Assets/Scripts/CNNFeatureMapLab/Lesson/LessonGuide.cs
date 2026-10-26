@@ -1,15 +1,16 @@
+using CNNFeatureMaps.Interaction;
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.Lesson
 {
-    // Preserve the existing prefab component and references as the lesson's presentation view.
-    public sealed class CNNFeatureMapGuide : MonoBehaviour
+    // 프리팹 참조는 유지하고, 콘텐츠 표시 제어에는 Manager를 통해 전달한다.
+    public sealed class LessonGuide : MonoBehaviour
     {
         [SerializeField] private Transform _inputRoot;
         [SerializeField] private Transform[] _layerRoots;
         [SerializeField] private Transform[] _outputRoots;
         [SerializeField] private Material _toolMaterial;
-        [SerializeField] private CNNFeatureMapGrabTarget _filter;
+        [SerializeField] private GrabTarget _filter;
         [SerializeField] private GameObject _filterCard;
         [SerializeField] private TextMesh _title;
         [SerializeField] private TextMesh _instruction;
@@ -19,22 +20,22 @@ namespace CNNFeatureMaps
         [SerializeField] private TextMesh _help;
         [SerializeField] private TextMesh _padding;
         [SerializeField] private TextMesh _inputCaption;
-        [SerializeField] private CNNFeatureMapButton[] _buttons;
+        [SerializeField] private LessonButton[] _buttons;
         [SerializeField] private TextMesh[] _buttonLabels;
         [SerializeField] private TextMesh[] _layerCaptions;
         [SerializeField] private TextMesh[] _outputCaptions;
         private CNNFeatureMapLabManager _scene;
-        private CNNFeatureMapPanel[] _panels;
 
         public Transform InputRoot => _inputRoot;
-        public CNNFeatureMapGrabTarget Filter => _filter;
+        public GrabTarget Filter => _filter;
         public Material ToolMaterial => _toolMaterial;
         public bool ReadyForModelDesign => _scene != null && _scene.ReadyForModelDesign;
+        internal Transform[] LayerRoots => _layerRoots;
+        internal Transform[] OutputRoots => _outputRoots;
 
         public void Initialize(CNNFeatureMapLabManager scene)
         {
             _scene = scene;
-            _panels = GetComponentsInChildren<CNNFeatureMapPanel>(true);
             InitializeVisuals();
         }
 
@@ -46,7 +47,7 @@ namespace CNNFeatureMaps
             }
             for (int index = 0; index < _buttons.Length; index++)
             {
-                _buttons[index].Configure(_scene, (CNNFeatureMapAction)index);
+                _buttons[index].Configure(_scene, (LessonAction)index);
                 Vector3 position = _buttons[index].transform.localPosition;
                 position.x = -.69f + index * .34f;
                 _buttons[index].transform.localPosition = position;
@@ -56,8 +57,8 @@ namespace CNNFeatureMaps
                 _buttonLabels[index].transform.localPosition = labelPosition;
                 SetText(_buttonLabels[index], _buttonLabels[index].text, .27f, .042f);
             }
-            CreateSizeButton("확대", CNNFeatureMapAction.Enlarge, 6);
-            CreateSizeButton("축소", CNNFeatureMapAction.Shrink, 7);
+            CreateSizeButton("확대", LessonAction.Enlarge, 6);
+            CreateSizeButton("축소", LessonAction.Shrink, 7);
             _help.color = UI.SceneUIStyle.Muted;
             SetText(_help, _help.text, 2.8f, .08f);
             SetText(_padding, _padding.text, .68f, .07f);
@@ -72,7 +73,7 @@ namespace CNNFeatureMaps
             }
         }
 
-        private void CreateSizeButton(string label, CNNFeatureMapAction action, int index)
+        private void CreateSizeButton(string label, LessonAction action, int index)
         {
             Transform parent = _buttons[0].transform.parent;
             Vector3 position = _buttons[0].transform.localPosition;
@@ -84,7 +85,7 @@ namespace CNNFeatureMaps
             buttonObject.transform.localRotation = _buttons[0].transform.localRotation;
             buttonObject.transform.localScale = _buttons[0].transform.localScale;
             buttonObject.GetComponent<Renderer>().sharedMaterial = _buttons[0].GetComponent<Renderer>().sharedMaterial;
-            CNNFeatureMapButton button = buttonObject.AddComponent<CNNFeatureMapButton>();
+            LessonButton button = buttonObject.AddComponent<LessonButton>();
             button.Configure(_scene, action);
             button.SetAvailable(true);
 
@@ -108,40 +109,38 @@ namespace CNNFeatureMaps
             label.transform.localScale = compensation * scale;
         }
 
-        public void ShowStep(int step, int channel)
+        public void ShowStep(LessonStep step, int channel)
         {
-            for (int index = 0; index < _layerRoots.Length; index++)
+            bool isFilterStep = step == LessonStep.BuildFeatureMap || step == LessonStep.CompareFilters;
+            _filterCard.SetActive(isFilterStep);
+            string title;
+            string instruction;
+            switch (step)
             {
-                _layerRoots[index].gameObject.SetActive(index == 0 || step >= 2);
+                case LessonStep.BuildFeatureMap:
+                    title = "1 / 4 — feature map 만들기";
+                    instruction = "민트색 손잡이를 이미지 위에서 움직이거나, 입력 픽셀을 눌러 보세요.\n3×3 영역에서 출력 뉴런 하나가 만들어집니다. 자동 이동으로 전체를 둘러보세요.";
+                    break;
+                case LessonStep.CompareFilters:
+                    title = "2 / 4 — 같은 입력, 다른 필터";
+                    instruction = "같은 이미지도 필터가 다르면 서로 다른 feature map이 됩니다.\n필터를 바꿔 비교하고, 맵의 테두리를 잡아 가까이 끌어와 보세요.";
+                    break;
+                case LessonStep.TraceReceptiveField:
+                    title = "3 / 4 — 한 픽셀의 영향 따라가기";
+                    instruction = "입력 픽셀 하나를 누르고, 각 층의 노란 뉴런들을 따라가 보세요.\n깊은 층의 뉴런일수록 넓게 봅니다: 입력 기준 최대 3×3 → 5×5 → 7×7.";
+                    SetText(_readout, "노란색은 수용 영역을 표시하며, 가중치가 0인 위치도 포함합니다.\n맵의 밝기는 ReLU 계산값입니다. 뉴런을 움직여도 계산 연결은 유지됩니다.", 2.8f, .11f);
+                    break;
+                case LessonStep.EditInput:
+                    title = "4 / 4 — 입력을 바꿔 보기";
+                    instruction = "입력 픽셀을 눌러 흑백을 바꾸고, feature map의 변화를 보세요.\n잡고·돌리고·확대하고, 신경망 사이를 걸어 다니며 살펴보세요.";
+                    SetText(_readout, "고정된 예제 필터 / 한 픽셀씩 이동 / 바깥은 0 / ReLU 적용\n예시 반응은 고양이·강아지 인식이 아닙니다. 처음 상태로 입력을 복원할 수 있습니다.", 2.8f, .11f);
+                    break;
+                default:
+                    throw new System.ArgumentOutOfRangeException(nameof(step), step, null);
             }
-            foreach (CNNFeatureMapPanel panel in _panels)
-            {
-                if (panel.Layer == 0)
-                {
-                    panel.gameObject.SetActive(step != 0 || panel.Channel == channel);
-                }
-            }
-            foreach (Transform output in _outputRoots)
-            {
-                output.gameObject.SetActive(step == 3);
-            }
-            _filterCard.SetActive(step < 2);
-            string[] titles = { "1 / 4 — feature map 만들기", "2 / 4 — 같은 입력, 다른 필터", "3 / 4 — 한 픽셀의 영향 따라가기", "4 / 4 — 입력을 바꿔 보기" };
-            string[] instructions =
-            {
-                "민트색 손잡이를 이미지 위에서 움직이거나, 입력 픽셀을 눌러 보세요.\n3×3 영역에서 출력 뉴런 하나가 만들어집니다. 자동 이동으로 전체를 둘러보세요.",
-                "같은 이미지도 필터가 다르면 서로 다른 feature map이 됩니다.\n필터를 바꿔 비교하고, 맵의 테두리를 잡아 가까이 끌어와 보세요.",
-                "입력 픽셀 하나를 누르고, 각 층의 노란 뉴런들을 따라가 보세요.\n깊은 층의 뉴런일수록 넓게 봅니다: 입력 기준 최대 3×3 → 5×5 → 7×7.",
-                "입력 픽셀을 눌러 흑백을 바꾸고, feature map의 변화를 보세요.\n잡고·돌리고·확대하고, 신경망 사이를 걸어 다니며 살펴보세요."
-            };
-            SetText(_title, titles[step], 2.8f, .07f);
-            SetText(_instruction, instructions[step], 2.8f, .12f);
+            SetText(_title, title, 2.8f, .07f);
+            SetText(_instruction, instruction, 2.8f, .12f);
             UpdateFilterCard(channel);
-            if (step >= 2)
-            {
-                SetText(_readout, step == 2 ? "노란색은 수용 영역을 표시하며, 가중치가 0인 위치도 포함합니다.\n맵의 밝기는 ReLU 계산값입니다. 뉴런을 움직여도 계산 연결은 유지됩니다." :
-                    "고정된 예제 필터 / 한 픽셀씩 이동 / 바깥은 0 / ReLU 적용\n예시 반응은 고양이·강아지 인식이 아닙니다. 처음 상태로 입력을 복원할 수 있습니다.", 2.8f, .11f);
-            }
         }
 
         private void UpdateFilterCard(int channel)
@@ -152,14 +151,16 @@ namespace CNNFeatureMaps
             SetText(_weights, weights, .68f, .17f);
         }
 
-        public void UpdateButtons(int step, int spreadLayer, bool scanning)
+        public void UpdateButtons(LessonStep step, int spreadLayer, bool scanning)
         {
-            _buttons[0].SetAvailable(step > 0);
+            bool isFirstStep = step == LessonStep.BuildFeatureMap;
+            bool isFilterStep = isFirstStep || step == LessonStep.CompareFilters;
+            _buttons[0].SetAvailable(!isFirstStep);
             _buttons[1].SetAvailable(true);
-            SetText(_buttonLabels[1], step == 3 ? "단계 마치기" : "다음으로", .27f, .042f);
-            _buttons[2].SetAvailable(step < 2);
-            _buttons[3].SetAvailable(step < 2);
-            _buttons[4].SetAvailable(step > 0);
+            SetText(_buttonLabels[1], step == LessonStep.EditInput ? "단계 마치기" : "다음으로", .27f, .042f);
+            _buttons[2].SetAvailable(isFilterStep);
+            _buttons[3].SetAvailable(isFilterStep);
+            _buttons[4].SetAvailable(!isFirstStep);
             _buttons[5].SetAvailable(true);
             SetText(_buttonLabels[4], "펼치기 " + (spreadLayer + 1), .27f, .042f);
             SetText(_buttonLabels[2], scanning ? "멈추기" : "자동 이동", .27f, .042f);

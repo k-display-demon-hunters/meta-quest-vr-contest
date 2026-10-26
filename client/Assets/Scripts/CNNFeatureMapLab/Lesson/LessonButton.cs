@@ -2,15 +2,15 @@ using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.Lesson
 {
-    public enum CNNFeatureMapAction { Previous, Next, Scan, Filter, Spread, Restore, Enlarge, Shrink }
+    public enum LessonAction { Previous, Next, Scan, Filter, Spread, Restore, Enlarge, Shrink }
 
     [RequireComponent(typeof(BoxCollider))]
-    public sealed class CNNFeatureMapButton : MonoBehaviour
+    public sealed class LessonButton : MonoBehaviour
     {
         private CNNFeatureMapLabManager _scene;
-        private CNNFeatureMapAction _action;
+        private LessonAction _action;
         private XRSimpleInteractable _interactable;
         private Renderer _renderer;
         private MaterialPropertyBlock _properties;
@@ -19,7 +19,7 @@ namespace CNNFeatureMaps
         private bool _hovered;
         private bool _pressed;
 
-        public void Configure(CNNFeatureMapLabManager scene, CNNFeatureMapAction action)
+        public void Configure(CNNFeatureMapLabManager scene, LessonAction action)
         {
             _scene = scene;
             _action = action;

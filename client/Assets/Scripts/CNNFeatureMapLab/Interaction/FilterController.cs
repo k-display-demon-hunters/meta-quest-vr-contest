@@ -1,15 +1,16 @@
+using CNNFeatureMaps.FeatureMaps;
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.Interaction
 {
-    public sealed class CNNFeatureMapFilterController
+    public sealed class FilterController
     {
         private const float CellSpacing = .066f;
         private readonly Transform _inputRoot;
-        private readonly CNNFeatureMapGrabTarget _filter;
+        private readonly GrabTarget _filter;
         private readonly Rigidbody _body;
         private readonly LineRenderer _connection;
-        private readonly CNNFeatureMapNode[,,] _firstNodes = new CNNFeatureMapNode[2, 8, 8];
+        private readonly MapNode[,,] _firstNodes = new MapNode[2, 8, 8];
         private int _scanIndex;
         private float _nextScan;
 
@@ -17,13 +18,13 @@ namespace CNNFeatureMaps
         public int Column { get; private set; } = 3;
         public bool IsScanning { get; private set; }
 
-        public CNNFeatureMapFilterController(Transform parent, Transform inputRoot,
-            CNNFeatureMapGrabTarget filter, Material material, CNNFeatureMapNode[] nodes)
+        public FilterController(Transform parent, Transform inputRoot,
+            GrabTarget filter, Material material, MapNode[] nodes)
         {
             _inputRoot = inputRoot;
             _filter = filter;
             _body = filter.GetComponent<Rigidbody>();
-            foreach (CNNFeatureMapNode node in nodes)
+            foreach (MapNode node in nodes)
             {
                 if (node.Layer == 0)
                 {

@@ -1,0 +1,8 @@
+{
+    "name": "ModelDesign.BlockSettings",
+    "rootNamespace": "ModelDesignScene.BlockSettings",
+    "references": [
+        "ModelDesign",
+        "UnityEngine.UI"
+    ]
+}

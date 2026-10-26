@@ -1,0 +1,6 @@
+{
+    "name": "ModelDesign",
+    "rootNamespace": "ModelDesignScene.Model",
+    "references": [],
+    "noEngineReferences": true
+}

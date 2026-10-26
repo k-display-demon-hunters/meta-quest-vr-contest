@@ -23,7 +23,6 @@ namespace ModelDesignScene.Execution.Engine
 
         internal CnnModel(ModelExecutionDefinition definition, CnnTrainingOptions options)
         {
-            definition.Validate(options);
             InputSize = definition.InputSize;
             int height = definition.Height;
             int width = definition.Width;

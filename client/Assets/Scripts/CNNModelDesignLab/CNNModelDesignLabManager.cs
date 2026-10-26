@@ -1,10 +1,11 @@
 using System.Collections.Generic;
-using ModelDesignScene.Assembly;
+using ModelDesignScene.ModelBuilder;
 using ModelDesignScene.BlockSettings;
-using ModelDesignScene.Editing;
+using ModelDesignScene.Model;
 using ModelDesignScene.Execution;
 using ModelDesignScene.Execution.Engine;
-using ModelDesignScene.Results;
+using ModelDesignScene.ControlPanel;
+using ModelDesignScene.Dataset;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -12,39 +13,42 @@ namespace ModelDesignScene
 {
     public sealed class CNNModelDesignLabManager : MonoBehaviour
     {
-        [SerializeField] private ModelAssemblyManager _assembly;
+        [SerializeField] private ModelBuilderManager _builder;
         [SerializeField] private ModelBlockSettingsManager _settings;
         [SerializeField] private ModelExecutionManager _execution;
-        [SerializeField] private ModelResultsManager _results;
+        [SerializeField] private ModelControlPanelManager _controlPanel;
+        [SerializeField] private ModelDatasetManager _dataset;
         [SerializeField] private ModelXRInputController _xrInput;
 
-        private ModelEditingManager _editing;
+        private ModelDefinition _model;
+        private IReadOnlyList<ValidationIssue> _validationIssues = System.Array.Empty<ValidationIssue>();
+        private bool _hasValidationResult;
         private bool _initialized;
         private bool _trainingCompleted;
-        private bool _workspaceUIIsDirty;
+        private bool _modelUIIsDirty;
 
         public bool ReadyForFactoryExit => _trainingCompleted && !_execution.IsBusy;
 
         private void Awake()
         {
-            _editing = new ModelEditingManager();
+            _model = new ModelDefinition();
         }
 
         private void OnEnable()
         {
-            _workspaceUIIsDirty = true;
+            _modelUIIsDirty = true;
             _xrInput.EnableInput();
             if (_initialized)
             {
-                _assembly.BeginInteraction();
+                _builder.BeginInteraction();
             }
         }
 
         private void Start()
         {
-            _editing.OnChanged += HandleWorkspaceChanged;
-            _assembly.OnChanged += HandleAssemblyChanged;
-            _assembly.OnSettingsRequested += HandleSettingsRequested;
+            _model.OnChanged += HandleModelChanged;
+            _builder.OnChanged += HandleBuilderChanged;
+            _builder.OnSettingsRequested += HandleSettingsRequested;
             _settings.OnDeleteRequested += HandleDeleteRequested;
             _execution.OnStateChanged += HandleExecutionStateChanged;
             _execution.OnTrainingProgress += HandleTrainingProgress;
@@ -52,23 +56,26 @@ namespace ModelDesignScene
             _execution.OnTrainingCancelled += HandleTrainingCancelled;
             _execution.OnInferenceCompleted += HandleInferenceCompleted;
             _execution.OnError += HandleExecutionError;
-            _results.OnInferenceRequested += HandleInferenceRequested;
-            _results.OnStartRequested += HandleTrainingStartRequested;
-            _results.OnStopRequested += HandleTrainingStopRequested;
+            _execution.OnValidationFailed += HandleValidationFailed;
+            _controlPanel.OnInferenceRequested += HandleInferenceRequested;
+            _controlPanel.OnStartRequested += HandleTrainingStartRequested;
+            _controlPanel.OnStopRequested += HandleTrainingStopRequested;
 
             // Scene components have completed Awake before the module managers connect them.
-            _settings.Initialize(_editing);
-            _assembly.Initialize(_editing, GetActivationHit);
-            _assembly.BeginInteraction();
+            _dataset.Initialize();
+            _execution.Initialize(_dataset);
+            _controlPanel.Initialize(_dataset);
+            _builder.Initialize(_model, GetActivationHit);
+            _builder.BeginInteraction();
             _initialized = true;
             HandleExecutionStateChanged();
         }
 
         private void LateUpdate()
         {
-            if (_initialized && _workspaceUIIsDirty)
+            if (_initialized && _modelUIIsDirty)
             {
-                RefreshWorkspaceUI();
+                RefreshModelUI();
             }
         }
 
@@ -77,10 +84,10 @@ namespace ModelDesignScene
             return _xrInput.GetActivationHit(interactor);
         }
 
-        private void HandleAssemblyChanged()
+        private void HandleBuilderChanged()
         {
             _settings.Close();
-            HandleWorkspaceChanged();
+            HandleModelChanged();
         }
 
         private void HandleSettingsRequested(LayerDefinition layer, Pose anchorPose)
@@ -94,26 +101,17 @@ namespace ModelDesignScene
         private void HandleDeleteRequested(LayerDefinition layer)
         {
             _settings.Close();
-            _assembly.DeleteLayer(layer);
+            _builder.DeleteLayer(layer);
         }
 
         private async void HandleTrainingStartRequested()
         {
-            if (!isActiveAndEnabled || _execution.IsBusy || _assembly.IsDragging)
-            {
-                return;
-            }
-            bool valid = _editing.TryBuild(_execution.TrainingOptions,
-                out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues);
-            PublishWorkspaceUI(valid, definition, issues, !valid);
-            if (!valid)
+            if (!isActiveAndEnabled || _execution.IsBusy || _builder.IsDragging)
             {
                 return;
             }
             _settings.Close();
-            _results.ResetTraining();
-            _trainingCompleted = false;
-            await _execution.StartTrainingAsync(definition);
+            await _execution.StartTrainingAsync(_model);
         }
 
         private async void HandleTrainingStopRequested()
@@ -136,55 +134,66 @@ namespace ModelDesignScene
         {
             if (_initialized && isActiveAndEnabled)
             {
-                _results.ShowState(_execution.State, _execution.HasTrainedModel,
+                if (_execution.State == ModelExecutionState.Training)
+                {
+                    _trainingCompleted = false;
+                    _validationIssues = System.Array.Empty<ValidationIssue>();
+                    _hasValidationResult = true;
+                    _controlPanel.ResetTraining();
+                }
+                _controlPanel.ShowState(_execution.State, _execution.HasTrainedModel,
                     !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
-                HandleWorkspaceChanged();
+                _modelUIIsDirty = true;
             }
         }
 
-        private void HandleTrainingProgress(TrainingProgress progress) => _results.ShowProgress(progress);
-        private void HandleTrainingCancelled() => _results.ShowCancelled();
-        private void HandleInferenceCompleted(InferenceResult result) => _results.ShowInference(result);
-        private void HandleExecutionError(string message) => _results.ShowError(message);
+        private void HandleTrainingProgress(TrainingProgress progress) => _controlPanel.ShowProgress(progress);
+        private void HandleTrainingCancelled() => _controlPanel.ShowCancelled();
+        private void HandleInferenceCompleted(InferenceResult result) => _controlPanel.ShowInference(result);
+        private void HandleExecutionError(string message) => _controlPanel.ShowError(message);
 
         private void HandleTrainingCompleted(TrainingResult result)
         {
-            _results.ShowCompleted(result);
+            _controlPanel.ShowCompleted(result);
             _trainingCompleted = result != null;
         }
 
-        private void HandleWorkspaceChanged()
+        private void HandleModelChanged()
         {
-            _workspaceUIIsDirty = true;
+            _validationIssues = System.Array.Empty<ValidationIssue>();
+            _hasValidationResult = false;
+            _modelUIIsDirty = true;
         }
 
-        private void RefreshWorkspaceUI()
+        private void HandleValidationFailed(IReadOnlyList<ValidationIssue> issues)
         {
-            _assembly.RefreshLabels();
+            _validationIssues = issues;
+            _hasValidationResult = true;
+            _modelUIIsDirty = true;
+            _controlPanel.ShowModelValidation(issues, _model.Layers, _builder.IsDragging, true, true);
+        }
+
+        private void RefreshModelUI()
+        {
+            _modelUIIsDirty = false;
+            _builder.RefreshLabels();
             _settings.Refresh();
-            bool valid = _editing.TryBuild(_execution.TrainingOptions,
-                out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues);
-            PublishWorkspaceUI(valid, definition, issues, false);
-        }
-
-        private void PublishWorkspaceUI(bool valid, ModelExecutionDefinition definition,
-            IReadOnlyList<ValidationIssue> issues, bool focus)
-        {
-            _workspaceUIIsDirty = false;
-            _results.ShowModelValidation(issues, _assembly.SlotLayers, _assembly.IsDragging, focus);
-            ModelExecutionDefinition submitted = _execution.SubmittedModel;
-            bool changed = submitted != null && (!valid || !_editing.Matches(submitted, definition));
-            _results.SetModelChanged(changed);
+            _controlPanel.ShowModelValidation(_validationIssues, _model.Layers,
+                _builder.IsDragging, _hasValidationResult);
+            _controlPanel.SetModelChanged(_execution.SubmittedModel != null
+                && !_execution.MatchesSubmittedModel(_model));
         }
 
         private void OnDisable()
         {
             _trainingCompleted = false;
+            _hasValidationResult = false;
+            _validationIssues = System.Array.Empty<ValidationIssue>();
             _execution.CloseSession();
             if (_initialized)
             {
-                _assembly.EndInteraction();
-                _results.ResetSessionUI();
+                _builder.EndInteraction();
+                _controlPanel.ResetSessionUI();
             }
             _settings.Close();
             _xrInput.DisableInput();
@@ -194,10 +203,10 @@ namespace ModelDesignScene
         {
             if (_initialized)
             {
-                if (_assembly != null)
+                if (_builder != null)
                 {
-                    _assembly.OnChanged -= HandleAssemblyChanged;
-                    _assembly.OnSettingsRequested -= HandleSettingsRequested;
+                    _builder.OnChanged -= HandleBuilderChanged;
+                    _builder.OnSettingsRequested -= HandleSettingsRequested;
                 }
                 if (_settings != null)
                 {
@@ -211,16 +220,17 @@ namespace ModelDesignScene
                     _execution.OnTrainingCancelled -= HandleTrainingCancelled;
                     _execution.OnInferenceCompleted -= HandleInferenceCompleted;
                     _execution.OnError -= HandleExecutionError;
+                    _execution.OnValidationFailed -= HandleValidationFailed;
                 }
-                if (_results != null)
+                if (_controlPanel != null)
                 {
-                    _results.OnInferenceRequested -= HandleInferenceRequested;
-                    _results.OnStartRequested -= HandleTrainingStartRequested;
-                    _results.OnStopRequested -= HandleTrainingStopRequested;
+                    _controlPanel.OnInferenceRequested -= HandleInferenceRequested;
+                    _controlPanel.OnStartRequested -= HandleTrainingStartRequested;
+                    _controlPanel.OnStopRequested -= HandleTrainingStopRequested;
                 }
             }
-            _editing.OnChanged -= HandleWorkspaceChanged;
-            _editing.Dispose();
+            _model.OnChanged -= HandleModelChanged;
+            _model.Dispose();
         }
     }
 }

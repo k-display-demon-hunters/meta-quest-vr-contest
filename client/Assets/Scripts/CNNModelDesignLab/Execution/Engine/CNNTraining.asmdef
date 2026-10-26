@@ -1,5 +1,6 @@
 {
     "name": "CNNTraining",
     "rootNamespace": "ModelDesignScene.Execution.Engine",
-    "noEngineReferences": true
+    "noEngineReferences": true,
+    "references": []
 }

@@ -15,8 +15,7 @@ namespace ModelDesignScene.Execution.Engine
             {
                 throw new ArgumentNullException("Dataset arrays are required.");
             }
-            if (inputSize < 1 || inputSize > 200000 || labels.Length < 1 || labels.Length > 100000 ||
-                (long)labels.Length * inputSize != images.Length || images.Length > 80000000)
+            if (inputSize < 1 || labels.Length < 1 || (long)labels.Length * inputSize != images.Length)
             {
                 throw new ArgumentException("Invalid dataset dimensions.");
             }

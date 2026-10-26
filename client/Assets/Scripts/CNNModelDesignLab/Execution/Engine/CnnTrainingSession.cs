@@ -9,9 +9,8 @@ namespace ModelDesignScene.Execution.Engine
     /// Progress runs on that worker; Unity callers must queue it to their main thread.
     /// Cancellation is cooperative and never reports partially trained weights as completed.
     /// </summary>
-    public sealed class CnnTrainingSession : IDisposable
+    internal sealed class CnnTrainingSession : IDisposable
     {
-        public const long MaxTrainingMultiplyAdds = 2000000000L;
         private readonly object _gate = new object();
         private CancellationTokenSource _operationCancellation;
         private CnnModel _trainedModel;
@@ -40,25 +39,11 @@ namespace ModelDesignScene.Execution.Engine
             }
         }
 
-        public Task<TrainingResult> TrainAsync(ModelExecutionDefinition definition, TrainingData data,
-            CnnTrainingOptions options, Action<TrainingProgress> progress = null)
+        internal Task<TrainingResult> TrainAsync(CnnTrainingRequest request, Action<TrainingProgress> progress)
         {
-            if (definition == null || data == null || options == null)
-            {
-                throw new ArgumentNullException("A model definition, dataset and options are required.");
-            }
-            long multiplyAdds = definition.CalculateMultiplyAdds(options);
-            if (data.Training.InputSize != definition.InputSize)
-            {
-                throw new ArgumentException("Dataset shape does not match model input.");
-            }
-            // Forward plus weight/input gradients cost roughly three forward passes.
-            // This is a safety bound, not a prediction of wall-clock duration on a headset.
-            long passes = ((long)data.Training.Count * 3 + data.Validation.Count) * options.Epochs + data.Test.Count;
-            if (multiplyAdds > MaxTrainingMultiplyAdds / passes)
-            {
-                throw new ArgumentException("Training workload is too large. Reduce the model, sample count or epochs.");
-            }
+            ModelExecutionDefinition definition = request.Definition;
+            TrainingData data = request.Data;
+            CnnTrainingOptions options = request.Options;
             lock (_gate)
             {
                 BeginOperation();

@@ -1,6 +1,5 @@
 using System;
-using ModelDesignScene.Editing;
-using ModelDesignScene.Execution.Engine;
+using ModelDesignScene.Model;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -26,8 +25,8 @@ namespace ModelDesignScene.BlockSettings
         [SerializeField] private Button _previousActivation;
         [SerializeField] private Button _nextActivation;
 
-        private readonly LayerNumberSetting[] _numberSettings = new LayerNumberSetting[NumberRowCount];
         private LayerDefinition _layer;
+        private BlockSettingsDefinition _definition;
         private bool _isConfigured;
 
         internal event Action OnDeleteRequested;
@@ -36,7 +35,6 @@ namespace ModelDesignScene.BlockSettings
 
         private void Awake()
         {
-            UI.SceneUIStyle.ApplyButtons(transform);
             _isConfigured = HasRequiredReferences();
             if (!_isConfigured)
             {
@@ -72,6 +70,7 @@ namespace ModelDesignScene.BlockSettings
 
             ClearSelection();
             _layer = layer;
+            _definition = BlockSettingsCatalog.Get(layer.Type);
             transform.SetPositionAndRotation(position, rotation);
             Refresh();
         }
@@ -111,57 +110,29 @@ namespace ModelDesignScene.BlockSettings
                 return;
             }
 
-            _title.text = _layer.Type + " 설정";
+            _title.text = _definition.Title;
+            _summary.text = _definition.Summary;
             _deleteButton.interactable = _layer.Type != LayerType.Input && _layer.Type != LayerType.Output;
-            int visibleNumberRowCount = 0;
-            bool hasActivation = _layer.Type == LayerType.Conv2D || _layer.Type == LayerType.Dense;
-            _activationRoot.SetActive(hasActivation);
-            if (hasActivation)
+            _activationRoot.SetActive(_definition.HasActivation);
+            if (_definition.HasActivation)
             {
                 _activationValue.text = _layer.Activation.ToString();
             }
 
-            switch (_layer.Type)
+            for (int index = 0; index < _definition.NumberFields.Count; index++)
             {
-                case LayerType.Conv2D:
-                    visibleNumberRowCount = 3;
-                    _summary.text = "합성곱 필터로 특징을 추출합니다.";
-                    ShowNumber(0, "필터 수", LayerNumberSetting.Filters, _layer.Filters);
-                    ShowNumber(1, "커널 높이", LayerNumberSetting.KernelHeight, _layer.Height);
-                    ShowNumber(2, "커널 너비", LayerNumberSetting.KernelWidth, _layer.Width);
-                    break;
-                case LayerType.MaxPooling2D:
-                    visibleNumberRowCount = 2;
-                    _summary.text = "최댓값 풀링으로 특징 맵의 크기를 줄입니다.";
-                    ShowNumber(0, "풀링 높이", LayerNumberSetting.PoolHeight, _layer.Height);
-                    ShowNumber(1, "풀링 너비", LayerNumberSetting.PoolWidth, _layer.Width);
-                    break;
-                case LayerType.Dense:
-                    visibleNumberRowCount = 1;
-                    _summary.text = "연결된 뉴런으로 특징을 결합합니다.";
-                    ShowNumber(0, "뉴런 수", LayerNumberSetting.Units, _layer.Units);
-                    break;
-                case LayerType.Flatten:
-                    _summary.text = "특징 맵을 일차원 벡터로 펼칩니다.\n변경할 설정이 없습니다.";
-                    break;
-                case LayerType.Input:
-                    _summary.text = "모델 입력입니다.\n이 블록의 설정은 고정되어 있습니다.";
-                    break;
-                case LayerType.Output:
-                    _summary.text = "10개 클래스 / Softmax.\n이 블록의 설정은 고정되어 있습니다.";
-                    break;
+                ShowNumber(index, _definition.NumberFields[index]);
             }
 
-            for (int index = visibleNumberRowCount; index < _numberRows.Length; index++)
+            for (int index = _definition.NumberFields.Count; index < _numberRows.Length; index++)
             {
                 _numberRows[index].Hide();
             }
         }
 
-        private void ShowNumber(int index, string label, LayerNumberSetting setting, int value)
+        private void ShowNumber(int index, BlockSettingsDefinition.NumberField field)
         {
-            _numberSettings[index] = setting;
-            _numberRows[index].Show(label, value, GetMaximum(setting));
+            _numberRows[index].Show(field.Label, field.ReadValue(_layer), field.Maximum);
         }
 
         private void AdjustNumber(int index, int direction)
@@ -171,44 +142,16 @@ namespace ModelDesignScene.BlockSettings
                 return;
             }
 
-            switch (_numberSettings[index])
-            {
-                case LayerNumberSetting.Filters:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.Filters, StepPositiveNumber(_layer.Filters, direction, ModelExecutionDefinition.MaxFilters));
-                    break;
-                case LayerNumberSetting.KernelHeight:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.KernelHeight, StepPositiveNumber(_layer.Height, direction, 28));
-                    break;
-                case LayerNumberSetting.KernelWidth:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.KernelWidth, StepPositiveNumber(_layer.Width, direction, 28));
-                    break;
-                case LayerNumberSetting.PoolHeight:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.PoolHeight, StepPositiveNumber(_layer.Height, direction, 28));
-                    break;
-                case LayerNumberSetting.PoolWidth:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.PoolWidth, StepPositiveNumber(_layer.Width, direction, 28));
-                    break;
-                case LayerNumberSetting.Units:
-                    OnNumberChangeRequested?.Invoke(_layer, LayerNumberSetting.Units, StepPositiveNumber(_layer.Units, direction, ModelExecutionDefinition.MaxDenseUnits));
-                    break;
-            }
-        }
-
-        private static int GetMaximum(LayerNumberSetting setting)
-        {
-            switch (setting)
-            {
-                case LayerNumberSetting.Filters: return ModelExecutionDefinition.MaxFilters;
-                case LayerNumberSetting.Units: return ModelExecutionDefinition.MaxDenseUnits;
-                default: return 28;
-            }
+            BlockSettingsDefinition.NumberField field = _definition.NumberFields[index];
+            int value = StepPositiveNumber(field.ReadValue(_layer), direction, field.Maximum);
+            OnNumberChangeRequested?.Invoke(_layer, field.Setting, value);
         }
 
         private static int StepPositiveNumber(int value, int direction, int maximum)
         {
             if (direction < 0)
             {
-                return value > 1 ? value - 1 : 1;
+                return value > LayerLimits.MinParameterValue ? value - 1 : LayerLimits.MinParameterValue;
             }
 
             return value < maximum ? value + 1 : maximum;
@@ -216,7 +159,7 @@ namespace ModelDesignScene.BlockSettings
 
         private void ChangeActivation(int direction)
         {
-            if (_layer == null || (_layer.Type != LayerType.Conv2D && _layer.Type != LayerType.Dense))
+            if (_layer == null || !_definition.HasActivation)
             {
                 return;
             }
@@ -231,6 +174,7 @@ namespace ModelDesignScene.BlockSettings
             if (_layer != null)
             {
                 _layer = null;
+                _definition = null;
             }
         }
 
@@ -308,7 +252,7 @@ namespace ModelDesignScene.BlockSettings
             {
                 _label.text = label;
                 _value.text = value.ToString();
-                _decrease.interactable = value > 1;
+                _decrease.interactable = value > LayerLimits.MinParameterValue;
                 _increase.interactable = value < maximum;
                 _root.SetActive(true);
             }

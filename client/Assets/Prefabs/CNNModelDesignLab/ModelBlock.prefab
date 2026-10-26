@@ -404,6 +404,6 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79eb1745ba7b426fbd1c4a0b3553a598, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.Assembly.ModelBlockController
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.ModelBlockController
   _grabInteractable: {fileID: 1004}
   _label: {fileID: 1503}

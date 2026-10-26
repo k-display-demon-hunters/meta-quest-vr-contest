@@ -1,5 +1,5 @@
 using System;
-using ModelDesignScene.Editing;
+using ModelDesignScene.Model;
 using UnityEngine;
 
 namespace ModelDesignScene.BlockSettings
@@ -12,8 +12,6 @@ namespace ModelDesignScene.BlockSettings
         private LayerDefinition _settingsLayer;
 
         internal event Action<LayerDefinition> OnDeleteRequested;
-        internal event Action<LayerDefinition, LayerNumberSetting, int> OnNumberChangeRequested;
-        internal event Action<LayerDefinition, ActivationType> OnActivationChangeRequested;
 
         private void Awake()
         {
@@ -49,6 +47,24 @@ namespace ModelDesignScene.BlockSettings
             _popup.Refresh();
         }
 
+        private void ChangeNumber(LayerDefinition layer, LayerNumberSetting setting, int value)
+        {
+            switch (setting)
+            {
+                case LayerNumberSetting.Filters: layer.SetFilters(value); break;
+                case LayerNumberSetting.KernelHeight: layer.SetKernelSize(value, layer.Width); break;
+                case LayerNumberSetting.KernelWidth: layer.SetKernelSize(layer.Height, value); break;
+                case LayerNumberSetting.PoolHeight: layer.SetPoolSize(value, layer.Width); break;
+                case LayerNumberSetting.PoolWidth: layer.SetPoolSize(layer.Height, value); break;
+                case LayerNumberSetting.Units: layer.SetUnits(value); break;
+            }
+        }
+
+        private void ChangeActivation(LayerDefinition layer, ActivationType activation)
+        {
+            layer.SetActivation(activation);
+        }
+
         private void HandleDeleteRequested()
         {
             if (isActiveAndEnabled && _settingsLayer != null &&
@@ -60,12 +76,14 @@ namespace ModelDesignScene.BlockSettings
 
         private void HandleNumberChangeRequested(LayerDefinition layer, LayerNumberSetting setting, int value)
         {
-            OnNumberChangeRequested?.Invoke(layer, setting, value);
+            ChangeNumber(layer, setting, value);
+            Refresh();
         }
 
         private void HandleActivationChangeRequested(LayerDefinition layer, ActivationType activation)
         {
-            OnActivationChangeRequested?.Invoke(layer, activation);
+            ChangeActivation(layer, activation);
+            Refresh();
         }
 
         private void OnDisable()

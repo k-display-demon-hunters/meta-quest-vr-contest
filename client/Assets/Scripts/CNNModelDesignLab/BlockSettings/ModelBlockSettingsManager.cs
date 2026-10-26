@@ -1,5 +1,5 @@
 using System;
-using ModelDesignScene.Editing;
+using ModelDesignScene.Model;
 using UnityEngine;
 
 namespace ModelDesignScene.BlockSettings
@@ -8,20 +8,10 @@ namespace ModelDesignScene.BlockSettings
     {
         [SerializeField] private ModelSettingsController _controller;
 
-        private ModelEditingManager _editing;
-
-        public event Action<LayerDefinition> OnDeleteRequested;
-
-        private void Awake()
+        public event Action<LayerDefinition> OnDeleteRequested
         {
-            _controller.OnDeleteRequested += HandleDeleteRequested;
-            _controller.OnNumberChangeRequested += HandleNumberChangeRequested;
-            _controller.OnActivationChangeRequested += HandleActivationChangeRequested;
-        }
-
-        public void Initialize(ModelEditingManager editing)
-        {
-            _editing = editing;
+            add => _controller.OnDeleteRequested += value;
+            remove => _controller.OnDeleteRequested -= value;
         }
 
         public void Open(LayerDefinition layer, Pose popupPose)
@@ -37,50 +27,6 @@ namespace ModelDesignScene.BlockSettings
         public void Refresh()
         {
             _controller.Refresh();
-        }
-
-        private void HandleDeleteRequested(LayerDefinition layer)
-        {
-            OnDeleteRequested?.Invoke(layer);
-        }
-
-        private void HandleNumberChangeRequested(LayerDefinition layer, LayerNumberSetting setting, int value)
-        {
-            switch (setting)
-            {
-                case LayerNumberSetting.Filters:
-                    _editing.SetFilters(layer, value);
-                    break;
-                case LayerNumberSetting.KernelHeight:
-                    _editing.SetKernelSize(layer, value, layer.Width);
-                    break;
-                case LayerNumberSetting.KernelWidth:
-                    _editing.SetKernelSize(layer, layer.Height, value);
-                    break;
-                case LayerNumberSetting.PoolHeight:
-                    _editing.SetPoolSize(layer, value, layer.Width);
-                    break;
-                case LayerNumberSetting.PoolWidth:
-                    _editing.SetPoolSize(layer, layer.Height, value);
-                    break;
-                case LayerNumberSetting.Units:
-                    _editing.SetUnits(layer, value);
-                    break;
-            }
-            _controller.Refresh();
-        }
-
-        private void HandleActivationChangeRequested(LayerDefinition layer, ActivationType activation)
-        {
-            _editing.SetActivation(layer, activation);
-            _controller.Refresh();
-        }
-
-        private void OnDestroy()
-        {
-            _controller.OnDeleteRequested -= HandleDeleteRequested;
-            _controller.OnNumberChangeRequested -= HandleNumberChangeRequested;
-            _controller.OnActivationChangeRequested -= HandleActivationChangeRequested;
         }
     }
 }

@@ -1,36 +1,33 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using ModelDesignScene.Execution.Engine;
 using NUnit.Framework;
 
-namespace ModelDesignScene.Editing.Tests
+namespace ModelDesignScene.Model.Tests
 {
     public sealed class ModelDesignTests
     {
         [Test]
-        public void LocalCnnBuildFollowsInputDirectionAndExcludesDetachedBlocks()
+        public void LocalCnnBuildFollowsSlotOrderAndExcludesUnplacedBlocks()
         {
-            using (ModelWorkspace workspace = new ModelWorkspace())
+            using (ModelDefinition model = new ModelDefinition())
             {
                 LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 5, ActivationType.Tanh);
                 LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
                 LayerDefinition flatten = LayerDefinition.Flatten();
                 LayerDefinition dense = LayerDefinition.Dense(12, ActivationType.Sigmoid);
-                foreach (LayerDefinition layer in new[] { conv, pool, flatten, dense })
-                {
-                    workspace.AddLayer(layer);
-                }
-                // Physical chains may be stored backwards; execution must always start at Input.
-                workspace.Connect(workspace.Output, dense);
-                workspace.Connect(dense, flatten);
-                workspace.Connect(flatten, pool);
-                workspace.Connect(pool, conv);
-                workspace.Connect(conv, workspace.Input);
-                workspace.AddLayer(LayerDefinition.Conv2D(999, 99, 99, ActivationType.Linear));
+                model.PlaceLayer(0, conv);
+                model.PlaceLayer(2, pool);
+                model.PlaceLayer(3, flatten);
+                model.PlaceLayer(6, dense);
+                LayerDefinition.Conv2D(16, 9, 9, ActivationType.Linear);
 
-                Assert.AreSame(workspace.Output, workspace.InputModel.Layers[0]);
-                Assert.IsEmpty(ModelValidator.ValidateForExecution(workspace));
-                ModelExecutionDefinition definition = ModelExecutionDefinitionBuilder.Build(workspace);
+                Assert.AreEqual(8, model.Layers.Count);
+                Assert.AreSame(conv, model.Layers[0]);
+                Assert.IsNull(model.Layers[1]);
+                ModelExecutionDefinition definition = BuildDefinition(model, out int?[] slotIndices);
                 Assert.AreEqual(28 * 28, definition.InputSize);
                 Assert.AreEqual(1, definition.Channels);
                 Assert.AreEqual(5, definition.Layers.Count);
@@ -50,289 +47,207 @@ namespace ModelDesignScene.Editing.Tests
         }
 
         [Test]
-        public void LocalCnnExecutionRejectsInvalidLayoutsAndResourceLimits()
+        public void LocalCnnExecutionRejectsInvalidLayouts()
         {
             LayerDefinition[][] invalidLayouts =
             {
                 new[] { LayerDefinition.Dense(12, ActivationType.ReLU) },
-                new[] { LayerDefinition.MaxPooling2D(2, 2), LayerDefinition.Flatten() },
+                new[] { LayerDefinition.Flatten(), LayerDefinition.MaxPooling2D(2, 2) },
                 new[] { LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU) },
-                new[] { LayerDefinition.Conv2D(4, 29, 3, ActivationType.ReLU), LayerDefinition.Flatten() }
+                new[] { LayerDefinition.MaxPooling2D(2, 2), LayerDefinition.Conv2D(4, 15, 3, ActivationType.ReLU), LayerDefinition.Flatten() }
             };
             foreach (LayerDefinition[] layout in invalidLayouts)
             {
-                using (ModelWorkspace workspace = CreateChain(layout))
+                using (ModelDefinition model = CreateModel(layout))
                 {
-                    Assert.IsFalse(ModelExecutionDefinitionBuilder.TryBuild(workspace, null,
-                        out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues));
-                    Assert.IsNull(definition);
-                    Assert.IsNotEmpty(issues);
-                    Assert.Throws<InvalidOperationException>(() => ModelExecutionDefinitionBuilder.Build(workspace));
+                    ModelExecutionDefinition definition = BuildDefinition(model, out int?[] slotIndices);
+                    Assert.IsFalse(CanPrepareTraining(definition, CreateData(),
+                        new CnnTrainingOptions(), slotIndices));
                 }
             }
             LayerDefinition flatten = LayerDefinition.Flatten();
-            using (ModelWorkspace workspace = CreateChain(
+            using (ModelDefinition model = CreateModel(
                 LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU), flatten))
             {
-                Assert.IsEmpty(ModelValidator.ValidateForExecution(workspace));
-                Assert.IsNotEmpty(ModelValidator.ValidateForExecution(workspace,
-                    new CnnTrainingOptions(maxParameters: 100)));
-                workspace.Disconnect(flatten, workspace.Output);
-                Assert.IsNotEmpty(ModelValidator.ValidateForExecution(workspace));
+                ModelExecutionDefinition definition = BuildDefinition(model, out int?[] slotIndices);
+                Assert.IsTrue(CanPrepareTraining(definition, CreateData(),
+                    new CnnTrainingOptions(), slotIndices));
+                model.RemoveLayer(1);
+                Assert.IsFalse(CanPrepareTraining(BuildDefinition(model, out int?[] remainingSlots),
+                    CreateData(), new CnnTrainingOptions(), remainingSlots));
             }
         }
 
         [Test]
-        public void LocalCnnSnapshotSurvivesEditsAndMatchesOnlyConnectedConfiguration()
+        public void LocalCnnSnapshotSurvivesEditsAndMatchesOnlyPlacedConfiguration()
         {
             LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
-            using (ModelWorkspace workspace = CreateChain(conv, LayerDefinition.Flatten()))
+            using (ModelDefinition model = CreateModel(conv, LayerDefinition.Flatten()))
             {
-                ModelExecutionDefinition submitted = ModelExecutionDefinitionBuilder.Build(workspace);
-                workspace.AddLayer(LayerDefinition.Dense(20, ActivationType.Linear));
-                Assert.IsTrue(ModelExecutionDefinitionBuilder.Matches(submitted,
-                    ModelExecutionDefinitionBuilder.Build(workspace)));
+                ModelExecutionDefinition submitted = BuildDefinition(model, out _);
+                LayerDefinition.Dense(20, ActivationType.Linear);
+                Assert.IsTrue(MatchesDefinition(model, submitted));
 
                 conv.SetFilters(8);
-                ModelExecutionDefinition edited = ModelExecutionDefinitionBuilder.Build(workspace);
+                ModelExecutionDefinition edited = BuildDefinition(model, out _);
                 Assert.AreEqual(4, submitted.Layers[0].Units);
                 Assert.AreEqual(8, edited.Layers[0].Units);
-                Assert.IsFalse(ModelExecutionDefinitionBuilder.Matches(submitted, edited));
-                Assert.IsFalse(ModelExecutionDefinitionBuilder.Matches(submitted, null));
+                Assert.IsFalse(MatchesDefinition(model, submitted));
+                Assert.IsFalse(MatchesDefinition(model, null));
                 Assert.Throws<NotSupportedException>(() =>
                     ((IList<CnnLayerDefinition>)submitted.Layers).Clear());
 
                 conv.SetFilters(4);
-                Assert.IsTrue(ModelExecutionDefinitionBuilder.Matches(submitted,
-                    ModelExecutionDefinitionBuilder.Build(workspace)));
-                workspace.Dispose();
+                Assert.IsTrue(MatchesDefinition(model, submitted));
+                model.Dispose();
                 conv.SetKernelSize(5, 5);
                 Assert.AreEqual(3, submitted.Layers[0].Height);
                 Assert.AreEqual(3, submitted.Layers[0].Width);
             }
         }
 
-        private static ModelWorkspace CreateChain(params LayerDefinition[] layers)
+        private static ModelExecutionDefinition BuildDefinition(ModelDefinition model, out int?[] slotIndices)
         {
-            ModelWorkspace workspace = new ModelWorkspace();
-            LayerDefinition previous = workspace.Input;
-            foreach (LayerDefinition layer in layers)
-            {
-                workspace.AddLayer(layer);
-                workspace.Connect(previous, layer);
-                previous = layer;
-            }
-            workspace.Connect(previous, workspace.Output);
-            return workspace;
+            object[] arguments = { model, null };
+            ModelExecutionDefinition definition = (ModelExecutionDefinition)InvokeExecutionMethod(
+                "ModelExecutionDefinitionBuilder", "Build", arguments);
+            slotIndices = (int?[])arguments[1];
+            return definition;
         }
 
-        private static void AssertOwnership(ModelWorkspace workspace)
+        private static bool MatchesDefinition(ModelDefinition model, ModelExecutionDefinition submitted)
         {
-            HashSet<LayerDefinition> seen = new HashSet<LayerDefinition>();
-            foreach (ModelDefinition model in workspace.Models)
+            return (bool)InvokeExecutionMethod("ModelExecutionDefinitionBuilder", "Matches", model, submitted);
+        }
+
+        private static bool CanPrepareTraining(ModelExecutionDefinition definition, TrainingData data,
+            CnnTrainingOptions options, int?[] slotIndices)
+        {
+            return (bool)InvokeExecutionMethod("ModelExecutionValidator", "TryPrepareTraining",
+                definition, data, options, slotIndices, null, null);
+        }
+
+        // An asmdef test assembly cannot directly reference the predefined Assembly-CSharp assembly.
+        // Invoke the production methods without copying their implementation into the tests.
+        private static object InvokeExecutionMethod(string typeName, string methodName, params object[] arguments)
+        {
+            Type type = Type.GetType("ModelDesignScene.Execution." + typeName + ", Assembly-CSharp", throwOnError: true);
+            MethodInfo method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+            if (method == null)
             {
-                Assert.IsNotEmpty(model.Layers);
-                foreach (LayerDefinition layer in model.Layers)
-                {
-                    Assert.IsTrue(seen.Add(layer), "A block belongs to more than one chain.");
-                    Assert.AreSame(model, workspace.GetModel(layer));
-                }
+                throw new MissingMethodException(type.FullName, methodName);
             }
-            Assert.IsTrue(seen.Contains(workspace.Input));
-            Assert.IsTrue(seen.Contains(workspace.Output));
+            try
+            {
+                return method.Invoke(null, arguments);
+            }
+            catch (TargetInvocationException exception) when (exception.InnerException != null)
+            {
+                ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+                throw;
+            }
+        }
+
+        private static TrainingData CreateData()
+        {
+            int size = LayerLimits.InputHeight * LayerLimits.InputWidth * LayerLimits.InputChannels;
+            return new TrainingData(
+                new TrainingDataset(new float[size], new[] { 0 }, size),
+                new TrainingDataset(new float[size], new[] { 0 }, size),
+                new TrainingDataset(new float[size], new[] { 0 }, size));
+        }
+
+        private static ModelDefinition CreateModel(params LayerDefinition[] layers)
+        {
+            ModelDefinition model = new ModelDefinition();
+            for (int slot = 0; slot < layers.Length; slot++)
+            {
+                model.PlaceLayer(slot, layers[slot]);
+            }
+            return model;
         }
 
         [Test]
-        public void InvalidConnectionsLeaveWorkspaceUnchanged()
+        public void FixedEndpointsArePreservedAndCannotBeReconfigured()
         {
-            LayerDefinition a = LayerDefinition.Dense(8, ActivationType.ReLU);
-            LayerDefinition b = LayerDefinition.Dense(4, ActivationType.ReLU);
-            using (ModelWorkspace workspace = CreateChain(a))
+            using (ModelDefinition model = new ModelDefinition())
             {
-                workspace.AddLayer(b);
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(workspace.Input, b));
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(b, a));
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(a, workspace.Input));
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(workspace.Output, b));
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(b, b));
-                Assert.Throws<InvalidOperationException>(() => workspace.Connect(b, workspace.Input));
-                Assert.Throws<InvalidOperationException>(() => workspace.Disconnect(workspace.Input, workspace.Output));
-                Assert.Throws<InvalidOperationException>(() => workspace.Disconnect(a, b));
-                Assert.AreEqual(2, workspace.Models.Count);
-                Assert.AreEqual(3, workspace.InputModel.Layers.Count);
-                AssertOwnership(workspace);
-            }
-        }
-
-        [Test]
-        public void FixedBlocksCannotBeDeletedDuplicatedReplacedOrReconfigured()
-        {
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                LayerDefinition dense = LayerDefinition.Dense(4, ActivationType.ReLU);
-                foreach (LayerDefinition fixedBlock in new[] { workspace.Input, workspace.Output })
+                LayerDefinition input = model.Input;
+                LayerDefinition output = model.Output;
+                model.PlaceLayer(0, LayerDefinition.Flatten());
+                model.RemoveLayer(0);
+                Assert.AreEqual(8, model.Layers.Count);
+                Assert.IsNull(model.Layers[0]);
+                Assert.AreSame(input, model.Input);
+                Assert.AreSame(output, model.Output);
+                Assert.Throws<ArgumentException>(() => model.PlaceLayer(0, input));
+                Assert.Throws<ArgumentException>(() => model.PlaceLayer(0, output));
+                foreach (LayerDefinition fixedBlock in new[] { input, output })
                 {
-                    Assert.Throws<InvalidOperationException>(() => workspace.AddLayer(fixedBlock));
-                    Assert.Throws<InvalidOperationException>(() => workspace.RemoveLayer(fixedBlock));
-                    Assert.Throws<InvalidOperationException>(() => workspace.ReplaceLayer(fixedBlock, dense));
                     Assert.Throws<InvalidOperationException>(() => fixedBlock.SetUnits(9));
                     Assert.Throws<InvalidOperationException>(() => fixedBlock.SetActivation(ActivationType.Tanh));
                 }
-                Assert.AreEqual(2, workspace.Models.Count);
-                AssertOwnership(workspace);
-            }
-        }
-
-        [Test]
-        public void BlocksCannotBelongToMultipleWorkspaces()
-        {
-            using (ModelWorkspace first = new ModelWorkspace())
-            using (ModelWorkspace second = new ModelWorkspace())
-            {
-                LayerDefinition dense = LayerDefinition.Dense(4, ActivationType.ReLU);
-                first.AddLayer(dense);
-                Assert.Throws<InvalidOperationException>(() => first.AddLayer(dense));
-                Assert.Throws<InvalidOperationException>(() => second.AddLayer(dense));
-                Assert.Throws<ArgumentException>(() => second.Connect(second.Input, dense));
-                first.RemoveLayer(dense);
-                second.AddLayer(dense);
-                AssertOwnership(first);
-                AssertOwnership(second);
             }
         }
 
         [Test]
         public void CollectionsAreReadOnly()
         {
-            using (ModelWorkspace workspace = new ModelWorkspace())
+            using (ModelDefinition model = new ModelDefinition())
             {
-                Assert.Throws<NotSupportedException>(() => ((IList<ModelDefinition>)workspace.Models).Clear());
-                Assert.Throws<NotSupportedException>(() => ((IList<LayerDefinition>)workspace.InputModel.Layers).Clear());
-            }
-        }
-
-        [TestCase(LayerType.Dense, LayerType.Dense, false)]
-        [TestCase(LayerType.Conv2D, LayerType.Dense, true)]
-        [TestCase(LayerType.Conv2D, LayerType.Output, true)]
-        [TestCase(LayerType.Dense, LayerType.Conv2D, true)]
-        [TestCase(LayerType.Dense, LayerType.Flatten, false)]
-        [TestCase(LayerType.Flatten, LayerType.Flatten, true)]
-        [TestCase(LayerType.Flatten, LayerType.Dense, false)]
-        [TestCase(LayerType.Conv2D, LayerType.Flatten, false)]
-        [TestCase(LayerType.MaxPooling2D, LayerType.Conv2D, false)]
-        public void DetachedFragmentsValidateWithoutEndpointRequirements(LayerType first, LayerType second, bool invalid)
-        {
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                LayerDefinition a = CreateLayer(first);
-                LayerDefinition b = second == LayerType.Output ? workspace.Output : CreateLayer(second);
-                workspace.AddLayer(a);
-                if (second != LayerType.Output) { workspace.AddLayer(b); }
-                workspace.Connect(a, b);
-                IReadOnlyList<ValidationIssue> issues = ModelValidator.ValidateEditing(workspace.GetModel(a));
-                Assert.AreEqual(invalid, issues.Count != 0);
-                if (invalid)
-                {
-                    Assert.AreSame(workspace.GetModel(a), issues[0].Model);
-                    Assert.AreEqual("/blocks/1", issues[0].Path);
-                }
+                Assert.Throws<NotSupportedException>(() => ((IList<LayerDefinition>)model.Layers).Clear());
             }
         }
 
         [Test]
-        public void AddAndConnectIsAtomicAndNotifiesOnce()
+        public void ModelChangesIgnoreUnplacedAndRemovedLayers()
         {
-            using (ModelWorkspace workspace = new ModelWorkspace())
+            using (ModelDefinition model = new ModelDefinition())
             {
                 int changed = 0;
-                int validated = 0;
-                workspace.OnChanged += () => changed++;
-                workspace.OnValidationChanged += issues => validated++;
-                LayerDefinition dense = LayerDefinition.Dense(8, ActivationType.ReLU);
-                workspace.AddAndConnect(workspace.Input, dense);
-                Assert.AreEqual(1, changed);
-                Assert.AreEqual(1, validated);
-                Assert.AreEqual(2, workspace.Models.Count);
-                LayerDefinition rejected = LayerDefinition.Dense(4, ActivationType.ReLU);
-                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(workspace.Input, rejected));
-                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(dense, dense));
-                Assert.Throws<InvalidOperationException>(() => workspace.AddAndConnect(dense, workspace.Output));
-                Assert.AreEqual(1, changed);
-                Assert.AreEqual(1, validated);
-                workspace.AddLayer(rejected);
-                AssertOwnership(workspace);
-            }
-        }
-
-        private static LayerDefinition CreateLayer(LayerType type)
-        {
-            switch (type)
-            {
-                case LayerType.Conv2D: return LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-                case LayerType.MaxPooling2D: return LayerDefinition.MaxPooling2D(2, 2);
-                case LayerType.Flatten: return LayerDefinition.Flatten();
-                default: return LayerDefinition.Dense(4, ActivationType.ReLU);
-            }
-        }
-
-        [Test]
-        public void ValidationEventsRefreshOnEditsAndIgnoreRemovedBlocks()
-        {
-            using (ModelWorkspace workspace = new ModelWorkspace())
-            {
-                int changed = 0;
-                int validated = 0;
-                workspace.OnChanged += () => changed++;
-                workspace.OnValidationChanged += issues =>
-                {
-                    validated++;
-                    Assert.AreSame(workspace.ValidationIssues, issues);
-                };
+                model.OnChanged += () => changed++;
                 LayerDefinition dense = LayerDefinition.Dense(4, ActivationType.ReLU);
                 LayerDefinition conv = LayerDefinition.Conv2D(8, 3, 3, ActivationType.ReLU);
-                workspace.AddLayer(dense);
-                workspace.AddLayer(conv);
-                workspace.Connect(dense, conv);
-                Assert.IsNotEmpty(workspace.ValidationIssues);
+                dense.SetUnits(8);
+                Assert.AreEqual(0, changed);
+                model.PlaceLayer(0, dense);
+                model.PlaceLayer(3, conv);
+                Assert.AreEqual(2, changed);
                 dense.SetUnits(16);
-                Assert.AreEqual(4, validated);
-                Assert.AreEqual(changed, validated);
+                Assert.AreEqual(3, changed);
                 dense.SetUnits(16);
-                Assert.AreEqual(4, validated);
+                Assert.AreEqual(3, changed);
                 Assert.Throws<ArgumentOutOfRangeException>(() => dense.SetUnits(0));
-                Assert.AreEqual(4, validated);
-                workspace.Disconnect(dense, conv);
-                Assert.IsEmpty(workspace.ValidationIssues);
-                workspace.RemoveLayer(dense);
-                int count = validated;
+                Assert.AreEqual(3, changed);
+                model.RemoveLayer(0);
+                int count = changed;
                 dense.SetUnits(32);
-                Assert.AreEqual(count, validated);
-                AssertOwnership(workspace);
+                Assert.AreEqual(count, changed);
+                Assert.IsNull(model.Layers[0]);
+                Assert.AreSame(conv, model.Layers[3]);
             }
         }
 
         [Test]
-        public void ReplacedAndDisposedBlocksDoNotNotifyWorkspace()
+        public void ReplacedAndDisposedLayersDoNotNotifyModel()
         {
-            ModelWorkspace workspace = new ModelWorkspace();
+            ModelDefinition model = new ModelDefinition();
             LayerDefinition oldLayer = LayerDefinition.Dense(4, ActivationType.ReLU);
             LayerDefinition replacement = LayerDefinition.Dense(8, ActivationType.Tanh);
-            workspace.AddLayer(oldLayer);
-            workspace.Connect(workspace.Input, oldLayer);
-            workspace.Connect(oldLayer, workspace.Output);
+            model.PlaceLayer(0, oldLayer);
             int count = 0;
-            workspace.OnChanged += () => count++;
-            workspace.ReplaceLayer(oldLayer, replacement);
-            Assert.AreSame(replacement, workspace.InputModel.Layers[1]);
+            model.OnChanged += () => count++;
+            model.RemoveLayer(0);
+            model.PlaceLayer(0, replacement);
+            Assert.AreSame(replacement, model.Layers[0]);
             oldLayer.SetUnits(16);
-            Assert.AreEqual(1, count);
+            Assert.AreEqual(2, count);
             replacement.SetUnits(32);
-            Assert.AreEqual(2, count);
-            workspace.Dispose();
+            Assert.AreEqual(3, count);
+            model.Dispose();
             replacement.SetUnits(64);
-            Assert.AreEqual(2, count);
-            Assert.Throws<ObjectDisposedException>(() => workspace.AddLayer(oldLayer));
-            workspace.Dispose();
+            Assert.AreEqual(3, count);
+            model.Dispose();
         }
 
         [Test]
@@ -342,6 +257,7 @@ namespace ModelDesignScene.Editing.Tests
             int count = 0;
             conv.OnChanged += () => count++;
             Assert.Throws<ArgumentOutOfRangeException>(() => conv.SetFilters(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => conv.SetFilters(LayerLimits.Conv2DMaxFilters + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => conv.SetKernelSize(7, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => conv.SetActivation((ActivationType)99));
             Assert.Throws<InvalidOperationException>(() => conv.SetUnits(8));

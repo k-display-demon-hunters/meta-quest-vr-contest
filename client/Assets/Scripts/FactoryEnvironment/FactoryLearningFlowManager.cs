@@ -3,6 +3,7 @@ using CNNFeatureMaps;
 using ModelDesignScene;
 using UI;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace FactoryEnvironment
 {
@@ -13,15 +14,9 @@ namespace FactoryEnvironment
         private FactoryPlayerController _player;
         private FactorySceneLoadController _sceneLoader;
         private FactoryNavigationData _navigationData;
-        private CNNPixelLabManager _pixels;
-        private CNNFeatureMapGuide _maps;
-        private CNNModelDesignLabManager _model;
         private FactoryDestinationId _stage = FactoryDestinationId.None;
         private bool _loading;
         private float _nextCheckTime;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private FactoryDestinationId _skippedStage = FactoryDestinationId.None;
-#endif
 
         private void Awake()
         {
@@ -38,10 +33,6 @@ namespace FactoryEnvironment
             {
                 destination.Area.Bind(_player.CameraTransform);
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            FactoryDebugController debugController = gameObject.AddComponent<FactoryDebugController>();
-            debugController.Initialize(this);
-#endif
             _sceneLoader.ActivateFactoryScene();
             _player.PrepareRayInput();
             _routeGuide.SetDestination(FactoryDestinationId.PixelLab);
@@ -76,41 +67,24 @@ namespace FactoryEnvironment
 
         private FactoryDestinationId GetDestination()
         {
-            bool skipped = false;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            skipped = _skippedStage == _stage;
-#endif
             switch (_stage)
             {
                 case FactoryDestinationId.None:
                     return FactoryDestinationId.PixelLab;
                 case FactoryDestinationId.PixelLab:
-                    return skipped || _pixels.ConvolutionCompleted
+                    return _navigationData.Get(_stage).Pixels.ConvolutionCompleted
                         ? FactoryDestinationId.FeatureMapLab : FactoryDestinationId.PixelLab;
                 case FactoryDestinationId.FeatureMapLab:
-                    return skipped || _maps.ReadyForModelDesign
+                    return _navigationData.Get(_stage).Maps.ReadyForModelDesign
                         ? FactoryDestinationId.ModelDesignLab : FactoryDestinationId.FeatureMapLab;
                 case FactoryDestinationId.ModelDesignLab:
-                    return skipped || _model.ReadyForFactoryExit
+                    return _navigationData.Get(_stage).Model.ReadyForFactoryExit
                         ? FactoryDestinationId.Exit : FactoryDestinationId.ModelDesignLab;
                 default:
                     return FactoryDestinationId.Exit;
             }
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        public bool TrySkipCurrentLesson()
-        {
-            if (!isActiveAndEnabled || _loading || _sceneLoader.IsLeaving
-                || _stage == FactoryDestinationId.None || _stage == FactoryDestinationId.Exit)
-            {
-                return false;
-            }
-            _skippedStage = _stage;
-            _nextCheckTime = 0f;
-            return true;
-        }
-#endif
 
         private IEnumerator LoadLesson(FactoryDestinationId destination)
         {
@@ -120,31 +94,50 @@ namespace FactoryEnvironment
                 yield return _sceneLoader.EndTutorial();
             }
             yield return _sceneLoader.PrepareLesson(destination);
-            GameObject content = _sceneLoader.PreparedContent;
-            if (content == null)
+            if (_sceneLoader.LastError != null)
             {
                 Fail(_sceneLoader.LastError);
                 yield break;
             }
+            FactoryNavigationData.DestinationData data = _navigationData.Get(destination);
+            data.Content = FindContent(_sceneLoader.PreparedScene, data);
+            _sceneLoader.PlacePreparedContent();
             if (GetDestination() != destination)
             {
                 yield return _sceneLoader.CancelPreparedLesson();
                 _loading = false;
                 yield break;
             }
-            if (_pixels != null)
+            if (_stage == FactoryDestinationId.PixelLab)
             {
-                _pixels.CloseDetails();
+                _navigationData.Get(_stage).Pixels.CloseDetails();
             }
             yield return _sceneLoader.CommitPreparedLesson();
-            _pixels = content.GetComponentInChildren<CNNPixelLabManager>(true);
-            _maps = content.GetComponentInChildren<CNNFeatureMapGuide>(true);
-            _model = content.GetComponentInChildren<CNNModelDesignLabManager>(true);
             _stage = destination;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            _skippedStage = FactoryDestinationId.None;
-#endif
             _loading = false;
+        }
+
+        private static GameObject FindContent(Scene scene, FactoryNavigationData.DestinationData data)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                switch (data.Id)
+                {
+                    case FactoryDestinationId.PixelLab:
+                        data.Pixels = root.GetComponentInChildren<CNNPixelLabManager>(true);
+                        if (data.Pixels != null) { return root; }
+                        break;
+                    case FactoryDestinationId.FeatureMapLab:
+                        data.Maps = root.GetComponentInChildren<CNNFeatureMapGuide>(true);
+                        if (data.Maps != null) { return root; }
+                        break;
+                    case FactoryDestinationId.ModelDesignLab:
+                        data.Model = root.GetComponentInChildren<CNNModelDesignLabManager>(true);
+                        if (data.Model != null) { return root; }
+                        break;
+                }
+            }
+            return null;
         }
 
         private IEnumerator EnterEnding()

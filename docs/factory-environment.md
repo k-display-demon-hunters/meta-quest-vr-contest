@@ -36,7 +36,7 @@ FactoryIntro
 1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
 2. 플레이어가 허용된 다음 영역에 머물고 물체를 잡지 않았으면 대상 씬을 Additive로 로드한다. 영역 안에서 물체를 놓아도 전환할 수 있다. 로딩 중 중복 요청은 차단한다.
 3. `CNNPixelLabManager`, `CNNFeatureMapLabManager`, `CNNModelDesignLabManager` 중 하나가 포함된 루트를 체험 콘텐츠로 찾는다.
-4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠를 기준점에 배치하고 Rigidbody 위치를 맞춘다. 픽셀 체험은 `RebaseDock`으로 원위치 복귀 기준도 갱신한다.
+4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠를 기준점에 배치하고 Rigidbody 위치를 맞춘다. 픽셀 체험은 보드 기준 로컬 좌표로 필터 복귀 위치와 회전을 관리하므로 공장에서 별도로 보정하지 않는다.
 5. 다음 콘텐츠 준비가 끝나면 완료 조건을 다시 확인하고, 이전 학습 씬에서 잡고 있던 물체를 XRI `SelectExit`로 놓은 뒤 이전 체험을 언로드한다. 엔딩 전환도 같은 선택 해제를 수행하며, 태블릿처럼 다른 씬에 속한 물체는 해제하지 않는다. 씬 로드에 실패하면 기존 체험을 유지한다. 씬 내부의 필수 콘텐츠 구성 누락은 런타임 복구 대상으로 처리하지 않는다. 로드 실패는 Console에 알리고, 해당 영역에 머무르면 다음 진입 검사 주기(0.1초)에 다시 로딩을 요청한다.
 6. 공장 씬을 활성 씬으로 유지한다. 체험 전환 때 플레이어를 이동시키지 않는다. 현재 방을 잠깐 나가도 체험은 유지되며, 다음 체험으로 진행한 뒤 이전 체험의 재실행·진행 복원은 제공하지 않는다.
 7. 모델 학습 성공·결과 표시 후에는 뒤쪽 출구를 안내한다. 출구 진입 시 `FactoryEnding`을 Single로 열어 공장과 체험을 정리한다. 이 전환에서는 Controller의 `IsLeaving` 상태로 파괴 콜백의 중복 언로드를 막는다.
@@ -52,15 +52,11 @@ FactoryIntro
 
 공용 [XRPlayerRig](../client/Assets/Prefabs/XR/XRPlayerRig.prefab)는 `PersistentXRPlayerRig`가 유지한다. 공장 루트의 `FactorySceneLoadController`가 파괴되면 자신이 로드한 튜토리얼·현재 체험·준비 중인 체험 씬을 언로드하되, 엔딩 Single 전환은 해당 전환이 정리를 담당한다.
 
-## 개발자용 완료 조건 우회
-
-에디터와 Development Build에서는 `Ctrl + Shift + F8`로 현재 체험의 완료 조건을 우회할 수 있다. `FactoryDebugController`가 키보드 입력을 받아 `FactoryLearningFlowManager.TrySkipCurrentLesson()`을 호출한다. 화면 안내나 Console 로그는 출력하지 않는다. Manager가 시작할 때 Controller를 생성하고 자신을 전달한다. 일반 빌드에서는 입력·우회 코드가 제외된다.
-
-우회는 현재 단계에만 적용한다. 다음 방 안내선을 따라 직접 이동하면 기존 Additive 로드 절차가 실행되며, 마지막 방에서는 출구가 허용된다. 학습 시작 전·로딩 중·엔딩 전환 중에는 요청을 받지 않고, 물체를 잡고 있어도 전환한다. 다음 체험 로드 성공 후 우회 상태를 지우며 바로 다시 단축키를 사용할 수 있다. 별도의 재사용 대기시간이나 사용 횟수 제한은 없다. 로드 실패 시에는 재시도를 위해 현재 단계의 우회 상태를 유지한다. 체험의 정답·학습 완료 데이터는 수정하지 않고 우회 상태는 저장하지 않는다.
-
 ## 바닥 안내선과 이동
 
 바닥 안내는 씬에 배치한 네 개의 고정 경로 오브젝트다. 입구→Pixel Lab, Pixel Lab→Feature Map Lab, Feature Map Lab→Model Design Lab, Model Design Lab→출구 순서이며 기존 경유점의 안전한 복도·출입구 동선을 사용한다. Model Design Lab의 랙 북쪽과 출하 구역 서쪽 입구를 우회한다. 선과 화살표는 고정 위치에 있고 사용자 이동으로 시작점이나 형태가 바뀌지 않는다. 현재 목적지 영역에서는 숨기고, 영역 밖이나 다음 단계에서는 해당 경로를 표시한다. 경로를 벗어난 사용자 위치와 연결하는 자동 재탐색은 제공하지 않는다.
+
+각 목적지의 `Content`, `Pixels`, `Maps`, `Model` 프로퍼티는 로드된 콘텐츠와 학습 컴포넌트의 런타임 참조를 보관한다. Manager의 `FindContent()`가 목적지에 맞는 학습 컴포넌트를 한 번 찾아 콘텐츠 루트와 함께 저장하며, Feature Map은 완료 판정에 사용하는 Guide로 루트를 식별한다. SceneLoadController는 `PrepareLesson()`으로 씬을 로드해 `PreparedScene`을 제공하고, 탐색이 끝난 뒤 `PlacePreparedContent()`로 저장된 콘텐츠를 배치한다. Manager는 완료 판정과 상세 화면 정리에 저장된 참조를 사용하며 전환 후 재탐색하지 않는다. SceneLoadController는 기존 씬 언로드·준비 취소·종료 시 해당 런타임 참조를 비운다.
 
 `FactoryNavigationData._destinations`의 각 목적지 항목에 경로를 연결한다. 배열 순서는 동작에 영향을 주지 않으며 `FactoryDestinationId`로 조회한다. Controller는 `Start()`에서 모든 경로를 숨겨 초기화한다. Inspector의 필수 연결은 런타임에서 재검증하지 않는다. 모든 경로는 같은 `FactoryRoute.mat`을 사용하며 Collider와 그림자는 없다. `SetDestination()`은 표시 상태만 바꾼다.
 

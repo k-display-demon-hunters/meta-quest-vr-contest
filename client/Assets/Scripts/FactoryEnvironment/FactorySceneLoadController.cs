@@ -1,8 +1,5 @@
 using System.Collections;
-using CNNFeatureMaps;
 using FactoryTutorial;
-using ModelDesignScene;
-using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -22,9 +19,11 @@ namespace FactoryEnvironment
         private bool _endTutorialRequested;
         private Scene _lesson;
         private Scene _preparedLesson;
+        private FactoryNavigationData.DestinationData _lessonData;
+        private FactoryNavigationData.DestinationData _preparedData;
 
         public FactoryNavigationData NavigationData => _navigationData;
-        public GameObject PreparedContent { get; private set; }
+        public Scene PreparedScene => _preparedLesson;
         public string LastError { get; private set; }
         public bool IsLeaving { get; private set; }
 
@@ -92,7 +91,6 @@ namespace FactoryEnvironment
 
         public IEnumerator PrepareLesson(FactoryDestinationId destination)
         {
-            PreparedContent = null;
             FactoryNavigationData.DestinationData data = _navigationData.Get(destination);
             AsyncOperation load = BeginLoad(data.SceneName, LoadSceneMode.Additive);
             if (load == null)
@@ -101,7 +99,12 @@ namespace FactoryEnvironment
             }
             yield return load;
             _preparedLesson = SceneManager.GetSceneByName(data.SceneName);
-            GameObject content = FindContent(_preparedLesson);
+            _preparedData = data;
+        }
+
+        public void PlacePreparedContent()
+        {
+            GameObject content = _preparedData.Content;
             // Keep the existing factory floor, lighting and persistent rig.
             foreach (GameObject root in _preparedLesson.GetRootGameObjects())
             {
@@ -114,19 +117,13 @@ namespace FactoryEnvironment
             {
                 light.enabled = false;
             }
-            Vector3 offset = data.ContentAnchor.position - Vector3.forward * 1.5f;
+            Vector3 offset = _preparedData.ContentAnchor.position - Vector3.forward * 1.5f;
             content.transform.position += offset;
             foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
             {
                 body.position = body.transform.position;
                 body.rotation = body.transform.rotation;
             }
-            CNNPixelLabManager pixels = content.GetComponentInChildren<CNNPixelLabManager>(true);
-            if (pixels != null)
-            {
-                pixels.RebaseDock(offset);
-            }
-            PreparedContent = content;
         }
 
         public IEnumerator CommitPreparedLesson()
@@ -135,10 +132,12 @@ namespace FactoryEnvironment
             {
                 _player.ReleaseSceneObjects(_lesson);
                 yield return SceneManager.UnloadSceneAsync(_lesson);
+                _lessonData.ClearContent();
             }
             _lesson = _preparedLesson;
+            _lessonData = _preparedData;
             _preparedLesson = default;
-            PreparedContent = null;
+            _preparedData = null;
             ActivateFactoryScene();
         }
 
@@ -148,8 +147,9 @@ namespace FactoryEnvironment
             {
                 yield return SceneManager.UnloadSceneAsync(_preparedLesson);
             }
+            _preparedData.ClearContent();
             _preparedLesson = default;
-            PreparedContent = null;
+            _preparedData = null;
         }
 
         public IEnumerator LoadEnding()
@@ -191,22 +191,10 @@ namespace FactoryEnvironment
             return null;
         }
 
-        private static GameObject FindContent(Scene scene)
-        {
-            foreach (GameObject root in scene.GetRootGameObjects())
-            {
-                if (root.GetComponentInChildren<CNNPixelLabManager>(true) != null
-                    || root.GetComponentInChildren<CNNFeatureMapLabManager>(true) != null
-                    || root.GetComponentInChildren<CNNModelDesignLabManager>(true) != null)
-                {
-                    return root;
-                }
-            }
-            return null;
-        }
-
         private void OnDestroy()
         {
+            _lessonData?.ClearContent();
+            _preparedData?.ClearContent();
             if (IsLeaving || !Application.isPlaying)
             {
                 return;

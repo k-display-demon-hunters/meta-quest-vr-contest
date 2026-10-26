@@ -1,4 +1,7 @@
 using System;
+using CNNFeatureMaps;
+using ModelDesignScene;
+using UI;
 using UnityEngine;
 
 namespace FactoryEnvironment
@@ -29,6 +32,19 @@ namespace FactoryEnvironment
             public FactoryAreaEntryController Area => _area;
             public string SceneName => _sceneName;
             public Transform ContentAnchor => _contentAnchor;
+
+            public GameObject Content { get; internal set; }
+            public CNNPixelLabManager Pixels { get; internal set; }
+            public CNNFeatureMapGuide Maps { get; internal set; }
+            public CNNModelDesignLabManager Model { get; internal set; }
+
+            public void ClearContent()
+            {
+                Content = null;
+                Pixels = null;
+                Maps = null;
+                Model = null;
+            }
         }
 
         [SerializeField] private Transform _entrance;

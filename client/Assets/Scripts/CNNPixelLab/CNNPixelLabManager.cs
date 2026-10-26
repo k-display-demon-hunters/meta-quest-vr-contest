@@ -47,7 +47,7 @@ namespace UI
 
 #if UNITY_EDITOR
         public bool EditorDetailsVisible => _detail.activeSelf;
-        public Vector3 EditorPreviewFocus => _detail.activeSelf ? _detail.transform.position + Vector3.right * 0.35f : _board.position;
+        public Vector3 EditorPreviewFocus => _detail.activeSelf ? _detail.transform.position + _detail.transform.right * 0.35f : _board.position;
 
         public bool EditorCanDragFilter(XRGrabInteractable target)
         {
@@ -87,7 +87,7 @@ namespace UI
             _lensMaterial = _lensRenderer.material;
             _lensMaterial.mainTexture = _pixelTexture;
             _selection = new PixelSelectionController(_board, _boardSize, _filter,
-                _lensRenderer, _selectionFrame, _lensMaterial, Columns, Rows);
+                _lensRenderer, _selectionFrame, _lensMaterial, Columns, Rows, _pixels);
             _filter.selectExited.AddListener(HandleReleased);
             _filter.selectEntered.AddListener(HandleGrabbed);
             _rgbView = _detail.AddComponent<RgbConvolutionView>();
@@ -185,6 +185,11 @@ namespace UI
 
         public void NextStage()
         {
+            if (_isRevealStage && _revealStage != null)
+            {
+                _revealStage.CompleteReveal();
+                return;
+            }
             if (_revealStage != null && _revealStage.IsReadyForConvolution)
             {
                 BeginConvolution();
@@ -251,6 +256,7 @@ namespace UI
                 _filter.selectEntered.RemoveListener(HandleGrabbed);
             }
             if (_revealStage != null) { _revealStage.PixelsRevealed -= HandlePixelsRevealed; }
+            _selection?.Dispose();
             Destroy(_smoothTexture);
             Destroy(_pixelTexture);
             Destroy(_boardMaterial);

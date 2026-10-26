@@ -4,8 +4,9 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace UI
 {
-    public sealed class PixelSelectionController
+    public sealed class PixelSelectionController : System.IDisposable
     {
+        private readonly FilterVolumeController _volume;
         private const float FilterDepth = 0.22f;
         private readonly Transform _board;
         private readonly Vector2 _boardSize;
@@ -28,7 +29,7 @@ namespace UI
         public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
 
         public PixelSelectionController(Transform board, Vector2 boardSize, XRGrabInteractable filter,
-            MeshRenderer lensRenderer, Transform selectionFrame, Material lensMaterial, int columns, int rows)
+            MeshRenderer lensRenderer, Transform selectionFrame, Material lensMaterial, int columns, int rows, Color32[] pixels)
         {
             _board = board;
             _boardSize = boardSize;
@@ -38,6 +39,7 @@ namespace UI
             _lensMaterial = lensMaterial;
             _columns = columns;
             _rows = rows;
+            _volume = new FilterVolumeController(filter.transform, lensRenderer, pixels, columns);
             // Use the same right-hand ray grab movement as the detail-view objects.
             _filter.trackPosition = true;
             _filter.trackRotation = false;
@@ -116,6 +118,7 @@ namespace UI
 
         private void SetPreview(Vector2Int origin)
         {
+            _volume.SetOrigin(origin);
             _lensMaterial.mainTextureScale = new Vector2(3f / _columns, 3f / _rows);
             _lensMaterial.mainTextureOffset = new Vector2((float)origin.x / _columns, (float)origin.y / _rows);
             _selectionFrame.localPosition = SelectionCenter(origin) + Vector3.back * 0.015f;
@@ -146,6 +149,8 @@ namespace UI
                 _selectionFrame.gameObject.SetActive(false);
             }
         }
+
+        public void Dispose() { _volume.Dispose(); }
 
         public void HandleReleased(SelectExitEventArgs args)
         {

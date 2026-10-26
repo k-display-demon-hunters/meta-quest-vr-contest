@@ -29,6 +29,9 @@ namespace UI
         private bool _exploring;
         private int _expected = -1;
         private bool _pulled;
+        private enum PendingAction { None, Extract, Align, Pull }
+        private PendingAction _pending;
+        public bool HasPendingAction => _pending != PendingAction.None;
         private static readonly Vector3 WeightOffset = new Vector3(0.08f, 0.055f, -0.3f);
         private static readonly Vector3 FilterTarget = new Vector3(-0.38f, 0, 0.15f);
 
@@ -73,8 +76,10 @@ namespace UI
             _patch.position = source - transform.forward * 0.06f;
             _patchSource = _patch.position;
             EnableGrab(_patchGrab);
+            _pending = PendingAction.Extract;
             _instruction.text = "선택한 작은 이미지 영역을 직접 잡아 밖으로 꺼낸 뒤 놓으세요.\nGrip으로 잡기 · 마우스 미리보기에서는 왼쪽 드래그";
             yield return new WaitUntil(() => _extracted);
+            _pending = PendingAction.None;
             StopGrab(_patchGrab);
             Vector3 start = _patch.localPosition;
             for (float time = 0; time < 0.7f; time += Time.unscaledDeltaTime)
@@ -117,9 +122,11 @@ namespace UI
                 _weights[c].localPosition = WeightOffset + Vector3.forward * (c * 0.65f);
             }
             EnableGrab(_filterGrab);
+            _pending = PendingAction.Align;
             _exploring = true;
             _instruction.text = "왼쪽의 3층 가중치 묶음 전체가 필터 하나예요.\n묶음을 잡아 오른쪽 RGB 입력에 맞춰 놓으세요. 정면과 옆면에서 위치를 확인하세요.";
             yield return new WaitUntil(() => _aligned);
+            _pending = PendingAction.None;
             StopGrab(_filterGrab);
             for (int c = 0; c < 3; c++) { _weights[c].SetParent(transform, true); }
             _instruction.text = "R에는 R 가중치, G에는 G, B에는 B가 대응해요.\n3 × 3 × 3 = 27쌍의 곱을 더해 출력 하나를 만듭니다.";
@@ -130,6 +137,7 @@ namespace UI
             StopInteraction();
             _expected = channel;
             _pulled = false;
+            _pending = PendingAction.Pull;
             _exploring = true;
             for (int c = 0; c < 3; c++)
             {
@@ -162,8 +170,16 @@ namespace UI
             }
             else if (target == _filterGrab)
             {
-                _aligned = Vector3.Distance(_filter.localPosition, FilterTarget) < 0.22f &&
-                    Quaternion.Angle(_filter.localRotation, Quaternion.identity) < 18;
+                // Compare visible RGB slices, not the offset parent pivot. Accept
+                // overlap or a small gap in front so both sets of values remain readable.
+                _aligned = true;
+                for (int c = 0; c < 3; c++)
+                {
+                    Vector3 offset = _layers[c].InverseTransformPoint(_weights[c].position);
+                    _aligned &= Mathf.Abs(offset.x) <= 0.22f && Mathf.Abs(offset.y) <= 0.20f
+                        && Mathf.Abs(offset.z) <= 0.48f
+                        && Quaternion.Angle(_weights[c].rotation, _layers[c].rotation) <= 30f;
+                }
                 _filter.localPosition = _aligned ? FilterTarget : new Vector3(-1.65f, 0, 0.15f);
                 _filter.localRotation = Quaternion.identity;
                 if (!_aligned) { _instruction.text = "세 색의 순서와 가로·세로 위치를 맞춰 다시 놓으세요."; }
@@ -227,6 +243,7 @@ namespace UI
 
         public void StopInteraction()
         {
+            _pending = PendingAction.None;
             _closing = true;
             _exploring = false;
             _expected = -1;
@@ -236,6 +253,35 @@ namespace UI
             foreach (LineRenderer pair in _pairs) { if (pair != null) { pair.enabled = false; } }
             if (_depthLine != null) { _depthLine.enabled = false; }
             _closing = false;
+        }
+
+        public bool CompletePendingAction()
+        {
+            PendingAction action = _pending;
+            if (action == PendingAction.None) { return false; }
+            _pending = PendingAction.None;
+            _closing = true;
+            if (action == PendingAction.Align)
+            {
+                StopGrab(_filterGrab);
+                _filter.localPosition = FilterTarget;
+                _filter.localRotation = Quaternion.identity;
+                _aligned = true;
+            }
+            else if (action == PendingAction.Extract)
+            {
+                StopGrab(_patchGrab);
+                _patch.position = _patchSource - transform.forward * 0.2f;
+                _extracted = true;
+            }
+            else if (_expected >= 0)
+            {
+                StopGrab(_layerGrabs[_expected]);
+                _layers[_expected].localPosition = _layerHomes[_expected] + Vector3.left * 0.3f;
+                _pulled = true;
+            }
+            _closing = false;
+            return true;
         }
 
         private void StopGrab(XRGrabInteractable grab)

@@ -49,20 +49,15 @@ namespace Education.Editor
 
             Transform convolutionPapers = PrepareGroup(convolutionRoom);
             Transform mlpPapers = PrepareGroup(mlpRoom);
-            CreateParchment(convolutionPapers, 0, new Vector3(-8.5f, 1.65f, 1f),
-                new Vector3(-11f, 1.65f, 5f), sprite, font);
-
-            Vector3[] mlpPositions =
+            Vector3[] positions = {
+                new Vector3(-1.1f, 1.45f, -1f), new Vector3(-3.8f, 1.45f, 6.5f),
+                new Vector3(-1.1f, 1.45f, 12f), new Vector3(-3.8f, 1.45f, 19.7f),
+                new Vector3(1.5f, 1.45f, 16.7f) };
+            Vector3[] directions = { Vector3.forward, Vector3.left, Vector3.forward, Vector3.left, Vector3.right };
+            for (int i = 0; i < positions.Length; i++)
             {
-                new Vector3(6.8f, 1.45f, 12f),
-                new Vector3(17.3f, 1.45f, 12f),
-                new Vector3(6.8f, 1.45f, 14f),
-                new Vector3(17.3f, 1.45f, 14f)
-            };
-            for (int i = 0; i < mlpPositions.Length; i++)
-            {
-                CreateParchment(mlpPapers, i + 1, mlpPositions[i],
-                    new Vector3(12f, 1.45f, 19f), sprite, font);
+                CreateParchment(i == 0 ? convolutionPapers : mlpPapers, i, positions[i],
+                    positions[i] - directions[i], sprite, font);
             }
 
             EnsureRig(scene, rigPrefab);
@@ -71,7 +66,7 @@ namespace Education.Editor
             {
                 throw new InvalidOperationException("Could not save the learning parchments in FactoryEnvironment.");
             }
-            Debug.Log("[Education] Placed five learning parchments: #1 in Pixel Lab, #2–5 in Model Design Lab.");
+            Debug.Log("[Education] Placed five learning parchments along the approach routes.");
         }
 
         private static Sprite LoadParchmentSprite()
@@ -194,9 +189,9 @@ namespace Education.Editor
                 font, new Vector2(0f, 90f), new Vector2(420f, 170f), 54);
             AddText(labelObject.transform, "Department", lesson.Department + " 작성",
                 font, new Vector2(0f, -50f), new Vector2(420f, 65f), 30);
-            AddText(labelObject.transform, "Collection room", index == 0 ? "Pixel Lab" : "Model Design Lab",
+            AddText(labelObject.transform, "Collection room", lesson.Room,
                 font, new Vector2(0f, -120f), new Vector2(420f, 50f), 27);
-            AddText(labelObject.transform, "Collect instruction", "오른손 Trigger / Grip · 수집\n3 m 이내에서 선택",
+            AddText(labelObject.transform, "Collect instruction", "양피지를 수집하세요!\n오른손 Trigger · 3 m 이내",
                 font, new Vector2(0f, -225f), new Vector2(470f, 85f), 27);
         }
 

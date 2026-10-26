@@ -20,6 +20,7 @@ namespace UI
         private Text _summary;
         private Button _combine;
         private Button _restart;
+        private Button _nextObservation;
         private readonly Button[] _moves = new Button[4];
         private Vector2Int _selected;
         private int _columns;
@@ -41,6 +42,7 @@ namespace UI
                 "", 850, 30, 440, 390, 26);
             _combine = Button(_observationUi.transform, "RGB 합쳐 보기", 0, -330, 350, ToggleCombined);
             _restart = Button(_observationUi.transform, "계산 다시 보기", 0, -395, 350, BeginCalculation);
+            _nextObservation = Button(_observationUi.transform, "다음으로", 850, -260, 440, AdvanceObservation);
             _moves[0] = Button(_observationUi.transform, "←", -480, -395, 90, () => _lab.MoveSelection(-1, 0));
             _moves[1] = Button(_observationUi.transform, "→", -370, -395, 90, () => _lab.MoveSelection(1, 0));
             _moves[2] = Button(_observationUi.transform, "↑", 370, -395, 90, () => _lab.MoveSelection(0, 1));
@@ -93,6 +95,21 @@ namespace UI
             _lab.SetBackgroundHidden(true);
             _combine.interactable = true;
             _busy = false;
+        }
+
+        private void Update()
+        {
+            if (_nextObservation == null) { return; }
+            bool pending = _observation.Volume.HasPendingAction;
+            _nextObservation.interactable = pending || !_busy;
+            _nextObservation.GetComponentInChildren<Text>().text = pending ? "자동 꺼내고 다음으로" : "다음으로";
+        }
+
+        private void AdvanceObservation()
+        {
+            if (_observation.Volume.CompletePendingAction() || _busy) { return; }
+            _lab.CloseDetails();
+            if (!_lab.ConvolutionCompleted) { _lab.NextStage(); }
         }
 
         private void BeginCalculation()

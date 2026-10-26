@@ -95,3 +95,21 @@ Inactive → AwaitingClick → Revealing → Revealed
 마우스 미리보기는 `UNITY_EDITOR` 안에서만 구현된다. 별도 카메라를 생성하고 기존 리그·시뮬레이터·입력 모듈을 비활성화한 뒤, 종료 시 이전 상태를 복원한다. 필터 드래그는 SelectionController에, 공간 물체 드래그와 놓기는 SpatialConvolutionController에 전달한다. 실제 XR 기기가 활성화되면 미리보기를 종료한다.
 
 입력 사진은 `client/Assets/Textures/CNNPixelLab/ColorPhoto.png`, 공용 리그는 `client/Assets/Prefabs/XR/XRPlayerRig.prefab`을 사용한다. 시각 에셋 구성은 [Neon UI 프리팹](neon-ui-prefabs.md)을 참고한다.
+
+## Quest 관찰 화면 배치
+
+큰 이미지의 하단과 조작 버튼이 겹치지 않도록 이미지 중심을 씬 기준 높이 2.45m, 조작판 중심을 0.62m로 분리한다. 이미지 아래에는 R/G/B 선택, 색 값 설명, 상세·다음·재시작 버튼, 단계 안내를 순서대로 배치한다. 진행 버튼은 항상 `다음으로`로 표시하고, 픽셀 관찰 완료 후에는 별도 안내에서 합성곱 연산 단계로 이동함을 설명한다.
+
+이 배치와 벽 충돌 수정은 소스에 반영했으며, 이번 변경 후 Unity 컴파일·Play 및 Quest APK 검증은 아직 수행하지 않았다.
+
+## 필터·픽셀 입체 표시 (2026-10-26)
+
+`FilterVolumeController`는 기존 필터 잡기 입력과 원본 샘플 좌표를 유지하면서 얇은 프레임·평면 렌즈 표시를 모서리가 다듬어진 두꺼운 프레임과 3×3 픽셀 블록으로 교체한다. `PixelVolumeMesh`의 공유 메시와 재질을 사용하고 선택 색상은 MaterialPropertyBlock으로 갱신한다. 밝기나 가중치에 따라 두께를 바꾸지 않는다. 투명도는 0.94이며 발광·추가 장식 조명은 사용하지 않는다.
+
+`PixelRevealStage`도 평면 Image 대신 동일한 메시의 픽셀 블록을 표시한다. 열별 전환 시 블록과 앞면 숫자가 이미지 앞쪽으로 함께 나온다. 색 선택·숫자·합성곱 데이터는 기존 값 그대로이며, 숫자는 앞면에 남고 옆면으로 깊이를 확인할 수 있다. 생성 메시·재질은 소유 Controller/Stage의 종료 시 해제한다. 이번 변경은 소스 검토까지 수행했으며 컴파일·Play·APK 확인 전이다.
+
+## 2026-10-26 Unity 실행 확인
+
+Unity 6000.3.24f1 Play에서 CNNPixelLab을 실행하고 실제 Camera.Render 결과로 정면 필터와 측면 픽셀 화면을 확인했다. 초기 MaterialPropertyBlock 필드 생성으로 발생한 Unity 생성자 예외를 BuildPixels 초기화로 옮겨 해결했다. 숫자 Canvas의 정렬 순서를 높이고 전환 완료 후 원본 사진 Renderer를 숨겨 반투명 블록 뒤 사진의 색 혼합과 숫자 가림을 수정했다. ResetStage에서는 사진을 다시 표시한다.
+
+최종 컴파일 완료·실패 없음, RevealPixels의 Revealing→Revealed 전환, G/B 버튼 onClick 호출 후 각각 576개 숫자의 원본 성분값 일치, NextStage 호출 후 합성곱 화면 활성화를 확인했다. 이는 에디터 실행·직접 콜백 검증이며 Quest 컨트롤러 레이 클릭이나 공장 전체 동선의 실기기 검증은 아니다. 자동화 연결의 Play/domain reload 중 응답 시간 초과 로그와 수정 전 예외 이력은 최종 콘텐츠 오류와 구분했다. 사용자의 후속 요청에 따라 APK 재빌드·기기 설치는 수행하지 않았다. 새 테스트 파일은 생성하지 않았다.

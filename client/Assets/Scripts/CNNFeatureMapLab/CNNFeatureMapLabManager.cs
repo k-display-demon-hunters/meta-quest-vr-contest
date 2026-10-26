@@ -21,9 +21,10 @@ namespace CNNFeatureMaps
         private int _channel;
         private int _spreadLayer;
         private int _editCount;
+        private bool _lastStepSkipped;
         public bool HasHeldTargets => _interaction.HasHeldTargets;
         public CNNFeatureMapExampleData Data => _data;
-        public bool ReadyForModelDesign => _ready && _guide != null && _step == 3 && _editCount > 0 && !HasHeldTargets;
+        public bool ReadyForModelDesign => _ready && _guide != null && _step == 3 && (_editCount > 0 || _lastStepSkipped) && !HasHeldTargets;
 
         private void Awake()
         {
@@ -140,6 +141,12 @@ namespace CNNFeatureMaps
                     ApplyStep();
                     break;
                 case CNNFeatureMapAction.Next:
+                    if (_step == 3)
+                    {
+                        _lastStepSkipped = _editCount == 0;
+                        _guide.ShowStepFinished(_lastStepSkipped);
+                        break;
+                    }
                     _step = Mathf.Min(3, _step + 1);
                     ApplyStep();
                     break;
@@ -166,6 +173,7 @@ namespace CNNFeatureMaps
                 case CNNFeatureMapAction.Restore:
                     System.Array.Clear(_visited, 0, _visited.Length);
                     _editCount = 0;
+                    _lastStepSkipped = false;
                     _data.RestoreInput(_inputImage);
                     ResetLayout();
                     break;

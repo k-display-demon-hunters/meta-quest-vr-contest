@@ -19,15 +19,29 @@ namespace UI
             _nextButton = nextButton;
             SceneUIStyle.Apply(_detailButton);
             SceneUIStyle.Apply(_nextButton);
+            foreach (Button button in detailButton.transform.parent.GetComponentsInChildren<Button>())
+            {
+                RectTransform rect = (RectTransform)button.transform;
+                rect.sizeDelta = new Vector2(button == nextButton ? 380 : 320, 100);
+                float x = button == detailButton ? -390 : button == nextButton ? 0 : 390;
+                rect.anchoredPosition = new Vector2(x, 20);
+                Text label = button.GetComponentInChildren<Text>();
+                label.fontSize = button == nextButton ? 48 : 34;
+                label.resizeTextForBestFit = false;
+                label.rectTransform.anchorMin = Vector2.zero;
+                label.rectTransform.anchorMax = Vector2.one;
+                label.rectTransform.offsetMin = new Vector2(10, 5);
+                label.rectTransform.offsetMax = new Vector2(-10, -5);
+            }
             _background = new[] { board, filter, detailButton.transform.parent.gameObject };
             RectTransform hint = new GameObject("Interaction hint", typeof(RectTransform)).GetComponent<RectTransform>();
             hint.SetParent(_detailButton.transform.parent, false);
             hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one * 0.5f;
-            hint.anchoredPosition = new Vector2(0, -70);
-            hint.sizeDelta = new Vector2(1200, 70);
+            hint.anchoredPosition = new Vector2(0, -105);
+            hint.sizeDelta = new Vector2(1400, 90);
             _instruction = hint.gameObject.AddComponent<Text>();
             _instruction.font = font;
-            _instruction.fontSize = 26;
+            _instruction.fontSize = 32;
             _instruction.alignment = TextAnchor.MiddleCenter;
             _instruction.color = Color.white;
             _instruction.raycastTarget = false;
@@ -48,7 +62,8 @@ namespace UI
         {
             _instruction.gameObject.SetActive(false);
             _detailButton.interactable = false;
-            _nextButton.interactable = false;
+            _nextButton.interactable = true;
+            _nextButton.GetComponentInChildren<Text>().text = "다음으로";
         }
 
         public void ResetControls()
@@ -67,8 +82,8 @@ namespace UI
             _detailButton.interactable = hasSelection;
             _nextButton.interactable = true;
             Text lessonLabel = _nextButton.GetComponentInChildren<Text>();
-            lessonLabel.text = "합성곱 연산\n원리 알아보기";
-            lessonLabel.fontSize = 24;
+            lessonLabel.text = "다음으로";
+            lessonLabel.fontSize = 48;
         }
 
         public void UpdateInstruction(bool readyForConvolution, bool hasSelection)
@@ -76,7 +91,7 @@ namespace UI
             _instruction.gameObject.SetActive(true);
             if (readyForConvolution)
             {
-                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n관찰을 마치면 ‘합성곱 연산 원리 알아보기’를 누르세요";
+                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n가운데 ‘다음으로’를 누르면 합성곱 연산 원리를 알아봅니다";
                 return;
             }
             _instruction.text = hasSelection

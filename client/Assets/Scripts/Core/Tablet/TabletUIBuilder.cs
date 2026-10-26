@@ -428,7 +428,7 @@ namespace Tablet
             Image actionShadow = PlaceImage(Shell.FeedbackRoot.transform, "Confirm Shadow", 452f, 823f, 658f, 115f,
                 new Color(0.18f, 0.36f, 0.59f, 0.28f));
             actionShadow.sprite = _resources.ShadowSprite;
-            Button confirm = PlaceButton(Shell.FeedbackRoot.transform, "Confirm Task", "작업 확인하기", 465f, 827f, 632f, 95f,
+            Button confirm = PlaceButton(Shell.FeedbackRoot.transform, "Confirm Task", "현재 미션 확인", 465f, 827f, 632f, 95f,
                 _learning.ConfirmCurrentTask, CardColor);
             confirm.GetComponent<Image>().sprite = _resources.PrimarySprite;
             AddOutline(confirm.GetComponent<Image>(), new Color(0.53f, 0.69f, 0.91f, 0.85f), new Vector2(2f, 2f));
@@ -518,6 +518,10 @@ namespace Tablet
                 new Vector2(700f, 64f), _tablet.CloseDetail, AccentColor);
             close.GetComponentInChildren<Text>().fontSize = 26;
             close.GetComponentInChildren<Text>().color = CardColor;
+            Shell.DetailCloseButton = close;
+            Shell.ConfirmQuitButton = CreateTextButton(modal.transform, "Confirm Application Quit", "확인 · 앱 종료",
+                new Vector2(0f, -190f), new Vector2(700f, 64f), _tablet.ConfirmApplicationQuit, AccentSoftColor);
+            Shell.ConfirmQuitButton.gameObject.SetActive(false);
             Shell.DetailOverlay.SetActive(false);
         }
 
@@ -565,8 +569,8 @@ namespace Tablet
             Settings.VibrationThumb.GetComponent<Image>().sprite = _resources.CircleSprite;
             CreateSymbolButton(modal.transform, "Close Settings", "완료", TabletSymbol.Check,
                 new Vector2(42f, -285f), new Vector2(200f, 70f), _tablet.ToggleSettings, AccentColor, CardColor);
-            CreateSymbolButton(modal.transform, "Exit Settings", "나가기", TabletSymbol.Exit,
-                new Vector2(260f, -285f), new Vector2(200f, 70f), _tablet.RequestExit,
+            CreateSymbolButton(modal.transform, "Exit Settings", "앱 종료", TabletSymbol.Exit,
+                new Vector2(260f, -285f), new Vector2(200f, 70f), _tablet.RequestApplicationQuit,
                 new Color(1f, 0.92f, 0.94f), ItemColors[4]);
 
             _buildingGroup = TabletInputController.FocusGroup.Stage;
@@ -846,6 +850,8 @@ namespace Tablet
             internal Text FeedbackTitle;
             internal Text FeedbackBody;
             internal GameObject DetailOverlay;
+            internal Button DetailCloseButton;
+            internal Button ConfirmQuitButton;
             internal Text DetailTitle;
             internal Text DetailBody;
             internal Image DetailImage;

@@ -28,11 +28,6 @@ namespace Tablet
         private int _detailReturnFocusIndex;
         private bool _initialized;
         internal TabletMapData MapData { get; private set; }
-#if UNITY_EDITOR
-        private bool _useSimulatorTabletPose;
-        private Vector3 _tabletReadingPosition;
-        private Vector3 _tabletReadingScale;
-#endif
 
         private TabletInputController.FocusGroup ActiveGroup => _ui.Shell.DetailOverlay.activeSelf
             ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
@@ -57,10 +52,6 @@ namespace Tablet
             _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
             _ui.Build(this, _parchment, _settings, _learning);
-#if UNITY_EDITOR
-            _tabletReadingPosition = transform.localPosition;
-            _tabletReadingScale = transform.localScale;
-#endif
             RefreshAll();
             _initialized = true;
         }
@@ -75,25 +66,14 @@ namespace Tablet
             _input.Tick();
         }
 
-#if UNITY_EDITOR
-        private void Start()
-        {
-            _useSimulatorTabletPose = FindFirstObjectByType<XR.XREditorSimulator>() != null;
-        }
-
-        private void LateUpdate()
-        {
-            if (!_useSimulatorTabletPose || !_initialized) { return; }
-            bool reading = _input.IsInteracting || UnityEngine.XR.XRSettings.isDeviceActive;
-            transform.localPosition = reading ? _tabletReadingPosition
-                : _tabletReadingPosition + new Vector3(-.35f, -.32f, .35f);
-            transform.localScale = _tabletReadingScale * (reading ? 1f : .65f);
-        }
-#endif
-
         // Keep the pickup, minimap and serialized component links on the existing entry point.
         public bool HasParchment(int index) => _parchment.HasParchment(index);
         public bool CollectParchment(int index) => _parchment.CollectParchment(index);
+
+        public void SetFactoryMission(int phase, int collected, int completed, string mission)
+        {
+            _learning.SetFactoryMission(phase, collected, completed, mission);
+        }
 
         public void SetMapData(TabletMapData data)
         {
@@ -156,7 +136,7 @@ namespace Tablet
             _learning.RefreshProgress();
             _settings.RefreshSettingsValues();
             UpdateFeedback("교육 문서 수집",
-                "방 안에서 은은하게 빛나는 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
+                "방으로 가는 길에서 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
         }
 
         internal void ShowFactoryMap()
@@ -176,13 +156,15 @@ namespace Tablet
 
         internal void ShowLearningInfo()
         {
-            ShowDetail("학습 정보", "픽셀 구조와 CNN 필터\n미디어 · XR 디스플레이 교육\n\n" +
+            ShowDetail("태블릿은 미션 보조 도구", "할 일을 모를 때: 현재 미션\n길을 찾을 때: 지도\n원리를 복습할 때: 수집한 양피지\n진행률: 양피지 5개 + 방 체험 3개\n\n" +
                 "현재 단계: " + _learning.SelectedName + "\n선택한 양피지: " + TabletParchmentController.ItemName(_parchment.SelectedIndex) +
                 "\n\n케디헌", false);
         }
 
         internal void ShowDetail(string title, string body, bool showImage)
         {
+            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(false);
+            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "완료";
             _ui.Shell.FactoryMapView.SetActive(false);
             _ui.Shell.DetailBody.gameObject.SetActive(true);
             _detailReturnFocusIndex = _input.FocusIndex;
@@ -200,6 +182,27 @@ namespace Tablet
         {
             _ui.Shell.DetailOverlay.SetActive(false);
             _input.ResetFocus(_detailReturnFocusIndex);
+        }
+
+        internal void RequestApplicationQuit()
+        {
+            ShowDetail("앱 종료", "체험을 종료하고 Quest 홈으로 돌아갈까요?\n\n현재 체험 진행과 학습 결과는 유지되지 않습니다.", false);
+            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "취소";
+            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(true);
+            _input.ResetFocus(0);
+        }
+
+        internal void ConfirmApplicationQuit()
+        {
+            if (!_ui.Shell.DetailOverlay.activeSelf || !_ui.Shell.ConfirmQuitButton.gameObject.activeSelf)
+            {
+                return;
+            }
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         internal void ToggleSettings()

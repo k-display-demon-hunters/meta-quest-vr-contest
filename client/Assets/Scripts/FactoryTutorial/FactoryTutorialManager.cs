@@ -36,25 +36,13 @@ namespace FactoryTutorial
             }
         }
 
-        public bool Initialize(XROrigin rig, Transform entrance)
+        public void Initialize(XROrigin rig, Transform entrance)
         {
             if (_initialized)
             {
-                return true;
+                return;
             }
-            if (rig == null || rig.Camera == null || entrance == null
-                || _panel == null || _font == null)
-            {
-                Debug.LogError("[FactoryTutorial] XR 리그와 공장 입구·안내 화면 연결을 확인해 주세요.", this);
-                return false;
-            }
-
             _playerInput = rig.GetComponent<XRPlayerInputController>();
-            if (_playerInput == null)
-            {
-                Debug.LogError("[FactoryTutorial] 공통 XR 리그의 입력 Controller를 확인해 주세요.", this);
-                return false;
-            }
 
             _panel.transform.SetPositionAndRotation(
                 entrance.position + entrance.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
@@ -65,7 +53,6 @@ namespace FactoryTutorial
             _initialized = true;
             HoldGuideRay();
             Refresh();
-            return true;
         }
 
         private void Previous()
@@ -119,7 +106,7 @@ namespace FactoryTutorial
 
         private void HoldGuideRay()
         {
-            if (_ownsRay || _playerInput == null)
+            if (_ownsRay)
             {
                 return;
             }

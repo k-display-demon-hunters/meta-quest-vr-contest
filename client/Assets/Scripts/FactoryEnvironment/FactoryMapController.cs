@@ -5,16 +5,40 @@ using UnityEngine;
 
 namespace FactoryEnvironment
 {
-    public static class FactoryMapReader
+    public sealed class FactoryMapController : MonoBehaviour
     {
-        public static TabletMapData Read(GameObject root)
+        private TabletManager _tablet;
+        private TabletMapData _mapData;
+
+        private void OnEnable()
+        {
+            // OnEnable also runs before the initial Start; publish only after the first setup.
+            if (_mapData != null)
+            {
+                PublishMap();
+            }
+        }
+
+        private void Start()
+        {
+            PublishMap();
+        }
+
+        private void PublishMap()
+        {
+            _mapData = ReadMap();
+            _tablet = FindFirstObjectByType<TabletManager>();
+            _tablet.SetMapData(_mapData);
+        }
+
+        private TabletMapData ReadMap()
         {
             List<TabletMapData.Floor> floors = new List<TabletMapData.Floor>();
             List<Rect> walls = new List<Rect>();
             List<TabletMapData.Parchment> parchments = new List<TabletMapData.Parchment>();
             Rect bounds = default;
             // The existing scene names distinguish structural floors/walls from roofs and machines.
-            foreach (BoxCollider collider in root.GetComponentsInChildren<BoxCollider>())
+            foreach (BoxCollider collider in gameObject.GetComponentsInChildren<BoxCollider>())
             {
                 Bounds colliderBounds = collider.bounds;
                 Rect footprint = Rect.MinMaxRect(colliderBounds.min.x, colliderBounds.min.z, colliderBounds.max.x, colliderBounds.max.z);
@@ -28,7 +52,7 @@ namespace FactoryEnvironment
                     walls.Add(footprint);
                 }
             }
-            foreach (ParchmentPickupController pickup in root.GetComponentsInChildren<ParchmentPickupController>(true))
+            foreach (ParchmentPickupController pickup in gameObject.GetComponentsInChildren<ParchmentPickupController>(true))
             {
                 parchments.Add(new TabletMapData.Parchment(pickup, pickup.LessonIndex));
             }
@@ -72,6 +96,15 @@ namespace FactoryEnvironment
                 return "출하 구역";
             }
             return "공장";
+        }
+
+        private void OnDisable()
+        {
+            // The tablet may already be destroyed during scene teardown, or Start may not have run.
+            if (_tablet != null)
+            {
+                _tablet.ClearMapData(_mapData);
+            }
         }
     }
 }

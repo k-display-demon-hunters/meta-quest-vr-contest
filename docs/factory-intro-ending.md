@@ -49,7 +49,7 @@
 
 ## 실제 공장 입구에서 한 번 안내
 
-`FactoryLearningFlowManager`는 실제 공장 입구에 플레이어를 배치한 뒤 `FactoryTutorial`을 Additive로 한 번 불러온다. 공장 배경과 공용 리그는 그대로 유지하며, 튜토리얼 씬에는 별도 리그·카메라·배경·EventSystem을 두지 않는다.
+`FactoryLearningFlowManager`는 `FactoryPlayerController`에 요청해 실제 공장 입구에 플레이어를 배치한 뒤 `FactorySceneLoadController`에 요청해 `FactoryTutorial`을 Additive로 한 번 불러온다. 튜토리얼 로드·초기화·완료 대기·언로드는 Controller가 담당한다. Controller는 튜토리얼 언로드 후 안내판도 표시한다. Manager는 튜토리얼 완료를 기다리지 않고 학습 진입을 허용하며, 첫 학습 진입 시 종료·언로드를 요청한 뒤 학습 씬을 로드한다. 공장 배경과 공용 리그는 그대로 유지하며, 튜토리얼 씬에는 별도 리그·카메라·배경·EventSystem을 두지 않는다.
 
 | 파일·클래스 | 책임 |
 | --- | --- |
@@ -57,9 +57,9 @@
 | `Scripts/FactoryTutorial/FactoryTutorialManager.cs` | 안내 페이지 순서·시작·완료와 안내 중 ray 유지를 담당한다. `IsComplete`로 공장 진행 코드에 완료 여부를 제공한다. |
 | `Scripts/FactoryTutorial/FactoryTutorialPanelController.cs` | 안내 Canvas와 이전/다음/안내 마치기 버튼을 구성하고 페이지 내용을 표시한다. |
 
-이동·선택·잡기·정면 복원·태블릿 설명의 다섯 페이지를 이전/다음/안내 마치기로 넘긴다. 고개 회전, 이동 목표 도착, 잡기 성공, 태블릿 입력 순서 등 수행 판정은 없다. 안내 중에는 ray를 켠 상태로 유지하고 학습 씬 진입을 보류한다. 이동·잡기·태블릿 조작을 페이지별로 제한하지 않는다.
+이동·선택·잡기·정면 복원·태블릿 설명의 다섯 페이지를 이전/다음/안내 마치기로 넘긴다. 고개 회전, 이동 목표 도착, 잡기 성공, 태블릿 입력 순서 등 수행 판정은 없다. 안내 중에는 ray를 켠 상태로 유지하며, 안내를 완료하지 않고 첫 학습에 진입하면 튜토리얼을 종료·언로드한다. 이동·잡기·태블릿 조작을 페이지별로 제한하지 않는다.
 
-공장 Manager는 `FactoryTutorialManager.IsComplete`를 기다린 뒤 튜토리얼 씬을 언로드하고 첫 바닥 경로와 고정 표지판을 표시한다. 공장의 공용 EventSystem은 안내 씬과 함께 언로드되지 않으므로 이후 학습 UI에도 사용한다. 공장 세션 안에서는 방 재방문·Additive 학습 전환으로 안내를 다시 열지 않는다. 엔딩 후 처음부터 새 체험을 시작하면 다시 한 번 표시한다. 별도 저장 키나 전역 상태는 추가하지 않았다.
+공장 SceneLoadController는 `FactoryTutorialManager.IsComplete` 또는 첫 학습 진입에 따른 종료 요청을 기다린 뒤 튜토리얼 씬을 언로드하고 고정 표지판을 표시한다. Manager는 시작 시 첫 바닥 경로를 표시한다. 공장의 공용 EventSystem은 안내 씬과 함께 언로드되지 않으므로 이후 학습 UI에도 사용한다. 공장 세션 안에서는 방 재방문·Additive 학습 전환으로 안내를 다시 열지 않는다. 엔딩 후 처음부터 새 체험을 시작하면 다시 한 번 표시한다. 별도 저장 키나 전역 상태는 추가하지 않았다.
 
 기존 `FactoryTutorialController.cs`는 `FactoryTutorialManager.cs`로 이름을 바꾸고 Panel 코드와 함께 `Scripts/FactoryTutorial`로 옮겼으며 각 `.meta` GUID를 보존했다. 태블릿 코드·프리팹·폰트·저장 형식은 변경하지 않았다.
 

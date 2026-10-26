@@ -15,8 +15,8 @@ namespace UI
         private readonly Material _lensMaterial;
         private readonly int _columns;
         private readonly int _rows;
-        private Vector3 _dockPosition;
-        private Quaternion _dockRotation;
+        private readonly Vector3 _dockLocalPosition;
+        private readonly Quaternion _dockLocalRotation;
         private bool _snapPending;
         private bool _hasSelection;
         private bool _previewValid;
@@ -42,13 +42,8 @@ namespace UI
             _filter.trackPosition = true;
             _filter.trackRotation = false;
             _filter.movementType = XRBaseInteractable.MovementType.Instantaneous;
-            _dockPosition = filter.transform.position;
-            _dockRotation = filter.transform.rotation;
-        }
-
-        public void RebaseDock(Vector3 offset)
-        {
-            _dockPosition += offset;
+            _dockLocalPosition = _board.InverseTransformPoint(filter.transform.position);
+            _dockLocalRotation = Quaternion.Inverse(_board.rotation) * filter.transform.rotation;
         }
 
         public void ResetSelection()
@@ -137,8 +132,9 @@ namespace UI
         private void PlaceFilter()
         {
             Vector3 position = _hasSelection
-                ? _board.TransformPoint(SelectionCenter(_selected) + Vector3.back * FilterDepth) : _dockPosition;
-            Quaternion rotation = _hasSelection ? _board.rotation : _dockRotation;
+                ? _board.TransformPoint(SelectionCenter(_selected) + Vector3.back * FilterDepth)
+                : _board.TransformPoint(_dockLocalPosition);
+            Quaternion rotation = _hasSelection ? _board.rotation : _board.rotation * _dockLocalRotation;
             _filter.transform.SetPositionAndRotation(position, rotation);
             Rigidbody body = _filter.GetComponent<Rigidbody>();
             body.position = position;

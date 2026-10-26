@@ -99,7 +99,7 @@ Manager의 주요 Inspector 참조는 `_font`, `_parchmentFont`, `_parchmentSpri
 
 `XREditorSimulator.Awake()`는 비활성 자식 오브젝트에 `SimulatedDeviceLifecycleManager`와 `XRInteractionSimulator`를 추가한다. 이동·회전·버튼 액션을 코드에서 구성하며, `OnEnable()`에서 액션과 가상 기기를 활성화한다. `OnDisable()`에서 비활성화하고 `OnDestroy()`에서 액션을 해제한다. 가상 컨트롤러 입력은 실제 기기와 같은 리그 입력 경로로 전달된다.
 
-에디터에서 시뮬레이터를 사용하는 경우 `TabletManager.LateUpdate()`가 태블릿의 읽기·대기 상태에 따라 표시 위치와 스케일을 전환한다.
+태블릿은 에디터 시뮬레이터와 실기기 모두 같은 왼손 grip 기준 위치·크기를 유지한다. 태블릿 조작 시작·종료에 따라 태블릿만 따로 이동하거나 축소하지 않는다.
 
 ## 프로젝트 설정 코드
 
@@ -115,18 +115,41 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.
 
-## Touch Plus 모델 패키지 설치 (2026-10-26)
+## Touch Plus 컨트롤러 에셋과 SDK 제거 (2026-10-27)
 
-Meta 공식 registry `https://npm.developer.oculus.com`에서 `com.meta.xr.sdk.core` 207.0.1을 설치했다. registry 범위는 해당 패키지로 제한하며, 의존 패키지 XR Hands 1.7.3은 Unity가 해결했다. 기존 OpenXR/XRI 버전과 리그 입력 연결은 유지한다.
+`com.meta.xr.sdk.core` 207.0.1, 그 의존성으로 추가된 XR Hands 1.7.3, Meta scoped registry를 패키지 설정에서 제거했다. 기존 OpenXR 1.16.1, XR Plug-in Management 4.5.3, XRI 3.3.2와 입력·리그 구성은 유지한다. 컨트롤러 표시는 SDK 실행 코드가 아니라 기존 `TouchPlusHandController`의 Unity XR 입력과 Unity Animator로 구동한다.
 
-모델은 `Packages/com.meta.xr.sdk.core/Meshes/MetaQuestTouchPlus/MetaQuestTouchPlus_Left.fbx`, `MetaQuestTouchPlus_Right.fbx`에 있고, Animation 하위 폴더에 좌·우 Animator Controller가 있다. 패키지 원본을 Assets에 복제하거나 수정하지 않는다. 출처·권리 조건은 ASSET_CREDITS.md에 기록했다.
+공식 207.0.1에서 Touch Plus 표시용 런타임 에셋 12개를 분리했다. 위치는 다음과 같다(`client/Assets` 기준).
+
+| 위치 | 보존 파일 |
+| --- | --- |
+| `Meshes/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlus_Left.fbx`, `MetaQuestTouchPlus_Right.fbx`. 버튼·Grip·Trigger·스틱 애니메이션은 FBX 안에 포함된다. |
+| `Meshes/Common/MetaQuestTouchPlus/Animation` | `MetaQuestTouchPlusLeftAnimation.controller`, `MetaQuestTouchPlusRightAnimation.controller` |
+| `Textures/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png`, `MetaQuestTouchPlus_Right_BaseColor_AO_AlphaRoughness.png`, `MetaQuestTouchPlus_Metallic.png`, `MetaQuestTouchPlus_Normals.png`, `batteryIndicatorTexture32.png` |
+| `Materials/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlusMATphong_left.mat`, `MetaQuestTouchPlusMATphong_right.mat`, `batteryIndicator_mat.mat` |
+
+FBX·PNG·Animator Controller와 기존 `.meta` 내용은 원본 그대로 유지했다. GUID와 importer 설정을 보존해 리그의 모델·Animator 참조 및 모델 내부 애니메이션 연결을 유지한다. 배터리 표시 재질·텍스처는 SDK의 Touch Pro 폴더에 있지만 Touch Plus 모델이 참조하므로 함께 보존했다.
+
+재질 3개는 SDK 셰이더 의존성을 제거하기 위해 본체의 `MetaLit`을 기존 URP/Lit으로, 배터리의 `TransparentTexture`를 URP/Unlit으로 연결하고 텍스처·색상·투명도 속성을 추가했다. 기존 `TouchPlusHandController`의 런타임 재질 생성과 버튼 표식·입력 연결은 유지한다. SDK 스크립트·에디터 도구·네이티브 플러그인·셰이더 파일은 포함하지 않는다.
+
+원래 `LICENSE.md`와 `NOTICE.txt`는 모델 폴더에 원문으로 보존한다. 출처·수정 여부는 [ASSET_CREDITS.md](ASSET_CREDITS.md)에 기록했다.
+
+이번 SDK 제거 작업에서는 파일·참조의 정적 검토만 수행했다. Unity 실행·에셋 임포트·컴파일·Play·테스트·APK 빌드는 실행하지 않았다. 아래 2026-10-26 검증 기록은 SDK가 설치되어 있던 당시 결과이며, SDK 제거 후 동작을 확인한 결과가 아니다.
+
+원본 왼손 Animator의 클립 fileID 18개는 FBX `.meta`의 `internalIDToNameTable`과 일치하지 않는다. 공식 207.0.1 원본에도 있는 상태이므로 모델·Controller·importer를 임의 수정하지 않았다. Unity 재임포트 시 실제 클립 참조가 해결되는지와 왼손 버튼 애니메이션은 실행 확인이 필요하다.
+
+## 과거 기록: Touch Plus 모델 패키지 설치 (2026-10-26)
+
+당시 Meta 공식 registry `https://npm.developer.oculus.com`에서 `com.meta.xr.sdk.core` 207.0.1을 설치했다. registry 범위는 해당 패키지로 제한했고, 의존 패키지 XR Hands 1.7.3은 Unity가 해결했다. 기존 OpenXR/XRI 버전과 리그 입력 연결은 유지했다.
+
+당시 모델은 `Packages/com.meta.xr.sdk.core/Meshes/MetaQuestTouchPlus/MetaQuestTouchPlus_Left.fbx`, `MetaQuestTouchPlus_Right.fbx`에 있었고, Animation 하위 폴더의 좌·우 Animator Controller를 사용했다. 설치 시점에는 패키지 원본을 Assets에 복제하거나 수정하지 않았다.
 
 Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (`isCompiling=false`, `isUpdating=false`, `scriptCompilationFailed=false`). 좌·우 모델 로드 및 왼손 버튼·Grip·Trigger·8방향 스틱 애니메이션 목록을 확인했다. Unity는 공식 패키지의 서명 파일 부재 경고를 출력했다. 다운로드 원본의 SHA 검증값은 Meta registry 값과 일치했다. Play·APK 빌드·기기 검증은 수행하지 않았으며 실제 리그 모델 교체와 튜토리얼 연결은 후속 작업이다.
 
-## 컨트롤러 표시와 실제 미션 연결 (2026-10-26)
+## 과거 기록: 컨트롤러 표시와 실제 미션 연결 (2026-10-26)
 
 `PersistentXRPlayerRig`의 직렬화된 좌·우 Touch Plus 모델 및 Animator 참조로 손의 grip pose 아래 실제 컨트롤러 모델을 생성한다. `TouchPlusHandController`가 Unity XR의 버튼·Grip·Trigger·스틱 값을 공식 Animator에 전달한다. 오른손 Meta 시스템 버튼은 앱 입력으로 가로채지 않는다. 패키지 모델·애니메이션 원본은 수정하지 않고 표시용 런타임 재질과 튜토리얼 표식만 별도로 생성·정리한다.
 
 `TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시한다. 단계 선택은 이동 안내이며 실제 걸어서 방에 들어간다. 기존 앱 실행 간 설정 저장과 미션 진행 저장은 별개이고 미션 진행은 세션 안에서 유지한다.
 
-후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 공장 씬이 함께 로드된 경우 `CNNMousePreviewController`는 실행하지 않아 공용 XR 리그를 유지한다. 단독 픽셀 씬의 로컬 마우스 미리보기 설정은 보존한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.
+SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 공장 씬이 함께 로드된 경우 `CNNMousePreviewController`는 실행하지 않아 공용 XR 리그를 유지한다. 단독 픽셀 씬의 로컬 마우스 미리보기 설정은 보존한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.

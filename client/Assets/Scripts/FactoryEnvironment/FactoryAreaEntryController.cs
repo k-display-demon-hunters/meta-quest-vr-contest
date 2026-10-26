@@ -12,7 +12,7 @@ namespace FactoryEnvironment
         {
             get
             {
-                if (!isActiveAndEnabled || _area == null || !_area.enabled || _player == null)
+                if (!isActiveAndEnabled || !_area.enabled || _player == null)
                 {
                     return false;
                 }

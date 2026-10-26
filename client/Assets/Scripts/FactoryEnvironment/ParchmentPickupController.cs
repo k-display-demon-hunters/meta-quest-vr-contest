@@ -2,7 +2,6 @@ using Tablet;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -33,10 +32,7 @@ namespace Education
         {
             _interactable = GetComponent<XRSimpleInteractable>();
             _restPosition = transform.localPosition;
-            if (_paperRenderer != null)
-            {
-                _paperColor = _paperRenderer.color;
-            }
+            _paperColor = _paperRenderer.color;
         }
 
         private void OnEnable()
@@ -47,11 +43,6 @@ namespace Education
 
         private void Start()
         {
-            foreach (Text label in GetComponentsInChildren<Text>(true))
-            {
-                if (label.name == "Collect instruction") { label.text = "양피지를 수집하세요!\n오른손 Trigger · 3 m 이내"; }
-                if (label.name == "Collection room") { label.text = ParchmentLesson.All[_lessonIndex].Room; }
-            }
             ResolveTablet(null);
             if (_tablet != null && _tablet.HasParchment(_lessonIndex))
             {
@@ -65,18 +56,9 @@ namespace Education
             float pulse = 0.5f + 0.5f * Mathf.Sin(phase);
             transform.localPosition = _restPosition + Vector3.up * (Mathf.Sin(phase * 0.7f) * FloatAmplitude);
 
-            if (_glowRenderer != null)
-            {
-                _glowRenderer.color = new Color(1f, 0.7f, 0.28f, Mathf.Lerp(0.1f, 0.17f, pulse));
-            }
-            if (_glowLight != null)
-            {
-                _glowLight.intensity = Mathf.Lerp(0.35f, 0.5f, pulse);
-            }
-            if (_paperRenderer != null)
-            {
-                _paperRenderer.color = Color.Lerp(_paperColor * 0.97f, _paperColor, pulse);
-            }
+            _glowRenderer.color = new Color(1f, 0.7f, 0.28f, Mathf.Lerp(0.1f, 0.17f, pulse));
+            _glowLight.intensity = Mathf.Lerp(0.35f, 0.5f, pulse);
+            _paperRenderer.color = Color.Lerp(_paperColor * 0.97f, _paperColor, pulse);
         }
 
         private void ResolveTablet(Transform interactor)

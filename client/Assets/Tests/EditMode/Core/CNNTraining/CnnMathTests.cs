@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Threading;
 using NUnit.Framework;
 
-namespace CNNTraining.Tests
+namespace ModelDesignScene.Execution.Engine.Tests
 {
     public sealed class CnnMathTests
     {

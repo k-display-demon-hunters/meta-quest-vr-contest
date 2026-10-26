@@ -14,7 +14,7 @@ Quest 3S에서 준비·학습·평가를 10~15초 안에 끝내는 것이 목표
 | `client/Assets/Scripts/CNNModelDesignLab/ModelDesign/` | 블록 편집 및 연결 검증, 실행 정의 스냅샷 생성 |
 | `client/Assets/Scripts/CNNModelDesignLab/` | MNIST 에셋 해석, Inspector 설정, 실행 요청과 UI 연결 |
 | `client/Assets/Data/CNNModelDesignLab/` | 학습·검증 후보 이미지와 평가 이미지의 바이너리 에셋 |
-| `client/Assets/Settings/CNNModelDesignLab/LocalTrainingSettings.asset` | 데이터 에셋 참조 및 학습·자원 설정 |
+| `client/Assets/Scripts/CNNModelDesignLab/Execution/CnnTrainingSettings.cs` | `private const` 학습 설정과 실행 옵션 생성 |
 
 의존성은 씬 → `ModelDesign` → `CNNTraining` 방향이다. 씬 실행 Controller도 엔진의 공개 세션·입출력 타입을 사용한다. 엔진은 블록, GameObject, 씬, MNIST 파일, 이미지 ID 규칙을 모른다. `CNNTraining.asmdef`는 `noEngineReferences: true`이며 씬 어셈블리를 참조하지 않는다.
 
@@ -51,24 +51,21 @@ Input(28 × 28 × 1)
 | 최종 분류 | Dense 10·Softmax 고정. 클래스 0~9. 최종 로짓에서 안정적인 교차엔트로피와 결합 기울기 계산 |
 | Adam | 미니배치 평균 기울기로 전체 학습 파라미터를 갱신. 모멘트·시점은 해당 실행 내부에 보관 |
 
-## 설정과 자원 제한
+## 학습 설정과 실행 검증
 
-`CnnTrainingSettings.CreateOptions()`가 변경 불가능한 `CnnTrainingOptions`를 만든다. 모델의 출력 크기·파라미터·연산량을 할당 전에 검사한다.
+`CnnTrainingSettings.CreateOptions()`가 코드의 `private const` 값으로 변경 불가능한 `CnnTrainingOptions`를 만든다. Inspector 설정 에셋은 사용하지 않는다. `ModelExecutionManager`는 같은 GameObject의 Controller를 `Awake()`에서 연결한다.
 
 | 기본값 | 값 |
 | --- | --- |
 | epoch / batch size | 3 / 16 |
 | learning rate / seed | 0.001 / 42 |
-| 최대 레이어 수 | 16 (Input 제외, Flatten·Output 포함) |
 | Conv 필터 / Dense 뉴런 상한 | 16 / 128 |
-| 최대 학습 파라미터 수 | 100,000 |
-| 입력·레이어별 최대 출력 원소 | 32,768 |
-| 이미지 한 장의 순전파 Conv·Dense 누적 곱셈-덧셈 | 2,000,000 |
-| 한 실행의 추정 학습·평가 곱셈-덧셈 | 2,000,000,000 |
 
-전체 실행 한도는 `이미지 한 장의 순전파 연산량 × ((학습 개수 × 3 + 검증 개수) × epoch + 평가 개수)`로 계산한다. 역전파를 순전파 두 번 분량으로 근사한 보호 한도이며, 모델 메모리 할당 전에 적용한다. UI의 필터·뉴런 상한도 엔진의 제한과 일치한다.
+개별 레이어의 설정 범위는 Model의 `LayerLimits`와 `LayerDefinition`에서 관리한다. Execution은 해당 범위 검사를 반복하지 않는다. 모델 전체 파라미터 수·레이어 수·중간 출력 크기·연산량·전체 학습량의 자원 한도는 적용하지 않으며, 엔진 입력 정의와 데이터의 임의 크기 상한도 두지 않는다.
 
-연산량 한도는 시간 보장이 아니다. 역전파·활성화·평가 비용도 있고 허용 모델에 따라 실행 시간이 달라진다. 기본 측정 대상은 `Conv(4, 3×3, ReLU) → Pool(2×2) → Flatten → Output`이며 파라미터 6,810개다. 이 모델은 450장·3 epoch로 시작한다. 더 큰 모델을 허용하기 전 실기기에서 초기화·학습·평가 시간과 VR 프레임을 함께 측정해야 한다.
+`Execution/ModelExecutionValidator.cs`는 학습 시작 요청 시 레이어 순서, Flatten 전환, 현재 공간 크기에 대한 커널·풀 크기, 최종 출력과 데이터 입력 형태를 검사한다. Manager는 검증 통과 후 엔진을 호출한다. 편집 시에는 기존 검사 결과만 초기화하며 재검증하지 않는다. 양수 차원·배열 길이 일치·정수 오버플로 같은 데이터 표현의 유효성 검사는 유지한다.
+
+아래 과거 측정 기록의 설정 에셋과 자원 한도는 당시 구현 기준이며 현재 실행 정책에는 적용되지 않는다.
 
 ## 내장 MNIST 데이터
 
@@ -165,3 +162,7 @@ Input(28×28×1)
 모델 구조와 epoch를 함께 바꾼 단일 실행 비교이므로 정확도 향상을 레이어 추가만의 효과로 분리해 해석할 수 없다. PC에서의 준비 포함 시간은 6.26초였으며 Quest 3S 시간은 여전히 미측정이다. 그래픽·VR 렌더링과 에디터 시작·임포트·컴파일 시간의 제외 기준은 이전 측정과 같다.
 
 원시 결과는 `client/Logs/mnist-editor-deeper-10epochs-20261024.json`, 로그는 같은 이름의 `.log`다. 임시 실행 코드는 측정 후 제거했다.
+
+## main 병합 적용 범위 (2026-10-27)
+
+`feature/cnn-model-design-modules`에 `main`을 병합하면서 CNNModelDesignLab의 씬·프리팹·전용 스크립트는 작업 브랜치 버전을 유지했다. main의 모델 설계 단계 건너뛰기와 해당 UI 이벤트 연결은 반영하지 않았으며 재구현도 하지 않았다. 양쪽 문서 기록은 보존한다. 이번 병합에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았고 기존 측정·검증 결과를 현재 병합본의 검증 결과로 간주하지 않는다.

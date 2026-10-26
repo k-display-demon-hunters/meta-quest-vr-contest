@@ -43,7 +43,6 @@ namespace UI
         public bool HasSelection => _selection != null && _selection.HasSelection;
         public bool ConvolutionCompleted { get; private set; }
         public void MarkConvolutionCompleted() { ConvolutionCompleted = true; }
-        public void RebaseDock(Vector3 offset, Quaternion rotation) { _selection.RebaseDock(offset, rotation); }
         public Vector2Int SelectedPixel => _selection.SelectedPixel;
 
 #if UNITY_EDITOR

@@ -1,0 +1,6 @@
+{
+    "name": "ModelDesign",
+    "rootNamespace": "ModelDesignScene.Editing",
+    "references": ["CNNTraining"],
+    "noEngineReferences": true
+}

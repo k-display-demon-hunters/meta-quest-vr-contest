@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using CNNTraining;
+using ModelDesignScene.Execution.Engine;
 using NUnit.Framework;
 
-namespace ModelDesign.Tests
+namespace ModelDesignScene.Editing.Tests
 {
     public sealed class ModelDesignTests
     {

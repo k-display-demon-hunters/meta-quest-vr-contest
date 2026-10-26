@@ -1,6 +1,10 @@
 using System.Collections.Generic;
-using ModelDesign;
-using CNNTraining;
+using ModelDesignScene.Assembly;
+using ModelDesignScene.BlockSettings;
+using ModelDesignScene.Editing;
+using ModelDesignScene.Execution;
+using ModelDesignScene.Execution.Engine;
+using ModelDesignScene.Results;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
@@ -8,19 +12,13 @@ namespace ModelDesignScene
 {
     public sealed class CNNModelDesignLabManager : MonoBehaviour
     {
-        [SerializeField] private ModelBlockController _inputBlock;
-        [SerializeField] private ModelBlockController _outputBlock;
-        [SerializeField] private ModelSupplyController _supply;
-        [SerializeField] private ModelConveyorController _conveyor;
-        [SerializeField] private ModelSettingsController _settings;
-        [SerializeField] private ModelExecutionController _execution;
-        [SerializeField] private ModelResultsController _results;
+        [SerializeField] private ModelAssemblyManager _assembly;
+        [SerializeField] private ModelBlockSettingsManager _settings;
+        [SerializeField] private ModelExecutionManager _execution;
+        [SerializeField] private ModelResultsManager _results;
         [SerializeField] private ModelXRInputController _xrInput;
 
-        private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
-        private readonly List<LayerDefinition> _connectedLayers = new List<LayerDefinition>();
-        private ModelWorkspace _workspace;
-        private ModelBlockController _grabbedBlock;
+        private ModelEditingManager _editing;
         private bool _initialized;
         private bool _trainingCompleted;
         private bool _workspaceUIIsDirty;
@@ -29,29 +27,24 @@ namespace ModelDesignScene
 
         private void Awake()
         {
-            foreach (UnityEngine.UI.Button button in GetComponentsInChildren<UnityEngine.UI.Button>(true))
-            {
-                if (!button.transform.IsChildOf(_results.transform))
-                {
-                    UI.SceneUIStyle.Apply(button);
-                }
-            }
-            _workspace = new ModelWorkspace();
+            _editing = new ModelEditingManager();
         }
 
         private void OnEnable()
         {
             _workspaceUIIsDirty = true;
             _xrInput.EnableInput();
-            foreach (ModelBlockController block in _blocks)
+            if (_initialized)
             {
-                block.SetInteractionEnabled(true);
+                _assembly.BeginInteraction();
             }
         }
 
         private void Start()
         {
-            _supply.OnBlockCreated += RegisterBlock;
+            _editing.OnChanged += HandleWorkspaceChanged;
+            _assembly.OnChanged += HandleAssemblyChanged;
+            _assembly.OnSettingsRequested += HandleSettingsRequested;
             _settings.OnDeleteRequested += HandleDeleteRequested;
             _execution.OnStateChanged += HandleExecutionStateChanged;
             _execution.OnTrainingProgress += HandleTrainingProgress;
@@ -63,164 +56,55 @@ namespace ModelDesignScene
             _results.OnStartRequested += HandleTrainingStartRequested;
             _results.OnStopRequested += HandleTrainingStopRequested;
 
-            // All scene blocks have completed Awake before their model data is assigned.
-            _inputBlock.Initialize(_workspace.Input, false);
-            _outputBlock.Initialize(_workspace.Output, false);
-            RegisterBlock(_inputBlock);
-            RegisterBlock(_outputBlock);
-            _supply.Initialize();
-            _conveyor.Initialize();
-            foreach (SlotSettingsController control in _conveyor.SettingsControls)
-            {
-                control.OnSettingsRequested += HandleSettingsRequested;
-            }
-            RefreshModelOrder();
+            // Scene components have completed Awake before the module managers connect them.
+            _settings.Initialize(_editing);
+            _assembly.Initialize(_editing, GetActivationHit);
+            _assembly.BeginInteraction();
             _initialized = true;
-            _workspace.OnChanged += HandleWorkspaceChanged;
             HandleExecutionStateChanged();
         }
 
         private void LateUpdate()
         {
-            if (_initialized)
+            if (_initialized && _workspaceUIIsDirty)
             {
-                _conveyor.PreviewPlacement(_grabbedBlock);
-                if (_workspaceUIIsDirty)
-                {
-                    RefreshWorkspaceUI();
-                }
+                RefreshWorkspaceUI();
             }
         }
 
-        private void RegisterBlock(ModelBlockController block)
+        private Collider GetActivationHit(IXRActivateInteractor interactor)
         {
-            if (!_blocks.Add(block))
-            {
-                return;
-            }
-            block.OnGrabbed += HandleBlockGrabbed;
-            block.OnReleased += HandleBlockReleased;
-            block.SetInteractionEnabled(isActiveAndEnabled);
+            return _xrInput.GetActivationHit(interactor);
         }
 
-        private void UnregisterBlock(ModelBlockController block)
+        private void HandleAssemblyChanged()
         {
-            block.SetInteractionEnabled(false);
-            block.OnGrabbed -= HandleBlockGrabbed;
-            block.OnReleased -= HandleBlockReleased;
-            _blocks.Remove(block);
-        }
-
-        private bool IsWorkspaceBlock(ModelBlockController block)
-        {
-            return block != null && !block.IsPalette && block.Layer != null && _blocks.Contains(block);
-        }
-
-        private void RemoveFromConveyor(ModelBlockController block)
-        {
-            if (_conveyor.RemoveBlock(block))
-            {
-                RefreshModelOrder();
-            }
-        }
-
-        private void RefreshModelOrder()
-        {
-            for (int index = 1; index < _connectedLayers.Count; index++)
-            {
-                _workspace.Disconnect(_connectedLayers[index - 1], _connectedLayers[index]);
-            }
-
-            _connectedLayers.Clear();
-            _connectedLayers.Add(_workspace.Input);
-            for (int index = 0; index < _conveyor.SlotCount; index++)
-            {
-                ModelBlockController block = _conveyor.GetBlock(index);
-                if (block != null)
-                {
-                    _connectedLayers.Add(block.Layer);
-                }
-            }
-            _connectedLayers.Add(_workspace.Output);
-
-            // Empty slots do not create layers; physical block positions stay unchanged.
-            for (int index = 1; index < _connectedLayers.Count; index++)
-            {
-                _workspace.Connect(_connectedLayers[index - 1], _connectedLayers[index]);
-            }
-        }
-
-        private void HandleBlockGrabbed(ModelBlockController block)
-        {
-            if (!isActiveAndEnabled || !_blocks.Contains(block))
-            {
-                return;
-            }
             _settings.Close();
-            if (block.IsPalette && _supply.TryTakeBlock(block))
-            {
-                _workspace.AddLayer(block.Layer);
-            }
-            RemoveFromConveyor(block);
-            _grabbedBlock = block;
-            _workspaceUIIsDirty = true;
+            HandleWorkspaceChanged();
         }
 
-        private void HandleBlockReleased(ModelBlockController block, bool cancelled)
+        private void HandleSettingsRequested(LayerDefinition layer, Pose anchorPose)
         {
-            if (!isActiveAndEnabled || _grabbedBlock != block)
+            if (isActiveAndEnabled)
             {
-                return;
-            }
-            // Taken blocks belong to the workspace, not the parts supply rack.
-            block.transform.SetParent(transform, true);
-            _conveyor.ClearPreview();
-            _grabbedBlock = null;
-            _workspaceUIIsDirty = true;
-            if (!cancelled && _conveyor.TryPlaceBlock(block))
-            {
-                RefreshModelOrder();
-            }
-            else
-            {
-                HandleDeleteRequested(block);
+                _settings.Open(layer, anchorPose);
             }
         }
 
-        private void HandleSettingsRequested(SlotSettingsController control, IXRActivateInteractor interactor)
+        private void HandleDeleteRequested(LayerDefinition layer)
         {
-            if (isActiveAndEnabled && _grabbedBlock == null && IsWorkspaceBlock(control.Block) &&
-                _xrInput.CanActivateSlot(control, interactor))
-            {
-                _settings.Open(control);
-            }
-        }
-
-        private void HandleDeleteRequested(ModelBlockController block)
-        {
-            if (!isActiveAndEnabled || !IsWorkspaceBlock(block) || block.IsFixed)
-            {
-                return;
-            }
             _settings.Close();
-            // Disconnect the old sequence before removing its layer from the workspace.
-            RemoveFromConveyor(block);
-            _workspace.RemoveLayer(block.Layer);
-            UnregisterBlock(block);
-            // Remove interaction immediately; Unity destroys the object at the end of the frame.
-            block.gameObject.SetActive(false);
-            Destroy(block.gameObject);
+            _assembly.DeleteLayer(layer);
         }
 
         private async void HandleTrainingStartRequested()
         {
-            if (!isActiveAndEnabled || _execution.IsBusy || _grabbedBlock != null)
+            if (!isActiveAndEnabled || _execution.IsBusy || _assembly.IsDragging)
             {
                 return;
             }
-            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
-                out ModelExecutionDefinition definition,
-                out IReadOnlyList<ValidationIssue> issues);
+            bool valid = _editing.TryBuild(_execution.TrainingOptions,
+                out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues);
             PublishWorkspaceUI(valid, definition, issues, !valid);
             if (!valid)
             {
@@ -250,15 +134,18 @@ namespace ModelDesignScene
 
         private void HandleExecutionStateChanged()
         {
-            _results.ShowState(_execution.State, _execution.HasTrainedModel,
-                !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
-            HandleWorkspaceChanged();
+            if (_initialized && isActiveAndEnabled)
+            {
+                _results.ShowState(_execution.State, _execution.HasTrainedModel,
+                    !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
+                HandleWorkspaceChanged();
+            }
         }
 
-        private void HandleTrainingProgress(TrainingProgress progress)
-        {
-            _results.ShowProgress(progress);
-        }
+        private void HandleTrainingProgress(TrainingProgress progress) => _results.ShowProgress(progress);
+        private void HandleTrainingCancelled() => _results.ShowCancelled();
+        private void HandleInferenceCompleted(InferenceResult result) => _results.ShowInference(result);
+        private void HandleExecutionError(string message) => _results.ShowError(message);
 
         private void HandleTrainingCompleted(TrainingResult result)
         {
@@ -266,48 +153,27 @@ namespace ModelDesignScene
             _trainingCompleted = result != null;
         }
 
-        private void HandleTrainingCancelled()
-        {
-            _results.ShowCancelled();
-        }
-
-        private void HandleInferenceCompleted(InferenceResult result)
-        {
-            _results.ShowInference(result);
-        }
-
-        private void HandleExecutionError(string message)
-        {
-            _results.ShowError(message);
-        }
-
         private void HandleWorkspaceChanged()
         {
-            // Disconnect/Connect emits intermediate chains; show their final state once per frame.
             _workspaceUIIsDirty = true;
         }
 
         private void RefreshWorkspaceUI()
         {
-            bool valid = ModelExecutionDefinitionBuilder.TryBuild(_workspace, _execution.TrainingOptions,
-                out ModelExecutionDefinition definition,
-                out IReadOnlyList<ValidationIssue> issues);
+            _assembly.RefreshLabels();
+            _settings.Refresh();
+            bool valid = _editing.TryBuild(_execution.TrainingOptions,
+                out ModelExecutionDefinition definition, out IReadOnlyList<ValidationIssue> issues);
             PublishWorkspaceUI(valid, definition, issues, false);
         }
 
-        private void PublishWorkspaceUI(bool valid, ModelExecutionDefinition definition, IReadOnlyList<ValidationIssue> issues, bool focus)
+        private void PublishWorkspaceUI(bool valid, ModelExecutionDefinition definition,
+            IReadOnlyList<ValidationIssue> issues, bool focus)
         {
             _workspaceUIIsDirty = false;
-            LayerDefinition[] slotLayers = new LayerDefinition[_conveyor.SlotCount];
-            for (int index = 0; index < slotLayers.Length; index++)
-            {
-                ModelBlockController block = _conveyor.GetBlock(index);
-                slotLayers[index] = block != null ? block.Layer : null;
-            }
-            _results.ShowModelValidation(issues, slotLayers, _grabbedBlock != null, focus);
+            _results.ShowModelValidation(issues, _assembly.SlotLayers, _assembly.IsDragging, focus);
             ModelExecutionDefinition submitted = _execution.SubmittedModel;
-            bool changed = submitted != null &&
-                (!valid || !ModelExecutionDefinitionBuilder.Matches(submitted, definition));
+            bool changed = submitted != null && (!valid || !_editing.Matches(submitted, definition));
             _results.SetModelChanged(changed);
         }
 
@@ -317,75 +183,44 @@ namespace ModelDesignScene
             _execution.CloseSession();
             if (_initialized)
             {
+                _assembly.EndInteraction();
                 _results.ResetSessionUI();
             }
-            _conveyor.ClearPreview();
             _settings.Close();
-            foreach (ModelBlockController block in _blocks)
-            {
-                if (block == null)
-                {
-                    continue;
-                }
-                block.SetInteractionEnabled(false);
-                if (block.IsGrabbed)
-                {
-                    block.CancelGrab();
-                    block.transform.SetParent(transform, true);
-                }
-            }
-            _grabbedBlock = null;
             _xrInput.DisableInput();
         }
 
         private void OnDestroy()
         {
-            if (_supply != null)
+            if (_initialized)
             {
-                _supply.OnBlockCreated -= RegisterBlock;
-            }
-            if (_settings != null)
-            {
-                _settings.OnDeleteRequested -= HandleDeleteRequested;
-            }
-            if (_execution != null)
-            {
-                _execution.OnStateChanged -= HandleExecutionStateChanged;
-                _execution.OnTrainingProgress -= HandleTrainingProgress;
-                _execution.OnTrainingCompleted -= HandleTrainingCompleted;
-                _execution.OnTrainingCancelled -= HandleTrainingCancelled;
-                _execution.OnInferenceCompleted -= HandleInferenceCompleted;
-                _execution.OnError -= HandleExecutionError;
-            }
-            if (_results != null)
-            {
-                _results.OnInferenceRequested -= HandleInferenceRequested;
-                _results.OnStartRequested -= HandleTrainingStartRequested;
-                _results.OnStopRequested -= HandleTrainingStopRequested;
-            }
-            if (_conveyor != null)
-            {
-                foreach (SlotSettingsController control in _conveyor.SettingsControls)
+                if (_assembly != null)
                 {
-                    if (control != null)
-                    {
-                        control.OnSettingsRequested -= HandleSettingsRequested;
-                    }
+                    _assembly.OnChanged -= HandleAssemblyChanged;
+                    _assembly.OnSettingsRequested -= HandleSettingsRequested;
+                }
+                if (_settings != null)
+                {
+                    _settings.OnDeleteRequested -= HandleDeleteRequested;
+                }
+                if (_execution != null)
+                {
+                    _execution.OnStateChanged -= HandleExecutionStateChanged;
+                    _execution.OnTrainingProgress -= HandleTrainingProgress;
+                    _execution.OnTrainingCompleted -= HandleTrainingCompleted;
+                    _execution.OnTrainingCancelled -= HandleTrainingCancelled;
+                    _execution.OnInferenceCompleted -= HandleInferenceCompleted;
+                    _execution.OnError -= HandleExecutionError;
+                }
+                if (_results != null)
+                {
+                    _results.OnInferenceRequested -= HandleInferenceRequested;
+                    _results.OnStartRequested -= HandleTrainingStartRequested;
+                    _results.OnStopRequested -= HandleTrainingStopRequested;
                 }
             }
-            foreach (ModelBlockController block in _blocks)
-            {
-                if (block != null)
-                {
-                    block.OnGrabbed -= HandleBlockGrabbed;
-                    block.OnReleased -= HandleBlockReleased;
-                }
-            }
-            if (_workspace != null)
-            {
-                _workspace.OnChanged -= HandleWorkspaceChanged;
-                _workspace.Dispose();
-            }
+            _editing.OnChanged -= HandleWorkspaceChanged;
+            _editing.Dispose();
         }
     }
 }

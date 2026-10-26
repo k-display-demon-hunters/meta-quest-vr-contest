@@ -2997,7 +2997,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9d80d6a50b954e788d467a092d64c3db, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.BlockSettingsPopup
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.BlockSettings.BlockSettingsPopup
   _title: {fileID: 1303}
   _summary: {fileID: 1403}
   _closeButton: {fileID: 4504}

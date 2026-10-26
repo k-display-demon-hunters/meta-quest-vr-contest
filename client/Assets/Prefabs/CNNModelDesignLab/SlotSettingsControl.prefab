@@ -389,7 +389,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4c95f223205f4889aca3f14a029aa6e0, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.SlotSettingsController
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.Assembly.SlotSettingsController
   _interactable: {fileID: 1003}
   _body: {fileID: 1103}
   _label: {fileID: 1503}

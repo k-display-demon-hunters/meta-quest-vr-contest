@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e61fcf312166462795cfdd667b8deb07, type: 3}
   m_Name: LocalTrainingSettings
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.Execution.CnnTrainingSettings
   _trainingDataset: {fileID: 4900000, guid: 5a04c8f9769741b9855446a7af689444, type: 3}
   _testDataset: {fileID: 4900000, guid: f90a39b09e1d49f992eb79195aea5899, type: 3}
   _epochs: 3

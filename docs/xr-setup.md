@@ -89,7 +89,7 @@ Manager의 주요 Inspector 참조는 `_font`, `_parchmentFont`, `_parchmentSpri
 
 공장 수집 오브젝트는 `TabletManager.CollectParchment(index)`를 호출한다. Manager는 이를 `TabletParchmentController`에 위임하고, 인벤토리는 `ParchmentLesson.All`의 문서 데이터를 표시한다.
 
-`FactoryMapReader`가 `TabletMapData`를 만들어 `SetMapData()`로 전달하면 모든 미니맵이 다시 구성된다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지워서 이전 씬의 해제가 새 지도를 지우지 않게 한다. 공장 배치 판독 방식은 [공장 환경 구현](factory-environment.md)에 있다.
+`FactoryMapController`가 `TabletMapData`를 만들어 `SetMapData()`로 전달하면 모든 미니맵이 다시 구성된다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지워서 이전 씬의 해제가 새 지도를 지우지 않게 한다. 공장 배치 판독 방식은 [공장 환경 구현](factory-environment.md)에 있다.
 
 미니맵은 XZ 평면을 +Z 위쪽으로 투영한다. 주변 지도는 카메라를 따라가며, 전체 지도는 전체 범위를 표시한다. 위치·방향·수집 여부는 일정 간격으로 갱신하고 변경 시 그래픽을 다시 그린다.
 

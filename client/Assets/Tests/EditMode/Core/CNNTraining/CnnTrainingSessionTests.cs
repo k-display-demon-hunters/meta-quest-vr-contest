@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
-namespace CNNTraining.Tests
+namespace ModelDesignScene.Execution.Engine.Tests
 {
     public sealed class CnnTrainingSessionTests
     {
@@ -16,7 +16,7 @@ namespace CNNTraining.Tests
             using (CnnTrainingSession session = new CnnTrainingSession())
             {
                 double firstValidationLoss = double.NaN;
-                TrainingResult result = await WithDeadline(session.TrainAsync(
+                TrainingResult result = await WithDeadline(TrainAsync(session,
                     definition, CreateData(), options, progress =>
                     {
                         if (progress.Epoch == 1)
@@ -46,7 +46,7 @@ namespace CNNTraining.Tests
                     "Inference on another image must not modify learned weights.");
 
                 // Reversed labels make reuse observable: retaining the previous model cannot pass.
-                TrainingResult retrained = await WithDeadline(session.TrainAsync(
+                TrainingResult retrained = await WithDeadline(TrainAsync(session,
                     definition, CreateData(reverseLabels: true), options));
                 Assert.AreEqual(1d, retrained.Evaluation["accuracy"]);
                 InferenceResult newDark = await WithDeadline(session.InferAsync(CreateImage(0f), "new-dark"));
@@ -67,7 +67,7 @@ namespace CNNTraining.Tests
             using (ManualResetEventSlim releaseProgress = new ManualResetEventSlim(false))
             using (CnnTrainingSession session = new CnnTrainingSession())
             {
-                Task<TrainingResult> training = session.TrainAsync(definition, data, options, progress =>
+                Task<TrainingResult> training = TrainAsync(session, definition, data, options, progress =>
                 {
                     progressEntered.TrySetResult(true);
                     if (!releaseProgress.Wait(TimeSpan.FromSeconds(10)))
@@ -82,7 +82,7 @@ namespace CNNTraining.Tests
                     Assert.IsFalse(session.HasTrainedModel);
                     Assert.Throws<InvalidOperationException>(() =>
                     {
-                        session.TrainAsync(definition, data, options);
+                        TrainAsync(session, definition, data, options);
                     });
                     Assert.Throws<InvalidOperationException>(() =>
                     {
@@ -109,7 +109,7 @@ namespace CNNTraining.Tests
                         session.InferAsync(CreateImage(0f), "cancelled");
                     });
 
-                    TrainingResult reused = await WithDeadline(session.TrainAsync(
+                    TrainingResult reused = await WithDeadline(TrainAsync(session,
                         definition, data, new CnnTrainingOptions(epochs: 1, batchSize: 4)));
                     Assert.AreEqual(1, reused.Epoch);
                     Assert.IsTrue(session.HasTrainedModel);
@@ -129,6 +129,14 @@ namespace CNNTraining.Tests
                     }
                 }
             }
+        }
+
+        private static Task<TrainingResult> TrainAsync(CnnTrainingSession session,
+            ModelExecutionDefinition definition, TrainingData data, CnnTrainingOptions options,
+            Action<TrainingProgress> progress = null)
+        {
+            CnnTrainingRequest request = new CnnTrainingRequest(definition, data, options);
+            return session.TrainAsync(request, progress);
         }
 
         private static ModelExecutionDefinition CreateModel()

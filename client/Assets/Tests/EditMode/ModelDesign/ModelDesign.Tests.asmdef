@@ -1,6 +1,13 @@
 {
     "name": "ModelDesign.Tests",
-    "references": ["ModelDesign", "CNNTraining"],
-    "includePlatforms": ["Editor"],
-    "optionalUnityReferences": ["TestAssemblies"]
+    "references": [
+        "ModelDesign",
+        "CNNTraining"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
 }

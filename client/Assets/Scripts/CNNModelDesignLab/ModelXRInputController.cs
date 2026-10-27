@@ -40,12 +40,11 @@ namespace ModelDesignScene
             ReleaseInput();
         }
 
-        public bool CanActivateSlot(SlotSettingsController control, IXRActivateInteractor interactor)
+        internal Collider GetActivationHit(IXRActivateInteractor interactor)
         {
-            return _inputEnabled && isActiveAndEnabled && control != null &&
+            return _inputEnabled && isActiveAndEnabled &&
                 _rightRay != null && ReferenceEquals(interactor, _rightRay) && !_rightRay.hasSelection &&
-                TryGetRayCollider(out Collider collider) &&
-                collider.GetComponentInParent<SlotSettingsController>() == control;
+                TryGetRayCollider(out Collider collider) ? collider : null;
         }
 
         private void ReleaseInput()

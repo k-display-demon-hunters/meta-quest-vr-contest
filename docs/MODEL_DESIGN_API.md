@@ -15,7 +15,7 @@
 | `ModelXRInputController` | 씬의 XR 입력·슬롯 활성화 조건 |
 | `ModelSettingsController` / `BlockSettingsPopup` | 슬롯 팝업 수명, 레이어 설정 입력과 변경 |
 | `ModelExecutionController` | 설정·데이터 준비, 재사용하는 로컬 세션 소유, 실행·취소 요청, 메인 스레드 결과 전달, 종료된 실행 결과 차단 |
-| `CnnTrainingSettings` | 데이터 TextAsset 참조와 학습·자원 한도. `CreateOptions()`와 `LoadDataset()` 제공 |
+| `CnnTrainingSettings` | epoch·batch size·learning rate·seed를 `private const`로 관리하고 `CreateOptions()`로 실행 옵션 생성 |
 | `MnistDataset` | 바이너리 데이터 해석·정규화·학습/검증 분리 및 UI 샘플 ID 조회. `Data`는 엔진용 `TrainingData` |
 | `ModelResultsController` | 저장된 구성 검사·학습·예측 페이지, 시작·중지 버튼, 실행 상태와 학습 당시 구성 여부 표시 |
 | `ModelValidationController` | 구성 문제의 원인·수정 방법·실제 슬롯 위치와 이전/다음 문제 표시 |
@@ -36,21 +36,21 @@ Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 �
 
 점유 슬롯·슬롯 밖에 놓거나 잡기를 취소한 블록은 Workspace에서 제거하고 파괴한다. 미완성·잘못된 순서는 편집 상태로 보관할 수 있지만 학습 시작 전에 거절한다.
 
-설정 요청은 Manager가 잡기 상태와 `CanActivateSlot()`로 확인한다. 팝업은 해당 슬롯의 `Popup Anchor`에 하나만 열며 시점을 따라가지 않는다. 값 변경은 `LayerDefinition.Set*()`을 통해 재검증·표시 갱신으로 이어진다. 삭제는 슬롯 제거, 레이어 제거, 이벤트 해제, 블록 파괴 순이다. Input·Output은 삭제할 수 없다.
+설정 요청은 Manager가 잡기 상태와 `CanActivateSlot()`로 확인한다. 팝업은 해당 슬롯의 `Popup Anchor`에 하나만 열며 시점을 따라가지 않는다. 값 변경은 `LayerDefinition.Set*()`을 통해 변경 이벤트와 표시 갱신으로 이어진다. 편집 시 기존 구성 검사 결과를 초기화하며 재검증하지 않는다. 삭제는 슬롯 제거, 레이어 제거, 이벤트 해제, 블록 파괴 순이다. Input·Output은 삭제할 수 없다.
 
 ## 구성 검사와 결과 콘솔
 
-구성 검사·학습·숫자 예측 페이지는 `ModelResults.prefab`에 저장한다. Workspace 변경은 Manager가 모아 `LateUpdate()`에서 실행 정의와 자원 한도를 검사하고, 문제 안내와 학습 당시 모델의 변경 여부를 함께 갱신한다. 연결 해제·재연결 중간 상태는 표시하지 않는다.
+구성 검사·학습·숫자 예측 페이지는 `ModelControlPanel.prefab`에 저장한다. 모델 변경 시 `CNNModelDesignLabManager`는 기존 문제 목록을 비우고 검사 대기 상태로 바꾼다. `LateUpdate()`는 표시와 학습 당시 모델의 변경 여부만 갱신하며 모델 구조·자원 한도를 검사하지 않는다.
 
-학습 시작 시 즉시 다시 검사한다. 문제가 있으면 학습을 요청하지 않고 구성 검사 페이지에 초점을 맞춘다. 시작 버튼은 `구성 문제 확인하기`로 표시되며, 작업 중이나 블록을 잡는 동안에는 시작할 수 없다. 문제 위치는 모델 내부 레이어 참조를 실제 슬롯과 비교해 표시한다. 엔진의 모델 전체 자원 오류는 임의의 슬롯을 지목하지 않고 원문과 일반 수정 안내를 표시한다.
+학습 시작 요청 시 `ModelExecutionManager`가 실행 정의를 만들고 엔진 호출 전에 모델을 검사한다. 문제가 있으면 엔진에 학습을 요청하지 않고 구성 검사 페이지에 초점을 맞춘다. 첫 오류를 반환하며 시작 버튼은 `구성 문제 확인하기`로 표시된다. 작업 중이나 블록을 잡는 동안에는 시작할 수 없다. `ValidationIssue.SlotIndex`로 문제 슬롯을 표시하고, 모델 전체 문제는 임의의 슬롯을 지목하지 않는다.
 
-빈 모델도 로컬 CNN 실행 규칙에 따라 Conv2D가 필요하다는 문제로 표시한다. 순서·자원 검사 통과는 학습 성공이나 정확도를 보장하지 않는다. 실행 오류는 별도 스크롤 패널에 표시한다.
+빈 모델은 학습 시작 요청 시 Flatten이 필요하다는 문제로 거절한다. 구조 검사 통과는 학습 성공이나 정확도를 보장하지 않는다. 실행 오류는 별도 스크롤 패널에 표시한다.
 
 ## 로컬 학습·추론
 
-`ModelExecutionDefinitionBuilder.TryBuild()`가 Input부터 Output까지 연결된 블록을 값으로 복사하고 자원 한도를 검사한다. Conv2D로 시작하고 Dense 앞에는 명시적 Flatten이 필요하다. 고정 Output은 Dense 10·Softmax다. JSON 직렬화나 통신 요청은 없다.
+`ModelExecutionDefinitionBuilder.Build()`는 배치된 블록을 슬롯 순서대로 복사하고 고정 Output을 붙여 실행 정의와 슬롯 대응표를 만든다. 모델 구조와 데이터 입력 형태 검증은 별도의 `ModelExecutionValidator`가 담당하며, `ModelExecutionManager`가 엔진 호출 전에 실행한다. 개별 설정 범위는 Model의 `LayerLimits`에 맡기고 모델 전체 자원 한도는 적용하지 않는다. Dense 앞에는 명시적 Flatten이 필요하고 고정 Output은 Dense 10·Softmax다. JSON 직렬화나 통신 요청은 없다.
 
-`ModelExecutionController`는 설정 에셋으로 데이터를 준비하고 `CnnTrainingSession`을 재사용한다. 엔진은 하나의 스레드풀 작업에서 학습·검증·평가를 수행한다. 동시에 두 작업을 실행하지 않으며 씬은 진행·완료·취소·오류만 받아 UI를 갱신한다. 최종 평가 동안에도 `Training` 상태를 유지하고 실제 평가가 끝난 뒤 완료된다.
+`ModelExecutionManager`는 Dataset 모듈에서 받은 데이터와 `CnnTrainingSettings.CreateOptions()`의 고정 설정으로 실행을 준비한다. 같은 GameObject의 Controller는 `Awake()`에서 연결하며 Inspector 참조를 사용하지 않는다. 엔진은 재사용하는 세션의 스레드풀 작업 하나에서 학습·검증·평가를 수행한다. 동시에 두 작업을 실행하지 않으며 씬은 진행·완료·취소·오류만 받아 UI를 갱신한다. 최종 평가 동안에도 `Training` 상태를 유지하고 실제 평가가 끝난 뒤 완료된다.
 
 진행 지표는 epoch별 실제 학습·검증 loss/accuracy이며 완료 결과에는 별도 test 부분집합 평가가 있다. 취소·오류·평가 미완료를 성공이나 공장 엔딩 조건 충족으로 표시하지 않는다.
 
@@ -70,13 +70,15 @@ Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 �
 | `ModelConveyor.prefab` | 슬롯·설정 조작기기·Input/Output |
 | `SlotSettingsControl.prefab` | 설정 Controller와 `Popup Anchor` |
 | `ModelResults.prefab` | 구성 검사·학습·예측 UI와 Controller, 시작·중지 버튼, `Samples` 참조 |
-| 씬 `ModelExecutionController._trainingSettings` | `Settings/CNNModelDesignLab/LocalTrainingSettings.asset` |
+| `ModelExecutionManager` → `ModelExecutionController` | 같은 GameObject에서 `GetComponent`로 연결 |
 
 벨트의 `Block Anchors`에 저장된 슬롯 위치·방향을 사용한다. `Slot Visuals Root`와 `Settings Controls Root`의 자식 순서는 앵커 순서와 일치해야 한다. 각 앵커의 로컬 좌표와 `Placement Half Extents`로 배치를 판정하며 실행 중 슬롯 수 변경은 지원하지 않는다.
 
 공용 오른손 입력은 `Scripts/Core/XR/XRPlayerInputController.cs`가 담당하고 모델 씬은 레이 적중 여부를 검사한다. 서버 주소 설정은 필요하지 않다.
 
-## 순수 편집 모델 API
+## 이전 편집 모델 API (보관)
+
+아래 Workspace 기반 API와 편집 시 재검증 설명은 이전 구현의 기록이다. 현재 슬롯 기반 `ModelDefinition`에는 적용되지 않는다. 현재 모델 검증은 `Execution/ModelExecutionValidator.cs`에서 담당하며, 학습 시작 요청을 받은 Manager가 엔진 호출 전에 수행한다.
 
 `ModelDesign` 어셈블리는 Unity API를 참조하지 않으며 `CNNTraining`의 공개 정의만 참조한다. 엔진에서 편집 모델로의 역참조는 없다.
 

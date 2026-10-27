@@ -1,6 +1,12 @@
 {
     "name": "CNNTraining.Tests",
-    "references": ["CNNTraining"],
-    "includePlatforms": ["Editor"],
-    "optionalUnityReferences": ["TestAssemblies"]
+    "references": [
+        "CNNTraining"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
 }

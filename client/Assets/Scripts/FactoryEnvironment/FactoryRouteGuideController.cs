@@ -4,42 +4,37 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryRouteGuideController : MonoBehaviour
     {
-        [SerializeField] private GameObject[] _routes;
-        private int _destination = -1;
+        private FactoryNavigationData _navigationData;
+        private FactoryDestinationId _destination = FactoryDestinationId.None;
 
-        public void Bind(Transform player)
+        public FactoryNavigationData NavigationData => _navigationData;
+
+        private void Awake()
         {
-            _destination = -1;
-            if (_routes == null || _routes.Length != 4)
+            _navigationData = GetComponentInParent<FactoryNavigationData>();
+        }
+
+        private void Start()
+        {
+            foreach (FactoryNavigationData.DestinationData data in _navigationData.Destinations)
             {
-                Debug.LogError("[FactoryRoute] 네 개의 고정 바닥 경로를 연결해 주세요.", this);
-                return;
-            }
-            foreach (GameObject route in _routes)
-            {
-                if (route != null)
-                {
-                    route.SetActive(false);
-                }
+                data.Route.SetActive(data.Id == _destination);
             }
         }
 
-        public void SetDestination(int destination)
+        public void SetDestination(FactoryDestinationId destination)
         {
-            if (_routes == null || destination == _destination)
+            if (destination == _destination)
             {
                 return;
             }
             _destination = destination;
-            for (int index = 0; index < _routes.Length; index++)
+            foreach (FactoryNavigationData.DestinationData data in _navigationData.Destinations)
             {
-                if (_routes[index] != null)
-                {
-                    _routes[index].SetActive(index == destination);
-                }
+                data.Route.SetActive(data.Id == _destination);
             }
         }
 
-        private void OnDisable() => SetDestination(-1);
+        private void OnDisable() => SetDestination(FactoryDestinationId.None);
     }
 }

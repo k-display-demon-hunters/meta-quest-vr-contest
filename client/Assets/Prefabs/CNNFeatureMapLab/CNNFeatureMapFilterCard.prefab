@@ -8,6 +8,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 810002000}
   - component: {fileID: 800000282}
   m_Layer: 0
   m_Name: CNNFeatureMapFilterCard
@@ -62,7 +63,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.35, y: 0.97, z: 2.75}
-  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_LocalScale: {x: 0.046130439, y: 0.046130439, z: 0.046130439}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 800000282}
@@ -159,7 +160,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.35, y: 0.78, z: 2.75}
-  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_LocalScale: {x: 0.053125, y: 0.053125, z: 0.053125}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 800000282}
@@ -256,7 +257,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.35, y: 0.57, z: 2.75}
-  m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_LocalScale: {x: 0.03587923, y: 0.03587923, z: 0.03587923}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 800000282}
@@ -325,3 +326,17 @@ TextMesh:
   m_RichText: 1
   m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   m_Color: {r: 0.85, g: 0.95, b: 0.96, a: 1}
+--- !u!114 &810002000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800000281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e27c26b1fcc44cb09deabaa1b966f78c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _filterName: {fileID: 800000286}
+  _weights: {fileID: 800000290}

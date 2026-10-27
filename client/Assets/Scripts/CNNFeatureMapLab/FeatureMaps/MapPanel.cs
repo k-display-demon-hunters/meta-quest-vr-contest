@@ -7,19 +7,19 @@ namespace CNNFeatureMaps.FeatureMaps
         [SerializeField] private Renderer _surface;
         [SerializeField] private int _channel;
         private int _layer = -1;
-        private MapNode[] _nodes;
+        private MapCell[] _nodes;
         private bool _extracted;
         public bool IsExtracted => _extracted;
         public int Layer => _layer;
         public int Channel => _channel;
-        public System.Collections.Generic.IReadOnlyList<MapNode> Nodes => _nodes;
+        public System.Collections.Generic.IReadOnlyList<MapCell> Nodes => _nodes;
 
         public void Initialize(CNNFeatureMapLabManager scene)
         {
             MapLayer layer = GetComponentInParent<MapLayer>();
             _layer = layer != null ? layer.Index : -1;
-            _nodes = GetComponentsInChildren<MapNode>(true);
-            foreach (MapNode node in _nodes)
+            _nodes = GetComponentsInChildren<MapCell>(true);
+            foreach (MapCell node in _nodes)
             {
                 node.Initialize(scene, _layer, _channel);
             }

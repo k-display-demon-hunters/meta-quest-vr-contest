@@ -6,8 +6,30 @@ namespace CNNFeatureMaps.Interaction
     public sealed class InteractionController
     {
         private readonly List<GrabTarget> _heldTargets = new List<GrabTarget>();
+        private GrabTarget[] _targets;
         private GrabTarget _scaleTarget;
         public bool HasHeldTargets => _heldTargets.Count > 0;
+
+        public void Initialize(Transform root)
+        {
+            _targets = root.GetComponentsInChildren<GrabTarget>(true);
+            foreach (GrabTarget target in _targets)
+            {
+                target.Initialize(this);
+            }
+        }
+
+        public void ResetPoses()
+        {
+            if (HasHeldTargets)
+            {
+                return;
+            }
+            foreach (GrabTarget target in _targets)
+            {
+                target.ResetPose();
+            }
+        }
 
         public bool CanGrab(GrabTarget candidate)
         {

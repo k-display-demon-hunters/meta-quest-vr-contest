@@ -1,3 +1,4 @@
+using CNNFeatureMaps.Interaction;
 using UnityEngine;
 
 namespace CNNFeatureMaps.FeatureMaps
@@ -7,16 +8,16 @@ namespace CNNFeatureMaps.FeatureMaps
         [SerializeField] private MapPanel[] _maps;
         [SerializeField] private int _layerIndex;
         [SerializeField] private float _spreadSpacing = .64f;
-        private CNNFeatureMapLabManager _scene;
+        private InteractionController _interaction;
         private Vector3[] _stackPositions;
         private bool _expanded;
         private bool _animating;
         public bool IsExpanded => _expanded;
         public int Index => _layerIndex;
 
-        public void Initialize(CNNFeatureMapLabManager scene)
+        public void Initialize(InteractionController interaction)
         {
-            _scene = scene;
+            _interaction = interaction;
         }
 
         private void Awake()
@@ -44,7 +45,7 @@ namespace CNNFeatureMaps.FeatureMaps
                 {
                     continue;
                 }
-                if (_scene.HasHeldDescendant(map.transform))
+                if (_interaction.HasHeldDescendant(map.transform))
                 {
                     settled = false;
                     continue;

@@ -1,4 +1,4 @@
-namespace CNNFeatureMaps.Lesson
+namespace CNNFeatureMaps
 {
     public enum LessonStep
     {

@@ -1,16 +1,18 @@
+using System.Collections.Generic;
 using CNNFeatureMaps.FeatureMaps;
 using UnityEngine;
 
 namespace CNNFeatureMaps.Interaction
 {
-    public sealed class FilterController
+    public sealed class FilterController : MonoBehaviour
     {
         private const float CellSpacing = .066f;
-        private readonly Transform _inputRoot;
-        private readonly GrabTarget _filter;
-        private readonly Rigidbody _body;
-        private readonly LineRenderer _connection;
-        private readonly MapNode[,,] _firstNodes = new MapNode[2, 8, 8];
+        [SerializeField] private GrabTarget _filter;
+        [SerializeField] private Material _toolMaterial;
+        private Transform _inputRoot;
+        private Rigidbody _body;
+        private LineRenderer _connection;
+        private readonly MapCell[,,] _firstNodes = new MapCell[2, 8, 8];
         private int _scanIndex;
         private float _nextScan;
 
@@ -18,13 +20,11 @@ namespace CNNFeatureMaps.Interaction
         public int Column { get; private set; } = 3;
         public bool IsScanning { get; private set; }
 
-        public FilterController(Transform parent, Transform inputRoot,
-            GrabTarget filter, Material material, MapNode[] nodes)
+        public void Initialize(Transform inputRoot, IReadOnlyList<MapCell> nodes)
         {
             _inputRoot = inputRoot;
-            _filter = filter;
-            _body = filter.GetComponent<Rigidbody>();
-            foreach (MapNode node in nodes)
+            _body = _filter.GetComponent<Rigidbody>();
+            foreach (MapCell node in nodes)
             {
                 if (node.Layer == 0)
                 {
@@ -32,9 +32,9 @@ namespace CNNFeatureMaps.Interaction
                 }
             }
             GameObject connection = new GameObject("Patch to output neuron");
-            connection.transform.SetParent(parent, false);
+            connection.transform.SetParent(transform, false);
             _connection = connection.AddComponent<LineRenderer>();
-            _connection.sharedMaterial = material;
+            _connection.sharedMaterial = _toolMaterial;
             _connection.positionCount = 2;
             _connection.useWorldSpace = true;
             _connection.startWidth = .006f;

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CNNFeatureMaps.FeatureMaps
 {
     [RequireComponent(typeof(Renderer))]
-    public sealed class MapNode : MonoBehaviour
+    public sealed class MapCell : MonoBehaviour
     {
         private CNNFeatureMapLabManager _scene;
         private int _layer = -1;
@@ -42,7 +42,7 @@ namespace CNNFeatureMaps.FeatureMaps
             _spotlight = spotlight;
         }
 
-        public void RefreshAppearance(ExampleData data)
+        public void RefreshAppearance(ConvolutionSimulation data)
         {
             float value = data.ReadValue(_layer, _channel, _row, _column);
             Color color = _layer < 0 ? new Color(value, value, value) :

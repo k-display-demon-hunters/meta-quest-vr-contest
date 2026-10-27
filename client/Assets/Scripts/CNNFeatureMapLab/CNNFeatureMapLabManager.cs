@@ -8,70 +8,57 @@ namespace CNNFeatureMaps
     [DefaultExecutionOrder(-100)]
     public sealed class CNNFeatureMapLabManager : MonoBehaviour
     {
-        [SerializeField] private Texture2D _inputImage;
-        [SerializeField] private Renderer[] _outputs;
-        private MapNode[] _nodes;
-        private MapPanel[] _panels;
+        [SerializeField] private InputMapController _inputMap;
+        [SerializeField] private MapDisplayController _display;
+        [SerializeField] private FilterController _filter;
+        [SerializeField] private LessonUIManager _lessonUI;
         private readonly InteractionController _interaction = new InteractionController();
-        private MapDisplayController _display;
-        private GrabTarget[] _targets;
-        private MapLayer[] _layers;
-        private ExampleData _data;
+        private ConvolutionSimulation _data;
         private bool _ready;
-        private LessonGuide _guide;
-        private FilterController _filter;
         private readonly bool[,,] _visited = new bool[2, 8, 8];
         private LessonStep _step = LessonStep.BuildFeatureMap;
         private int _channel;
-        private int _spreadLayer;
         private int _editCount;
         private bool _lastStepSkipped;
         public bool HasHeldTargets => _interaction.HasHeldTargets;
-        public ExampleData Data => _data;
-        public bool ReadyForModelDesign => _ready && _guide != null && _step == LessonStep.EditInput
+        public ConvolutionSimulation Data => _data;
+        public bool ReadyForModelDesign => _ready && _step == LessonStep.EditInput
             && (_editCount > 0 || _lastStepSkipped) && !HasHeldTargets;
         private bool IsFilterStep => _step == LessonStep.BuildFeatureMap || _step == LessonStep.CompareFilters;
 
         private void Awake()
         {
-            // Prefab parts own their local references; the workspace supplies session context.
-            _nodes = GetComponentsInChildren<MapNode>(true);
-            _panels = GetComponentsInChildren<MapPanel>(true);
-            _targets = GetComponentsInChildren<GrabTarget>(true);
-            _layers = GetComponentsInChildren<MapLayer>(true);
-            _display = new MapDisplayController(_nodes, _outputs);
-            foreach (MapPanel panel in _panels)
-            {
-                panel.Initialize(this);
-            }
-            foreach (GrabTarget target in _targets)
-            {
-                target.Initialize(this);
-            }
-            foreach (MapLayer layer in _layers)
-            {
-                layer.Initialize(this);
-            }
+            // Wire interaction before child grab components begin receiving XR events.
+            _interaction.Initialize(transform);
+            _display.Initialize(this, _interaction);
+        }
+
+        private void OnEnable()
+        {
+            _lessonUI.OnActionRequested += Perform;
+        }
+
+        private void OnDisable()
+        {
+            _lessonUI.OnActionRequested -= Perform;
         }
 
         private void Start()
         {
-            if (_inputImage == null || !_inputImage.isReadable || _inputImage.width != 8 || _inputImage.height != 8)
+            if (_inputMap == null)
             {
-                Debug.LogError("CNNFeatureMapLabManager requires the readable 8 x 8 sample image.", this);
+                Debug.LogError("CNNFeatureMapLabManager requires an InputMapController.", this);
                 return;
             }
-            _data = new ExampleData(_inputImage);
-            _ready = true;
-            _guide = GetComponent<LessonGuide>();
-            RefreshAppearance(false);
-            if (_guide != null)
+            if (!_inputMap.TryReadInput(out float[,] input))
             {
-                _guide.Initialize(this);
-                _filter = new FilterController(transform, _guide.InputRoot,
-                    _guide.Filter, _guide.ToolMaterial, _nodes);
-                ApplyStep();
+                return;
             }
+            _data = new ConvolutionSimulation(input);
+            _ready = true;
+            RefreshAppearance(false);
+            _filter.Initialize(_inputMap.transform, _display.Cells);
+            ApplyStep();
         }
 
         private void LateUpdate()
@@ -103,11 +90,6 @@ namespace CNNFeatureMaps
             {
                 return;
             }
-            if (_guide == null)
-            {
-                SelectReceptiveField(row, column);
-                return;
-            }
             switch (_step)
             {
                 case LessonStep.BuildFeatureMap:
@@ -125,13 +107,13 @@ namespace CNNFeatureMaps
 
         public void Perform(LessonAction action)
         {
-            if (!_ready || _guide == null)
+            if (!_ready)
             {
                 return;
             }
             if (HasHeldTargets)
             {
-                _guide.ShowReleaseBeforeAction();
+                _lessonUI.ShowReleaseBeforeAction();
                 return;
             }
             switch (action)
@@ -151,7 +133,8 @@ namespace CNNFeatureMaps
                     ApplyStep();
                     break;
                 case LessonAction.Spread:
-                    SpreadNextLayer();
+                    _display.SpreadNextLayer(_step == LessonStep.CompareFilters);
+                    UpdateButtons();
                     break;
                 case LessonAction.Restore:
                     RestoreLesson();
@@ -161,40 +144,10 @@ namespace CNNFeatureMaps
                     float multiplier = action == LessonAction.Enlarge ? 1.2f : 1f / 1.2f;
                     if (!_interaction.ScaleSelectedTarget(multiplier))
                     {
-                        _guide.ShowSelectScaleTarget();
+                        _lessonUI.ShowSelectScaleTarget();
                     }
                     break;
             }
-        }
-
-        public bool CanGrab(GrabTarget candidate)
-        {
-            return _interaction.CanGrab(candidate);
-        }
-
-        public bool HasHeldDescendant(Transform ancestor)
-        {
-            return _interaction.HasHeldDescendant(ancestor);
-        }
-
-        public void HoldTarget(GrabTarget target)
-        {
-            _interaction.HoldTarget(target);
-        }
-
-        public void ReleaseTarget(GrabTarget target)
-        {
-            _interaction.ReleaseTarget(target);
-        }
-
-        public void SelectScaleTarget(GrabTarget target)
-        {
-            _interaction.SelectScaleTarget(target);
-        }
-
-        public bool ScaleSelectedTarget(float multiplier)
-        {
-            return _interaction.ScaleSelectedTarget(multiplier);
         }
 
         public void ResetLayout()
@@ -203,20 +156,11 @@ namespace CNNFeatureMaps
             {
                 return;
             }
-            foreach (MapLayer layer in _layers)
-            {
-                layer.Collapse();
-            }
-            foreach (GrabTarget target in _targets)
-            {
-                target.ResetPose();
-            }
+            _display.ResetLayout();
+            _interaction.ResetPoses();
             _data.SelectPixel(-1, -1);
             RefreshAppearance(false);
-            if (_guide != null)
-            {
-                ApplyStep();
-            }
+            ApplyStep();
         }
 
         public void RefreshMaps()
@@ -259,7 +203,7 @@ namespace CNNFeatureMaps
                     break;
                 case LessonStep.EditInput:
                     _lastStepSkipped = _editCount == 0;
-                    _guide.ShowStepFinished(_lastStepSkipped);
+                    _lessonUI.ShowStepFinished(_lastStepSkipped);
                     return;
             }
             ApplyStep();
@@ -268,29 +212,17 @@ namespace CNNFeatureMaps
         private void ApplyStep()
         {
             _filter.StopScanning();
-            _spreadLayer = 0;
-            foreach (MapLayer layer in _layers)
-            {
-                if (layer.IsExpanded)
-                {
-                    layer.ToggleSpread();
-                }
-            }
             _data.SelectPixel(-1, -1);
-            _display.UpdateStepVisibility(_step, _channel, _guide.LayerRoots, _guide.OutputRoots, _panels);
-            _guide.ShowStep(_step, _channel);
+            _display.UpdateStepVisibility(_step, _channel);
+            _display.ApplyStepLayout(_step == LessonStep.CompareFilters);
+            _lessonUI.ShowLesson(_step, _channel, _display.NextSpreadLayer, _filter.IsScanning);
             _filter.SetVisible(IsFilterStep);
-            if (_step == LessonStep.CompareFilters && !_layers[0].IsExpanded)
-            {
-                _layers[0].ToggleSpread();
-            }
             UpdateNodeStates();
             RefreshAppearance(false);
             if (IsFilterStep)
             {
                 ApplyPatch();
             }
-            UpdateButtons();
         }
 
         // 1·2단계는 같은 필터 위치 선택과 방문 기록을 사용한다.
@@ -321,19 +253,14 @@ namespace CNNFeatureMaps
                     }
                 }
             }
-            _guide.ShowPatch(row, column, _data.ReadFirstLayerSum(_channel, row, column),
+            _lessonUI.ShowPatch(row, column, _data.ReadFirstLayerSum(_channel, row, column),
                 _data.ReadValue(0, _channel, row, column), count);
         }
 
         private void SelectReceptiveField(int row, int column)
         {
-            if (_guide != null)
-            {
-                int affectedRows = Mathf.Min(7, row + 1) - Mathf.Max(0, row - 1) + 1;
-                int affectedColumns = Mathf.Min(7, column + 1) - Mathf.Max(0, column - 1) + 1;
-                _guide.ShowAffectedPixel(row, column, affectedRows * affectedColumns);
-            }
             _data.SelectPixel(row, column);
+            _lessonUI.ShowAffectedPixel(row, column, _data.CountAffectedPositions(0));
             RefreshAppearance(true);
         }
 
@@ -343,29 +270,19 @@ namespace CNNFeatureMaps
             _data.SelectPixel(row, column);
             _editCount++;
             RefreshAppearance(false);
-            _guide.ShowInputEdited(_editCount);
-        }
-
-        private void SpreadNextLayer()
-        {
-            for (int index = 0; index < _layers.Length; index++)
-            {
-                bool expand = index == _spreadLayer;
-                if (_layers[index].gameObject.activeInHierarchy && _layers[index].IsExpanded != expand)
-                {
-                    _layers[index].ToggleSpread();
-                }
-            }
-            _spreadLayer = (_spreadLayer + 1) % (_step == LessonStep.CompareFilters ? 1 : _layers.Length);
-            UpdateButtons();
+            _lessonUI.ShowInputEdited(_editCount);
         }
 
         private void RestoreLesson()
         {
+            if (!_inputMap.TryReadInput(out float[,] input))
+            {
+                return;
+            }
+            _data.RestoreInput(input);
             System.Array.Clear(_visited, 0, _visited.Length);
             _editCount = 0;
             _lastStepSkipped = false;
-            _data.RestoreInput(_inputImage);
             ResetLayout();
         }
 
@@ -376,7 +293,7 @@ namespace CNNFeatureMaps
 
         private void UpdateButtons()
         {
-            _guide.UpdateButtons(_step, _spreadLayer, _filter.IsScanning);
+            _lessonUI.UpdateButtons(_step, _display.NextSpreadLayer, _filter.IsScanning);
         }
 
         private void RefreshAppearance(bool hasSelection)

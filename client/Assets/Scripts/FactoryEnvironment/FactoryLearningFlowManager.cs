@@ -1,6 +1,5 @@
 using System.Collections;
 using CNNFeatureMaps;
-using CNNFeatureMaps.Lesson;
 using FactoryTutorial;
 using ModelDesignScene;
 using Tablet;
@@ -39,7 +38,7 @@ namespace FactoryEnvironment
         private string _lastMission;
         private int _lastProgress = -1;
         private CNNPixelLabManager _pixels;
-        private LessonGuide _maps;
+        private CNNFeatureMapLabManager _maps;
         private CNNModelDesignLabManager _model;
         private XRBaseInteractor[] _interactors;
         private FactoryAreaEntryController _failedArea;
@@ -403,7 +402,7 @@ namespace FactoryEnvironment
             }
             _lesson = incoming;
             _pixels = nextPixels;
-            _maps = content.GetComponentInChildren<LessonGuide>(true);
+            _maps = content.GetComponentInChildren<CNNFeatureMapLabManager>(true);
             _model = content.GetComponentInChildren<CNNModelDesignLabManager>(true);
             _stage = index;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

@@ -15,10 +15,10 @@ namespace CNNFeatureMaps.Interaction
         [SerializeField] private GrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
         [SerializeField] private bool _isFilter;
-        private CNNFeatureMapLabManager _scene;
+        private InteractionController _interaction;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
-        private MapNode _node;
+        private MapCell _node;
         private MapPanel _panel;
         private MapLayer _layer;
         private Vector3 _homePosition;
@@ -32,9 +32,9 @@ namespace CNNFeatureMaps.Interaction
         internal Collider[] GrabColliders => _grabColliders;
         public bool canProcess => isActiveAndEnabled;
 
-        public void Initialize(CNNFeatureMapLabManager scene)
+        public void Initialize(InteractionController interaction)
         {
-            _scene = scene;
+            _interaction = interaction;
         }
 
         private void Awake()
@@ -42,7 +42,7 @@ namespace CNNFeatureMaps.Interaction
             _homePosition = transform.localPosition;
             _homeRotation = transform.localRotation;
             _homeScale = transform.localScale;
-            _node = GetComponent<MapNode>();
+            _node = GetComponent<MapCell>();
             _panel = GetComponent<MapPanel>();
             _layer = GetComponent<MapLayer>();
             _body = GetComponent<Rigidbody>();
@@ -72,7 +72,7 @@ namespace CNNFeatureMaps.Interaction
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
         {
-            return _scene.CanGrab(this);
+            return _interaction.CanGrab(this);
         }
 
         public void ScaleBy(float multiplier)
@@ -117,7 +117,7 @@ namespace CNNFeatureMaps.Interaction
 
         private void BeginInteraction()
         {
-            _scene.HoldTarget(this);
+            _interaction.HoldTarget(this);
             if (_panel != null)
             {
                 _panel.Extract();
@@ -129,10 +129,10 @@ namespace CNNFeatureMaps.Interaction
         }
 
         private void HandleSelect(SelectEnterEventArgs args) => BeginInteraction();
-        private void HandleRelease(SelectExitEventArgs args) => _scene.ReleaseTarget(this);
+        private void HandleRelease(SelectExitEventArgs args) => _interaction.ReleaseTarget(this);
         private void HandleActivate(ActivateEventArgs args)
         {
-            _scene.SelectScaleTarget(this);
+            _interaction.SelectScaleTarget(this);
             if (_node != null)
             {
                 _node.SelectPixel();
@@ -145,7 +145,7 @@ namespace CNNFeatureMaps.Interaction
             _grab.selectEntered.RemoveListener(HandleSelect);
             _grab.selectExited.RemoveListener(HandleRelease);
             _grab.activated.RemoveListener(HandleActivate);
-            _scene.ReleaseTarget(this);
+            _interaction.ReleaseTarget(this);
         }
     }
 }

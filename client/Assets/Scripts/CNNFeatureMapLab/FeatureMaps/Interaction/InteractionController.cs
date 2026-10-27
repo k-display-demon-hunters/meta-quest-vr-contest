@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CNNFeatureMaps.Interaction
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
     public sealed class InteractionController
     {
@@ -9,6 +9,9 @@ namespace CNNFeatureMaps.Interaction
         private GrabTarget[] _targets;
         private GrabTarget _scaleTarget;
         public bool HasHeldTargets => _heldTargets.Count > 0;
+
+        public event System.Action<Transform> OnTargetHeld;
+        public event System.Action<Transform> OnTargetActivated;
 
         public void Initialize(Transform root)
         {
@@ -19,16 +22,17 @@ namespace CNNFeatureMaps.Interaction
             }
         }
 
-        public void ResetPoses()
+        public bool ResetPoses()
         {
             if (HasHeldTargets)
             {
-                return;
+                return false;
             }
             foreach (GrabTarget target in _targets)
             {
                 target.ResetPose();
             }
+            return true;
         }
 
         public bool CanGrab(GrabTarget candidate)
@@ -60,7 +64,14 @@ namespace CNNFeatureMaps.Interaction
             if (!_heldTargets.Contains(target))
             {
                 _heldTargets.Add(target);
+                OnTargetHeld?.Invoke(target.transform);
             }
+        }
+
+        public void ActivateTarget(GrabTarget target)
+        {
+            SelectScaleTarget(target);
+            OnTargetActivated?.Invoke(target.transform);
         }
 
         public void ReleaseTarget(GrabTarget target)

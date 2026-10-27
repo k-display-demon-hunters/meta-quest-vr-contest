@@ -8,28 +8,10 @@ namespace CNNFeatureMaps.Lesson
         [SerializeField] private TextMesh _instruction;
         [SerializeField] private TextMesh _readout;
 
-        public void ShowStep(LessonStep step)
+        public void ShowContent(LessonContent content)
         {
-            bool isFilterStep = step == LessonStep.BuildFeatureMap || step == LessonStep.CompareFilters;
-            LessonContent content;
-            switch (step)
-            {
-                case LessonStep.BuildFeatureMap:
-                    content = LessonContent.BuildFeatureMap;
-                    break;
-                case LessonStep.CompareFilters:
-                    content = LessonContent.CompareFilters;
-                    break;
-                case LessonStep.TraceReceptiveField:
-                    content = LessonContent.TraceReceptiveField;
-                    break;
-                case LessonStep.EditInput:
-                    content = LessonContent.EditInput;
-                    break;
-                default:
-                    throw new System.ArgumentOutOfRangeException(nameof(step), step, null);
-            }
-            if (!isFilterStep)
+            // Filter steps supply their readout through ShowPatch after the base UI is shown.
+            if (content.Readout != null)
             {
                 _readout.text = content.Readout;
             }

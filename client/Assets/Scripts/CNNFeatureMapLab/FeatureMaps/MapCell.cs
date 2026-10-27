@@ -5,7 +5,6 @@ namespace CNNFeatureMaps.FeatureMaps
     [RequireComponent(typeof(Renderer))]
     public sealed class MapCell : MonoBehaviour
     {
-        private CNNFeatureMapLabManager _scene;
         private int _layer = -1;
         private int _channel;
         [SerializeField] private int _row;
@@ -22,9 +21,8 @@ namespace CNNFeatureMaps.FeatureMaps
         public int Row => _row;
         public int Column => _column;
 
-        public void Initialize(CNNFeatureMapLabManager scene, int layer, int channel)
+        public void Initialize(int layer, int channel)
         {
-            _scene = scene;
             _layer = layer;
             _channel = channel;
         }
@@ -76,14 +74,6 @@ namespace CNNFeatureMaps.FeatureMaps
         {
             IsDetached = false;
             _renderer.enabled = true;
-        }
-
-        public void SelectPixel()
-        {
-            if (_layer < 0)
-            {
-                _scene.SelectPixel(_row, _column);
-            }
         }
     }
 }

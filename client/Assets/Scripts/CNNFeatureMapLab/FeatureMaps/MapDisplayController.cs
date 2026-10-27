@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using CNNFeatureMaps.Interaction;
 using UnityEngine;
 
 namespace CNNFeatureMaps.FeatureMaps
@@ -17,19 +17,19 @@ namespace CNNFeatureMaps.FeatureMaps
         public IReadOnlyList<MapCell> Cells => _nodes;
         public int NextSpreadLayer => _spreadLayer;
 
-        public void Initialize(CNNFeatureMapLabManager scene, InteractionController interaction)
+        public void Initialize(Func<Transform, bool> hasHeldDescendant)
         {
             _nodes = GetComponentsInChildren<MapCell>(true);
             _panels = GetComponentsInChildren<MapPanel>(true);
             foreach (MapPanel panel in _panels)
             {
-                panel.Initialize(scene);
+                panel.Initialize();
             }
             _layers = new MapLayer[_layerRoots.Length];
             for (int index = 0; index < _layerRoots.Length; index++)
             {
                 _layers[index] = _layerRoots[index].GetComponent<MapLayer>();
-                _layers[index].Initialize(interaction);
+                _layers[index].Initialize(hasHeldDescendant);
             }
         }
 
@@ -93,6 +93,18 @@ namespace CNNFeatureMaps.FeatureMaps
             foreach (MapLayer layer in _layers)
             {
                 layer.Collapse();
+            }
+        }
+
+        public void ResetExtractedStates()
+        {
+            foreach (MapCell node in _nodes)
+            {
+                node.ReturnToGrid();
+            }
+            foreach (MapPanel panel in _panels)
+            {
+                panel.ReturnToStack();
             }
         }
 

@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 10005}
   - component: {fileID: 810004000}
   - component: {fileID: 810006000}
+  - component: {fileID: 810007000}
+  - component: {fileID: 810008000}
   m_Layer: 0
   m_Name: CNNFeatureMapWorkspace
   m_TagString: Untagged
@@ -55,10 +57,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e7ca3b82fb846539cc401edafe0e280, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _featureMaps: {fileID: 810007000}
+  _lessonUI: {fileID: 810006000}
+--- !u!114 &810007000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 10001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b45b98906eca4839a02133b0366a7f29, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   _inputMap: {fileID: 810003000}
   _display: {fileID: 810004000}
+  _interaction: {fileID: 810008000}
+--- !u!114 &810008000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 10001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d558328ec299429f926d04fdb06099d0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   _filter: {fileID: 810005000}
-  _lessonUI: {fileID: 810006000}
 --- !u!114 &810006000
 MonoBehaviour:
   m_ObjectHideFlags: 0

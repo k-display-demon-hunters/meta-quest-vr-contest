@@ -6,19 +6,18 @@ namespace CNNFeatureMaps.FeatureMaps
     {
         [SerializeField] private Texture2D _inputImage;
 
-        public bool TryReadInput(out float[,] input)
+        public float[,] ReadInput()
         {
-            input = null;
             int size = ConvolutionSimulation.Size;
             if (_inputImage == null || !_inputImage.isReadable ||
                 _inputImage.width != size || _inputImage.height != size)
             {
                 Debug.LogError($"InputMapController requires a readable {size} x {size} input image.", this);
-                return false;
+                return null;
             }
 
             Color[] pixels = _inputImage.GetPixels();
-            input = new float[size, size];
+            float[,] input = new float[size, size];
             for (int row = 0; row < size; row++)
             {
                 for (int column = 0; column < size; column++)
@@ -27,7 +26,7 @@ namespace CNNFeatureMaps.FeatureMaps
                     input[row, column] = pixels[(size - 1 - row) * size + column].grayscale;
                 }
             }
-            return true;
+            return input;
         }
     }
 }

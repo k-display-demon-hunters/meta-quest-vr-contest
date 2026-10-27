@@ -1,11 +1,10 @@
-using CNNFeatureMaps.FeatureMaps;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace CNNFeatureMaps.Interaction
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
     public enum GrabKind { Node, Map, Layer }
 
@@ -18,9 +17,6 @@ namespace CNNFeatureMaps.Interaction
         private InteractionController _interaction;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
-        private MapCell _node;
-        private MapPanel _panel;
-        private MapLayer _layer;
         private Vector3 _homePosition;
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
@@ -42,9 +38,6 @@ namespace CNNFeatureMaps.Interaction
             _homePosition = transform.localPosition;
             _homeRotation = transform.localRotation;
             _homeScale = transform.localScale;
-            _node = GetComponent<MapCell>();
-            _panel = GetComponent<MapPanel>();
-            _layer = GetComponent<MapLayer>();
             _body = GetComponent<Rigidbody>();
             _body.isKinematic = true;
             _body.useGravity = false;
@@ -85,14 +78,6 @@ namespace CNNFeatureMaps.Interaction
             transform.localScale = _homeScale * _scaleFactor;
         }
 
-        public void ToggleSpread()
-        {
-            if (_layer != null)
-            {
-                _layer.ToggleSpread();
-            }
-        }
-
         public void ResetPose()
         {
             if (IsHeld)
@@ -105,40 +90,11 @@ namespace CNNFeatureMaps.Interaction
             _body.position = transform.position;
             _body.rotation = transform.rotation;
             _scaleFactor = 1f;
-            if (_node != null)
-            {
-                _node.ReturnToGrid();
-            }
-            if (_panel != null)
-            {
-                _panel.ReturnToStack();
-            }
         }
 
-        private void BeginInteraction()
-        {
-            _interaction.HoldTarget(this);
-            if (_panel != null)
-            {
-                _panel.Extract();
-            }
-            if (_node != null)
-            {
-                _node.Extract();
-            }
-        }
-
-        private void HandleSelect(SelectEnterEventArgs args) => BeginInteraction();
+        private void HandleSelect(SelectEnterEventArgs args) => _interaction.HoldTarget(this);
         private void HandleRelease(SelectExitEventArgs args) => _interaction.ReleaseTarget(this);
-        private void HandleActivate(ActivateEventArgs args)
-        {
-            _interaction.SelectScaleTarget(this);
-            if (_node != null)
-            {
-                _node.SelectPixel();
-            }
-            ToggleSpread();
-        }
+        private void HandleActivate(ActivateEventArgs args) => _interaction.ActivateTarget(this);
 
         private void OnDisable()
         {

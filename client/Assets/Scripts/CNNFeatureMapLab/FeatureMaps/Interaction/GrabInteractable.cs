@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace CNNFeatureMaps.Interaction
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
     // Supply the owned colliders before XRI Awake/OnEnable can claim child pixels.
     public sealed class GrabInteractable : XRGrabInteractable

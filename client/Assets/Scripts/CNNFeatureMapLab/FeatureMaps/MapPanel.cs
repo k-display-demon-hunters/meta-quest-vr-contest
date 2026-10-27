@@ -14,14 +14,14 @@ namespace CNNFeatureMaps.FeatureMaps
         public int Channel => _channel;
         public System.Collections.Generic.IReadOnlyList<MapCell> Nodes => _nodes;
 
-        public void Initialize(CNNFeatureMapLabManager scene)
+        public void Initialize()
         {
             MapLayer layer = GetComponentInParent<MapLayer>();
             _layer = layer != null ? layer.Index : -1;
             _nodes = GetComponentsInChildren<MapCell>(true);
             foreach (MapCell node in _nodes)
             {
-                node.Initialize(scene, _layer, _channel);
+                node.Initialize(_layer, _channel);
             }
         }
 

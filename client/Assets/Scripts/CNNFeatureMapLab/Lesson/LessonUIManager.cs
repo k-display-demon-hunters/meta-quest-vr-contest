@@ -8,7 +8,14 @@ namespace CNNFeatureMaps.Lesson
         [SerializeField] private LessonButtonGroupController _buttonGroup;
         [SerializeField] private FilterCardController _filterCard;
 
-        public event System.Action<LessonAction> OnActionRequested;
+        public event System.Action OnPreviousRequested;
+        public event System.Action OnNextRequested;
+        public event System.Action OnScanRequested;
+        public event System.Action OnFilterRequested;
+        public event System.Action OnSpreadRequested;
+        public event System.Action OnRestoreRequested;
+        public event System.Action OnEnlargeRequested;
+        public event System.Action OnShrinkRequested;
 
         private void OnEnable()
         {
@@ -22,20 +29,63 @@ namespace CNNFeatureMaps.Lesson
 
         private void HandleActionRequested(LessonAction action)
         {
-            OnActionRequested?.Invoke(action);
+            switch (action)
+            {
+                case LessonAction.Previous:
+                    OnPreviousRequested?.Invoke();
+                    break;
+                case LessonAction.Next:
+                    OnNextRequested?.Invoke();
+                    break;
+                case LessonAction.Scan:
+                    OnScanRequested?.Invoke();
+                    break;
+                case LessonAction.Filter:
+                    OnFilterRequested?.Invoke();
+                    break;
+                case LessonAction.Spread:
+                    OnSpreadRequested?.Invoke();
+                    break;
+                case LessonAction.Restore:
+                    OnRestoreRequested?.Invoke();
+                    break;
+                case LessonAction.Enlarge:
+                    OnEnlargeRequested?.Invoke();
+                    break;
+                case LessonAction.Shrink:
+                    OnShrinkRequested?.Invoke();
+                    break;
+            }
         }
 
         public void ShowLesson(LessonStep step, int channel, int spreadLayer, bool scanning)
         {
-            _guide.ShowStep(step);
-            bool isFilterStep = step == LessonStep.BuildFeatureMap || step == LessonStep.CompareFilters;
-            _filterCard.Show(channel, isFilterStep);
-            UpdateButtons(step, spreadLayer, scanning);
+            LessonContent content = GetContent(step);
+            _guide.ShowContent(content);
+            _filterCard.Show(channel, content.ShowFilterCard);
+            _buttonGroup.UpdateButtons(content, spreadLayer, scanning);
         }
 
         public void UpdateButtons(LessonStep step, int spreadLayer, bool scanning)
         {
-            _buttonGroup.UpdateButtons(step, spreadLayer, scanning);
+            _buttonGroup.UpdateButtons(GetContent(step), spreadLayer, scanning);
+        }
+
+        private static LessonContent GetContent(LessonStep step)
+        {
+            switch (step)
+            {
+                case LessonStep.BuildFeatureMap:
+                    return LessonContent.BuildFeatureMap;
+                case LessonStep.CompareFilters:
+                    return LessonContent.CompareFilters;
+                case LessonStep.TraceReceptiveField:
+                    return LessonContent.TraceReceptiveField;
+                case LessonStep.EditInput:
+                    return LessonContent.EditInput;
+                default:
+                    throw new System.ArgumentOutOfRangeException(nameof(step), step, null);
+            }
         }
 
         public void ShowPatch(int row, int column, float sum, float value, int count)

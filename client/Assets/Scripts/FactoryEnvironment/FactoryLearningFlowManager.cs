@@ -128,7 +128,7 @@ namespace FactoryEnvironment
                         if (data.Pixels != null) { return root; }
                         break;
                     case FactoryDestinationId.FeatureMapLab:
-                        data.Maps = root.GetComponentInChildren<CNNFeatureMapGuide>(true);
+                        data.Maps = root.GetComponentInChildren<CNNFeatureMapLabManager>(true);
                         if (data.Maps != null) { return root; }
                         break;
                     case FactoryDestinationId.ModelDesignLab:

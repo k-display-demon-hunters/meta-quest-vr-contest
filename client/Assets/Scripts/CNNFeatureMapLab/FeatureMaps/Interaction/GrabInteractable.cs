@@ -1,14 +1,14 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
     // Supply the owned colliders before XRI Awake/OnEnable can claim child pixels.
-    public sealed class CNNFeatureMapGrabInteractable : XRGrabInteractable
+    public sealed class GrabInteractable : XRGrabInteractable
     {
         protected override void Awake()
         {
-            CNNFeatureMapGrabTarget target = GetComponent<CNNFeatureMapGrabTarget>();
+            GrabTarget target = GetComponent<GrabTarget>();
             if (target == null || target.GrabColliders == null || target.GrabColliders.Length == 0)
             {
                 Debug.LogError("Feature map grab target requires explicit colliders.", this);

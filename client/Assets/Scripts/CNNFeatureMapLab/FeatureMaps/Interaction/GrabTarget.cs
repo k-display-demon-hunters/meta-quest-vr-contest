@@ -4,36 +4,33 @@ using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
-    public enum CNNFeatureMapGrabKind { Node, Map, Layer }
+    public enum GrabKind { Node, Map, Layer }
 
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class CNNFeatureMapGrabTarget : MonoBehaviour, IXRSelectFilter
+    public sealed class GrabTarget : MonoBehaviour, IXRSelectFilter
     {
-        [SerializeField] private CNNFeatureMapGrabKind _kind;
+        [SerializeField] private GrabKind _kind;
         [SerializeField] private Collider[] _grabColliders;
         [SerializeField] private bool _isFilter;
-        private CNNFeatureMapLabManager _scene;
+        private InteractionController _interaction;
         private XRGrabInteractable _grab;
         private Rigidbody _body;
-        private CNNFeatureMapNode _node;
-        private CNNFeatureMapPanel _panel;
-        private CNNFeatureMapLayer _layer;
         private Vector3 _homePosition;
         private Quaternion _homeRotation;
         private Vector3 _homeScale;
         private float _scaleFactor = 1f;
 
-        public CNNFeatureMapGrabKind Kind => _kind;
+        public GrabKind Kind => _kind;
         public bool IsHeld => _grab != null && _grab.isSelected;
         public bool CanScale => !_isFilter;
         internal Collider[] GrabColliders => _grabColliders;
         public bool canProcess => isActiveAndEnabled;
 
-        public void Initialize(CNNFeatureMapLabManager scene)
+        public void Initialize(InteractionController interaction)
         {
-            _scene = scene;
+            _interaction = interaction;
         }
 
         private void Awake()
@@ -41,14 +38,11 @@ namespace CNNFeatureMaps
             _homePosition = transform.localPosition;
             _homeRotation = transform.localRotation;
             _homeScale = transform.localScale;
-            _node = GetComponent<CNNFeatureMapNode>();
-            _panel = GetComponent<CNNFeatureMapPanel>();
-            _layer = GetComponent<CNNFeatureMapLayer>();
             _body = GetComponent<Rigidbody>();
             _body.isKinematic = true;
             _body.useGravity = false;
             // Explicit colliders prevent layer/map handles from also claiming child cells.
-            _grab = gameObject.AddComponent<CNNFeatureMapGrabInteractable>();
+            _grab = gameObject.AddComponent<GrabInteractable>();
             _grab.enabled = false;
             _grab.colliders.Clear();
             _grab.colliders.AddRange(_grabColliders);
@@ -71,7 +65,7 @@ namespace CNNFeatureMaps
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
         {
-            return _scene.CanGrab(this);
+            return _interaction.CanGrab(this);
         }
 
         public void ScaleBy(float multiplier)
@@ -82,14 +76,6 @@ namespace CNNFeatureMaps
             }
             _scaleFactor = Mathf.Clamp(_scaleFactor * multiplier, .4f, 4f);
             transform.localScale = _homeScale * _scaleFactor;
-        }
-
-        public void ToggleSpread()
-        {
-            if (_layer != null)
-            {
-                _layer.ToggleSpread();
-            }
         }
 
         public void ResetPose()
@@ -104,47 +90,18 @@ namespace CNNFeatureMaps
             _body.position = transform.position;
             _body.rotation = transform.rotation;
             _scaleFactor = 1f;
-            if (_node != null)
-            {
-                _node.ReturnToGrid();
-            }
-            if (_panel != null)
-            {
-                _panel.ReturnToStack();
-            }
         }
 
-        private void BeginInteraction()
-        {
-            _scene.HoldTarget(this);
-            if (_panel != null)
-            {
-                _panel.Extract();
-            }
-            if (_node != null)
-            {
-                _node.Extract();
-            }
-        }
-
-        private void HandleSelect(SelectEnterEventArgs args) => BeginInteraction();
-        private void HandleRelease(SelectExitEventArgs args) => _scene.ReleaseTarget(this);
-        private void HandleActivate(ActivateEventArgs args)
-        {
-            _scene.SelectScaleTarget(this);
-            if (_node != null)
-            {
-                _node.SelectPixel();
-            }
-            ToggleSpread();
-        }
+        private void HandleSelect(SelectEnterEventArgs args) => _interaction.HoldTarget(this);
+        private void HandleRelease(SelectExitEventArgs args) => _interaction.ReleaseTarget(this);
+        private void HandleActivate(ActivateEventArgs args) => _interaction.ActivateTarget(this);
 
         private void OnDisable()
         {
             _grab.selectEntered.RemoveListener(HandleSelect);
             _grab.selectExited.RemoveListener(HandleRelease);
             _grab.activated.RemoveListener(HandleActivate);
-            _scene.ReleaseTarget(this);
+            _interaction.ReleaseTarget(this);
         }
     }
 }

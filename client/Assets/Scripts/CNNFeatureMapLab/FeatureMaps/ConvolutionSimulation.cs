@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
-    public sealed class CNNFeatureMapExampleData
+    public sealed class ConvolutionSimulation
     {
         public const int Size = 8;
         public static readonly int[] Channels = { 2, 3, 5 };
@@ -10,22 +10,13 @@ namespace CNNFeatureMaps
         private readonly float[][,,] _values = new float[3][,,];
         private readonly bool[][,] _affected = new bool[4][,];
 
-        public CNNFeatureMapExampleData(Texture2D image)
+        public ConvolutionSimulation(float[,] input)
         {
-            Color[] pixels = image.GetPixels();
-            for (int row = 0; row < Size; row++)
-            {
-                for (int column = 0; column < Size; column++)
-                {
-                    // Tensor rows run top to bottom; Unity texture rows run bottom to top.
-                    _input[row, column] = pixels[(Size - 1 - row) * Size + column].grayscale;
-                }
-            }
             for (int layer = 0; layer < 4; layer++)
             {
                 _affected[layer] = new bool[Size, Size];
             }
-            ComputeConvolutions();
+            RestoreInput(input);
         }
 
         public float ReadValue(int layer, int channel, int row, int column)
@@ -34,6 +25,22 @@ namespace CNNFeatureMaps
         }
 
         public bool IsAffected(int layer, int row, int column) => _affected[layer + 1][row, column];
+
+        public int CountAffectedPositions(int layer)
+        {
+            int count = 0;
+            for (int row = 0; row < Size; row++)
+            {
+                for (int column = 0; column < Size; column++)
+                {
+                    if (IsAffected(layer, row, column))
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
 
         public void SelectPixel(int row, int column)
         {
@@ -131,16 +138,13 @@ namespace CNNFeatureMaps
             ComputeConvolutions();
         }
 
-        public void RestoreInput(Texture2D image)
+        public void RestoreInput(float[,] input)
         {
-            Color[] pixels = image.GetPixels();
-            for (int row = 0; row < Size; row++)
+            if (input == null || input.GetLength(0) != Size || input.GetLength(1) != Size)
             {
-                for (int column = 0; column < Size; column++)
-                {
-                    _input[row, column] = pixels[(Size - 1 - row) * Size + column].grayscale;
-                }
+                throw new System.ArgumentException($"Input must be a {Size} x {Size} array.", nameof(input));
             }
+            System.Array.Copy(input, _input, input.Length);
             SelectPixel(-1, -1);
             ComputeConvolutions();
         }

@@ -1,15 +1,15 @@
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps.Interaction
 {
-    public sealed class CNNFeatureMapFilterController
+    public sealed class FilterController : MonoBehaviour
     {
         private const float CellSpacing = .066f;
-        private readonly Transform _inputRoot;
-        private readonly CNNFeatureMapGrabTarget _filter;
-        private readonly Rigidbody _body;
-        private readonly LineRenderer _connection;
-        private readonly CNNFeatureMapNode[,,] _firstNodes = new CNNFeatureMapNode[2, 8, 8];
+        [SerializeField] private GrabTarget _filter;
+        [SerializeField] private Material _toolMaterial;
+        private Rigidbody _body;
+        private LineRenderer _connection;
+        private Transform _connectionTarget;
         private int _scanIndex;
         private float _nextScan;
 
@@ -17,23 +17,13 @@ namespace CNNFeatureMaps
         public int Column { get; private set; } = 3;
         public bool IsScanning { get; private set; }
 
-        public CNNFeatureMapFilterController(Transform parent, Transform inputRoot,
-            CNNFeatureMapGrabTarget filter, Material material, CNNFeatureMapNode[] nodes)
+        public void Initialize()
         {
-            _inputRoot = inputRoot;
-            _filter = filter;
-            _body = filter.GetComponent<Rigidbody>();
-            foreach (CNNFeatureMapNode node in nodes)
-            {
-                if (node.Layer == 0)
-                {
-                    _firstNodes[node.Channel, node.Row, node.Column] = node;
-                }
-            }
+            _body = _filter.GetComponent<Rigidbody>();
             GameObject connection = new GameObject("Patch to output neuron");
-            connection.transform.SetParent(parent, false);
+            connection.transform.SetParent(transform, false);
             _connection = connection.AddComponent<LineRenderer>();
-            _connection.sharedMaterial = material;
+            _connection.sharedMaterial = _toolMaterial;
             _connection.positionCount = 2;
             _connection.useWorldSpace = true;
             _connection.startWidth = .006f;
@@ -75,7 +65,7 @@ namespace CNNFeatureMaps
             if (_filter.IsHeld)
             {
                 StopScanning();
-                Vector3 local = _inputRoot.InverseTransformPoint(_filter.transform.position);
+                Vector3 local = transform.InverseTransformPoint(_filter.transform.position);
                 int row = Mathf.Clamp(Mathf.RoundToInt(3.5f - local.y / CellSpacing), 0, 7);
                 int column = Mathf.Clamp(Mathf.RoundToInt(local.x / CellSpacing + 3.5f), 0, 7);
                 changed = row != Row || column != Column;
@@ -94,16 +84,21 @@ namespace CNNFeatureMaps
             }
             // Only the teaching filter follows the grid; maps and neurons remain freely movable.
             Vector3 position = new Vector3((Column - 3.5f) * CellSpacing, (3.5f - Row) * CellSpacing, -.075f);
-            _body.position = _inputRoot.TransformPoint(position);
-            _body.rotation = _inputRoot.rotation;
+            _body.position = transform.TransformPoint(position);
+            _body.rotation = transform.rotation;
             _filter.transform.SetPositionAndRotation(_body.position, _body.rotation);
             return changed;
         }
 
-        public void UpdateConnection(int channel)
+        public void SetConnectionTarget(Transform target)
+        {
+            _connectionTarget = target;
+        }
+
+        public void UpdateConnection()
         {
             _connection.SetPosition(0, _filter.transform.position);
-            _connection.SetPosition(1, _firstNodes[channel, Row, Column].transform.position);
+            _connection.SetPosition(1, _connectionTarget.position);
         }
     }
 }

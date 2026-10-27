@@ -35,7 +35,7 @@ namespace FactoryEnvironment
 
             public GameObject Content { get; internal set; }
             public CNNPixelLabManager Pixels { get; internal set; }
-            public CNNFeatureMapGuide Maps { get; internal set; }
+            public CNNFeatureMapLabManager Maps { get; internal set; }
             public CNNModelDesignLabManager Model { get; internal set; }
 
             public void ClearContent()

@@ -1,22 +1,23 @@
+using System;
 using UnityEngine;
 
-namespace CNNFeatureMaps
+namespace CNNFeatureMaps.FeatureMaps
 {
-    public sealed class CNNFeatureMapLayer : MonoBehaviour
+    public sealed class MapLayer : MonoBehaviour
     {
-        [SerializeField] private CNNFeatureMapPanel[] _maps;
+        [SerializeField] private MapPanel[] _maps;
         [SerializeField] private int _layerIndex;
         [SerializeField] private float _spreadSpacing = .64f;
-        private CNNFeatureMapLabManager _scene;
+        private Func<Transform, bool> _hasHeldDescendant;
         private Vector3[] _stackPositions;
         private bool _expanded;
         private bool _animating;
         public bool IsExpanded => _expanded;
         public int Index => _layerIndex;
 
-        public void Initialize(CNNFeatureMapLabManager scene)
+        public void Initialize(Func<Transform, bool> hasHeldDescendant)
         {
-            _scene = scene;
+            _hasHeldDescendant = hasHeldDescendant;
         }
 
         private void Awake()
@@ -38,13 +39,13 @@ namespace CNNFeatureMaps
             float blend = 1f - Mathf.Exp(-9f * Time.deltaTime);
             for (int index = 0; index < _maps.Length; index++)
             {
-                CNNFeatureMapPanel map = _maps[index];
+                MapPanel map = _maps[index];
                 // Extracted maps and their free cell nodes remain where the user put them.
                 if (map.IsExtracted)
                 {
                     continue;
                 }
-                if (_scene.HasHeldDescendant(map.transform))
+                if (_hasHeldDescendant(map.transform))
                 {
                     settled = false;
                     continue;

@@ -77,6 +77,22 @@ CNNFeatureMapLab/
 
 InteractionController와 ConvolutionSimulation은 일반 C# 객체다. 두 모듈 진입점과 하위 InteractionManager·MapDisplayController·FilterController·InputMapController는 프리팹에 연결된 컴포넌트다. 씬 Manager는 FeatureMapsManager와 LessonUIManager만 참조한다.
 
+## 모듈 사이의 호출과 이벤트
+
+씬 Manager가 연결하는 공개 계약은 다음과 같다. 계산 객체·셀·버튼 참조는 모듈 사이에 전달하지 않는다.
+
+| 발신 → 수신 | 계약과 처리 |
+|---|---|
+| Lesson → 씬 Manager | `OnPreviousRequested`, `OnNextRequested`, `OnScanRequested`, `OnFilterRequested`, `OnSpreadRequested`, `OnRestoreRequested`, `OnEnlargeRequested`, `OnShrinkRequested`를 각각 전용 처리 함수에 연결한다. `CanPerformAction()` 통과 후 단계 변경 또는 FeatureMaps 명령을 수행한다. |
+| 씬 Manager → FeatureMaps | `ShowStep(step, channel)`, `ToggleScanning()`, `SpreadNextLayer()`, `TryRestore()`, `ScaleSelectedTarget(multiplier)`로 동작을 요청한다. |
+| FeatureMaps → Lesson | `OnStepApplied(step, channel, spreadLayer, scanning)`을 `ShowLesson()`에 연결해 해당 단계의 안내와 버튼을 갱신한다. |
+| FeatureMaps → Lesson | `OnPatchEvaluated(row, column, sum, value, count)`는 선택 위치의 ReLU 적용 전 합, 적용 후 값, 해당 채널의 방문 위치 수를 `ShowPatch()`에 전달한다. |
+| FeatureMaps → Lesson | `OnAffectedPixelSelected(row, column, affectedCount)`와 `OnInputEdited(editCount)`는 각각 수용 영역 위치 수와 누적 입력 수정 횟수를 표시한다. |
+| FeatureMaps → 씬 Manager → Lesson | `OnScanningChanged`를 받으면 씬 Manager가 현재 단계·다음 펼침 층·스캔 상태를 읽어 `UpdateButtons()`를 호출한다. |
+| 공장 → 씬 Manager | `ReadyForModelDesign`을 읽어 다음 방 진입을 허용한다. 특징 맵의 내부 Controller나 계산 결과를 직접 읽지 않는다. |
+
+Interaction의 `OnTargetHeld`, `OnTargetActivated`, `OnFilterPositionChanged`, `OnPosesReset`은 FeatureMaps 내부에서 처리한다. 셀·맵 분리 상태, 필터 좌표 적용과 복원은 이 경계 안에 남고, Lesson에는 표시할 결과만 전달한다.
+
 ## Lesson UI의 데이터와 표시
 
 `LessonUIManager.ShowLesson()`은 `GetContent(step)`으로 단계별 LessonContent를 한 번 선택한다. 선택한 Content는 `LessonGuide.ShowContent()`와 `LessonButtonGroupController.UpdateButtons()`에 전달하고, `ShowFilterCard`는 FilterCardController의 표시 여부로 전달한다. 버튼만 갱신할 때도 LessonUIManager가 Content를 선택하므로 Guide와 버튼 묶음에서 단계를 다시 판단하지 않는다.
@@ -97,6 +113,8 @@ LessonContent의 `Buttons`는 LessonAction을 키로 사용하는 상태 사전�
 씬 Manager는 `_step`, `_channel`, `_lastStepSkipped`를 관리한다. FeatureMapsManager는 전달받은 단계·채널과 시뮬레이션·방문 배열·`EditCount`를 관리하며, 필터의 행·열과 스캔 상태는 Interaction 내부에서 관리한다. 다음에 펼칠 층은 FeatureMapsManager의 `NextSpreadLayer`로 읽어 버튼에 전달한다. `Restore` 명령은 FeatureMapsManager.TryRestore()에 원본 입력·방문 기록·수정 횟수 초기화와 배치 복원을 요청한다. FeatureMapsManager 내부에서 층 애니메이션 정리 → InteractionManager의 자세 복원 → 복원 완료 이벤트에 따른 셀·맵 분리 상태 초기화 순서를 처리하며, 성공하면 씬 Manager가 현재 단계를 다시 적용한다.
 
 마지막 단계의 다음 버튼은 `단계 마치기`로 표시된다. 입력을 수정하지 않고 이 버튼을 누르면 `_lastStepSkipped`가 참이 된다. 공장 진행에서 읽는 `ReadyForModelDesign`은 초기화 완료, 마지막 단계, 입력 수정 1회 이상 또는 건너뛰기, 잡은 대상 없음이 모두 충족될 때 참이다. FactoryLearningFlowManager가 CNNFeatureMapLabManager에서 이 값을 직접 읽는다. 공장 씬 전환은 [공장 환경 구현](factory-environment.md)에서 다룬다.
+
+앞의 세 단계는 방문 위치 수나 스캔 완료를 다음 단계의 필수 조건으로 삼지 않는다. 마지막 단계에서 입력을 한 번 수정했다면 `단계 마치기` 버튼을 누르기 전에도 위 완료 조건을 충족할 수 있다. 이전 단계로 돌아가면 마지막 단계 조건이 사라져 공장 진행이 다시 보류되고, `처음 상태`는 수정 횟수와 `_lastStepSkipped`를 지운다. 이 상태는 현재 씬 인스턴스에만 보관하며 다음 모델 제작 씬에 입력·가중치·특징 맵을 전달하지 않는다.
 
 ## 계산 데이터
 
@@ -147,3 +165,7 @@ MapCell의 `_row`·`_column`, MapPanel의 `_channel`, MapLayer의 `_layerIndex`�
 입력 이미지는 `CNNFeatureMapInput` 루트의 InputMapController `_inputImage`에 지정한다. Workspace의 FeatureMapsManager `_inputMap`은 해당 입력 프리팹 인스턴스의 InputMapController를, `_display`는 Workspace의 MapDisplayController를 참조한다. InteractionManager `_filter`는 입력 프리팹 인스턴스의 FilterController를 참조한다. FeatureMapsManager의 `_interaction`을 하위 InteractionManager에 연결하고, 씬 Manager의 `_featureMaps`·`_lessonUI`는 두 모듈 진입점에 연결한다.
 
 Lesson UI의 위치·회전·크기·폰트 재질은 프리팹에 저장한다. 입력·층·출력 이름표, 도움말, 패딩 설명은 런타임 코드에서 참조하거나 크기를 다시 조절하지 않는다. 주요 안내문·버튼·필터 카드도 실행 중에는 문자열과 표시 상태만 갱신하며, 버튼 생성이나 텍스트 복제·자동 크기 조절을 수행하지 않는다. 주요 안내문과 필터 카드·고정 캡션의 TextMesh는 유지하고, 버튼의 글자만 uGUI Text로 구성한다.
+
+## 확인 범위
+
+현재 스크립트의 호출·이벤트·완료 조건과 Workspace·버튼 프리팹의 직렬화된 참조를 대조해 문서를 갱신했다. 이 문서 갱신에서는 Unity 실행, 컴파일, 테스트, APK 빌드를 수행하지 않았다. 실제 XR 입력, 씬 전환, Quest에서의 표시·성능은 이번 정적 확인 결과에 포함하지 않는다.

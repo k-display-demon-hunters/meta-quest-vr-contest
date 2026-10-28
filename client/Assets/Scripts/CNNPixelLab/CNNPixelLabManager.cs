@@ -1,17 +1,12 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace UI
 {
     public sealed class CNNPixelLabManager : MonoBehaviour
     {
-        private const int Columns = 32;
-        private const int Rows = 18;
+        // Keep the scene's serialized bindings; compose runtime modules from them in Awake.
         [SerializeField] private Texture2D _sourceImage;
         [SerializeField] private Transform _board;
         [SerializeField] private MeshRenderer _boardRenderer;
@@ -26,241 +21,200 @@ namespace UI
         [SerializeField] private Text[] _values;
         [SerializeField] private PixelRevealStage _revealStage;
         [SerializeField] private Button _nextButton;
-        private RgbConvolutionView _rgbView;
-        private PixelSelectionController _selection;
+
+        private PixelImageManager _image;
+        private PixelLessonManager _lesson;
         private PixelLabUIController _ui;
-        private Color32[] _pixels;
-        private Texture2D _smoothTexture;
-        private Texture2D _pixelTexture;
-        private Material _boardMaterial;
-        private Material _lensMaterial;
-        private bool _isRevealStage;
-        private GameObject _ownedEventSystem;
-        private XRUIInputModule _addedUIInputModule;
-        private bool _initialized;
+        private readonly PixelUIInputController _input = new PixelUIInputController();
 
-        public Vector3 SelectionWorldPosition => _selection.SelectionWorldPosition;
-        public bool HasSelection => _selection != null && _selection.HasSelection;
+        public Vector3 SelectionWorldPosition => _image.SelectionWorldPosition;
+        public bool HasSelection => _image != null && _image.HasSelection;
+        public Vector2Int SelectedPixel => _image.SelectedPixel;
         public bool ConvolutionCompleted { get; private set; }
-        public void MarkConvolutionCompleted() { ConvolutionCompleted = true; }
-        public Vector2Int SelectedPixel => _selection.SelectedPixel;
-
-#if UNITY_EDITOR
-        public bool EditorDetailsVisible => _detail.activeSelf;
-        public Vector3 EditorPreviewFocus => _detail.activeSelf ? _detail.transform.position + _detail.transform.right * 0.35f : _board.position;
-
-        public bool EditorCanDragFilter(XRGrabInteractable target)
-        {
-            return target == _filter && !_isRevealStage && !_detail.activeSelf;
-        }
-
-        public void EditorDragFilter(Ray ray)
-        {
-            _selection.EditorDragFilter(ray);
-        }
-
-        public void EditorReleaseFilter()
-        {
-            _selection.EditorReleaseFilter();
-        }
-#endif
 
         private void Awake()
         {
-            // Resolve the surviving rig, since the scene's duplicate may have been removed.
+            // Additively loaded scenes use the surviving persistent rig camera.
             _camera = Camera.main;
-            if (_camera == null)
-            {
-                Debug.LogError("[CNNPixelLab] An active XRPlayerRig camera is required.", this);
-                enabled = false;
-                return;
-            }
             foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true))
             {
                 canvas.worldCamera = _camera;
             }
-            _smoothTexture = PixelImageFactory.CreateSmoothPhoto(_sourceImage);
-            _pixels = PixelImageFactory.SamplePixels(_smoothTexture, Columns, Rows);
-            _pixelTexture = PixelImageFactory.CreateTexture(_pixels, Columns, Rows, FilterMode.Point);
-            _boardMaterial = _boardRenderer.material;
-            _boardMaterial.mainTexture = _smoothTexture;
-            _lensMaterial = _lensRenderer.material;
-            _lensMaterial.mainTexture = _pixelTexture;
-            _selection = new PixelSelectionController(_board, _boardSize, _filter,
-                _lensRenderer, _selectionFrame, _lensMaterial, Columns, Rows, _pixels);
-            _filter.selectExited.AddListener(HandleReleased);
-            _filter.selectEntered.AddListener(HandleGrabbed);
-            _rgbView = _detail.AddComponent<RgbConvolutionView>();
-            _rgbView.Initialize(this, _values[0].font);
-            _ui = new PixelLabUIController(_detailButton, _nextButton, _values[0].font,
-                _board.gameObject, _filter.gameObject);
-            if (_revealStage != null) { _revealStage.PixelsRevealed += HandlePixelsRevealed; }
-            _initialized = true;
+            _image = new PixelImageManager(_sourceImage, _board, _boardRenderer, _boardSize,
+                _filter, _lensRenderer, _selectionFrame, _revealStage);
+            _lesson = _detail.AddComponent<PixelLessonManager>();
+            _lesson.Initialize(_values[0].font);
+            _ui = new PixelLabUIController(_detailButton, _nextButton, _values[0].font);
             ResetLab();
         }
 
         private void OnEnable()
         {
-            if (!_initialized) { return; }
-            if (EventSystem.current == null)
-            {
-                _ownedEventSystem = new GameObject("CNN Pixel Lab UI Input", typeof(EventSystem), typeof(XRUIInputModule));
-                _ownedEventSystem.transform.SetParent(transform, false);
-            }
-            else if (EventSystem.current.GetComponent<XRUIInputModule>() == null)
-            {
-                _addedUIInputModule = EventSystem.current.gameObject.AddComponent<XRUIInputModule>();
-            }
+            _image.SelectionChanged += HandleSelectionChanged;
+            _image.FilterGrabbed += HandleFilterGrabbed;
+            _image.PixelsRevealed += HandlePixelsRevealed;
+            _lesson.CloseRequested += CloseDetails;
+            _lesson.AdvanceRequested += HandleAdvanceRequested;
+            _lesson.BackgroundHiddenChanged += SetBackgroundHidden;
+            _lesson.SelectionMoveRequested += MoveSelection;
+            _lesson.Completed += MarkConvolutionCompleted;
+            _image.EnableInput();
+            _input.Enable(transform);
         }
 
         private void LateUpdate()
         {
-            if (!_initialized || _isRevealStage) { return; }
-            if (_selection.UpdateSelection())
-            {
-                _ui.SetSelectionAvailable(_selection.HasSelection);
-                UpdateInstruction();
-            }
+            _image.UpdateSelection();
         }
 
         public void ShowDetails()
         {
-            if (_isRevealStage || !_selection.HasSelection || _filter.isSelected) { return; }
-            _rgbView.Show(_pixels, Columns, Rows, _selection.SelectedPixel, false);
-            _detail.SetActive(true);
+            if (_image.IsRevealing || !_image.HasSelection || _image.IsFilterHeld)
+            {
+                return;
+            }
+            ShowLesson(false);
         }
 
         public void BeginConvolution()
         {
-            if (_revealStage == null || !_revealStage.IsReadyForConvolution || !_selection.HasSelection
-                || _filter.isSelected) { return; }
-            _rgbView.Show(_pixels, Columns, Rows, _selection.SelectedPixel, true);
+            if (!_image.IsReadyForConvolution || !_image.HasSelection || _image.IsFilterHeld)
+            {
+                return;
+            }
+            ShowLesson(true);
             SetBackgroundHidden(true);
         }
 
         public void CloseDetails()
         {
-            foreach (SpatialConvolutionController spatial in _detail.GetComponentsInChildren<SpatialConvolutionController>(true))
-            {
-                spatial.ReleaseInteractions();
-            }
-            _detail.SetActive(false);
+            _lesson.Close();
             SetBackgroundHidden(false);
         }
 
         public void SetBackgroundHidden(bool hidden)
         {
+            _image.SetBackgroundHidden(hidden);
             _ui.SetBackgroundHidden(hidden);
+        }
+
+        public void MarkConvolutionCompleted()
+        {
+            ConvolutionCompleted = true;
         }
 
         public void ResetLab()
         {
-            if (_filter.isSelected) { return; }
+            if (_image.IsFilterHeld)
+            {
+                return;
+            }
             ConvolutionCompleted = false;
             CloseDetails();
-            _isRevealStage = false;
-            if (_revealStage != null) { _revealStage.ResetStage(); }
+            _image.Reset();
             _ui.ResetControls();
-            _filter.gameObject.SetActive(true);
-            _selection.ResetSelection();
-            _detail.SetActive(false);
             UpdateInstruction();
         }
 
         public void MoveSelection(int dx, int dy)
         {
-            if (_isRevealStage || !_selection.HasSelection || _filter.isSelected) { return; }
-            _selection.MoveSelection(dx, dy);
-            _rgbView.Show(_pixels, Columns, Rows, _selection.SelectedPixel, _revealStage != null && _revealStage.IsReadyForConvolution);
-        }
-
-        private void HandlePixelsRevealed()
-        {
-            _isRevealStage = false;
-            _filter.gameObject.SetActive(true);
-            _selection.EnsureSelection();
-            _ui.ShowPixelsRevealed(_selection.HasSelection);
-            UpdateInstruction();
+            if (_image.IsRevealing || !_image.HasSelection || _image.IsFilterHeld)
+            {
+                return;
+            }
+            _image.MoveSelection(dx, dy);
+            ShowLesson(_image.IsReadyForConvolution);
         }
 
         public void NextStage()
         {
-            if (_isRevealStage && _revealStage != null)
+            if (_image.IsRevealing)
             {
-                _revealStage.CompleteReveal();
+                _image.CompleteReveal();
                 return;
             }
-            if (_revealStage != null && _revealStage.IsReadyForConvolution)
+            if (_image.IsReadyForConvolution)
             {
                 BeginConvolution();
                 return;
             }
-            if (_isRevealStage || _filter.isSelected || _revealStage == null
-                || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
+            if (!_image.CanBeginReveal)
+            {
+                return;
+            }
             CloseDetails();
-            _isRevealStage = true;
             _ui.ShowRevealStarted();
-            _selection.SuspendSelection();
-            _detail.SetActive(false);
-            _filter.gameObject.SetActive(false);
-            _revealStage.ShowImage(_pixels, Columns, Rows);
+            _image.BeginReveal();
         }
 
-        private void HandleReleased(SelectExitEventArgs args)
+        private void ShowLesson(bool calculationAvailable)
         {
-            _selection.HandleReleased(args);
-        }
-
-        private void HandleGrabbed(SelectEnterEventArgs args)
-        {
-            _ui.ShowFilterGrabbed();
-            _selection.HandleGrabbed(args);
-            _detail.SetActive(false);
+            _lesson.Show(_image.Pixels, PixelImageManager.Columns, PixelImageManager.Rows,
+                _image.SelectedPixel, _image.SelectionWorldPosition, calculationAvailable);
         }
 
         private void UpdateInstruction()
         {
-            _ui.UpdateInstruction(_revealStage != null && _revealStage.IsReadyForConvolution,
-                _selection.HasSelection);
+            _ui.UpdateInstruction(_image.IsReadyForConvolution, _image.HasSelection);
         }
+
+        private void HandleSelectionChanged()
+        {
+            _ui.SetSelectionAvailable(_image.HasSelection);
+            UpdateInstruction();
+        }
+
+        private void HandleFilterGrabbed()
+        {
+            _ui.ShowFilterGrabbed();
+            CloseDetails();
+        }
+
+        private void HandlePixelsRevealed()
+        {
+            _ui.ShowPixelsRevealed(_image.HasSelection);
+            UpdateInstruction();
+        }
+
+        private void HandleAdvanceRequested()
+        {
+            CloseDetails();
+            if (!ConvolutionCompleted)
+            {
+                NextStage();
+            }
+        }
+
+#if UNITY_EDITOR
+        public bool EditorDetailsVisible => _lesson.IsVisible;
+        public Vector3 EditorPreviewFocus => _lesson.IsVisible ? _lesson.PreviewFocus : _image.BoardPosition;
+
+        public bool EditorCanDragFilter(XRGrabInteractable target)
+        {
+            return _image.IsFilter(target) && !_image.IsRevealing && !_lesson.IsVisible;
+        }
+
+        public void EditorDragFilter(Ray ray) => _image.EditorDragFilter(ray);
+        public void EditorReleaseFilter() => _image.EditorReleaseFilter();
+#endif
 
         private void OnDisable()
         {
-            if (_ownedEventSystem != null)
-            {
-                _ownedEventSystem.SetActive(false);
-                Destroy(_ownedEventSystem);
-                _ownedEventSystem = null;
-            }
-            if (_addedUIInputModule != null)
-            {
-                Destroy(_addedUIInputModule);
-                _addedUIInputModule = null;
-            }
-            if (_initialized && _filter != null && _filter.isSelected)
-            {
-                // Keep a held filter in the content scene when the persistent rig survives.
-                if (_filter.interactionManager != null)
-                {
-                    _filter.interactionManager.CancelInteractableSelection((IXRSelectInteractable)_filter);
-                }
-                _filter.transform.SetParent(transform, true);
-            }
+            _image.SelectionChanged -= HandleSelectionChanged;
+            _image.FilterGrabbed -= HandleFilterGrabbed;
+            _image.PixelsRevealed -= HandlePixelsRevealed;
+            _lesson.CloseRequested -= CloseDetails;
+            _lesson.AdvanceRequested -= HandleAdvanceRequested;
+            _lesson.BackgroundHiddenChanged -= SetBackgroundHidden;
+            _lesson.SelectionMoveRequested -= MoveSelection;
+            _lesson.Completed -= MarkConvolutionCompleted;
+            _image.DisableInput(transform);
+            _input.Dispose();
         }
 
         private void OnDestroy()
         {
-            if (_filter != null)
-            {
-                _filter.selectExited.RemoveListener(HandleReleased);
-                _filter.selectEntered.RemoveListener(HandleGrabbed);
-            }
-            if (_revealStage != null) { _revealStage.PixelsRevealed -= HandlePixelsRevealed; }
-            _selection?.Dispose();
-            Destroy(_smoothTexture);
-            Destroy(_pixelTexture);
-            Destroy(_boardMaterial);
-            Destroy(_lensMaterial);
+            _image?.Dispose();
         }
     }
 }

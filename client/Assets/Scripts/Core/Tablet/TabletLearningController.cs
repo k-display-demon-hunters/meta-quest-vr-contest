@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.UI;
 using static Tablet.TabletUIBuilder;
@@ -12,41 +10,30 @@ namespace Tablet
         private float _progress;
         private string _mission = "양피지를 수집하고 세 방의 체험을 완료하세요.";
 
-        private readonly string[] _phaseNames = { "미션 안내", "픽셀·합성곱", "피처맵", "모델 제작", "복구 마무리" };
-        private readonly int[] _phaseStageIndices = { 0, 1, 2, 3, 4 };
-        private readonly string[] _stageNames = { "미션 안내", "Pixel Lab", "Feature Map Lab", "Model Design Lab", "복구 마무리" };
         private readonly TabletTask[] _tasks =
         {
-            new TabletTask("양피지 수집 0/5", false),
-            new TabletTask("방 체험 완료 0/3", false),
-            new TabletTask("미션 안내 읽기", false)
+            new TabletTask(TabletLearningContent.TaskLabels[0], false),
+            new TabletTask(TabletLearningContent.TaskLabels[1], false),
+            new TabletTask(TabletLearningContent.TaskLabels[2], false)
         };
         private int _selectedStageIndex;
 
         private readonly TabletUIBuilder.LearningView _view;
         private readonly TabletVisualResources _resources;
-        private readonly Action<string, string> _feedback;
+        public event Action<string, string> FeedbackRequested;
 
-        public IReadOnlyList<string> PhaseNames => _phaseNames;
-        public IReadOnlyList<int> PhaseStageIndices => _phaseStageIndices;
-        public IReadOnlyList<string> StageNames => _stageNames;
-        public int TaskCount => _tasks.Length;
-        public string TaskLabel(int index) => _tasks[index].Label;
         public int SelectedIndex => _selectedStageIndex;
-        public string SelectedName => _stageNames[_selectedStageIndex];
+        public string SelectedName => TabletLearningContent.StageNames[_selectedStageIndex];
 
-        public TabletLearningController(Transform tabletTransform, Transform[] stageStartPoints,
-            TabletUIBuilder.LearningView view, TabletVisualResources resources,
-            Action<int> stageMoveRequested, Action<string, string> feedback)
+        public TabletLearningController(TabletUIBuilder.LearningView view, TabletVisualResources resources)
         {
             _view = view;
             _resources = resources;
-            _feedback = feedback;
         }
 
         public void RestoreSelection(int index)
         {
-            _selectedStageIndex = Mathf.Clamp(index, 0, _stageNames.Length - 1);
+            _selectedStageIndex = Mathf.Clamp(index, 0, TabletLearningContent.StageNames.Count - 1);
         }
 
         public void RefreshFocus(Selectable focusedControl, bool mainGroup)
@@ -83,7 +70,7 @@ namespace Tablet
 
         public void RefreshStage()
         {
-            string stageName = _stageNames[_selectedStageIndex];
+            string stageName = TabletLearningContent.StageNames[_selectedStageIndex];
             if (_view.SettingsStageLabel != null)
             {
                 _view.SettingsStageLabel.text = stageName;
@@ -123,14 +110,14 @@ namespace Tablet
 
         public void SetFactoryMission(int phase, int collected, int completed, string mission)
         {
-            _selectedStageIndex = Mathf.Clamp(phase, 0, _stageNames.Length - 1);
+            _selectedStageIndex = Mathf.Clamp(phase, 0, TabletLearningContent.StageNames.Count - 1);
             _progress = Mathf.Clamp01((collected + completed) / 8f);
             _mission = mission;
             _tasks[0].Label = "양피지 수집 " + collected + "/5";
             _tasks[0].IsCompleted = collected == 5;
             _tasks[1].Label = "방 체험 완료 " + completed + "/3";
             _tasks[1].IsCompleted = completed == 3;
-            _tasks[2].Label = _stageNames[_selectedStageIndex];
+            _tasks[2].Label = TabletLearningContent.StageNames[_selectedStageIndex];
             _tasks[2].IsCompleted = completed == 3 && collected == 5;
             RefreshTasks();
             RefreshProgress();
@@ -139,13 +126,13 @@ namespace Tablet
 
         public void ConfirmCurrentTask()
         {
-            _feedback("현재 미션 · " + SelectedName, _mission +
+            FeedbackRequested?.Invoke("현재 미션 · " + SelectedName, _mission +
                 "\n\n진행률 = 양피지 5개 + 방 체험 3개, 총 8개 목표의 완료 비율입니다.\n미수집 양피지는 지도에서 찾아 돌아가 수집할 수 있어요.");
         }
 
         public void MoveToStage(int stageIndex)
         {
-            _feedback("이동 안내", _stageNames[Mathf.Clamp(stageIndex, 0, _stageNames.Length - 1)] +
+            FeedbackRequested?.Invoke("이동 안내", TabletLearningContent.StageNames[Mathf.Clamp(stageIndex, 0, TabletLearningContent.StageNames.Count - 1)] +
                 "\n공장 지도를 확인하고 바닥 안내선을 따라 직접 이동하세요.\n현재 미션: " + _mission);
         }
 

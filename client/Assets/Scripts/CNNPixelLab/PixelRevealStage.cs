@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -23,7 +24,7 @@ namespace UI
         private BoxCollider _clickCollider;
         private XRSimpleInteractable _clickTarget;
         private bool _initialized;
-        private Color32[] _sourcePixels;
+        private IReadOnlyList<Color32> _sourcePixels;
         private MeshRenderer[] _pixelBlocks;
         private Color[] _blockColors;
         private Mesh _blockMesh;
@@ -39,7 +40,7 @@ namespace UI
         public RevealPhase Phase { get; private set; }
         public bool IsReadyForConvolution => Phase == RevealPhase.Revealed;
 
-        public void ShowImage(Color32[] pixels, int columns, int rows)
+        public void ShowImage(IReadOnlyList<Color32> pixels, int columns, int rows)
         {
             if (Phase != RevealPhase.Inactive) { return; }
             _camera = Camera.main;
@@ -141,18 +142,18 @@ namespace UI
             PixelsRevealed?.Invoke();
         }
 
-        private void BuildPixels(Color32[] pixels, int columns, int rows)
+        private void BuildPixels(IReadOnlyList<Color32> pixels, int columns, int rows)
         {
             const float CellSize = 96;
             _blockProperties = new MaterialPropertyBlock();
             Transform photo = _board.Find("Low resolution image");
             if (photo != null) { _photoRenderer = photo.GetComponent<MeshRenderer>(); }
             _sourcePixels = pixels;
-            _pixelBlocks = new MeshRenderer[pixels.Length];
-            _blockColors = new Color[pixels.Length];
+            _pixelBlocks = new MeshRenderer[pixels.Count];
+            _blockColors = new Color[pixels.Count];
             _blockMesh = PixelVolumeMesh.Create();
             _blockMaterial = PixelVolumeMesh.CreateMaterial(true);
-            _numbers = new Text[pixels.Length];
+            _numbers = new Text[pixels.Count];
             _pixelCanvas = new GameObject("Image pixels and values", typeof(RectTransform), typeof(Canvas));
             RectTransform canvasRect = (RectTransform)_pixelCanvas.transform;
             canvasRect.SetParent(_board, false);
@@ -229,7 +230,7 @@ namespace UI
 
         private void SetChannel(int channel)
         {
-            for (int i = 0; i < _sourcePixels.Length; i++)
+            for (int i = 0; i < _sourcePixels.Count; i++)
             {
                 Color32 pixel = _sourcePixels[i];
                 byte value = channel == 0 ? pixel.r : channel == 1 ? pixel.g : pixel.b;

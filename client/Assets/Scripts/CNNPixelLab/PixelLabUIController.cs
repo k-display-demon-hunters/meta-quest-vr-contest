@@ -8,12 +8,11 @@ namespace UI
         private readonly Button _detailButton;
         private readonly Button _nextButton;
         private readonly Text _instruction;
-        private readonly GameObject[] _background;
-        private readonly bool[] _backgroundStates = new bool[3];
+        private readonly GameObject _controls;
+        private bool _controlsWereActive;
         private bool _backgroundHidden;
 
-        public PixelLabUIController(Button detailButton, Button nextButton, Font font,
-            GameObject board, GameObject filter)
+        public PixelLabUIController(Button detailButton, Button nextButton, Font font)
         {
             _detailButton = detailButton;
             _nextButton = nextButton;
@@ -33,7 +32,7 @@ namespace UI
                 label.rectTransform.offsetMin = new Vector2(10, 5);
                 label.rectTransform.offsetMax = new Vector2(-10, -5);
             }
-            _background = new[] { board, filter, detailButton.transform.parent.gameObject };
+            _controls = detailButton.transform.parent.gameObject;
             RectTransform hint = new GameObject("Interaction hint", typeof(RectTransform)).GetComponent<RectTransform>();
             hint.SetParent(_detailButton.transform.parent, false);
             hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one * 0.5f;
@@ -102,11 +101,11 @@ namespace UI
         public void SetBackgroundHidden(bool hidden)
         {
             if (_backgroundHidden == hidden) { return; }
-            for (int i = 0; i < _background.Length; i++)
+            if (hidden)
             {
-                if (hidden) { _backgroundStates[i] = _background[i].activeSelf; }
-                _background[i].SetActive(hidden ? false : _backgroundStates[i]);
+                _controlsWereActive = _controls.activeSelf;
             }
+            _controls.SetActive(hidden ? false : _controlsWereActive);
             _backgroundHidden = hidden;
         }
     }

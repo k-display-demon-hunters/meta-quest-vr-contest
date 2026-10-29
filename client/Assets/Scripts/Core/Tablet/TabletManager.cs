@@ -12,6 +12,7 @@ namespace Tablet
         [SerializeField, HideInInspector] private Text _message;
         [SerializeField] private Font _font;
         [SerializeField] private Font _parchmentFont;
+        [SerializeField] private Font _parchmentTitleFont;
         [SerializeField] private Sprite _parchmentSprite;
         [SerializeField] private Transform[] _stageStartPoints;
         [SerializeField] private StageMoveEvent _stageMoveRequested = new StageMoveEvent();
@@ -28,6 +29,8 @@ namespace Tablet
         private int _detailReturnFocusIndex;
         private bool _initialized;
         internal TabletMapData MapData { get; private set; }
+        internal Font ParchmentFont => _parchmentFont != null ? _parchmentFont : _resolvedFont;
+        internal Font ParchmentTitleFont => _parchmentTitleFont != null ? _parchmentTitleFont : ParchmentFont;
 
         private TabletInputController.FocusGroup ActiveGroup => _ui.Shell.DetailOverlay.activeSelf
             ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
@@ -41,7 +44,8 @@ namespace Tablet
             _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(),
                 () => ActiveGroup, () => _ui.CanvasRect, SetInteraction, ToggleSettings, GoBack,
                 (control, mainGroup) => _learning.RefreshFocus(control, mainGroup));
-            _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentFont, _parchmentSprite, _input);
+            _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentFont,
+                _parchmentTitleFont, _parchmentSprite, _input);
             _parchment = new TabletParchmentController(_ui, _resources, _input.ResetFocus,
                 visible => _ui.Shell.FeedbackRoot.SetActive(visible), UpdateFeedback);
             _settings = new TabletSettingsController(this, _ui.Settings, () => _saveRequested.Invoke(), UpdateFeedback);
@@ -136,7 +140,7 @@ namespace Tablet
             _learning.RefreshProgress();
             _settings.RefreshSettingsValues();
             UpdateFeedback("교육 문서 수집",
-                "방으로 가는 길에서 양피지를 찾아\n오른손 Trigger 또는 Grip으로 획득하세요.\n\n획득한 문서는 오른쪽 아이템함에서\n선택하면 이곳에서 읽을 수 있습니다.");
+                "방으로 가는 길에서 양피지를 찾아\n오른손 Trigger 또는 Grip으로 열어보세요.\n\n세 페이지를 읽고 완료를 누르면\n오른쪽 아이템함에 보관됩니다.");
         }
 
         internal void ShowFactoryMap()

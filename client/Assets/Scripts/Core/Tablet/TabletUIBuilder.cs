@@ -36,6 +36,7 @@ namespace Tablet
         private readonly TabletVisualResources _resources;
         private readonly Font _resolvedFont;
         private readonly Font _parchmentFont;
+        private readonly Font _parchmentTitleFont;
         private readonly Sprite _parchmentSprite;
         private readonly TabletInputController _input;
         private TabletManager _tablet;
@@ -54,12 +55,13 @@ namespace Tablet
         public RectTransform CanvasRect => _canvasRect;
 
         public TabletUIBuilder(Transform tabletTransform, TabletVisualResources resources, Font font,
-            Font parchmentFont, Sprite parchmentSprite, TabletInputController input)
+            Font parchmentFont, Font parchmentTitleFont, Sprite parchmentSprite, TabletInputController input)
         {
             _tabletTransform = tabletTransform;
             _resources = resources;
             _resolvedFont = font;
             _parchmentFont = parchmentFont;
+            _parchmentTitleFont = parchmentTitleFont;
             _parchmentSprite = parchmentSprite;
             _input = input;
         }
@@ -269,7 +271,7 @@ namespace Tablet
                     21, FontStyle.Bold, TextColor));
                 Parchment.InventoryDescriptions.Add(PlaceText(item.transform, "Parchment Description", "", 1259f, top + 48f, 182f, 29f,
                     18, FontStyle.Normal, MutedTextColor));
-                Image icon = PlaceImage(item.transform, "Parchment Icon", 1188f, top + 17f, 46f, 56f, Color.white);
+                Image icon = PlaceImage(item.transform, "Parchment Icon", 1176f, top + 24f, 70f, 40f, Color.white);
                 icon.sprite = _parchmentSprite;
                 icon.type = Image.Type.Simple;
                 icon.preserveAspect = true;
@@ -279,40 +281,52 @@ namespace Tablet
 
         private void BuildParchmentReader()
         {
-            Color ink = new Color(0.13f, 0.17f, 0.24f);
-            Image paper = PlaceImage(_surfaceRect, "Parchment Reader", 450f, 280f, 660f, 656f, Color.white);
+            Color ink = Color.white;
+            Image paper = PlaceImage(_surfaceRect, "Parchment Reader", 77f, 112f, 1400f, 788f, Color.white);
             paper.sprite = _parchmentSprite;
             paper.type = Image.Type.Simple;
             Parchment.ParchmentReader = paper.gameObject;
-            Parchment.ParchmentSource = PlaceText(paper.transform, "Document Source", "", 524f, 322f, 512f, 35f,
-                21, FontStyle.Normal, ink);
-            Parchment.ParchmentTitle = PlaceText(paper.transform, "Document Title", "", 524f, 365f, 512f, 62f,
-                36, FontStyle.Normal, ink);
-            PlaceImage(paper.transform, "Ink Rule", 525f, 426f, 510f, 1.2f, new Color(0.15f, 0.2f, 0.3f, 0.3f)).sprite = null;
-            Parchment.ParchmentBody = PlaceText(paper.transform, "Document Body", "", 525f, 444f, 510f, 386f,
-                29, FontStyle.Normal, ink, TextAnchor.UpperLeft);
-            Parchment.ParchmentBody.lineSpacing = 1.03f;
+            Parchment.ParchmentSource = PlaceText(paper.transform, "Document Source", "", 345f, 269f, 840f, 32f,
+                22, FontStyle.Normal, ink);
+            Parchment.ParchmentTitle = PlaceText(paper.transform, "Document Title", "", 345f, 307f, 850f, 54f,
+                42, FontStyle.Normal, ink);
+            PlaceImage(paper.transform, "Hologram Rule", 345f, 369f, 850f, 2f,
+                new Color(0.55f, 0.9f, 1f, 0.75f)).sprite = null;
+            Parchment.ParchmentBody = PlaceText(paper.transform, "Document Body", "", 345f, 383f, 850f, 306f,
+                24, FontStyle.Normal, ink, TextAnchor.UpperLeft);
+            Parchment.ParchmentBody.lineSpacing = 1.06f;
             Parchment.ParchmentBody.resizeTextForBestFit = true;
-            Parchment.ParchmentBody.resizeTextMinSize = 26;
-            Parchment.ParchmentBody.resizeTextMaxSize = 29;
-            Font handwriting = _parchmentFont != null ? _parchmentFont : _resolvedFont;
-            Parchment.ParchmentTitle.font = handwriting;
-            Parchment.ParchmentSource.font = handwriting;
-            Parchment.ParchmentBody.font = handwriting;
+            Parchment.ParchmentBody.resizeTextMinSize = 21;
+            Parchment.ParchmentBody.resizeTextMaxSize = 24;
+            Font parchmentFont = _parchmentFont != null ? _parchmentFont : _resolvedFont;
+            Parchment.ParchmentTitle.font = _parchmentTitleFont != null ? _parchmentTitleFont : parchmentFont;
+            Parchment.ParchmentSource.font = parchmentFont;
+            Parchment.ParchmentBody.font = parchmentFont;
 
             Parchment.ParchmentExample = new GameObject("Lesson Illustration", typeof(RectTransform));
             Parchment.ParchmentExample.transform.SetParent(paper.transform, false);
             RectTransform exampleRect = (RectTransform)Parchment.ParchmentExample.transform;
             exampleRect.sizeDelta = paper.rectTransform.sizeDelta;
 
-            Parchment.PreviousParchmentPage = PlaceButton(paper.transform, "Previous Document Page", "이전", 524f, 858f, 104f, 49f,
-                () => _parchment.ChangeParchmentPage(-1), new Color(0.96f, 0.9f, 0.75f));
-            Parchment.ParchmentPageLabel = PlaceText(paper.transform, "Document Page Count", "", 635f, 858f, 154f, 49f,
+            PlaceImage(paper.transform, "Reader Controls Backdrop", 345f, 744f, 850f, 72f,
+                new Color(0.015f, 0.08f, 0.15f, 0.96f)).sprite = _resources.RoundedSprite;
+            Color buttonColor = new Color(0.03f, 0.17f, 0.27f, 0.96f);
+            Parchment.PreviousParchmentPage = PlaceButton(paper.transform, "Previous Document Page", "이전", 420f, 758f, 140f, 50f,
+                () => _parchment.ChangeParchmentPage(-1), buttonColor);
+            Parchment.ParchmentPageLabel = PlaceText(paper.transform, "Document Page Count", "", 585f, 758f, 154f, 50f,
                 22, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
-            Parchment.NextParchmentPage = PlaceButton(paper.transform, "Next Document Page", "다음", 797f, 858f, 104f, 49f,
-                () => _parchment.ChangeParchmentPage(1), new Color(0.96f, 0.9f, 0.75f));
-            PlaceButton(paper.transform, "Close Document", "닫기", 918f, 858f, 116f, 49f,
-                _parchment.CloseParchment, new Color(0.9f, 0.85f, 0.74f));
+            Parchment.ParchmentPageLabel.font = parchmentFont;
+            Parchment.NextParchmentPage = PlaceButton(paper.transform, "Next Document Page", "다음", 760f, 758f, 140f, 50f,
+                () => _parchment.ChangeParchmentPage(1), buttonColor);
+            Button close = PlaceButton(paper.transform, "Close Document", "닫기", 1040f, 758f, 140f, 50f,
+                _parchment.CloseParchment, buttonColor);
+            foreach (Button button in new[] { Parchment.PreviousParchmentPage, Parchment.NextParchmentPage, close })
+            {
+                Text label = button.GetComponentInChildren<Text>();
+                label.font = parchmentFont;
+                label.fontStyle = FontStyle.Normal;
+                label.color = ink;
+            }
             paper.gameObject.SetActive(false);
         }
 
@@ -336,23 +350,23 @@ namespace Tablet
             }
 
             Transform parent = Parchment.ParchmentExample.transform;
-            Color ink = new Color(0.13f, 0.17f, 0.24f);
+            Color ink = Color.white;
             if (_parchment.SelectedIndex == 0)
             {
                 string[] labels = { "R 채널", "G 채널", "B 채널" };
                 for (int index = 0; index < 3; index++)
                 {
-                    float x = 568f + index * 156f;
-                    Image grid = PlaceImage(parent, labels[index], x, 742f, 110f, 76f, Color.white);
+                    float x = 452f + index * 260f;
+                    Image grid = PlaceImage(parent, labels[index], x, 625f, 110f, 76f, Color.white);
                     grid.sprite = _resources.PixelSprites[index + 1];
                     grid.type = Image.Type.Simple;
-                    PlaceText(parent, "Channel Caption " + index, labels[index], x, 819f, 110f, 27f,
+                    PlaceParchmentText(parent, "Channel Caption " + index, labels[index], x, 704f, 110f, 27f,
                         19, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
                 }
             }
             else if (_parchment.SelectedIndex == 1)
             {
-                PlaceText(parent, "Padding Example", "입력 5×5  ·  필터 3×3  ·  이동 1칸\n\n패딩 없음 → 출력 3×3\n사방에 1칸 패딩 → 출력 5×5", 538f, 729f, 487f, 117f,
+                PlaceParchmentText(parent, "Padding Example", "입력 5×5  ·  필터 3×3  ·  이동 1칸\n\n패딩 없음 → 출력 3×3\n사방에 1칸 패딩 → 출력 5×5", 434f, 608f, 760f, 119f,
                     23, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
             }
             else if (_parchment.SelectedIndex == 2 || _parchment.SelectedIndex == 3)
@@ -361,15 +375,15 @@ namespace Tablet
             }
             else
             {
-                PlaceText(parent, "ReLU Example", "입력     −3     −1      0      2      5\n\nReLU      0       0      0      2      5", 538f, 735f, 487f, 108f,
+                PlaceParchmentText(parent, "ReLU Example", "입력     −3     −1      0      2      5\n\nReLU      0       0      0      2      5", 434f, 612f, 760f, 108f,
                     24, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
             }
         }
 
         private void BuildFeatureMapExample(Transform parent)
         {
-            PlaceText(parent, "Example Display Note", "필터 반응의 절댓값을 밝기로 표시한 예시", 548f, 723f, 460f, 23f,
-                16, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleCenter);
+            PlaceParchmentText(parent, "Example Display Note", "필터 반응의 절댓값을 밝기로 표시한 예시", 434f, 608f, 760f, 23f,
+                16, FontStyle.Normal, new Color(0.73f, 0.91f, 1f), TextAnchor.MiddleCenter);
             string[] captions = _parchment.SelectedIndex == 3
                 ? new[] { "세로 경계", "가로 경계", "주변 경계" }
                 : new[] { "원본", "세로 경계", "가로 경계" };
@@ -378,29 +392,39 @@ namespace Tablet
             for (int index = 0; index < 3; index++)
             {
                 int mapIndex = index;
-                float x = 548f + index * 161f;
-                Image map = PlaceImage(parent, "Example Map " + index, x + 34f, 748f, 70f, 70f, Color.white);
+                float x = 454f + index * 260f;
+                Image map = PlaceImage(parent, "Example Map " + index, x + 34f, 632f, 70f, 70f, Color.white);
                 map.sprite = _resources.LessonMapSprites[_parchment.SelectedIndex == 3 ? index + 1 : index];
                 map.type = Image.Type.Simple;
                 if (_parchment.SelectedIndex == 3)
                 {
                     Parchment.FeatureMapImages.Add(map);
                     map.enabled = _parchment.IsFeatureMapVisible(index);
-                    Button toggle = PlaceButton(parent, "Toggle Example Map " + index, "", x, 819f, 138f, 30f,
-                        () => _parchment.ToggleFeatureMap(mapIndex), AccentSoftColor);
+                    Button toggle = PlaceButton(parent, "Toggle Example Map " + index, "", x, 706f, 138f, 30f,
+                        () => _parchment.ToggleFeatureMap(mapIndex), new Color(0.03f, 0.17f, 0.27f, 0.96f));
                     Text label = toggle.GetComponentInChildren<Text>();
                     label.fontSize = 17;
+                    label.font = _parchmentFont != null ? _parchmentFont : _resolvedFont;
+                    label.color = Color.white;
                     label.text = captions[index] + (_parchment.IsFeatureMapVisible(index) ? " · 켜짐" : " · 꺼짐");
                     Parchment.FeatureMapLabels.Add(label);
                     Parchment.FeatureMapButtons.Add(toggle);
                 }
                 else
                 {
-                    PlaceText(parent, "Example Caption " + index, captions[index], x, 819f, 138f, 30f,
-                        20, FontStyle.Normal, TextColor, TextAnchor.MiddleCenter);
+                    PlaceParchmentText(parent, "Example Caption " + index, captions[index], x, 706f, 138f, 30f,
+                        20, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
                 }
             }
             _buildingGroup = previousGroup;
+        }
+
+        private Text PlaceParchmentText(Transform parent, string name, string value, float x, float y,
+            float width, float height, int fontSize, FontStyle style, Color color, TextAnchor alignment)
+        {
+            Text label = PlaceText(parent, name, value, x, y, width, height, fontSize, style, color, alignment);
+            label.font = _parchmentFont != null ? _parchmentFont : _resolvedFont;
+            return label;
         }
 
         private void BuildMainFeedback()

@@ -115,7 +115,7 @@ namespace UI
 
         private void LateUpdate()
         {
-            if (!_initialized || _isRevealStage) { return; }
+            if (!_initialized || _isRevealStage || (_revealStage != null && _revealStage.IsReadyForConvolution)) { return; }
             if (_selection.UpdateSelection())
             {
                 _ui.SetSelectionAvailable(_selection.HasSelection);
@@ -126,8 +126,13 @@ namespace UI
         public void ShowDetails()
         {
             if (_isRevealStage || !_selection.HasSelection || _filter.isSelected) { return; }
-            _rgbView.Show(_pixels, Columns, Rows, _selection.SelectedPixel, false);
-            _detail.SetActive(true);
+            if (_revealStage == null || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
+            _isRevealStage = true;
+            _ui.ShowRevealStarted();
+            _selection.SuspendSelection();
+            _filter.gameObject.SetActive(false);
+            _revealStage.ShowImage(_pixels, Columns, Rows, _selection.SelectedPixel);
+            _revealStage.RevealPixels();
         }
 
         public void BeginConvolution()
@@ -177,33 +182,19 @@ namespace UI
         private void HandlePixelsRevealed()
         {
             _isRevealStage = false;
-            _filter.gameObject.SetActive(true);
-            _selection.EnsureSelection();
             _ui.ShowPixelsRevealed(_selection.HasSelection);
             UpdateInstruction();
         }
 
         public void NextStage()
         {
-            if (_isRevealStage && _revealStage != null)
-            {
-                _revealStage.CompleteReveal();
-                return;
-            }
+            if (_isRevealStage) { return; }
             if (_revealStage != null && _revealStage.IsReadyForConvolution)
             {
                 BeginConvolution();
                 return;
             }
-            if (_isRevealStage || _filter.isSelected || _revealStage == null
-                || _revealStage.Phase != PixelRevealStage.RevealPhase.Inactive) { return; }
-            CloseDetails();
-            _isRevealStage = true;
-            _ui.ShowRevealStarted();
-            _selection.SuspendSelection();
-            _detail.SetActive(false);
-            _filter.gameObject.SetActive(false);
-            _revealStage.ShowImage(_pixels, Columns, Rows);
+            ShowDetails();
         }
 
         private void HandleReleased(SelectExitEventArgs args)

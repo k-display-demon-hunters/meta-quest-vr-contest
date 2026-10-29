@@ -27,7 +27,7 @@
 2. `PixelImageFactory.CreateSmoothPhoto()`가 원본을 128×72로 샘플링한 뒤 5×5 평균 블러를 적용한다. `SamplePixels()`가 이 결과를 32×18 `Color32[]`로 만든다.
 3. Manager는 부드러운 사진을 이미지 표면에, Point 필터링으로 만든 32×18 텍스처를 선택 렌즈에 연결한다. Selection/UI Controller와 `RgbConvolutionView`를 생성하고 필터·픽셀 전환 이벤트를 구독한다.
 4. `LateUpdate()`에서 SelectionController가 놓기 후 선택을 확정하면 상세 보기 버튼과 안내를 갱신한다.
-5. `ShowDetails()`는 `RgbConvolutionView.Show(..., false)`로 RGB 관찰을 연다. 픽셀 전환 완료 후 `BeginConvolution()`은 같은 데이터를 `Show(..., true)`로 전달해 계산 학습을 시작한다.
+5. `ShowDetails()`는 선택한 영역을 유지한 채 이미지의 픽셀 전환과 RGB 깊이 분리 애니메이션을 시작한다. 완료 후 `다음으로`가 `BeginConvolution()`을 호출하고, 같은 원본·선택 좌표를 `RgbConvolutionView.Show(..., true)`에 전달한다.
 
 UI 입력은 `OnEnable()`에서 준비한다. EventSystem이 없으면 씬 하위에 생성하고, 기존 EventSystem에 `XRUIInputModule`만 없으면 그 모듈을 추가한다. 비활성화할 때는 자신이 생성한 EventSystem 또는 추가한 모듈을 정리한다.
 
@@ -41,7 +41,11 @@ UI 입력은 `OnEnable()`에서 준비한다. EventSystem이 없으면 씬 하�
 Inactive → AwaitingClick → Revealing → Revealed
 ```
 
-다음으로를 누르면 이미지의 `XRSimpleInteractable`과 콜라이더를 활성화한다. 보드는 씬 시작부터 원래 크기의 2배(4.8×2.7m)로 고정되며, 다음으로를 눌러도 추가 확대나 조작판 이동은 수행하지 않는다. 이미지 Activate가 픽셀 전환을 시작하고, 열별 `CanvasGroup` 표시가 끝나면 `PixelsRevealed` 이벤트를 발생시킨다. Manager는 이 이벤트를 받아 필터와 선택을 복원하고 합성곱 진입 버튼을 활성화한다. 색 선택은 Trigger, 필터 이동은 Grip으로 안내한다. `IsReadyForConvolution`은 `Revealed` 상태에서만 참이다.
+이미지는 시작부터 4.8×2.7m 크기로 표시한다. 방 안의 별도 위치에 놓인 필터를 찾아 이미지 위에 놓으면 `자세히 보기`가 활성화된다. 첫 화면은 `자세히 보기 / 처음으로`, 자세히 보기 이후는 `다음으로 / 처음으로` 두 버튼만 표시한다. 픽셀 전환과 RGB 분리가 진행되는 동안 다음 버튼은 비활성화되며 처음으로는 애니메이션을 취소한다.
+
+`자세히 보기`에서 원본 사진이 열 순서로 컬러 입체 픽셀로 바뀌고, `RgbPixelStackController`가 선택한 3×3 영역을 앞으로 확대하며 같은 위치의 R·G·B를 깊이 방향의 세 층으로 펼친다. 숫자는 각 층의 앞면에 표시하고 별도의 R/G/B 선택 버튼은 만들지 않는다. RGB 층의 깊이는 구조를 이해하기 위한 공간 표현이며 실제 디스플레이 픽셀의 물리적인 층이나 색 세기의 크기를 뜻하지 않는다. 옆으로 이동해 겹친 층을 관찰한 후 같은 선택 영역으로 합성곱을 시작한다.
+
+원본은 `OpeningBroadcast.png`이며 오프닝 대형 디스플레이의 뉴스 방송을 고정 시점에서 렌더링한 것이다. 표시·렌즈·계산이 같은 원본을 사용한다. 필터는 콘텐츠 로컬 (-2.4, 1.15, -0.6)에 배치하고 기존 보드 기준 복귀 좌표를 사용하여 공장 배치 회전에도 처음 위치로 돌아간다.
 
 `RgbConvolutionView.Show()`는 선택한 3×3 영역을 위에서 아래 순서로 읽어 `int[3, 9]` 입력 배열을 채운다. 관찰 모드에서는 `SpatialConvolutionController.Observe()`를 통해 영역 꺼내기와 RGB 층 표시를 진행한다. 계산 모드에서는 `ConvolutionExercise.Begin()`으로 입력과 고정 가중치를 전달한다.
 
@@ -113,3 +117,8 @@ Inactive → AwaitingClick → Revealing → Revealed
 Unity 6000.3.24f1 Play에서 CNNPixelLab을 실행하고 실제 Camera.Render 결과로 정면 필터와 측면 픽셀 화면을 확인했다. 초기 MaterialPropertyBlock 필드 생성으로 발생한 Unity 생성자 예외를 BuildPixels 초기화로 옮겨 해결했다. 숫자 Canvas의 정렬 순서를 높이고 전환 완료 후 원본 사진 Renderer를 숨겨 반투명 블록 뒤 사진의 색 혼합과 숫자 가림을 수정했다. ResetStage에서는 사진을 다시 표시한다.
 
 최종 컴파일 완료·실패 없음, RevealPixels의 Revealing→Revealed 전환, G/B 버튼 onClick 호출 후 각각 576개 숫자의 원본 성분값 일치, NextStage 호출 후 합성곱 화면 활성화를 확인했다. 이는 에디터 실행·직접 콜백 검증이며 Quest 컨트롤러 레이 클릭이나 공장 전체 동선의 실기기 검증은 아니다. 자동화 연결의 Play/domain reload 중 응답 시간 초과 로그와 수정 전 예외 이력은 최종 콘텐츠 오류와 구분했다. 사용자의 후속 요청에 따라 APK 재빌드·기기 설치는 수행하지 않았다. 새 테스트 파일은 생성하지 않았다.
+
+
+## 2026-10-29 입체 관찰 동선 변경
+
+새 RGB 층 표시는 `Scripts/CNNPixelLab/RgbPixelStackController.cs`가 담당한다. 공용 XR 입력·공장 이동·다음 방 완료 조건은 유지한다. 기존 별도 RGB 관찰 화면은 이번 진입 흐름에서 호출하지 않으며 합성곱 설명·퀴즈는 기존 계산 화면을 사용한다. Unity 6000.3.24f1 컴파일 성공을 확인했다. Play에서 선택 상태를 설정하여 Revealing→Revealed 완료, RGB 세 층의 서로 다른 깊이, 다음으로 합성곱 화면 활성화, 처음으로 초기화를 확인했다. MaterialPropertyBlock 생성자 초기화 오류를 Initialize로 옮겨 수정했다. 실제 카메라 렌더링으로 입체 블록과 숫자 표시도 확인했으나, 근접 정면에서는 뒤 층 숫자가 겹쳐 보이는 한계가 있다. 검증은 에디터 콜백 기반이며 Quest 직접 잡기·공장 전체 동선 검증이나 APK 빌드는 수행하지 않았다.

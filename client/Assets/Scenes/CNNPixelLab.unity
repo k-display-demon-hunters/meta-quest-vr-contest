@@ -2188,7 +2188,7 @@ Transform:
   m_GameObject: {fileID: 1241807117}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.55, y: 1.55, z: 1.5}
+  m_LocalPosition: {x: -2.4, y: 1.15, z: -0.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2371,7 +2371,6 @@ MonoBehaviour:
   m_ThrowVelocityScale: 1.5
   m_ThrowAngularVelocityScale: 1
   m_ForceGravityOnDetach: 0
-  m_UnparentTransformOnGrab: 1
   m_RetainTransformParent: 1
   m_StartingSingleGrabTransformers: []
   m_StartingMultipleGrabTransformers: []
@@ -3982,7 +3981,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7ba0b356c691854e93b96608ad06758, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI.CNNPixelLabManager
-  _sourceImage: {fileID: 2800000, guid: 5747fbb933e9f95428b858610b09a826, type: 3}
+  _sourceImage: {fileID: 2800000, guid: 67b08e27b4d8dd94a9828493264db320, type: 3}
   _board: {fileID: 1902821098}
   _boardRenderer: {fileID: 712224470}
   _boardSize: {x: 2.4, y: 1.35}

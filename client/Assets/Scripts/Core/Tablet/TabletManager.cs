@@ -26,13 +26,14 @@ namespace Tablet
         private TabletParchmentController _parchment;
         private TabletSettingsController _settings;
         private TabletLearningController _learning;
+        private TabletDetailController _detail;
+        private TabletMapData _mapData;
         private int _detailReturnFocusIndex;
         private bool _initialized;
-        internal TabletMapData MapData { get; private set; }
         internal Font ParchmentFont => _parchmentFont != null ? _parchmentFont : _resolvedFont;
         internal Font ParchmentTitleFont => _parchmentTitleFont != null ? _parchmentTitleFont : ParchmentFont;
 
-        private TabletInputController.FocusGroup ActiveGroup => _ui.Shell.DetailOverlay.activeSelf
+        private TabletInputController.FocusGroup ActiveGroup => _detail.IsOpen
             ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
             ? TabletInputController.FocusGroup.Stage : _settings.IsOpen
             ? TabletInputController.FocusGroup.Settings : TabletInputController.FocusGroup.Main;
@@ -42,27 +43,26 @@ namespace Tablet
             ResolveFont();
             _resources = new TabletVisualResources();
             _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(),
-                () => ActiveGroup, () => _ui.CanvasRect, SetInteraction, ToggleSettings, GoBack,
-                (control, mainGroup) => _learning.RefreshFocus(control, mainGroup));
+                () => ActiveGroup, () => _ui.CanvasRect);
             _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentFont,
                 _parchmentTitleFont, _parchmentSprite, _input);
-            _parchment = new TabletParchmentController(_ui, _resources, _input.ResetFocus,
-                visible => _ui.Shell.FeedbackRoot.SetActive(visible), UpdateFeedback);
-            _settings = new TabletSettingsController(this, _ui.Settings, () => _saveRequested.Invoke(), UpdateFeedback);
-            _learning = new TabletLearningController(transform, _stageStartPoints, _ui.Learning,
-                _resources, HandleStageMoveRequested, UpdateFeedback);
+            _parchment = new TabletParchmentController(_ui, _resources);
+            _settings = new TabletSettingsController(this, _ui.Settings);
+            _learning = new TabletLearningController(_ui.Learning, _resources);
+            _detail = new TabletDetailController(_ui.Shell);
             _settings.LoadSettings(out int stageIndex, out int itemIndex);
             _learning.RestoreSelection(stageIndex);
             _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
-            _ui.Build(this, _parchment, _settings, _learning);
+            _ui.Build(_settings.Brightness, _settings.Volume, _parchment.HasParchment);
             RefreshAll();
             _initialized = true;
         }
 
         private void OnEnable()
         {
-            _input?.Enable();
+            SubscribeEvents();
+            _input.Enable();
         }
 
         private void Update()
@@ -81,28 +81,17 @@ namespace Tablet
 
         public void SetMapData(TabletMapData data)
         {
-            MapData = data;
-            foreach (TabletMinimapController map in GetComponentsInChildren<TabletMinimapController>(true))
-            {
-                map.RebuildMap();
-            }
+            _mapData = data;
+            _ui.SetMapData(data);
         }
 
         public void ClearMapData(TabletMapData data)
         {
             // An unloading scene must not clear a newer scene's map.
-            if (MapData == data)
+            if (_mapData == data)
             {
                 SetMapData(null);
             }
-        }
-
-        private void HandleStageMoveRequested(int stageIndex)
-        {
-            _stageMoveRequested.Invoke(stageIndex);
-            _ui.Shell.StageMenu.SetActive(false);
-            _settings.SetSettingsVisible(false);
-            _input.ResetFocus(SettingsFocusIndex());
         }
 
         internal void SaveSettings()
@@ -146,8 +135,7 @@ namespace Tablet
         internal void ShowFactoryMap()
         {
             ShowDetail("공장 안내도", "", false);
-            _ui.Shell.DetailBody.gameObject.SetActive(false);
-            _ui.Shell.FactoryMapView.SetActive(true);
+            _detail.ShowMap();
         }
 
         internal void ShowHint()
@@ -167,38 +155,27 @@ namespace Tablet
 
         internal void ShowDetail(string title, string body, bool showImage)
         {
-            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(false);
-            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "완료";
-            _ui.Shell.FactoryMapView.SetActive(false);
-            _ui.Shell.DetailBody.gameObject.SetActive(true);
             _detailReturnFocusIndex = _input.FocusIndex;
-            _ui.Shell.DetailTitle.text = title;
-            _ui.Shell.DetailBody.text = body;
-            _ui.Shell.DetailBody.fontSize = showImage ? 23 : 27;
-            _ui.Shell.DetailBody.rectTransform.anchoredPosition = new Vector2(0f, showImage ? 211f : 60f);
-            _ui.Shell.DetailBody.rectTransform.sizeDelta = new Vector2(700f, showImage ? 54f : 330f);
-            _ui.Shell.DetailImage.gameObject.SetActive(showImage);
-            _ui.Shell.DetailOverlay.SetActive(true);
+            _detail.Show(title, body, showImage);
             _input.ResetFocus(0);
         }
 
         internal void CloseDetail()
         {
-            _ui.Shell.DetailOverlay.SetActive(false);
+            _detail.Close();
             _input.ResetFocus(_detailReturnFocusIndex);
         }
 
         internal void RequestApplicationQuit()
         {
             ShowDetail("앱 종료", "체험을 종료하고 Quest 홈으로 돌아갈까요?\n\n현재 체험 진행과 학습 결과는 유지되지 않습니다.", false);
-            _ui.Shell.DetailCloseButton.GetComponentInChildren<Text>().text = "취소";
-            _ui.Shell.ConfirmQuitButton.gameObject.SetActive(true);
+            _detail.ShowQuitConfirmation();
             _input.ResetFocus(0);
         }
 
         internal void ConfirmApplicationQuit()
         {
-            if (!_ui.Shell.DetailOverlay.activeSelf || !_ui.Shell.ConfirmQuitButton.gameObject.activeSelf)
+            if (!_detail.IsQuitConfirmationOpen)
             {
                 return;
             }
@@ -216,7 +193,7 @@ namespace Tablet
                 SetInteraction(true);
             }
             bool open = !_settings.IsOpen;
-            _ui.Shell.DetailOverlay.SetActive(false);
+            _detail.Close();
             _ui.Shell.StageMenu.SetActive(false);
             _settings.SetSettingsVisible(open);
             _input.ResetFocus(open ? 0 : SettingsFocusIndex());
@@ -253,17 +230,14 @@ namespace Tablet
             {
                 _settings.SetSettingsVisible(false);
                 _ui.Shell.StageMenu.SetActive(false);
-                if (_ui.Shell.DetailOverlay != null)
-                {
-                    _ui.Shell.DetailOverlay.SetActive(false);
-                }
+                _detail.Close();
             }
             _input.SetInteraction(active, _parchment.SelectedIndex);
         }
 
         private void GoBack()
         {
-            if (_ui.Shell.DetailOverlay.activeSelf)
+            if (_detail.IsOpen)
             {
                 CloseDetail();
             }
@@ -289,6 +263,89 @@ namespace Tablet
             }
         }
 
+        private void SubscribeEvents()
+        {
+            _ui.ParchmentSelected += _parchment.SelectItem;
+            _ui.ParchmentPageRequested += _parchment.ChangeParchmentPage;
+            _ui.ParchmentCloseRequested += _parchment.CloseParchment;
+            _ui.FeatureMapToggleRequested += _parchment.ToggleFeatureMap;
+            _ui.CurrentTaskRequested += _learning.ConfirmCurrentTask;
+            _ui.StageRequested += _learning.MoveToStage;
+            _ui.BrightnessChanged += _settings.SetBrightness;
+            _ui.VolumeChanged += _settings.SetVolume;
+            _ui.VibrationRequested += _settings.ToggleVibration;
+            _input.InteractionRequested += SetInteraction;
+            _input.SettingsRequested += ToggleSettings;
+            _input.BackRequested += GoBack;
+            _input.FocusChanged += _learning.RefreshFocus;
+            _ui.SettingsRequested += ToggleSettings;
+            _ui.LearningInfoRequested += ShowLearningInfo;
+            _ui.FactoryMapRequested += ShowFactoryMap;
+            _ui.HintRequested += ShowHint;
+            _ui.ImageDetailRequested += ShowImageDetail;
+            _ui.SaveRequested += SaveSettings;
+            _ui.ExitRequested += RequestExit;
+            _ui.DetailCloseRequested += CloseDetail;
+            _ui.QuitConfirmationRequested += RequestApplicationQuit;
+            _ui.QuitRequested += ConfirmApplicationQuit;
+            _ui.StageMenuRequested += ShowStageMenu;
+            _parchment.FocusRequested += _input.ResetFocus;
+            _parchment.FeedbackVisibilityChanged += SetFeedbackVisible;
+            _parchment.FeedbackRequested += UpdateFeedback;
+            _settings.Saved += HandleSettingsSaved;
+            _settings.FeedbackRequested += UpdateFeedback;
+            _learning.FeedbackRequested += UpdateFeedback;
+        }
+
+        private void UnsubscribeEvents()
+        {
+            _ui.ParchmentSelected -= _parchment.SelectItem;
+            _ui.ParchmentPageRequested -= _parchment.ChangeParchmentPage;
+            _ui.ParchmentCloseRequested -= _parchment.CloseParchment;
+            _ui.FeatureMapToggleRequested -= _parchment.ToggleFeatureMap;
+            _ui.CurrentTaskRequested -= _learning.ConfirmCurrentTask;
+            _ui.StageRequested -= _learning.MoveToStage;
+            _ui.BrightnessChanged -= _settings.SetBrightness;
+            _ui.VolumeChanged -= _settings.SetVolume;
+            _ui.VibrationRequested -= _settings.ToggleVibration;
+            _input.InteractionRequested -= SetInteraction;
+            _input.SettingsRequested -= ToggleSettings;
+            _input.BackRequested -= GoBack;
+            _input.FocusChanged -= _learning.RefreshFocus;
+            _ui.SettingsRequested -= ToggleSettings;
+            _ui.LearningInfoRequested -= ShowLearningInfo;
+            _ui.FactoryMapRequested -= ShowFactoryMap;
+            _ui.HintRequested -= ShowHint;
+            _ui.ImageDetailRequested -= ShowImageDetail;
+            _ui.SaveRequested -= SaveSettings;
+            _ui.ExitRequested -= RequestExit;
+            _ui.DetailCloseRequested -= CloseDetail;
+            _ui.QuitConfirmationRequested -= RequestApplicationQuit;
+            _ui.QuitRequested -= ConfirmApplicationQuit;
+            _ui.StageMenuRequested -= ShowStageMenu;
+            _parchment.FocusRequested -= _input.ResetFocus;
+            _parchment.FeedbackVisibilityChanged -= SetFeedbackVisible;
+            _parchment.FeedbackRequested -= UpdateFeedback;
+            _settings.Saved -= HandleSettingsSaved;
+            _settings.FeedbackRequested -= UpdateFeedback;
+            _learning.FeedbackRequested -= UpdateFeedback;
+        }
+
+        private void SetFeedbackVisible(bool visible)
+        {
+            _ui.Shell.FeedbackRoot.SetActive(visible);
+        }
+
+        private void HandleSettingsSaved()
+        {
+            _saveRequested.Invoke();
+        }
+
+        private void ShowImageDetail()
+        {
+            ShowDetail("원본 이미지", "오염 픽셀과 주변 픽셀의 밝기·색을 비교하세요.", true);
+        }
+
         private void OnDisable()
         {
             _input?.Disable();
@@ -297,6 +354,7 @@ namespace Tablet
                 SetInteraction(false);
             }
             _settings?.StopAnimation();
+            UnsubscribeEvents();
         }
 
         private void OnDestroy()

@@ -25,29 +25,29 @@
 ```text
 FactoryIntro
   → FactoryEnvironment
-      → FactoryTutorial (안내 완료 후 언로드)
+      → FactoryTutorial (안내 완료 또는 첫 학습 진입 시 언로드)
       → CNNPixelLab
       → CNNFeatureMapLab
       → CNNModelDesignLab
       → 뒤쪽 출구 → FactoryEnding
 ```
 
-`FactoryLearningFlowManager.Start`는 `FactoryPlayerController.PlaceAtEntrance()`를 호출해 유지된 XR 리그를 FactoryNavigationData의 `Entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. Controller가 제공한 카메라를 진입 영역에 연결한 뒤 `FactorySceneLoadController.RunTutorial()`을 요청한다. Controller가 `FactoryTutorial`을 Additive로 로드하고 초기화한 뒤 `FactoryTutorialManager.IsComplete`를 기다려 언로드한다. SceneLoadController는 성공한 뒤 씬에 미리 배치한 안내판을 켠다. Manager는 시작 시 첫 경로를 켜고 튜토리얼 완료 여부와 관계없이 학습 진입을 허용한다. 첫 학습 진입 시 `EndTutorial()`을 요청하고, 튜토리얼 언로드가 끝나면 학습 씬을 로드한다. 튜토리얼이 로딩 중이면 로드 완료 후 초기화하지 않고 바로 언로드한다. 튜토리얼 로딩 실패 또는 완료 전 안내 오브젝트 해제는 Controller에서 로그로 알린다. 안내는 공장 배경을 유지한 입구에서 수행 판정 없는 다섯 페이지로 진행한다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
+`FactoryLearningFlowManager.Start`는 `FactoryPlayerController.PlaceAtEntrance()`를 호출해 유지된 XR 리그를 FactoryNavigationData의 `Entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. Controller가 제공한 카메라를 진입 영역에 연결한 뒤 `FactorySceneLoadController.RunTutorial()`을 요청한다. Controller가 `FactoryTutorial`을 Additive로 로드하고 초기화한 뒤 `FactoryTutorialManager.IsComplete`를 기다려 언로드한다. SceneLoadController는 성공한 뒤 씬에 미리 배치한 안내판을 켠다. Manager는 시작 시 첫 경로를 켜고 튜토리얼 완료 여부와 관계없이 학습 진입을 허용한다. 첫 학습 진입 시 `EndTutorial()`을 요청하고, 튜토리얼 언로드가 끝나면 학습 씬을 로드한다. 튜토리얼이 로딩 중이면 로드 완료 후 초기화하지 않고 바로 언로드한다. 튜토리얼 로딩 실패 또는 완료 전 안내 오브젝트 해제는 Controller에서 로그로 알린다. 안내는 공장 배경을 유지한 입구에서 수행 판정 없는 14페이지로 진행한다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
 
 1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
-2. 플레이어가 다음 영역에 머물러도 해당 방의 양피지를 모두 열람하고 `완료`하지 않았다면 체험 씬을 로드하지 않는다. Pixel Lab은 01·02, Feature Map Lab은 03·04, Model Design Lab은 05가 필요하다. 조건을 충족하면 대상 씬을 Additive로 로드하며, 로딩 중 중복 요청은 차단한다.
+2. 플레이어가 다음 영역에 머물러도 해당 방의 양피지를 모두 열람하고 `완료`하지 않았다면 체험 씬을 로드하지 않는다. Pixel Lab은 01·02, Feature Map Lab은 03·04, Model Design Lab은 05가 필요하다. 조건을 충족하면 대상 씬을 Additive로 로드하며, 로딩 중 중복 요청은 차단한다. 공장 Manager는 잡기 상태를 별도 검사하지 않지만 피처맵 완료 프로퍼티는 자체 잡기 상태를 포함한다.
 3. `CNNPixelLabManager`, `CNNFeatureMapLabManager`, `CNNModelDesignLabManager` 중 하나가 포함된 루트를 체험 콘텐츠로 찾는다.
-4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠를 기준점에 배치하고 Rigidbody 위치를 맞춘다. 픽셀 체험은 보드 기준 로컬 좌표로 필터 복귀 위치와 회전을 관리하므로 공장에서 별도로 보정하지 않는다.
+4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠 위치에 `ContentAnchor.position - Vector3.forward * 1.5f` 오프셋을 더하고 Rigidbody 위치·회전을 Transform에 맞춘다. 콘텐츠 회전은 이 배치 함수에서 변경하지 않는다. 픽셀 체험은 보드 기준 로컬 좌표로 필터 복귀 위치와 회전을 관리하므로 공장에서 별도로 보정하지 않는다.
 5. 다음 콘텐츠 준비가 끝나면 완료 조건을 다시 확인하고, 이전 학습 씬에서 잡고 있던 물체를 XRI `SelectExit`로 놓은 뒤 이전 체험을 언로드한다. 엔딩 전환도 같은 선택 해제를 수행하며, 태블릿처럼 다른 씬에 속한 물체는 해제하지 않는다. 씬 로드에 실패하면 기존 체험을 유지한다. 씬 내부의 필수 콘텐츠 구성 누락은 런타임 복구 대상으로 처리하지 않는다. 로드 실패는 Console에 알리고, 해당 영역에 머무르면 다음 진입 검사 주기(0.1초)에 다시 로딩을 요청한다.
 6. 공장 씬을 활성 씬으로 유지한다. 체험 전환 때 플레이어를 이동시키지 않는다. 현재 방을 잠깐 나가도 체험은 유지되며, 다음 체험으로 진행한 뒤 이전 체험의 재실행·진행 복원은 제공하지 않는다.
 7. 모델 학습 성공·결과 표시 후에는 뒤쪽 출구를 안내한다. 출구 진입 시 `FactoryEnding`을 Single로 열어 공장과 체험을 정리한다. 이 전환에서는 Controller의 `IsLeaving` 상태로 파괴 콜백의 중복 언로드를 막는다.
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab에 들어가면 안내 언로드 후 `CNNPixelLab`을 불러온다. |
+| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab에 들어가면 튜토리얼 언로드 후 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
 | 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이고 양피지 03·04를 완료하면 Feature Map Lab 체험을 불러온다. |
 | 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이고 양피지 05를 완료하면 Model Design Lab 체험을 불러온다. |
-| 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 재학습 시작 시 완료 상태를 초기화한다. |
+| 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 완료 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 새 학습의 Training 상태에서 완료 상태를 초기화한다. 단계 건너뛰기는 완료 조건이 아니다. |
 
 각 체험의 계산과 입력은 해당 씬의 Manager·Controller가 담당한다. 픽셀 체험의 계산 결과를 피처맵 씬으로 전달하지 않으며, 피처맵은 자체 예제 데이터를 사용한다. 자세한 구현은 [픽셀·합성곱](pixel-inspection.md), [피처맵](cnn-feature-map-explorer.md), [모델 제작](MODEL_DESIGN_API.md)에 정리한다.
 
@@ -57,13 +57,13 @@ FactoryIntro
 
 바닥 안내는 씬에 배치한 네 개의 고정 경로 오브젝트다. 입구→Pixel Lab, Pixel Lab→Feature Map Lab, Feature Map Lab→Model Design Lab, Model Design Lab→출구 순서이며 기존 경유점의 안전한 복도·출입구 동선을 사용한다. Model Design Lab의 랙 북쪽과 출하 구역 서쪽 입구를 우회한다. 선과 화살표는 고정 위치에 있고 사용자 이동으로 시작점이나 형태가 바뀌지 않는다. 현재 목적지 영역에서는 숨기고, 영역 밖이나 다음 단계에서는 해당 경로를 표시한다. 경로를 벗어난 사용자 위치와 연결하는 자동 재탐색은 제공하지 않는다.
 
-각 목적지의 `Content`, `Pixels`, `Maps`, `Model` 프로퍼티는 로드된 콘텐츠와 학습 컴포넌트의 런타임 참조를 보관한다. Manager의 `FindContent()`가 목적지에 맞는 학습 컴포넌트를 한 번 찾아 콘텐츠 루트와 함께 저장하며, Feature Map은 완료 판정에 사용하는 Guide로 루트를 식별한다. SceneLoadController는 `PrepareLesson()`으로 씬을 로드해 `PreparedScene`을 제공하고, 탐색이 끝난 뒤 `PlacePreparedContent()`로 저장된 콘텐츠를 배치한다. Manager는 완료 판정과 상세 화면 정리에 저장된 참조를 사용하며 전환 후 재탐색하지 않는다. SceneLoadController는 기존 씬 언로드·준비 취소·종료 시 해당 런타임 참조를 비운다.
+각 목적지의 `Content`, `Pixels`, `Maps`, `Model` 프로퍼티는 로드된 콘텐츠와 학습 컴포넌트의 런타임 참조를 보관한다. Manager의 `FindContent()`가 목적지에 맞는 학습 컴포넌트를 한 번 찾아 콘텐츠 루트와 함께 저장하며, Feature Map도 `CNNFeatureMapLabManager`로 루트를 식별한다. SceneLoadController는 `PrepareLesson()`으로 씬을 로드해 `PreparedScene`을 제공하고, 탐색이 끝난 뒤 `PlacePreparedContent()`로 저장된 콘텐츠를 배치한다. Manager는 완료 판정과 상세 화면 정리에 저장된 참조를 사용하며 전환 후 재탐색하지 않는다. SceneLoadController는 기존 씬 언로드·준비 취소·종료 시 해당 런타임 참조를 비운다.
 
-`FactoryNavigationData._destinations`의 각 목적지 항목에 경로를 연결한다. 배열 순서는 동작에 영향을 주지 않으며 `FactoryDestinationId`로 조회한다. Controller는 `Start()`에서 모든 경로를 숨겨 초기화한다. Inspector의 필수 연결은 런타임에서 재검증하지 않는다. 모든 경로는 같은 `FactoryRoute.mat`을 사용하며 Collider와 그림자는 없다. `SetDestination()`은 표시 상태만 바꾼다.
+`FactoryNavigationData._destinations`의 각 목적지 항목에 경로를 연결한다. 배열 순서는 동작에 영향을 주지 않으며 `FactoryDestinationId`로 조회한다. Controller는 `Start()`에서 현재 목적지와 일치하는 경로만 켠다. Manager가 먼저 첫 목적지를 지정했다면 그 경로가 유지된다. Inspector의 필수 연결은 런타임에서 재검증하지 않는다. 모든 경로는 같은 `FactoryRoute.mat`을 사용하며 Collider와 그림자는 없다. `SetDestination()`은 표시 상태만 바꾼다.
 
-방 간판은 `FactoryEnvironment.unity`에 World Space Canvas와 Text로 미리 배치한다. 기존 간판 프레임과 위치를 유지하고 인쇄 면은 `RoomSignSurface.mat`의 공통 어두운 배경을 사용한다. 방 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며, 런타임 생성이나 재질 덮어쓰기 없이 씬에 저장된 상태로 표시한다. 간판 문구·배치·스타일은 씬에서 편집한다. 기존 간판 PNG/GUID나 공장 내부 탐색용 오브젝트명을 바꾸지 않는다. `FactoryMapController`는 같은 새 방 이름을 지도 데이터로 전달한다. 태블릿 구현은 변경하지 않아 양피지 인벤토리의 기존 `ParchmentLesson.Room` 문구는 이번 수정 범위에서 제외한다.
+방 간판은 `FactoryEnvironment.unity`에 World Space Canvas와 Text로 미리 배치한다. 기존 간판 프레임과 위치를 유지하고 인쇄 면은 `RoomSignSurface.mat`의 공통 어두운 배경을 사용한다. 방 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며, 런타임 생성이나 재질 덮어쓰기 없이 씬에 저장된 상태로 표시한다. 간판 문구·배치·스타일은 씬에서 편집한다. 기존 간판 PNG/GUID나 공장 내부 탐색용 오브젝트명을 바꾸지 않는다. `FactoryMapController`는 같은 새 방 이름을 지도 데이터로 전달한다. 양피지 인벤토리의 방 이름은 지도와 별개로 `ParchmentLesson.Room`에 정의되어 있다.
 
-공용 스틱 이동 속도는 5m/s다. 플레이어의 벽 충돌은 이번 변경에 포함하지 않는다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다.
+공용 스틱 이동 속도와 에디터 FPS 모드의 WASD 몸 이동 속도는 5m/s다. 입력 동작은 공용 XR 리그와 [조작법](xr-simulator.md)을 따른다.
 
 입구 안내판 `Factory route instruction`은 공장 루트 아래 `(0, 1.4, -17)`에 비활성 상태로 저장한다. 배경 Cube는 `(3.6, 0.45, 0.05)` 크기로 방 간판과 같은 `RoomSignSurface.mat`을 참조한다. TextMesh는 기존 Noto Sans 글꼴과 `바닥의 안내선을 따라 이동하세요.` 문구를 사용하고 Collider나 입력 컴포넌트는 두지 않는다. SceneLoadController는 튜토리얼 완료 또는 첫 학습 진입에 따른 언로드 후 안내판을 활성화하며, 런타임 오브젝트·재질 생성은 하지 않는다.
 
@@ -75,6 +75,7 @@ FactoryIntro
 FactoryMapController.ReadMap()
   → TabletMapData
   → TabletManager.SetMapData
+  → TabletUIBuilder.SetMapData
   → TabletMinimapController
 ```
 
@@ -89,7 +90,15 @@ FactoryMapController.ReadMap()
 
 바닥과 벽은 읽는 시점의 정적 데이터다. 양피지 마커는 원본 Transform의 위치와 활성 상태를 참조한다. `FactoryMapController`는 시작 및 재활성화 때 데이터를 읽어 게시하고, 비활성화될 때 자신이 게시한 데이터를 해제한다.
 
-`TabletMinimapController`는 같은 데이터를 주변 지도와 전체 지도에 사용한다. 카메라의 X/Z 위치·방향과 획득 상태는 0.1초 간격으로 갱신한다. 마커는 원본이 활성 상태이고 `TabletManager.HasParchment`가 거짓일 때 표시한다. 지도 도형은 `MaskableGraphic`으로 그리며 공장 전용 카메라나 RenderTexture에 의존하지 않는다.
+`TabletManager`는 UIBuilder의 `SetMapData()`를 통해 생성 시 보관한 주변 지도·전체 지도에 데이터를 전달한다. 상세 지도 창의 표시 전환은 `TabletDetailController`가 담당한다. `TabletMinimapController`는 전달받은 같은 데이터를 주변 지도와 전체 지도에 사용하며, 수집 상태는 Manager 대신 `HasParchment` 조회 함수로 읽는다. 카메라의 X/Z 위치·방향과 획득 상태는 0.1초 간격으로 갱신한다. 마커는 원본이 활성 상태이고 전달받은 수집 여부 조회 결과가 거짓일 때 표시한다. 지도 도형은 `MaskableGraphic`으로 그리며 공장 전용 카메라나 RenderTexture에 의존하지 않는다.
+
+## 공장과 Tablet의 경계
+
+공장은 `TabletManager.SetMapData/ClearMapData`, `CollectParchment/HasParchment`만 통해 지도·수집 데이터를 연결한다. Tablet의 UI·포커스·설정·양피지 열람은 공장 흐름이 직접 조작하지 않는다.
+
+`TabletManager`는 UIBuilder의 버튼 요청과 Input·Settings·Parchment·Learning의 로컬 C# 이벤트를 `OnEnable()`에서 연결하고 `OnDisable()`에서 해제한다. UIBuilder는 화면 구성과 생성한 지도 참조를 보관하고, Manager나 수집·설정·학습 Controller를 직접 호출하지 않는다. 설정값은 Settings, 획득 배열·열람 페이지는 Parchment, 미션·진행률은 Learning이 소유한다. 상세 안내·지도·종료 확인 화면의 표시 책임은 `TabletDetailController`에 있고, 단계·초기 작업 문구는 `TabletLearningContent`에 있다.
+
+Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. 매번 Manager를 찾아 지도 데이터를 읽거나 생성한 지도를 계층 탐색으로 다시 수집하지 않는다.
 
 ## 양피지 수집과 문서
 
@@ -124,22 +133,12 @@ FactoryMapController.ReadMap()
 
 공장 전용 렌더링 에셋은 [Materials](../client/Assets/Materials/FactoryEnvironment), [Textures](../client/Assets/Textures/FactoryEnvironment), [Meshes](../client/Assets/Meshes/FactoryEnvironment)에 있다.
 
-## 이번 변경의 확인 범위
+## 현재 연결과 안내 문구의 차이
 
-양피지 완료 상태가 체험 씬 로드보다 먼저 검사되는지와 열람 화면에서 마지막 페이지에만 `완료`가 나타나는지를 정적으로 검토했다. 이번 수정의 Unity 자동 컴파일은 사용자에게 허용받았으며, 체험 Play·테스트·빌드는 실행하지 않았다. 확대 연출, XR 버튼 입력, 태블릿 보관, 방 진입 차단의 실제 동작은 사용자가 체험하면서 확인할 예정이다.
+현재 공장 흐름은 양피지 완료 조건을 충족한 뒤 허용된 영역에 진입하면 체험을 자동으로 로드한다. 방별 소개 모달과 `체험 시작` 버튼을 기다리는 경로는 없다. 마지막 모델 체험을 완료한 뒤에는 별도의 양피지 조건 없이 출구로 진행한다.
 
-## 미션·방 소개·수집 동선 개편 (2026-10-26)
+태블릿에는 `SetFactoryMission(phase, collected, completed, mission)`과 8개 목표의 진행률 표시 기능이 있지만, 현재 FactoryEnvironment와 세 학습 씬에는 이를 호출하여 방 완료를 게시하는 코드가 없다. `FactoryTutorialManager`의 14페이지 안내에는 8개 목표와 방 입구 소개 문구가 남아 있으므로, 안내 문구만으로 현재 공장 흐름의 실제 연동을 판단하면 안 된다. 이 문서는 존재하는 연결을 기록하며 누락된 연동을 새로 구현하지 않는다.
 
-입구에서 전체 미션과 태블릿 역할을 안내한다. 양피지 5개 수집과 세 방 체험 완료를 합쳐 8개 목표의 진행률을 실제 상태로 표시한다. 태블릿의 미션 확인 버튼은 안내를 보여주며 수동으로 완료 수치를 올리지 않는다. 공장 이동은 실제 이동으로 진행하며 태블릿의 단계 항목은 해당 방의 이동 안내를 제공한다.
+## 확인 범위
 
-양피지 1·2는 Pixel Lab 접근 동선, 3·4는 Feature Map Lab 접근 동선, 5는 Model Design Lab 접근 동선에 배치했다. 문서 순서·GUID·인벤토리 인덱스는 유지한다. 미수집 양피지가 있어도 방 입장을 막지 않고 지도에서 재방문하도록 안내한다. 진행률과 수집 상태는 현재 실행 세션 기준이다.
-
-각 목적지에 들어가면 이 방의 CNN 역할과 첫 행동을 안내하고 `체험 시작`으로 해당 씬을 로드한다. 안내 중 방 밖으로 나가면 취소되어 재진입 시 다시 설명한다. 오른손 레이는 소개 중 사용할 수 있도록 유지하고 종료 시 원래 상태로 복원한다. 체험 루트는 중앙 복도에서 들어오는 방향(왼쪽 방은 -X, 오른쪽 방은 +X)에 정면이 맞도록 회전하며 사용자 머리를 강제로 회전시키지 않는다. 픽셀 필터의 원래 거치 위치도 같은 회전·이동을 적용한다.
-
-사용자 허가 후 Unity 6000.3.24f1에서 컴파일·Play를 확인했다. 튜토리얼 14페이지 버튼 콜백, XRI activated 콜백을 통한 양피지 수집과 태블릿 1/5·12% 갱신, 세 방의 소개 → 체험 시작 → Additive 로드·이전 체험 언로드를 확인했다. 모델 제작 방에서는 소개 도중 퇴실 시 취소되고 재진입하면 다시 안내되는 것도 확인했다.
-
-검증은 에디터에서 리그 위치를 설정하고 버튼 콜백을 호출했으며, 체험 간 진행에는 기존 개발자 건너뛰기를 사용했다. 실제 Quest 조작으로 모든 체험을 완료한 검증은 아니다. 카메라 렌더로 각 방의 입구 방향 배치를 확인했으며, 공장 흐름에서 로컬 마우스 미리보기가 XR 카메라를 숨기던 문제를 수정했다. Quest에서의 가독성·잡기·성능, APK 빌드·기기 설치는 이번 검증에 포함하지 않았다.
-
-## main 병합 적용 범위 (2026-10-27)
-
-`feature/cnn-model-design-modules`에 `main`을 병합하면서 FactoryEnvironment 씬과 전용 스크립트는 작업 브랜치 버전을 유지했다. 위의 main 측 미션·진행률 갱신, 방 입장 소개, 동적 안내판과 배치 방향 변경 기록은 이력으로 보존하며 이번 병합에서 해당 구현을 이식하지 않았다. 단계 건너뛰기 등 제외한 기능의 재구현은 하지 않았다. 별도 FactoryTutorial과 공용 코드의 main 변경은 병합에 포함된다. 이번 병합은 정적 비교만 수행했으며 위의 과거 실행 검증 결과가 현재 병합본을 검증한 것은 아니다.
+현재 FactoryEnvironment 전용 소스, 세 학습 씬의 완료 프로퍼티, 공장 씬·지도·Tablet API 참조를 읽어 문서를 갱신했다. 이번 갱신에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다. 이전 구현에서 기록한 방 소개·미션 진행률·개발자 건너뛰기 실행 결과를 현재 공장 코드의 검증 결과로 사용하지 않는다. 실제 Quest 입력·가독성·잡기·씬 전환과 APK 동작은 별도 실행 확인이 필요하다.

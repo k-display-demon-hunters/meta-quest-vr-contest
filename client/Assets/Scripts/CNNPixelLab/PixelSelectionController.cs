@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace UI
@@ -152,12 +151,12 @@ namespace UI
 
         public void Dispose() { _volume.Dispose(); }
 
-        public void HandleReleased(SelectExitEventArgs args)
+        public void HandleReleased()
         {
             _snapPending = true;
         }
 
-        public void HandleGrabbed(SelectEnterEventArgs args)
+        public void HandleGrabbed()
         {
             _snapPending = false;
         }

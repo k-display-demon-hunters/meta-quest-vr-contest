@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -39,14 +40,35 @@ namespace Tablet
         private readonly Font _parchmentTitleFont;
         private readonly Sprite _parchmentSprite;
         private readonly TabletInputController _input;
-        private TabletManager _tablet;
-        private TabletParchmentController _parchment;
-        private TabletSettingsController _settings;
-        private TabletLearningController _learning;
+        private readonly List<TabletMinimapController> _maps = new List<TabletMinimapController>();
+        private float _initialBrightness;
+        private float _initialVolume;
+        private Func<int, bool> _hasParchment;
         private Canvas _canvas;
         private RectTransform _canvasRect;
         private RectTransform _surfaceRect;
         private TabletInputController.FocusGroup _buildingGroup;
+
+        public event Action<int> ParchmentSelected;
+        public event Action<int> ParchmentPageRequested;
+        public event Action ParchmentCloseRequested;
+        public event Action<int> FeatureMapToggleRequested;
+        public event Action CurrentTaskRequested;
+        public event Action<int> StageRequested;
+        public event Action<float> BrightnessChanged;
+        public event Action<float> VolumeChanged;
+        public event Action VibrationRequested;
+        public event Action SettingsRequested;
+        public event Action LearningInfoRequested;
+        public event Action FactoryMapRequested;
+        public event Action HintRequested;
+        public event Action ImageDetailRequested;
+        public event Action SaveRequested;
+        public event Action ExitRequested;
+        public event Action DetailCloseRequested;
+        public event Action QuitConfirmationRequested;
+        public event Action QuitRequested;
+        public event Action<bool> StageMenuRequested;
 
         public ParchmentView Parchment { get; } = new ParchmentView();
         public LearningView Learning { get; } = new LearningView();
@@ -66,13 +88,11 @@ namespace Tablet
             _input = input;
         }
 
-        public void Build(TabletManager tablet, TabletParchmentController parchment,
-            TabletSettingsController settings, TabletLearningController learning)
+        public void Build(float brightness, float volume, Func<int, bool> hasParchment)
         {
-            _tablet = tablet;
-            _parchment = parchment;
-            _settings = settings;
-            _learning = learning;
+            _initialBrightness = brightness;
+            _initialVolume = volume;
+            _hasParchment = hasParchment;
             BuildInterface();
         }
 
@@ -168,8 +188,8 @@ namespace Tablet
             Learning.ProgressFill.rectTransform.anchoredPosition = ReferencePosition(_surfaceRect, 954f, 114f);
             Learning.ProgressPercent = PlaceText(_surfaceRect, "Progress Percent", "", 1186f, 99f, 150f, 32f,
                 20, FontStyle.Normal, MutedTextColor);
-            Shell.SettingsButton = PlaceIconButton(_surfaceRect, "설정", TabletSymbol.Gear, 1353f, 85f, 58f, _tablet.ToggleSettings);
-            PlaceIconButton(_surfaceRect, "학습 정보", TabletSymbol.User, 1428f, 85f, 58f, _tablet.ShowLearningInfo);
+            Shell.SettingsButton = PlaceIconButton(_surfaceRect, "설정", TabletSymbol.Gear, 1353f, 85f, 58f, () => SettingsRequested?.Invoke());
+            PlaceIconButton(_surfaceRect, "학습 정보", TabletSymbol.User, 1428f, 85f, 58f, () => LearningInfoRequested?.Invoke());
         }
 
         private void BuildLeftStatus()
@@ -177,19 +197,19 @@ namespace Tablet
             PlaceText(_surfaceRect, "Learning Stage Caption", "학습 단계", 107f, 212f, 260f, 36f,
                 23, FontStyle.Bold, TextColor);
             PlaceImage(_surfaceRect, "Stage Connector", 127f, 300f, 2f, 228f, new Color(0.80f, 0.84f, 0.88f)).sprite = null;
-            for (int index = 0; index < _learning.PhaseNames.Count; index++)
+            for (int index = 0; index < TabletLearningContent.PhaseNames.Count; index++)
             {
                 int phaseIndex = index;
                 float centerY = 291f + index * 59f;
                 Button phase = PlaceButton(_surfaceRect, "Learning Phase " + index, "", 91f, centerY - 31f, 307f, 62f,
-                    () => _learning.MoveToStage(_learning.PhaseStageIndices[phaseIndex]), SurfaceColor);
+                    () => StageRequested?.Invoke(phaseIndex), SurfaceColor);
                 Learning.PhaseSurfaces.Add(phase.GetComponent<Image>());
                 Image circle = PlaceImage(phase.transform, "Phase Number Circle", 101f, centerY - 27f, 54f, 54f, Color.white);
                 circle.sprite = _resources.MutedCircleSprite;
                 Learning.PhaseCircles.Add(circle);
                 PlaceText(phase.transform, "Phase Number", (index + 1).ToString(), 101f, centerY - 22f, 54f, 44f,
                     21, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
-                Learning.PhaseLabels.Add(PlaceText(phase.transform, "Phase Label", _learning.PhaseNames[index], 173f, centerY - 20f, 185f, 40f,
+                Learning.PhaseLabels.Add(PlaceText(phase.transform, "Phase Label", TabletLearningContent.PhaseNames[index], 173f, centerY - 20f, 185f, 40f,
                     24, FontStyle.Normal, MutedTextColor));
                 Learning.PhaseChevrons.Add(PlaceSymbol(phase.transform, "Phase Chevron", TabletSymbol.ChevronRight,
                     363f, centerY - 9f, 18f, AccentColor));
@@ -200,7 +220,7 @@ namespace Tablet
                 21, FontStyle.Bold, TextColor);
             Learning.TaskCount = PlaceText(tasks.transform, "Task Count", "", 326f, 592f, 48f, 34f,
                 21, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleRight);
-            for (int index = 0; index < _learning.TaskCount; index++)
+            for (int index = 0; index < TabletLearningContent.TaskLabels.Count; index++)
             {
                 float top = 633f + index * 47f;
                 Learning.TaskRows.Add(PlaceImage(tasks.transform, "Task Row " + index, 105f, top, 279f, 46f, CardColor));
@@ -209,7 +229,7 @@ namespace Tablet
                 Learning.TaskChecks.Add(check);
                 Learning.TaskCheckmarks.Add(PlaceSymbol(tasks.transform, "Completed " + index, TabletSymbol.Check,
                     122f, top + 15f, 18f, Color.white));
-                Learning.TaskTexts.Add(PlaceText(tasks.transform, "Task Text " + index, _learning.TaskLabel(index),
+                Learning.TaskTexts.Add(PlaceText(tasks.transform, "Task Text " + index, TabletLearningContent.TaskLabels[index],
                     168f, top + 6f, 214f, 34f, 19, FontStyle.Normal, MutedTextColor));
             }
             BuildMinimap();
@@ -218,7 +238,7 @@ namespace Tablet
         private void BuildMinimap()
         {
             Button map = PlaceButton(_surfaceRect, "Factory Minimap", "", 85f, 792f, 317f, 137f,
-                _tablet.ShowFactoryMap, CardColor);
+                () => FactoryMapRequested?.Invoke(), CardColor);
             map.GetComponent<Image>().sprite = _resources.PanelSprite;
             PlaceText(map.transform, "Map Caption", "현재 위치", 102f, 796f, 230f, 29f, 18, FontStyle.Bold, TextColor);
             PlaceSymbol(map.transform, "Expand Map", TabletSymbol.Expand, 369f, 802f, 17f, AccentColor);
@@ -245,7 +265,17 @@ namespace Tablet
             XROrigin origin = _tabletTransform.GetComponentInParent<XROrigin>();
             Transform player = origin != null && origin.Camera != null ? origin.Camera.transform :
                 _canvas.worldCamera != null ? _canvas.worldCamera.transform : null;
-            geometry.GetComponent<TabletMinimapController>().Initialize(_tablet, player, _resolvedFont, status, overview);
+            TabletMinimapController map = geometry.GetComponent<TabletMinimapController>();
+            map.Initialize(player, _resolvedFont, status, overview, _hasParchment);
+            _maps.Add(map);
+        }
+
+        public void SetMapData(TabletMapData data)
+        {
+            foreach (TabletMinimapController map in _maps)
+            {
+                map.SetMapData(data);
+            }
         }
 
         private void BuildInventory()
@@ -262,12 +292,12 @@ namespace Tablet
                 glow.sprite = _resources.ShadowSprite;
                 Parchment.InventoryGlows.Add(glow);
                 Button item = PlaceButton(_surfaceRect, "Inventory " + index, "", 1166f, top, 302f, 90f,
-                    () => _parchment.SelectItem(itemIndex), CardColor);
+                    () => ParchmentSelected?.Invoke(itemIndex), CardColor);
                 Parchment.InventoryButtons.Add(item);
                 Image surface = item.GetComponent<Image>();
                 surface.sprite = _resources.PanelSprite;
                 Parchment.InventorySurfaces.Add(surface);
-                Parchment.InventoryLabels.Add(PlaceText(item.transform, "Parchment Name", TabletParchmentController.ItemName(index), 1259f, top + 14f, 164f, 34f,
+                Parchment.InventoryLabels.Add(PlaceText(item.transform, "Parchment Name", "양피지 " + (index + 1).ToString("00"), 1259f, top + 14f, 164f, 34f,
                     21, FontStyle.Bold, TextColor));
                 Parchment.InventoryDescriptions.Add(PlaceText(item.transform, "Parchment Description", "", 1259f, top + 48f, 182f, 29f,
                     18, FontStyle.Normal, MutedTextColor));
@@ -312,14 +342,14 @@ namespace Tablet
                 new Color(0.015f, 0.08f, 0.15f, 0.96f)).sprite = _resources.RoundedSprite;
             Color buttonColor = new Color(0.03f, 0.17f, 0.27f, 0.96f);
             Parchment.PreviousParchmentPage = PlaceButton(paper.transform, "Previous Document Page", "이전", 420f, 758f, 140f, 50f,
-                () => _parchment.ChangeParchmentPage(-1), buttonColor);
+                () => ParchmentPageRequested?.Invoke(-1), buttonColor);
             Parchment.ParchmentPageLabel = PlaceText(paper.transform, "Document Page Count", "", 585f, 758f, 154f, 50f,
                 22, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
             Parchment.ParchmentPageLabel.font = parchmentFont;
             Parchment.NextParchmentPage = PlaceButton(paper.transform, "Next Document Page", "다음", 760f, 758f, 140f, 50f,
-                () => _parchment.ChangeParchmentPage(1), buttonColor);
+                () => ParchmentPageRequested?.Invoke(1), buttonColor);
             Button close = PlaceButton(paper.transform, "Close Document", "닫기", 1040f, 758f, 140f, 50f,
-                _parchment.CloseParchment, buttonColor);
+                () => ParchmentCloseRequested?.Invoke(), buttonColor);
             foreach (Button button in new[] { Parchment.PreviousParchmentPage, Parchment.NextParchmentPage, close })
             {
                 Text label = button.GetComponentInChildren<Text>();
@@ -330,7 +360,7 @@ namespace Tablet
             paper.gameObject.SetActive(false);
         }
 
-        public void RebuildParchmentIllustration(bool visible)
+        public void RebuildParchmentIllustration(bool visible, int lessonIndex, IReadOnlyList<bool> featureMapVisible)
         {
             // Remove old controls from navigation before destroying their visuals at the end of this frame.
             _input.RemoveControls(Parchment.FeatureMapButtons);
@@ -351,7 +381,7 @@ namespace Tablet
 
             Transform parent = Parchment.ParchmentExample.transform;
             Color ink = Color.white;
-            if (_parchment.SelectedIndex == 0)
+            if (lessonIndex == 0)
             {
                 string[] labels = { "R 채널", "G 채널", "B 채널" };
                 for (int index = 0; index < 3; index++)
@@ -364,14 +394,14 @@ namespace Tablet
                         19, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
                 }
             }
-            else if (_parchment.SelectedIndex == 1)
+            else if (lessonIndex == 1)
             {
                 PlaceParchmentText(parent, "Padding Example", "입력 5×5  ·  필터 3×3  ·  이동 1칸\n\n패딩 없음 → 출력 3×3\n사방에 1칸 패딩 → 출력 5×5", 434f, 608f, 760f, 119f,
                     23, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
             }
-            else if (_parchment.SelectedIndex == 2 || _parchment.SelectedIndex == 3)
+            else if (lessonIndex == 2 || lessonIndex == 3)
             {
-                BuildFeatureMapExample(parent);
+                BuildFeatureMapExample(parent, lessonIndex, featureMapVisible);
             }
             else
             {
@@ -380,11 +410,11 @@ namespace Tablet
             }
         }
 
-        private void BuildFeatureMapExample(Transform parent)
+        private void BuildFeatureMapExample(Transform parent, int lessonIndex, IReadOnlyList<bool> featureMapVisible)
         {
             PlaceParchmentText(parent, "Example Display Note", "필터 반응의 절댓값을 밝기로 표시한 예시", 434f, 608f, 760f, 23f,
                 16, FontStyle.Normal, new Color(0.73f, 0.91f, 1f), TextAnchor.MiddleCenter);
-            string[] captions = _parchment.SelectedIndex == 3
+            string[] captions = lessonIndex == 3
                 ? new[] { "세로 경계", "가로 경계", "주변 경계" }
                 : new[] { "원본", "세로 경계", "가로 경계" };
             TabletInputController.FocusGroup previousGroup = _buildingGroup;
@@ -394,19 +424,19 @@ namespace Tablet
                 int mapIndex = index;
                 float x = 454f + index * 260f;
                 Image map = PlaceImage(parent, "Example Map " + index, x + 34f, 632f, 70f, 70f, Color.white);
-                map.sprite = _resources.LessonMapSprites[_parchment.SelectedIndex == 3 ? index + 1 : index];
+                map.sprite = _resources.LessonMapSprites[lessonIndex == 3 ? index + 1 : index];
                 map.type = Image.Type.Simple;
-                if (_parchment.SelectedIndex == 3)
+                if (lessonIndex == 3)
                 {
                     Parchment.FeatureMapImages.Add(map);
-                    map.enabled = _parchment.IsFeatureMapVisible(index);
+                    map.enabled = featureMapVisible[index];
                     Button toggle = PlaceButton(parent, "Toggle Example Map " + index, "", x, 706f, 138f, 30f,
-                        () => _parchment.ToggleFeatureMap(mapIndex), new Color(0.03f, 0.17f, 0.27f, 0.96f));
+                        () => FeatureMapToggleRequested?.Invoke(mapIndex), new Color(0.03f, 0.17f, 0.27f, 0.96f));
                     Text label = toggle.GetComponentInChildren<Text>();
                     label.fontSize = 17;
                     label.font = _parchmentFont != null ? _parchmentFont : _resolvedFont;
                     label.color = Color.white;
-                    label.text = captions[index] + (_parchment.IsFeatureMapVisible(index) ? " · 켜짐" : " · 꺼짐");
+                    label.text = captions[index] + (featureMapVisible[index] ? " · 켜짐" : " · 꺼짐");
                     Parchment.FeatureMapLabels.Add(label);
                     Parchment.FeatureMapButtons.Add(toggle);
                 }
@@ -453,7 +483,7 @@ namespace Tablet
                 new Color(0.18f, 0.36f, 0.59f, 0.28f));
             actionShadow.sprite = _resources.ShadowSprite;
             Button confirm = PlaceButton(Shell.FeedbackRoot.transform, "Confirm Task", "현재 미션 확인", 465f, 827f, 632f, 95f,
-                _learning.ConfirmCurrentTask, CardColor);
+                () => CurrentTaskRequested?.Invoke(), CardColor);
             confirm.GetComponent<Image>().sprite = _resources.PrimarySprite;
             AddOutline(confirm.GetComponent<Image>(), new Color(0.53f, 0.69f, 0.91f, 0.85f), new Vector2(2f, 2f));
             Text confirmLabel = confirm.GetComponentInChildren<Text>();
@@ -464,11 +494,11 @@ namespace Tablet
             confirmLabel.rectTransform.sizeDelta = new Vector2(430f, 80f);
             PlaceSymbol(confirm.transform, "Confirm Check", TabletSymbol.Check, 683f, 859f, 29f, Color.white);
             PlaceSymbol(confirm.transform, "Confirm Disclosure", TabletSymbol.ChevronRight, 1035f, 862f, 24f, Color.white);
-            Button hint = PlaceButton(Shell.FeedbackRoot.transform, "Hint", "", 943f, 213f, 154f, 58f, _tablet.ShowHint, CardColor);
+            Button hint = PlaceButton(Shell.FeedbackRoot.transform, "Hint", "", 943f, 213f, 154f, 58f, () => HintRequested?.Invoke(), CardColor);
             PlaceSymbol(hint.transform, "Hint Bulb", TabletSymbol.Bulb, 963f, 226f, 32f, new Color(1f, 0.70f, 0.20f));
             PlaceText(hint.transform, "Hint Label", "힌트 보기", 1005f, 225f, 88f, 34f, 20, FontStyle.Normal, MutedTextColor);
             Button expand = PlaceButton(Shell.FeedbackRoot.transform, "Expand Image", "", 657f, 659f, 51f, 49f,
-                () => _tablet.ShowDetail("원본 이미지", "오염 픽셀과 주변 픽셀의 밝기·색을 비교하세요.", true), new Color(0.31f, 0.35f, 0.41f, 0.8f));
+                () => ImageDetailRequested?.Invoke(), new Color(0.31f, 0.35f, 0.41f, 0.8f));
             PlaceSymbol(expand.transform, "Expand Symbol", TabletSymbol.Expand, 670f, 672f, 25f, Color.white);
         }
 
@@ -502,12 +532,12 @@ namespace Tablet
 
         private void BuildDashboardActions()
         {
-            Button save = PlaceButton(_surfaceRect, "Save Dashboard", "", 1162f, 806f, 143f, 118f, _tablet.SaveSettings,
+            Button save = PlaceButton(_surfaceRect, "Save Dashboard", "", 1162f, 806f, 143f, 118f, () => SaveRequested?.Invoke(),
                 new Color(0.88f, 0.95f, 0.96f));
             PlaceSymbol(save.transform, "Save Symbol", TabletSymbol.Download, 1213f, 830f, 38f, new Color(0.16f, 0.39f, 0.47f));
             Settings.DashboardSaveLabel = PlaceText(save.transform, "Save Label", "저장하기", 1174f, 878f, 119f, 34f,
                 22, FontStyle.Normal, new Color(0.16f, 0.30f, 0.43f), TextAnchor.MiddleCenter);
-            Button exit = PlaceButton(_surfaceRect, "Exit Dashboard", "", 1318f, 806f, 153f, 118f, _tablet.RequestExit,
+            Button exit = PlaceButton(_surfaceRect, "Exit Dashboard", "", 1318f, 806f, 153f, 118f, () => ExitRequested?.Invoke(),
                 new Color(1f, 0.92f, 0.94f));
             PlaceSymbol(exit.transform, "Exit Symbol", TabletSymbol.Exit, 1373f, 831f, 38f, ItemColors[4]);
             PlaceText(exit.transform, "Exit Label", "나가기", 1335f, 878f, 119f, 34f,
@@ -539,12 +569,12 @@ namespace Tablet
             AddMinimapGraphic(mapViewport, mapStatus, true);
             Shell.FactoryMapView.SetActive(false);
             Button close = CreateTextButton(modal.transform, "Close Detail", "완료", new Vector2(0f, -280f),
-                new Vector2(700f, 64f), _tablet.CloseDetail, AccentColor);
+                new Vector2(700f, 64f), () => DetailCloseRequested?.Invoke(), AccentColor);
             close.GetComponentInChildren<Text>().fontSize = 26;
             close.GetComponentInChildren<Text>().color = CardColor;
             Shell.DetailCloseButton = close;
             Shell.ConfirmQuitButton = CreateTextButton(modal.transform, "Confirm Application Quit", "확인 · 앱 종료",
-                new Vector2(0f, -190f), new Vector2(700f, 64f), _tablet.ConfirmApplicationQuit, AccentSoftColor);
+                new Vector2(0f, -190f), new Vector2(700f, 64f), () => QuitRequested?.Invoke(), AccentSoftColor);
             Shell.ConfirmQuitButton.gameObject.SetActive(false);
             Shell.DetailOverlay.SetActive(false);
         }
@@ -568,19 +598,19 @@ namespace Tablet
                 new Vector2(520f, 50f), 23, FontStyle.Normal, MutedTextColor, TextAnchor.MiddleRight);
             CreateSeparator(modal.transform, new Vector2(0f, 255f), new Vector2(720f, 1f));
             Button stages = CreateSymbolButton(modal.transform, "Choose Stage", "단계 이동", TabletSymbol.Grid,
-                new Vector2(-120f, 200f), new Vector2(480f, 72f), () => _tablet.ShowStageMenu(true), CardColor, TextColor);
+                new Vector2(-120f, 200f), new Vector2(480f, 72f), () => StageMenuRequested?.Invoke(true), CardColor, TextColor);
             stages.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
             CreateSymbol(stages.transform, "Disclosure", TabletSymbol.ChevronRight, new Vector2(205f, 0f), 28f, AccentColor);
             Button save = CreateSymbolButton(modal.transform, "Save Settings", "저장하기", TabletSymbol.Download,
-                new Vector2(252f, 200f), new Vector2(216f, 72f), _tablet.SaveSettings, AccentSoftColor, AccentColor);
+                new Vector2(252f, 200f), new Vector2(216f, 72f), () => SaveRequested?.Invoke(), AccentSoftColor, AccentColor);
             Settings.SaveLabel = save.GetComponentInChildren<Text>();
             BuildSettingSlider(modal.rectTransform, "Brightness", "밝기", TabletSymbol.Sun, new Vector2(0f, 80f),
-                _settings.Brightness, _settings.SetBrightness, out Settings.BrightnessValue);
+                _initialBrightness, value => BrightnessChanged?.Invoke(value), out Settings.BrightnessValue);
             BuildSettingSlider(modal.rectTransform, "Volume", "볼륨", TabletSymbol.Volume, new Vector2(0f, -30f),
-                _settings.Volume, _settings.SetVolume, out Settings.VolumeValue);
+                _initialVolume, value => VolumeChanged?.Invoke(value), out Settings.VolumeValue);
 
             Button vibration = CreateTextButton(modal.transform, "Vibration", "", new Vector2(0f, -145f),
-                new Vector2(720f, 82f), _settings.ToggleVibration, CardColor);
+                new Vector2(720f, 82f), () => VibrationRequested?.Invoke(), CardColor);
             CreateSymbol(vibration.transform, "Vibration Symbol", TabletSymbol.Vibrate, new Vector2(-320f, 0f), 34f, MutedTextColor);
             CreateText(vibration.transform, "Vibration Label", "진동", new Vector2(-240f, 0f),
                 new Vector2(100f, 50f), 24, FontStyle.Normal, TextColor, TextAnchor.MiddleLeft);
@@ -592,9 +622,9 @@ namespace Tablet
                 new Vector2(36f, 36f), CardColor).rectTransform;
             Settings.VibrationThumb.GetComponent<Image>().sprite = _resources.CircleSprite;
             CreateSymbolButton(modal.transform, "Close Settings", "완료", TabletSymbol.Check,
-                new Vector2(42f, -285f), new Vector2(200f, 70f), _tablet.ToggleSettings, AccentColor, CardColor);
+                new Vector2(42f, -285f), new Vector2(200f, 70f), () => SettingsRequested?.Invoke(), AccentColor, CardColor);
             CreateSymbolButton(modal.transform, "Exit Settings", "앱 종료", TabletSymbol.Exit,
-                new Vector2(260f, -285f), new Vector2(200f, 70f), _tablet.RequestApplicationQuit,
+                new Vector2(260f, -285f), new Vector2(200f, 70f), () => QuitConfirmationRequested?.Invoke(),
                 new Color(1f, 0.92f, 0.94f), ItemColors[4]);
 
             _buildingGroup = TabletInputController.FocusGroup.Stage;
@@ -603,12 +633,12 @@ namespace Tablet
             Shell.StageMenu = stagePanel.gameObject;
             CreateText(stagePanel.transform, "Stage Menu Title", "단계 이동", new Vector2(0f, 305f),
                 new Vector2(720f, 60f), 40, FontStyle.Bold, TextColor, TextAnchor.MiddleLeft);
-            for (int index = 0; index < _learning.StageNames.Count; index++)
+            for (int index = 0; index < TabletLearningContent.StageNames.Count; index++)
             {
                 int stageIndex = index;
-                Button stage = CreateTextButton(stagePanel.transform, "Stage " + index, _learning.StageNames[index],
+                Button stage = CreateTextButton(stagePanel.transform, "Stage " + index, TabletLearningContent.StageNames[index],
                     new Vector2(0f, 220f - index * 80f), new Vector2(720f, 70f),
-                    () => _learning.MoveToStage(stageIndex), CardColor);
+                    () => StageRequested?.Invoke(stageIndex), CardColor);
                 Text label = stage.GetComponentInChildren<Text>();
                 label.fontStyle = FontStyle.Normal;
                 label.alignment = TextAnchor.MiddleLeft;
@@ -624,7 +654,7 @@ namespace Tablet
                     new Vector2(318f, 0f), 30f, AccentColor));
             }
             CreateSymbolButton(stagePanel.transform, "Back to Settings", "설정으로", TabletSymbol.ChevronLeft,
-                new Vector2(240f, -295f), new Vector2(240f, 62f), () => _tablet.ShowStageMenu(false), CardColor, AccentColor);
+                new Vector2(240f, -295f), new Vector2(240f, 62f), () => StageMenuRequested?.Invoke(false), CardColor, AccentColor);
             Shell.StageMenu.SetActive(false);
             Settings.SettingsOverlay.SetActive(false);
         }

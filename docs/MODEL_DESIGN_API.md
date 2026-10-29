@@ -1,138 +1,67 @@
 # 모델 제작 씬과 편집 API
 
-대상은 `client/Assets/Scenes/CNNModelDesignLab.unity`다. 슬롯의 블록 순서로 CNN을 구성하고 기기 내 학습 세션에 학습·추론을 요청한다. 조작은 [공통 조작법](xr-simulator.md), 연산·데이터·실행 제한은 [CNN 학습](CNN_TRAINING.md)을 참고한다.
+[CNNModelDesignLab.unity](../client/Assets/Scenes/CNNModelDesignLab.unity)는 8개 슬롯에 블록을 배치해 모델을 구성하고, 내장 MNIST로 학습·평가·추론한다. 조작은 [공통 조작법](xr-simulator.md), 수학·데이터 형식·학습 설정은 [기기 내 CNN 학습](CNN_TRAINING.md)을 참고한다. 현재 씬은 Python 서버나 JSON·WebSocket 프로토콜을 사용하지 않는다.
 
-## 파일과 책임
+## 모듈과 책임
 
-씬 스크립트는 `client/Assets/Scripts/CNNModelDesignLab/`, 네임스페이스는 `ModelDesignScene`이다. 학습 엔진은 `client/Assets/Scripts/Core/CNNTraining/`에 분리한다.
+런타임 루트는 `client/Assets/Scripts/CNNModelDesignLab/`다. `CNNModelDesignLabManager`는 편집 모델과 체험 완료 상태를 소유하고, 아래 다섯 모듈의 진입점과 공용 입력 어댑터 `ModelXRInputController`를 연결한다.
 
-| 파일·클래스 | 책임 |
+| 폴더·진입점 | 내부 담당과 책임 |
 | --- | --- |
-| `CNNModelDesignLabManager` | Workspace·Input·Output 준비, Controller 이벤트 연결, 배치 순서 갱신, 검증 후 학습 요청, 결과와 편집 모델 비교, 엔딩 진입 조율 |
-| `ModelSupplyController` | 공급 블록 보충 및 꺼내기 |
-| `ModelConveyorController` | 저장된 슬롯 앵커의 배치 판정·정렬과 점유 상태 표시 |
-| `ModelBlockController` | 개별 블록의 잡기 상태·표시 및 레이어 연결 |
-| `ModelXRInputController` | 씬의 XR 입력·슬롯 활성화 조건 |
-| `ModelSettingsController` / `BlockSettingsPopup` | 슬롯 팝업 수명, 레이어 설정 입력과 변경 |
-| `ModelExecutionController` | 설정·데이터 준비, 재사용하는 로컬 세션 소유, 실행·취소 요청, 메인 스레드 결과 전달, 종료된 실행 결과 차단 |
-| `CnnTrainingSettings` | epoch·batch size·learning rate·seed를 `private const`로 관리하고 `CreateOptions()`로 실행 옵션 생성 |
-| `MnistDataset` | 바이너리 데이터 해석·정규화·학습/검증 분리 및 UI 샘플 ID 조회. `Data`는 엔진용 `TrainingData` |
-| `ModelResultsController` | 저장된 구성 검사·학습·예측 페이지, 시작·중지 버튼, 실행 상태와 학습 당시 구성 여부 표시 |
-| `ModelValidationController` | 구성 문제의 원인·수정 방법·실제 슬롯 위치와 이전/다음 문제 표시 |
-| `ModelTrainingMetricsController` | 실제 학습·검증 지표의 epoch별 그래프와 최종 평가 표시 |
-| `ModelInferenceResultsController` | 샘플 선택·예측 결과 표시. 요청 ID와 결과 ID 비교 |
-| `ModelMetricGraph` | 전달받은 지표를 학습·검증 선 그래프로 시각화 |
+| `ModelBuilder/ModelBuilderManager` | `ModelBuilderController`가 공급소·고정 Input/Output·컨베이어·블록을 관리한다. `ConveyorSlots`는 실제 블록의 슬롯 점유를, `ModelDefinition`은 같은 슬롯의 레이어 데이터를 보관한다. 설정 요청은 레이어와 팝업 위치를 이벤트로 전달한다. |
+| `BlockSettings/ModelBlockSettingsManager` | `ModelSettingsController`가 팝업을 열고 닫으며 설정값을 갱신한다. `BlockSettingsCatalog`·`BlockSettingsDefinition`은 블록 종류별 항목을 제공하고, `BlockSettingsPopup`·`LayerNumberSetting`이 입력을 처리한다. 삭제는 `OnDeleteRequested`로 요청한다. |
+| `Execution/ModelExecutionManager` | Dataset에서 실행 데이터를 받고 `ModelExecutionDefinitionBuilder`·`ModelExecutionValidator`로 실행 요청을 준비한다. `ModelExecutionController`는 실행 상태와 메인 스레드 결과 전달을, 하위 `Engine/CnnEngineManager`는 학습 세션을 관리한다. |
+| `ControlPanel/ModelControlPanelManager` | `ModelControlPanelController`가 구성 검사·학습·예측 페이지와 버튼을 연결한다. `ModelValidationController`, `ModelTrainingMetricsController`, `ModelInferenceResultsController`가 각 표시를 담당하고 `ModelMetricGraph`가 지표 그래프를 그린다. |
+| `Dataset/ModelDatasetManager` | `ModelDatasetController`가 MNIST 바이너리와 샘플 텍스처를 준비한다. `MnistDataset`은 파일 해석·정규화·split 분리를, `DatasetSample`은 화면에 필요한 ID·텍스처·정답을 담당한다. |
+| `Model/ModelDefinition` | 고정 Input·Output과 편집 슬롯 8개의 레이어를 소유한다. `LayerDefinition`은 레이어 설정과 변경 이벤트, `LayerLimits`는 입력 크기와 개별 설정 범위를 정의한다. |
 
-Manager는 기능 사이 순서를 조율하고 Controller는 개별 기능을 담당한다. 계산 구현과 가중치는 씬에 노출하지 않는다. Validation·Metrics·InferenceResults는 프리팹에 저장된 MonoBehaviour이며 ResultsController가 연결한다. UI 계층과 배치는 런타임에 생성하지 않는다.
+의존 방향은 `씬 Manager → 모듈 Manager → 내부 Controller/데이터`다. Execution 아래의 엔진은 Unity API·씬·블록·MNIST 이미지 이름을 알지 않는다. 현재 네임스페이스는 `ModelDesignScene`과 각 모듈 하위 이름이다. `Model/ModelDesign.asmdef`와 `Execution/Engine/CNNTraining.asmdef`는 각각 Unity 참조가 없는 별도 어셈블리이며, 편집 Model 어셈블리는 엔진 어셈블리도 참조하지 않는다. 두 표현의 변환은 Execution 모듈이 맡는다.
 
-## 블록 배치와 설정
+## 초기화와 이벤트 연결
 
-1. Manager가 Workspace와 고정 Input·Output을 준비하고 공급소·슬롯·이벤트를 연결한다.
-2. 공급소에서 꺼낸 블록의 레이어를 Workspace에 추가한다. 공급소는 같은 종류의 전용 프리팹으로 기본 블록을 보충한다.
-3. 슬롯의 블록을 잡으면 팝업을 닫고 슬롯을 비운 뒤 순서를 갱신한다.
-4. 배치 미리보기는 벨트 로컬 좌표의 블록 중심과 슬롯별 `Placement Half Extents`를 비교한다.
-5. 정상 배치 시 빈 슬롯에 등록하고 위치·방향을 정렬한다. 점유 슬롯·슬롯 밖·취소된 잡기는 배치하지 않는다.
-6. 연결은 `Input → 슬롯 순서의 블록 → Output`으로 갱신한다. 빈 슬롯은 건너뛰며 다른 블록 위치를 옮기지 않는다.
+1. 씬 Manager의 `Awake()`가 `ModelDefinition`을 만든다. `OnEnable()`은 XR 입력을 켜고 재활성화 시 블록 상호작용을 재개한다.
+2. `Start()`가 Model·Builder·Settings·Execution·ControlPanel의 이벤트를 연결한다. 각 컴포넌트의 `Awake()`가 끝난 뒤 Dataset → Execution → ControlPanel → Builder 순서로 초기화한다.
+3. Builder 초기화에는 편집 모델과 XR 적중 조회 함수를 전달한다. Execution과 ControlPanel에는 Dataset 진입점을 전달하여 실행 데이터와 화면 샘플을 각각 준비한다.
+4. 변경이 발생하면 `_modelUIIsDirty`를 설정한다. `LateUpdate()`는 필요한 때 블록 라벨·팝업·구성 검사 표시와 학습 당시 구성 여부를 갱신한다. 매 프레임 모델 구조를 재검증하지 않는다.
 
-점유 슬롯·슬롯 밖에 놓거나 잡기를 취소한 블록은 Workspace에서 제거하고 파괴한다. 미완성·잘못된 순서는 편집 상태로 보관할 수 있지만 학습 시작 전에 거절한다.
-
-설정 요청은 Manager가 잡기 상태와 `CanActivateSlot()`로 확인한다. 팝업은 해당 슬롯의 `Popup Anchor`에 하나만 열며 시점을 따라가지 않는다. 값 변경은 `LayerDefinition.Set*()`을 통해 변경 이벤트와 표시 갱신으로 이어진다. 편집 시 기존 구성 검사 결과를 초기화하며 재검증하지 않는다. 삭제는 슬롯 제거, 레이어 제거, 이벤트 해제, 블록 파괴 순이다. Input·Output은 삭제할 수 없다.
-
-## 구성 검사와 결과 콘솔
-
-구성 검사·학습·숫자 예측 페이지는 `ModelControlPanel.prefab`에 저장한다. 모델 변경 시 `CNNModelDesignLabManager`는 기존 문제 목록을 비우고 검사 대기 상태로 바꾼다. `LateUpdate()`는 표시와 학습 당시 모델의 변경 여부만 갱신하며 모델 구조·자원 한도를 검사하지 않는다.
-
-학습 시작 요청 시 `ModelExecutionManager`가 실행 정의를 만들고 엔진 호출 전에 모델을 검사한다. 문제가 있으면 엔진에 학습을 요청하지 않고 구성 검사 페이지에 초점을 맞춘다. 첫 오류를 반환하며 시작 버튼은 `구성 문제 확인하기`로 표시된다. 작업 중이나 블록을 잡는 동안에는 시작할 수 없다. `ValidationIssue.SlotIndex`로 문제 슬롯을 표시하고, 모델 전체 문제는 임의의 슬롯을 지목하지 않는다.
-
-빈 모델은 학습 시작 요청 시 Flatten이 필요하다는 문제로 거절한다. 구조 검사 통과는 학습 성공이나 정확도를 보장하지 않는다. 실행 오류는 별도 스크롤 패널에 표시한다.
-
-## 로컬 학습·추론
-
-`ModelExecutionDefinitionBuilder.Build()`는 배치된 블록을 슬롯 순서대로 복사하고 고정 Output을 붙여 실행 정의와 슬롯 대응표를 만든다. 모델 구조와 데이터 입력 형태 검증은 별도의 `ModelExecutionValidator`가 담당하며, `ModelExecutionManager`가 엔진 호출 전에 실행한다. 개별 설정 범위는 Model의 `LayerLimits`에 맡기고 모델 전체 자원 한도는 적용하지 않는다. Dense 앞에는 명시적 Flatten이 필요하고 고정 Output은 Dense 10·Softmax다. JSON 직렬화나 통신 요청은 없다.
-
-`ModelExecutionManager`는 Dataset 모듈에서 받은 데이터와 `CnnTrainingSettings.CreateOptions()`의 고정 설정으로 실행을 준비한다. 같은 GameObject의 Controller는 `Awake()`에서 연결하며 Inspector 참조를 사용하지 않는다. 엔진은 재사용하는 세션의 스레드풀 작업 하나에서 학습·검증·평가를 수행한다. 동시에 두 작업을 실행하지 않으며 씬은 진행·완료·취소·오류만 받아 UI를 갱신한다. 최종 평가 동안에도 `Training` 상태를 유지하고 실제 평가가 끝난 뒤 완료된다.
-
-진행 지표는 epoch별 실제 학습·검증 loss/accuracy이며 완료 결과에는 별도 test 부분집합 평가가 있다. 취소·오류·평가 미완료를 성공이나 공장 엔딩 조건 충족으로 표시하지 않는다.
-
-추론 UI는 텍스처 이름 `mnist-test-N`을 Controller에 전달한다. `MnistDataset.TryGetTestImage()`가 같은 원본 인덱스의 픽셀을 찾아 세션에 넘긴다. 엔진은 이미지 이름 규칙을 해석하지 않는다. 결과 ID가 현재 요청과 같은지 확인한 뒤 예측 숫자와 10개 Softmax 출력을 표시한다.
-
-학습 중·후 편집은 가능하다. `SubmittedModel`과 현재 실행 정의의 값을 비교해 이전 구성으로 학습한 결과임을 표시한다. 새 학습과 씬 종료 시 모델 수명은 세션이 관리한다.
-
-씬 종료 시 작업 취소, 결과 초기화, 팝업 닫기, 잡기 취소와 입력 해제를 수행한다. Controller는 종료된 세션·작업의 늦은 결과를 무시한다. 계산 종료 전 가중치·버퍼를 다른 작업에 재사용하지 않는다. 재진입 시 다시 학습한다.
-
-## 씬·프리팹 연결
-
-| 에셋·필드 | 연결 |
+| 상향 이벤트 | 씬 Manager의 처리 |
 | --- | --- |
-| `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. `PersistentXRPlayerRig`가 추가 로드 시 중복 제거 |
-| `Prefabs/CNNModelDesignLab/ModelBlock.prefab` 및 종류별 블록 프리팹 | Conv·Pooling·Flatten·Dense와 고정 Input·Output의 외형, Controller, Collider, 잡기 설정 |
-| `PartsSupplyRack.prefab` | 공급소·기본 블록 |
-| `ModelConveyor.prefab` | 슬롯·설정 조작기기·Input/Output |
-| `SlotSettingsControl.prefab` | 설정 Controller와 `Popup Anchor` |
-| `ModelResults.prefab` | 구성 검사·학습·예측 UI와 Controller, 시작·중지 버튼, `Samples` 참조 |
-| `ModelExecutionManager` → `ModelExecutionController` | 같은 GameObject에서 `GetComponent`로 연결 |
+| Model `OnChanged`, Builder `OnChanged` | 기존 검증 결과를 비우고 UI 갱신을 예약한다. Builder 변경은 열린 설정 팝업도 닫는다. |
+| Builder `OnSettingsRequested(layer, pose)` | Settings 진입점에 해당 레이어의 팝업 열기를 요청한다. |
+| Settings `OnDeleteRequested(layer)` | 팝업을 닫고 Builder에 삭제를 요청한다. |
+| ControlPanel `OnStartRequested` / `OnStopRequested` / `OnInferenceRequested` | 활성 상태·실행 상태·잡기 상태를 확인한 뒤 Execution 진입점에 요청한다. |
+| Execution `OnValidationFailed` | 문제 목록과 슬롯 대응을 표시하고 구성 검사 페이지에 초점을 맞춘다. |
+| Execution 상태·진행·완료·취소·오류 이벤트 | ControlPanel 진입점으로 화면을 갱신하고 학습 완료 상태를 관리한다. |
 
-벨트의 `Block Anchors`에 저장된 슬롯 위치·방향을 사용한다. `Slot Visuals Root`와 `Settings Controls Root`의 자식 순서는 앵커 순서와 일치해야 한다. 각 앵커의 로컬 좌표와 `Placement Half Extents`로 배치를 판정하며 실행 중 슬롯 수 변경은 지원하지 않는다.
+현재 씬 Manager의 이벤트 연결 수명은 `Start()`부터 `OnDestroy()`까지다. `OnDisable()`에서는 학습 세션·상호작용·팝업·입력을 종료하고 UI와 완료 상태를 초기화한다. 활성 기간에만 구독하는 형태로 구현되어 있다고 해석하지 않는다.
 
-공용 오른손 입력은 `Scripts/Core/XR/XRPlayerInputController.cs`가 담당하고 모델 씬은 레이 적중 여부를 검사한다. 서버 주소 설정은 필요하지 않다.
+## 슬롯 기반 편집
 
-## 이전 편집 모델 API (보관)
+`ModelDefinition.Layers`는 빈 슬롯을 null로 보존하는 읽기 전용 8칸 목록이다. `PlaceLayer(slot, layer)`와 `RemoveLayer(slot)`가 슬롯을 변경하며, 배치된 레이어의 설정 변경도 모델의 `OnChanged`로 전달된다. Input·Output은 편집 슬롯에 넣지 않는다. 모델 수명이 끝나면 `Dispose()`로 레이어 구독을 해제한다.
 
-아래 Workspace 기반 API와 편집 시 재검증 설명은 이전 구현의 기록이다. 현재 슬롯 기반 `ModelDefinition`에는 적용되지 않는다. 현재 모델 검증은 `Execution/ModelExecutionValidator.cs`에서 담당하며, 학습 시작 요청을 받은 Manager가 엔진 호출 전에 수행한다.
+1. 공급소에서 블록을 잡으면 같은 종류의 프리팹을 보충한다. 잡은 블록은 공급 블록 상태에서 벗어난다.
+2. 기존 슬롯의 블록을 잡으면 슬롯 점유와 모델의 해당 레이어를 제거한다. 나머지 슬롯은 이동하지 않는다.
+3. 놓을 때 컨베이어 로컬 좌표와 슬롯의 `Placement Half Extents`로 위치를 판단한다. 유효한 빈 슬롯이면 점유·모델 데이터를 등록하고 블록을 앵커에 정렬한다.
+4. 슬롯 밖·점유 슬롯에 놓거나 잡기가 취소되면 블록을 등록 해제하고 파괴한다. 상호작용 종료 시 아직 손에 들린 임시 블록도 정리한다.
+5. 실행 정의를 만들 때 빈 슬롯을 건너뛰고 슬롯 순서대로 레이어를 복사한 뒤 고정 Output(Dense 10·Softmax)을 붙인다.
 
-`ModelDesign` 어셈블리는 Unity API를 참조하지 않으며 `CNNTraining`의 공개 정의만 참조한다. 엔진에서 편집 모델로의 역참조는 없다.
+설정 입력은 Builder 내부에서 잡기 여부와 오른손 레이 적중을 확인한다. 선택한 슬롯의 `Popup Anchor` 위치를 Settings 모듈에 전달하며, 팝업은 하나만 열린다. 값 변경은 `LayerDefinition.SetFilters/SetKernelSize/SetPoolSize/SetUnits/SetActivation`을 사용한다. 삭제 요청은 씬 Manager를 거쳐 Builder에 돌아오므로 Settings가 실제 블록이나 컨베이어를 직접 조작하지 않는다.
 
-| 타입 | 역할 |
-| --- | --- |
-| `LayerDefinition` | 레이어 종류·설정값. 실제 변경 시 `OnChanged` 발생 |
-| `ModelDefinition` | 연결된 레이어 덩어리의 읽기 전용 목록 |
-| `ModelWorkspace` | Input·Output·덩어리 소유, 연결·삭제·교체, 재검증·변경 이벤트 |
-| `ModelValidator` | 순서·출력 형태·Flatten 전환 및 Input–Output 연결 검사 |
-| `ValidationIssue` | 문제 모델·블록 경로·메시지 |
-| `ModelExecutionDefinitionBuilder` | 불변 실행 정의로 변환, 자원 한도 검증, 정의 값 비교 |
+## 실행 검증과 학습
 
-| 호출·속성 | 동작 |
-| --- | --- |
-| `workspace.AddLayer(layer)` | 단독 덩어리 추가 |
-| `workspace.AddAndConnect(existingLayer, newLayer)` | 빈 끝점에 새 블록 추가·연결 |
-| `workspace.Connect(first, second)` | 다른 덩어리의 빈 끝점 연결. 인자 순서 무관 |
-| `workspace.Disconnect(first, second)` | 인접 연결 해제 |
-| `workspace.RemoveLayer(layer)` | 삭제. 중간 블록 양쪽은 별도 덩어리가 됨 |
-| `workspace.ReplaceLayer(oldLayer, newLayer)` | 연결 위치 유지하며 교체 |
-| `workspace.GetModel(layer)` | 블록이 현재 속한 덩어리 |
-| `workspace.InputModel` / `workspace.Models` | Input 덩어리 / 전체 덩어리 |
-| `workspace.ValidationIssues` | 최신 편집 검증 결과 |
-| `layer.SetFilters()` / `SetKernelSize()` / `SetPoolSize()` / `SetUnits()` / `SetActivation()` | 레이어별 설정 변경 |
-| `ModelValidator.ValidateEditing(model)` | 미완성 덩어리 검사. 모르는 입력 형태는 판정 보류 |
-| `ModelValidator.ValidateForExecution(workspace, options)` | 연결된 실행 모델과 자원 한도 검사 |
-| `ModelExecutionDefinitionBuilder.TryBuild(workspace, options, out definition, out issues)` | 실행 정의 생성. 실패 시 오류 목록 |
-| `ModelExecutionDefinitionBuilder.Build(workspace, options)` | 정의 반환. 실패 시 예외 |
-| `ModelExecutionDefinitionBuilder.Matches(first, second)` | 입력·레이어 순서·설정값 비교 |
+시작 버튼은 씬이 활성 상태이고 실행 중이 아니며 블록을 잡고 있지 않을 때 Execution에 요청한다. Execution은 Dataset 준비 오류를 먼저 처리하고, 현재 모델의 값 스냅샷과 원래 슬롯 대응표를 만든 뒤 구조를 검사한다. 첫 오류가 있으면 엔진을 실행하지 않고 `ValidationIssue.SlotIndex`와 메시지를 전달한다. 모델 전체 오류에는 임의의 슬롯을 지정하지 않는다.
 
-Input·Output은 Workspace당 하나다. 분기·순환은 허용하지 않는다. 연결·분리·삭제·교체는 덩어리 목록을 갱신하므로 UI는 블록 참조를 유지하고 `GetModel()`로 현재 덩어리를 조회한다. 실제 변경 시 재검증 후 `OnValidationChanged`, `OnChanged` 순서로 이벤트가 발생한다. 동일 값 설정과 거절된 작업은 이벤트를 발생시키지 않는다. Workspace 사용 종료 시 `Dispose()`한다.
+현재 검사는 Flatten 이전의 공간 레이어, 명시적 Flatten 한 번, Flatten 이후 Dense, 현재 입력 크기에 맞는 커널·풀 크기, 최종 Dense 10·Softmax를 확인한다. 첫 레이어를 Conv2D로 강제하지 않으므로 `Flatten → Output`도 구조상 허용한다. Dense 앞에 Flatten을 자동으로 추가하지 않는다. 빈 모델은 Flatten 누락으로 거절한다. 개별 값 범위는 `LayerLimits`가 관리하고, 모델 전체 연산량·파라미터 수의 별도 상한은 없다.
 
-```csharp
-using CNNTraining;
-using ModelDesign;
+`ModelExecutionManager`는 같은 GameObject의 Controller를 `Awake()`에서 연결하고, 최초 유효한 학습 요청 때 `CnnEngineManager`를 만든다. 엔진 Manager가 재사용하는 `CnnTrainingSession`을 소유한다. 학습 설정은 `Execution/CnnTrainingSettings.cs`의 코드 상수이며 현재 10 epoch, batch 16, learning rate 0.001, seed 42다.
 
-using (ModelWorkspace workspace = new ModelWorkspace())
-{
-    LayerDefinition conv = LayerDefinition.Conv2D(4, 3, 3, ActivationType.ReLU);
-    LayerDefinition pool = LayerDefinition.MaxPooling2D(2, 2);
-    LayerDefinition flatten = LayerDefinition.Flatten();
-    workspace.AddAndConnect(workspace.Input, conv);
-    workspace.AddAndConnect(conv, pool);
-    workspace.AddAndConnect(pool, flatten);
-    workspace.Connect(flatten, workspace.Output);
-    ModelExecutionDefinition definition = ModelExecutionDefinitionBuilder.Build(
-        workspace, new CnnTrainingOptions());
-    // 실행 Controller에 definition을 전달한다. 편집 객체와 가중치는 공유하지 않는다.
-}
-```
+작업은 스레드풀에서 실행한다. Controller의 큐가 진행·결과를 메인 스레드 `Update()`로 전달하며 세션/작업 번호로 늦은 응답을 차단한다. 학습·검증·최종 평가가 끝나야 완료이고, 취소·실패는 완료로 처리하지 않는다. 세션은 한 번에 하나의 학습 또는 추론만 허용한다. 새 학습은 새 가중치와 optimizer 상태로 시작한다.
 
-## 추론 샘플 ID
+`SubmittedModel`과 현재 모델은 실행 정의의 값으로 비교한다. 학습 중·후 편집은 가능하지만 제출 당시 스냅샷은 바뀌지 않으며, 현재 구성이 다르면 콘솔에 알린다. 계산 구현이나 가중치는 화면 코드에 노출하지 않는다.
 
-`Textures/CNNModelDesignLab/`의 텍스처·정답을 `ModelResultsController.Samples`에 연결한다. ID는 확장자를 제외한 이름이다.
+## 추론과 공장 완료 조건
+
+Dataset 모듈이 텍스처 이름 `mnist-test-N`을 내장 test 데이터의 원본 인덱스와 연결한다. ControlPanel은 `DatasetSample` 목록으로 샘플을 표시하고 선택한 ID만 추론 요청으로 전달한다. Execution이 해당 픽셀을 조회해 엔진에 전달하며 엔진은 ID를 결과 식별값으로만 사용한다. 화면은 요청한 ID와 결과 ID를 비교하여 예측 숫자와 10개 출력을 표시한다.
 
 | 정답 | 이미지 이름 |
 | --- | --- |
@@ -147,4 +76,21 @@ using (ModelWorkspace workspace = new ModelWorkspace())
 | 8 | `mnist-test-61` |
 | 9 | `mnist-test-7` |
 
-원본 MNIST test split에서 숫자별 첫 이미지다. 새 샘플의 원본 인덱스는 내장 test 데이터에 있어야 한다. 없는 ID는 오류로 처리하며 다른 이미지로 대체하지 않는다.
+공장 흐름은 `ReadyForFactoryExit`를 읽는다. 이 값은 `_trainingCompleted && !_execution.IsBusy`이며, 학습 완료 결과를 화면에 전달한 뒤 완료 상태를 설정한다. 새 학습의 `Training` 상태와 씬 비활성화 시 초기화한다. 현재 씬에는 단계 건너뛰기로 출구를 허용하는 경로가 없다. 추론 완료나 특정 정확도 달성은 출구 조건이 아니다.
+
+## 씬·프리팹 연결
+
+| 연결 대상 | 현재 구성 |
+| --- | --- |
+| 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset`, `_xrInput` |
+| `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어 |
+| `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 표시와 설정 기기. 자식 순서는 슬롯 순서와 대응한다. |
+| `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
+| `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
+| `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 배치는 프리팹에 저장한다. |
+| `ModelDatasetController` | `_trainingDataset`, `_testDataset`, `_sampleImages`로 바이너리 에셋과 샘플 텍스처 연결 |
+| `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 모델 씬은 `ModelXRInputController`를 통해 레이 적중을 조회한다. |
+
+## 확인 범위
+
+이 문서는 현재 소스·씬·프리팹의 참조와 동작 경로를 읽어 갱신했다. 이번 문서 갱신에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다. 이전 실행 측정은 [CNN 학습 문서의 과거 검증 기록](CNN_TRAINING.md#과거-검증-기록)에 별도로 남기며 현재 코드의 검증 결과로 간주하지 않는다.

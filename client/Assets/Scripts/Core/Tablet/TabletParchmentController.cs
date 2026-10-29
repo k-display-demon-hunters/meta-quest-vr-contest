@@ -15,22 +15,18 @@ namespace Tablet
         private readonly TabletUIBuilder _ui;
         private readonly TabletUIBuilder.ParchmentView _view;
         private readonly TabletVisualResources _resources;
-        private readonly Action<int> _resetFocus;
-        private readonly Action<bool> _showFeedback;
-        private readonly Action<string, string> _feedback;
+        public event Action<int> FocusRequested;
+        public event Action<bool> FeedbackVisibilityChanged;
+        public event Action<string, string> FeedbackRequested;
 
         public int SelectedIndex => _selectedItemIndex;
         public bool IsOpen => _view.ParchmentReader.activeSelf;
 
-        public TabletParchmentController(TabletUIBuilder ui, TabletVisualResources resources,
-            Action<int> resetFocus, Action<bool> showFeedback, Action<string, string> feedback)
+        public TabletParchmentController(TabletUIBuilder ui, TabletVisualResources resources)
         {
             _ui = ui;
             _view = ui.Parchment;
             _resources = resources;
-            _resetFocus = resetFocus;
-            _showFeedback = showFeedback;
-            _feedback = feedback;
         }
 
         public void RestoreSelection(int index)
@@ -39,7 +35,6 @@ namespace Tablet
         }
 
         public static string ItemName(int index) => "양피지 " + (index + 1).ToString("00");
-        public bool IsFeatureMapVisible(int index) => _featureMapVisible[index];
 
         private void RefreshParchmentPage()
         {
@@ -55,7 +50,7 @@ namespace Tablet
             // ReferencePosition uses the centre of the old rectangle; keep the top edge fixed when its height changes.
             _view.ParchmentBody.rectTransform.anchoredPosition = _ui.ReferencePosition(_view.ParchmentReader.transform,
                 770f, 383f + (illustrated ? 220f : 306f) * 0.5f);
-            _ui.RebuildParchmentIllustration(illustrated);
+            _ui.RebuildParchmentIllustration(illustrated, _selectedItemIndex, _featureMapVisible);
         }
 
         public void ChangeParchmentPage(int delta)
@@ -71,8 +66,8 @@ namespace Tablet
         public void CloseParchment()
         {
             _view.ParchmentReader.SetActive(false);
-            _showFeedback(true);
-            _resetFocus(_selectedItemIndex);
+            FeedbackVisibilityChanged?.Invoke(true);
+            FocusRequested?.Invoke(_selectedItemIndex);
         }
 
         public void ToggleFeatureMap(int index)
@@ -113,7 +108,7 @@ namespace Tablet
             RefreshInventory();
             _view.ParchmentReader.SetActive(true);
             _view.ParchmentReader.transform.SetAsLastSibling();
-            _showFeedback(false);
+            FeedbackVisibilityChanged?.Invoke(false);
             RefreshParchmentPage();
         }
 
@@ -130,7 +125,7 @@ namespace Tablet
             }
             _collectedParchments[index] = true;
             RefreshInventory();
-            _feedback(ItemName(index) + " 완료",
+            FeedbackRequested?.Invoke(ItemName(index) + " 완료",
                 ParchmentLesson.All[index].Title + "\n\n양피지가 태블릿에 보관되었습니다.\n오른쪽 아이템함에서 다시 읽을 수 있습니다.");
             return true;
         }

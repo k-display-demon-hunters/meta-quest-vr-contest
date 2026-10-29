@@ -79,6 +79,12 @@ namespace UI
             StartCoroutine(Run());
         }
 
+        public void Close()
+        {
+            _spatial.ReleaseInteractions();
+            gameObject.SetActive(false);
+        }
+
         private void Update()
         {
             if (_spatial == null || _skip == null) { return; }

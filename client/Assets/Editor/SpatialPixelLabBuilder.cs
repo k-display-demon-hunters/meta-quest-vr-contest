@@ -54,7 +54,7 @@ namespace UI.Editor
             selection.gameObject.SetActive(false);
             GameObject filter = new GameObject("Grab the filter", typeof(Rigidbody), typeof(BoxCollider));
             filter.transform.SetParent(lab.transform, false);
-            filter.transform.localPosition = new Vector3(1.55f, 1.55f, 1.5f);
+            filter.transform.localPosition = new Vector3(-2.4f, 1.15f, -0.6f);
             Rigidbody filterBody = filter.GetComponent<Rigidbody>();
             filterBody.isKinematic = true;
             filterBody.useGravity = false;
@@ -96,7 +96,7 @@ namespace UI.Editor
             detail.gameObject.SetActive(false);
 
             SerializedObject fields = new SerializedObject(controller);
-            Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/ColorPhoto.png"));
+            Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/OpeningBroadcast.png"));
             Assign(fields, "_board", board);
             Assign(fields, "_boardRenderer", image);
             Assign(fields, "_filter", grab);

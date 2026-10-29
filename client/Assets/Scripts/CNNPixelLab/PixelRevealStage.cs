@@ -31,18 +31,18 @@ namespace UI
         private Material _blockMaterial;
         private MaterialPropertyBlock _blockProperties;
         private MeshRenderer _photoRenderer;
-        private Text[] _numbers;
-        private GameObject _channelControls;
-        private Button[] _channelButtons;
+        private RgbPixelStackController _rgbStack;
+        private Vector2Int _selected;
         private Text _instruction;
         public event System.Action PixelsRevealed;
 
         public RevealPhase Phase { get; private set; }
         public bool IsReadyForConvolution => Phase == RevealPhase.Revealed;
 
-        public void ShowImage(IReadOnlyList<Color32> pixels, int columns, int rows)
+        public void ShowImage(IReadOnlyList<Color32> pixels, int columns, int rows, Vector2Int selected)
         {
             if (Phase != RevealPhase.Inactive) { return; }
+            _selected = selected;
             _camera = Camera.main;
             if (_camera == null)
             {
@@ -85,7 +85,7 @@ namespace UI
             if (Phase != RevealPhase.AwaitingClick) { return; }
             Phase = RevealPhase.Revealing;
             _instruction.text = "이미지가 픽셀과 숫자로 바뀌고 있어요";
-            _channelControls.SetActive(true);
+
             StartCoroutine(RevealColumns());
         }
 
@@ -98,7 +98,7 @@ namespace UI
             _clickTarget.enabled = false;
             _clickCollider.enabled = false;
             _pixelCanvas.SetActive(false);
-            _channelControls.SetActive(false);
+            if (_rgbStack != null) { _rgbStack.gameObject.SetActive(false); }
             _instruction.gameObject.SetActive(false);
         }
 
@@ -106,7 +106,6 @@ namespace UI
         {
             if (Phase != RevealPhase.AwaitingClick && Phase != RevealPhase.Revealing) { return; }
             StopAllCoroutines();
-            _channelControls.SetActive(true);
             FinishReveal();
         }
 
@@ -126,6 +125,9 @@ namespace UI
                 UpdateBlockOpacity();
                 yield return null;
             }
+            if (_photoRenderer != null) { _photoRenderer.enabled = false; }
+            _instruction.text = "선택한 3×3 픽셀에서 R·G·B가 앞뒤로 펼쳐져요";
+            yield return _rgbStack.Unfold(_sourcePixels, _columns.Length, _sourcePixels.Count / _columns.Length, _selected);
             FinishReveal();
         }
 
@@ -153,7 +155,6 @@ namespace UI
             _blockColors = new Color[pixels.Count];
             _blockMesh = PixelVolumeMesh.Create();
             _blockMaterial = PixelVolumeMesh.CreateMaterial(true);
-            _numbers = new Text[pixels.Count];
             _pixelCanvas = new GameObject("Image pixels and values", typeof(RectTransform), typeof(Canvas));
             RectTransform canvasRect = (RectTransform)_pixelCanvas.transform;
             canvasRect.SetParent(_board, false);
@@ -183,64 +184,15 @@ namespace UI
                     _pixelBlocks[y * columns + x] = PixelVolumeMesh.Add(cell, "Pixel block", _blockMesh,
                         _blockMaterial, new Vector3(0, 0, depth * 0.5f + 0.003f),
                         new Vector3(CellSize - 5, CellSize - 5, depth));
-                    Text text = Rect(cell, "Value", 0, 0, CellSize - 4, CellSize - 4).gameObject.AddComponent<Text>();
-                    text.font = _font;
-                    text.fontSize = 30;
-                    text.alignment = TextAnchor.MiddleCenter;
-                    text.color = ((Color)pixel).grayscale > 0.55f ? Color.black : Color.white;
-                    text.text = pixel.r.ToString();
-                    text.raycastTarget = false;
-                    text.supportRichText = false;
 
-                    _numbers[y * columns + x] = text;
                 }
             }
-            _channelControls = Rect(_controls, "RGB channels", 0, 170, 900, 80).gameObject;
-            _channelButtons = new Button[3];
-            Text hint = Rect(_channelControls.transform, "Channel help", 0, -65, 1400, 35).gameObject.AddComponent<Text>();
-            hint.font = _font;
-            hint.fontSize = 28;
-            hint.text = "R/G/B 선택: Trigger · 숫자: 색의 세기 (0~255)";
-            hint.alignment = TextAnchor.MiddleCenter;
-            hint.color = Color.white;
-            hint.raycastTarget = false;
-            string[] labels = { "R · 빨강", "G · 초록", "B · 파랑" };
-            for (int c = 0; c < 3; c++)
-            {
-                int channel = c;
-                RectTransform rect = Rect(_channelControls.transform, labels[c], (c - 1) * 300, 0, 260, 80);
-                Image image = rect.gameObject.AddComponent<Image>();
-                image.color = new Color(0.65f, 0.67f, 0.7f);
-                Button button = rect.gameObject.AddComponent<Button>();
-                button.targetGraphic = image;
-                button.onClick.AddListener(() => SetChannel(channel));
-                _channelButtons[c] = button;
-                Text label = Rect(rect, "Label", 0, 0, 260, 80).gameObject.AddComponent<Text>();
-                label.font = _font;
-                label.fontSize = 36;
-                label.text = labels[c];
-                label.alignment = TextAnchor.MiddleCenter;
-                label.color = Color.black;
-                label.raycastTarget = false;
-                UI.SceneUIStyle.Apply(button);
-            }
-            SetChannel(0);
-            _channelControls.SetActive(false);
-        }
-
-        private void SetChannel(int channel)
-        {
-            for (int i = 0; i < _sourcePixels.Count; i++)
-            {
-                Color32 pixel = _sourcePixels[i];
-                byte value = channel == 0 ? pixel.r : channel == 1 ? pixel.g : pixel.b;
-                _blockColors[i] = channel == 0 ? new Color32(value, 0, 0, 255)
-                    : channel == 1 ? new Color32(0, value, 0, 255) : new Color32(0, 0, value, 255);
-                _numbers[i].text = value.ToString();
-                _numbers[i].color = channel == 1 && value > 175 ? Color.black : Color.white;
-            }
-            UpdateBlockOpacity();
-            for (int c = 0; c < 3; c++) { _channelButtons[c].interactable = c != channel; }
+            for (int i = 0; i < pixels.Count; i++) { _blockColors[i] = pixels[i]; }
+            GameObject stack = new GameObject("Selected pixel RGB volume");
+            stack.transform.SetParent(_board, false);
+            _rgbStack = stack.AddComponent<RgbPixelStackController>();
+            _rgbStack.Initialize(_font, _boardSize, _blockMesh, _blockMaterial);
+            stack.SetActive(false);
         }
 
         private void UpdateBlockOpacity()

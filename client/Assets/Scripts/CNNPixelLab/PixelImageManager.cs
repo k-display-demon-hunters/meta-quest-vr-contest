@@ -91,7 +91,7 @@ namespace UI
 
         public void UpdateSelection()
         {
-            if (!IsRevealing && _selection.UpdateSelection())
+            if (!IsRevealing && !IsReadyForConvolution && _selection.UpdateSelection())
             {
                 SelectionChanged?.Invoke();
             }
@@ -111,7 +111,8 @@ namespace UI
         {
             _selection.SuspendSelection();
             _filter.gameObject.SetActive(false);
-            _reveal.ShowImage(Pixels, Columns, Rows);
+            _reveal.ShowImage(Pixels, Columns, Rows, _selection.SelectedPixel);
+            _reveal.RevealPixels();
         }
 
         public void CompleteReveal()
@@ -153,8 +154,6 @@ namespace UI
 
         private void HandlePixelsRevealed()
         {
-            _filter.gameObject.SetActive(true);
-            _selection.EnsureSelection();
             PixelsRevealed?.Invoke();
         }
 

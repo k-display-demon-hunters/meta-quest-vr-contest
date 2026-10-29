@@ -69,11 +69,12 @@ namespace UI
 
         public void ShowDetails()
         {
-            if (_image.IsRevealing || !_image.HasSelection || _image.IsFilterHeld)
+            if (!_image.CanBeginReveal || !_image.HasSelection)
             {
                 return;
             }
-            ShowLesson(false);
+            _ui.ShowRevealStarted();
+            _image.BeginReveal();
         }
 
         public void BeginConvolution()
@@ -130,7 +131,6 @@ namespace UI
         {
             if (_image.IsRevealing)
             {
-                _image.CompleteReveal();
                 return;
             }
             if (_image.IsReadyForConvolution)
@@ -138,13 +138,7 @@ namespace UI
                 BeginConvolution();
                 return;
             }
-            if (!_image.CanBeginReveal)
-            {
-                return;
-            }
-            CloseDetails();
-            _ui.ShowRevealStarted();
-            _image.BeginReveal();
+            ShowDetails();
         }
 
         private void ShowLesson(bool calculationAvailable)

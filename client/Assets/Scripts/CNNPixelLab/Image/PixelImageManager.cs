@@ -33,7 +33,6 @@ namespace UI
         public bool IsFilterHeld => _filter.isSelected;
         public Vector2Int SelectedPixel => _selection.SelectedPixel;
         public Vector3 SelectionWorldPosition => _selection.SelectionWorldPosition;
-        public Vector3 BoardPosition => _board.position;
         public bool IsReadyForConvolution => _reveal != null && _reveal.IsReadyForConvolution;
         public bool IsRevealing => _reveal != null
             && (_reveal.Phase == PixelRevealStage.RevealPhase.AwaitingClick
@@ -157,11 +156,6 @@ namespace UI
             PixelsRevealed?.Invoke();
         }
 
-#if UNITY_EDITOR
-        public bool IsFilter(XRGrabInteractable target) => target == _filter;
-        public void EditorDragFilter(Ray ray) => _selection.EditorDragFilter(ray);
-        public void EditorReleaseFilter() => _selection.EditorReleaseFilter();
-#endif
 
         public void Dispose()
         {

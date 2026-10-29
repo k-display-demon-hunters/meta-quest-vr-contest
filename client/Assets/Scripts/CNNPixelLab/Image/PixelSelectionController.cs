@@ -161,23 +161,5 @@ namespace UI
             _snapPending = false;
         }
 
-#if UNITY_EDITOR
-        public void EditorDragFilter(Ray ray)
-        {
-            Plane plane = new Plane(_board.forward, _board.TransformPoint(Vector3.back * FilterDepth));
-            if (!plane.Raycast(ray, out float distance)) { return; }
-            _filter.transform.SetPositionAndRotation(ray.GetPoint(distance), _board.rotation);
-            Rigidbody body = _filter.GetComponent<Rigidbody>();
-            body.position = _filter.transform.position;
-            body.rotation = _filter.transform.rotation;
-            UpdatePreview();
-        }
-
-        public void EditorReleaseFilter()
-        {
-            _snapPending = true;
-        }
-
-#endif
     }
 }

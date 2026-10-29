@@ -98,24 +98,6 @@ namespace UI
             _closing = false;
         }
 
-#if UNITY_EDITOR
-        public bool CanDrag(XRGrabInteractable target)
-        {
-            return target != null && target.isActiveAndEnabled &&
-                (target == _kernelGrab || Array.IndexOf(_answers, target) >= 0);
-        }
-
-        public void Release(XRGrabInteractable target)
-        {
-            if (target == _kernelGrab)
-            {
-                AlignReleasedKernel();
-                return;
-            }
-            int index = Array.IndexOf(_answers, target);
-            if (index >= 0) { ReleaseAnswer(index); }
-        }
-#endif
 
         private void HandleKernelGrabbed(SelectEnterEventArgs args)
         {

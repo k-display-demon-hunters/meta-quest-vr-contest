@@ -26,8 +26,6 @@ namespace UI
         private bool _busy;
         private bool _initialized;
 
-        public bool IsVisible => gameObject.activeSelf;
-        public Vector3 PreviewFocus => transform.position + transform.right * 0.35f;
 
         public event Action CloseRequested;
         public event Action AdvanceRequested;

@@ -1,6 +1,6 @@
 # 통합 조작법
 
-Quest 컨트롤러, 에디터 XR 시뮬레이터, CNN 픽셀 씬의 마우스 미리보기 조작을 정리한다. 공통 입력의 구현은 [XR 리그와 태블릿](xr-setup.md)에 있다.
+Quest 컨트롤러와 에디터 XR 시뮬레이터 조작을 정리한다. 공통 입력의 구현은 [XR 리그와 태블릿](xr-setup.md)에 있다.
 
 ## 공통 컨트롤러 입력
 
@@ -132,17 +132,3 @@ Trigger를 누르는 동안 플레이어 이동은 멈춘다. Trigger를 놓은 
 WASD는 몸의 이동을 흉내 낸다. 왼쪽 스틱 이동을 직접 조작하려면 Shift + I/K/J/L을 사용한다. 시작 시 시점이 바닥에 가까우면 FPS 모드에서 E로 높이를 올린다.
 
 Quest Link를 사용할 때는 PC/Standalone의 `Initialize XR on Startup`을 켜고, `Project Settings > XR Plug-in Management > XR Interaction Toolkit`의 `Use XR Interaction Simulator in scenes`를 끈다. 키보드·마우스 시뮬레이터로 돌아올 때는 반대로 설정한다.
-
-## CNN 픽셀 씬의 마우스 미리보기
-
-`Tools > CNN > Mouse Preview (This Computer Only)`를 켜고 `CNNPixelLab`에서 사용한다. XR 기기가 활성화되지 않은 에디터 Play에서 동작한다.
-
-| 마우스 입력 | 동작 |
-| --- | --- |
-| 왼쪽 클릭 | UI 버튼·이미지 선택 |
-| 왼쪽 드래그 | 필터 또는 공간 상호작용 물체 이동 |
-| 오른쪽 드래그 | 카메라 회전 |
-| 휠 | 카메라 줌. 필터 외 물체를 드래그 중이면 물체 깊이 조절 |
-| 휠 버튼 드래그 | 카메라 평행 이동 |
-| 정면으로 돌아가기 | 미리보기 카메라 복원 |
-| Quest 조작으로 복귀 | 미리보기를 끝내고 XR 입력 복원 |

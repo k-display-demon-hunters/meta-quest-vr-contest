@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace UI
 {
@@ -55,18 +54,6 @@ namespace UI
             _view.SpatialGuide.gameObject.SetActive(false);
         }
 
-#if UNITY_EDITOR
-        public bool EditorCanDrag(XRGrabInteractable target)
-        {
-            return _volume.CanDrag(target) || _interaction.CanDrag(target);
-        }
-
-        public void EditorRelease(XRGrabInteractable target)
-        {
-            if (_volume.CanDrag(target)) { _volume.Released(target); }
-            else { _interaction.Release(target); }
-        }
-#endif
 
         public void Initialize(Font font)
         {

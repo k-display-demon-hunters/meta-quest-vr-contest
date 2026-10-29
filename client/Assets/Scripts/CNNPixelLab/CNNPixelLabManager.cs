@@ -179,18 +179,6 @@ namespace UI
             }
         }
 
-#if UNITY_EDITOR
-        public bool EditorDetailsVisible => _lesson.IsVisible;
-        public Vector3 EditorPreviewFocus => _lesson.IsVisible ? _lesson.PreviewFocus : _image.BoardPosition;
-
-        public bool EditorCanDragFilter(XRGrabInteractable target)
-        {
-            return _image.IsFilter(target) && !_image.IsRevealing && !_lesson.IsVisible;
-        }
-
-        public void EditorDragFilter(Ray ray) => _image.EditorDragFilter(ray);
-        public void EditorReleaseFilter() => _image.EditorReleaseFilter();
-#endif
 
         private void OnDisable()
         {

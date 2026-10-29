@@ -153,12 +153,6 @@ namespace UI
             StopInteraction();
         }
 
-        public bool CanDrag(XRGrabInteractable target)
-        {
-            return target != null && target.isActiveAndEnabled &&
-                (target == _patchGrab || target == _filterGrab || System.Array.IndexOf(_layerGrabs, target) >= 0);
-        }
-
         public void Released(XRGrabInteractable target)
         {
             if (_closing) { return; }

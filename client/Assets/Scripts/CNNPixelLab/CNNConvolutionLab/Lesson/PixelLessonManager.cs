@@ -18,10 +18,6 @@ namespace UI
         private RgbConvolutionView _view;
         private SpatialConvolutionController _observation;
         private ConvolutionExercise _exercise;
-        private Vector3 _selectionWorldPosition;
-        private Vector2Int _selected;
-        private int _columns;
-        private int _rows;
         private bool _combined;
         private bool _busy;
         private bool _initialized;
@@ -29,8 +25,6 @@ namespace UI
 
         public event Action CloseRequested;
         public event Action AdvanceRequested;
-        public event Action<bool> BackgroundHiddenChanged;
-        public event Action<int, int> SelectionMoveRequested;
         public event Action Completed;
 
         private void OnEnable()
@@ -66,8 +60,7 @@ namespace UI
             }
         }
 
-        public void Show(IReadOnlyList<Color32> pixels, int columns, int rows, Vector2Int selected,
-            Vector3 selectionWorldPosition, bool calculationAvailable)
+        public void Show(PixelPatchData pixels)
         {
             gameObject.SetActive(true);
             StopAllCoroutines();
@@ -75,28 +68,17 @@ namespace UI
             _exercise.Close();
             _busy = false;
             _combined = false;
-            _selectionWorldPosition = selectionWorldPosition;
-            _selected = selected;
-            _columns = columns;
-            _rows = rows;
             for (int channel = 0; channel < 3; channel++)
             {
                 for (int i = 0; i < 9; i++)
                 {
-                    Color32 pixel = pixels[(selected.y + 2 - i / 3) * columns + selected.x + i % 3];
+                    Color32 pixel = pixels[i];
                     _inputs[channel, i] = channel == 0 ? pixel.r : channel == 1 ? pixel.g : pixel.b;
                 }
             }
             _view.ShowObservation();
             _observation.SetData(_inputs, _weights);
-            if (calculationAvailable)
-            {
-                BeginCalculation();
-            }
-            else
-            {
-                StartCoroutine(ShowObservation());
-            }
+            BeginCalculation();
         }
 
         public void Close()
@@ -111,8 +93,7 @@ namespace UI
         private IEnumerator ShowObservation(bool extract = true)
         {
             SetBusy(true);
-            yield return _observation.Observe(_selectionWorldPosition, extract);
-            BackgroundHiddenChanged?.Invoke(true);
+            yield return _observation.Observe(Vector3.zero, extract);
             SetBusy(false);
         }
 
@@ -133,7 +114,6 @@ namespace UI
             }
             _observation.ReleaseInteractions();
             _view.ShowCalculation();
-            _exercise.SelectionSource = _selectionWorldPosition;
             _exercise.Begin(_inputs, _weights, CompleteExercise);
         }
 
@@ -157,7 +137,7 @@ namespace UI
         private void CompleteExercise(int[] sums)
         {
             Completed?.Invoke();
-            _view.ShowCompleted(sums, _selected, _columns, _rows);
+            _view.ShowCompleted(sums);
             StartCoroutine(ShowObservation(false));
         }
 
@@ -172,18 +152,12 @@ namespace UI
             CloseRequested?.Invoke();
         }
 
-        private void HandleSelectionMoveRequested(int dx, int dy)
-        {
-            SelectionMoveRequested?.Invoke(dx, dy);
-        }
-
         private void SubscribeView()
         {
             _view.CombineRequested += ToggleCombined;
             _view.RestartRequested += BeginCalculation;
             _view.AdvanceRequested += AdvanceObservation;
             _view.CloseRequested += HandleCloseRequested;
-            _view.SelectionMoveRequested += HandleSelectionMoveRequested;
         }
 
         private void UnsubscribeView()
@@ -192,7 +166,6 @@ namespace UI
             _view.RestartRequested -= BeginCalculation;
             _view.AdvanceRequested -= AdvanceObservation;
             _view.CloseRequested -= HandleCloseRequested;
-            _view.SelectionMoveRequested -= HandleSelectionMoveRequested;
         }
 
         private void OnDisable()

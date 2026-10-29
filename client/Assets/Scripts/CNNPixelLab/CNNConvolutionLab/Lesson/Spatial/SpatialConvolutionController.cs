@@ -134,7 +134,7 @@ namespace UI
             else { _volume.Explore(); }
         }
 
-        public IEnumerator Focus(int channel, Vector3 source)
+        public IEnumerator Focus(int channel)
         {
             _volume.StopInteraction();
             _view.SpatialGuide.gameObject.SetActive(false);

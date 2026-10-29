@@ -110,7 +110,7 @@ namespace FactoryEnvironment
             }
             if (_stage == FactoryDestinationId.PixelLab)
             {
-                _navigationData.Get(_stage).Pixels.CloseDetails();
+                yield return _navigationData.Get(_stage).Pixels.EndSession();
             }
             yield return _sceneLoader.CommitPreparedLesson();
             _stage = destination;

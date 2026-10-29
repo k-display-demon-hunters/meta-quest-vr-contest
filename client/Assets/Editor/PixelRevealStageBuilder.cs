@@ -16,15 +16,15 @@ namespace UI.Editor
             Scene scene = SceneManager.GetActiveScene();
             if (EditorApplication.isPlaying || scene.path != SpatialPixelLabBuilder.ScenePath)
             {
-                throw new InvalidOperationException("Open CNNPixelLab in Edit Mode first.");
+                throw new InvalidOperationException("Open CNNScreenLab in Edit Mode first.");
             }
-            CNNPixelLabManager lab = null;
+            CNNScreenLabManager lab = null;
             foreach (GameObject root in scene.GetRootGameObjects())
             {
-                lab = root.GetComponentInChildren<CNNPixelLabManager>();
+                lab = root.GetComponentInChildren<CNNScreenLabManager>(true);
                 if (lab != null) { break; }
             }
-            if (lab == null) { throw new InvalidOperationException("CNNPixelLabManager is missing."); }
+            if (lab == null) { throw new InvalidOperationException("CNNScreenLabManager is missing."); }
             PixelRevealStage stage = lab.GetComponent<PixelRevealStage>();
             if (stage == null) { stage = lab.gameObject.AddComponent<PixelRevealStage>(); }
             Transform controls = lab.transform.Find("Spatial controls");

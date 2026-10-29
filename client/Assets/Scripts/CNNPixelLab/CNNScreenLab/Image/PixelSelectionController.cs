@@ -61,6 +61,14 @@ namespace UI
             _selectionFrame.gameObject.SetActive(false);
         }
 
+        public void RestoreSelection(Vector2Int selected)
+        {
+            _selected = selected;
+            _hasSelection = true;
+            _snapPending = false;
+            PlaceFilter();
+        }
+
         public void EnsureSelection()
         {
             if (!_hasSelection)

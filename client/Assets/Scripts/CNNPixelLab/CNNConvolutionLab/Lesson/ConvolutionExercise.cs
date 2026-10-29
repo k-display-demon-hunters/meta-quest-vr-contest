@@ -9,7 +9,6 @@ namespace UI
     public sealed class ConvolutionExercise : MonoBehaviour
     {
         private SpatialConvolutionController _spatial;
-        public Vector3 SelectionSource { get; set; }
         private readonly Button[] _answers = new Button[3];
         private readonly int[] _options = new int[3];
         private readonly int[] _sums = new int[3];
@@ -113,7 +112,7 @@ namespace UI
             yield return _spatial.PrepareVolume();
             yield return WaitForNext("RGB 대응 관계 확인 완료");
             yield return _spatial.PullColour(0);
-            yield return _spatial.Focus(0, SelectionSource);
+            yield return _spatial.Focus(0);
             Highlight(-1);
             _title.text = "R 학습 · 정해진 가중치로 계산하기";
             _explanation.text = "앞의 R 픽셀과 왼쪽 가중치를 관찰하세요. 가중치를 Grip으로 잡아 R 픽셀 앞에 놓으세요.";
@@ -164,7 +163,7 @@ namespace UI
             yield return WaitForNext("G 퀴즈로");
 
             yield return _spatial.PullColour(1);
-            yield return _spatial.Focus(1, SelectionSource);
+            yield return _spatial.Focus(1);
             _spatial.AlignKernel();
             HighlightRow(0);
             _title.text = "G 퀴즈 · 첫 줄의 가중합을 구하세요";
@@ -193,7 +192,7 @@ namespace UI
             yield return WaitForNext("B 퀴즈로");
 
             yield return _spatial.PullColour(2);
-            yield return _spatial.Focus(2, SelectionSource);
+            yield return _spatial.Focus(2);
             _spatial.AlignKernel();
             Highlight(-1);
             _title.text = "B 퀴즈 · 9개 항의 선형결합을 완성하세요";

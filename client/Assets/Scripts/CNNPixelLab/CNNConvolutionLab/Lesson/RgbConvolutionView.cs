@@ -15,13 +15,11 @@ namespace UI
         private Button _restart;
         private Button _nextObservation;
         private Text _nextObservationLabel;
-        private readonly Button[] _moves = new Button[4];
 
         public event Action CombineRequested;
         public event Action RestartRequested;
         public event Action AdvanceRequested;
         public event Action CloseRequested;
-        public event Action<int, int> SelectionMoveRequested;
 
         public Transform ObservationRoot => _observationUi.transform;
         public Transform ExerciseRoot { get; private set; }
@@ -47,26 +45,14 @@ namespace UI
             _nextObservation = Button(_observationUi.transform, "다음으로", 850, -260, 440,
                 () => AdvanceRequested?.Invoke());
             _nextObservationLabel = _nextObservation.GetComponentInChildren<Text>();
-            _moves[0] = Button(_observationUi.transform, "←", -480, -395, 90,
-                () => SelectionMoveRequested?.Invoke(-1, 0));
-            _moves[1] = Button(_observationUi.transform, "→", -370, -395, 90,
-                () => SelectionMoveRequested?.Invoke(1, 0));
-            _moves[2] = Button(_observationUi.transform, "↑", 370, -395, 90,
-                () => SelectionMoveRequested?.Invoke(0, 1));
-            _moves[3] = Button(_observationUi.transform, "↓", 480, -395, 90,
-                () => SelectionMoveRequested?.Invoke(0, -1));
             ExerciseRoot = Rect(transform, "Convolution exercise", 0, 0, 1300, 1400);
-            Button(transform, "이미지로 돌아가기", -850, -340, 380,
+            Button(transform, "다른 영역 선택", -850, -340, 380,
                 () => CloseRequested?.Invoke());
         }
 
         public void ShowObservation()
         {
             _observationUi.SetActive(true);
-            foreach (Button move in _moves)
-            {
-                move.gameObject.SetActive(false);
-            }
             _combine.gameObject.SetActive(true);
             _combineLabel.text = "RGB 합쳐 보기";
             _restart.gameObject.SetActive(false);
@@ -78,19 +64,11 @@ namespace UI
             _observationUi.SetActive(false);
         }
 
-        public void ShowCompleted(int[] sums, Vector2Int selected, int columns, int rows)
+        public void ShowCompleted(int[] sums)
         {
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(true);
             _combine.gameObject.SetActive(false);
-            foreach (Button move in _moves)
-            {
-                move.gameObject.SetActive(true);
-            }
-            _moves[0].interactable = selected.x > 0;
-            _moves[1].interactable = selected.x < columns - 3;
-            _moves[2].interactable = selected.y < rows - 3;
-            _moves[3].interactable = selected.y > 0;
             _summary.text = $"R 합 ({sums[0]}) + G 합 ({sums[1]}) + B 합 ({sums[2]}) + 편향 0\n= 이번 위치의 계산 결과 {sums[0] + sums[1] + sums[2]}\n세 색의 가중치 묶음이 필터 하나예요. 계산 결과는 색이 아니라 숫자 하나예요.";
         }
 

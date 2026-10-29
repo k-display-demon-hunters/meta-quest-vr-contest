@@ -119,6 +119,19 @@ namespace UI
             _reveal.CompleteReveal();
         }
 
+        public PixelPatchData CapturePatch()
+        {
+            Color32[] patch = new Color32[9];
+            Vector2Int origin = _selection.SelectedPixel;
+            for (int i = 0; i < 9; i++)
+            {
+                patch[i] = Pixels[(origin.y + 2 - i / 3) * Columns + origin.x + i % 3];
+            }
+            return new PixelPatchData(patch);
+        }
+
+        public void RestoreSelection(Vector2Int selected) { _selection.RestoreSelection(selected); }
+
         public void MoveSelection(int dx, int dy)
         {
             _selection.MoveSelection(dx, dy);

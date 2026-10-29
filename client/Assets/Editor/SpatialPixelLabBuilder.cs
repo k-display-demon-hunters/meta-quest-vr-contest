@@ -15,7 +15,7 @@ namespace UI.Editor
 {
     public static class SpatialPixelLabBuilder
     {
-        public const string ScenePath = "Assets/Scenes/CNNPixelLab.unity";
+        public const string ScenePath = "Assets/Scenes/CNNScreenLab.unity";
         private const string MaterialFolder = "Assets/Materials/CNNPixelLab";
         private static Font _font;
         private static Material _dark;
@@ -42,7 +42,7 @@ namespace UI.Editor
             Camera camera = player.GetComponentInChildren<Camera>();
 
             GameObject lab = new GameObject("CNN Pixel Workshop");
-            CNNPixelLabManager controller = lab.AddComponent<CNNPixelLabManager>();
+            CNNScreenLabManager controller = lab.AddComponent<CNNScreenLabManager>();
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
             board.localPosition = new Vector3(0, 1.65f, 1.8f);
@@ -78,23 +78,6 @@ namespace UI.Editor
             Button details = Button(controls.transform, "더 자세히 보기", -360, 25, 320, 70);
             UnityEventTools.AddPersistentListener(details.onClick, controller.ShowDetails);
             UnityEventTools.AddPersistentListener(Button(controls.transform, "처음부터", 0, 25, 270, 70).onClick, controller.ResetLab);
-            Canvas detail = Canvas(lab.transform, "Floating pixel values", new Vector3(0, 1.7f, 1.25f), new Vector2(1000, 620), 0.0022f, camera);
-            Box(detail.transform, "Panel", 0, 0, 1000, 620, new Color32(13, 27, 43, 255));
-            Image[] cells = new Image[9];
-            Text[] values = new Text[9];
-            for (int row = 0; row < 3; row++)
-            {
-                for (int column = 0; column < 3; column++)
-                {
-                    int index = row * 3 + column;
-                    RectTransform cell = Box(detail.transform, "Pixel " + index, -138 + column * 138, 148 - row * 138, 132, 132, Color.black);
-                    cells[index] = cell.GetComponent<Image>();
-                    values[index] = Label(cell, "Value", "", 0, 0, 128, 128, 32, Color.white);
-                }
-            }
-            UnityEventTools.AddPersistentListener(Button(detail.transform, "이미지로 돌아가기", 0, -245, 410, 76).onClick, controller.CloseDetails);
-            detail.gameObject.SetActive(false);
-
             SerializedObject fields = new SerializedObject(controller);
             Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/OpeningBroadcast.png"));
             Assign(fields, "_board", board);
@@ -104,16 +87,12 @@ namespace UI.Editor
             Assign(fields, "_selectionFrame", selection);
             Assign(fields, "_camera", camera);
             Assign(fields, "_detailButton", details);
-            Assign(fields, "_detail", detail.gameObject);
-            fields.FindProperty("_cells").arraySize = fields.FindProperty("_values").arraySize = 9;
-            for (int i = 0; i < 9; i++)
-            {
-                fields.FindProperty("_cells").GetArrayElementAtIndex(i).objectReferenceValue = cells[i];
-                fields.FindProperty("_values").GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-            }
+            Assign(fields, "_font", _font);
             fields.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, ScenePath);
             PixelRevealStageBuilder.Install();
+            lab.SetActive(false);
+            EditorSceneManager.SaveScene(scene);
             if (!EditorBuildSettings.scenes.Any(item => item.path == ScenePath))
             {
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes.Concat(new[] { new EditorBuildSettingsScene(ScenePath, true) }).ToArray();

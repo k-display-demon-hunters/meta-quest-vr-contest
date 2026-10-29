@@ -1,202 +1,146 @@
+using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace UI
 {
     public sealed class CNNPixelLabManager : MonoBehaviour
     {
-        // Keep the scene's serialized bindings; compose runtime modules from them in Awake.
-        [SerializeField] private Texture2D _sourceImage;
-        [SerializeField] private Transform _board;
-        [SerializeField] private MeshRenderer _boardRenderer;
-        [SerializeField] private Vector2 _boardSize = new Vector2(2.4f, 1.35f);
-        [SerializeField] private XRGrabInteractable _filter;
-        [SerializeField] private MeshRenderer _lensRenderer;
-        [SerializeField] private Transform _selectionFrame;
-        [SerializeField] private Camera _camera;
-        [SerializeField] private Button _detailButton;
-        [SerializeField] private GameObject _detail;
-        [SerializeField] private Image[] _cells;
-        [SerializeField] private Text[] _values;
-        [SerializeField] private PixelRevealStage _revealStage;
-        [SerializeField] private Button _nextButton;
+        private PixelLabSceneLoadController _sceneLoader;
+        private CNNScreenLabManager _screen;
+        private CNNConvolutionLabManager _convolution;
+        private PixelPatchData _patch;
+        private Vector2Int _selectedPixel;
+        private bool _completed;
+        private bool _switching;
+        private bool _ending;
 
-        private PixelImageManager _image;
-        private PixelLessonManager _lesson;
-        private PixelLabUIController _ui;
-        private readonly PixelUIInputController _input = new PixelUIInputController();
-
-        public Vector3 SelectionWorldPosition => _image.SelectionWorldPosition;
-        public bool HasSelection => _image != null && _image.HasSelection;
-        public Vector2Int SelectedPixel => _image.SelectedPixel;
-        public bool ConvolutionCompleted { get; private set; }
+        public bool ConvolutionCompleted => _completed && !_switching && !_ending;
 
         private void Awake()
         {
-            // Additively loaded scenes use the surviving persistent rig camera.
-            _camera = Camera.main;
-            foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true))
-            {
-                canvas.worldCamera = _camera;
-            }
-            _image = new PixelImageManager(_sourceImage, _board, _boardRenderer, _boardSize,
-                _filter, _lensRenderer, _selectionFrame, _revealStage);
-            _lesson = _detail.AddComponent<PixelLessonManager>();
-            _lesson.Initialize(_values[0].font);
-            _ui = new PixelLabUIController(_detailButton, _nextButton, _values[0].font);
-            ResetLab();
+            _sceneLoader = GetComponent<PixelLabSceneLoadController>();
         }
 
         private void OnEnable()
         {
-            _image.SelectionChanged += HandleSelectionChanged;
-            _image.FilterGrabbed += HandleFilterGrabbed;
-            _image.PixelsRevealed += HandlePixelsRevealed;
-            _lesson.CloseRequested += CloseDetails;
-            _lesson.AdvanceRequested += HandleAdvanceRequested;
-            _lesson.BackgroundHiddenChanged += SetBackgroundHidden;
-            _lesson.SelectionMoveRequested += MoveSelection;
-            _lesson.Completed += MarkConvolutionCompleted;
-            _image.EnableInput();
-            _input.Enable(transform);
+            SubscribeStage();
         }
 
-        private void LateUpdate()
+        private IEnumerator Start()
         {
-            _image.UpdateSelection();
+            _switching = true;
+            yield return SwitchStage(false, false);
         }
 
-        public void ShowDetails()
+        public IEnumerator EndSession()
         {
-            if (!_image.CanBeginReveal || !_image.HasSelection)
+            _ending = true;
+            while (_switching)
             {
-                return;
+                yield return null;
             }
-            _ui.ShowRevealStarted();
-            _image.BeginReveal();
+            UnbindStage();
+            yield return _sceneLoader.UnloadStages();
         }
 
-        public void BeginConvolution()
+        private IEnumerator SwitchStage(bool calculation, bool restoreSelection)
         {
-            if (!_image.IsReadyForConvolution || !_image.HasSelection || _image.IsFilterHeld)
+            yield return _sceneLoader.PrepareStage(calculation);
+            if (_sceneLoader.LastError != null)
             {
-                return;
+                Debug.LogError("[PixelLab] " + _sceneLoader.LastError, this);
+                _switching = false;
+                yield break;
             }
-            ShowLesson(true);
-            SetBackgroundHidden(true);
-        }
-
-        public void CloseDetails()
-        {
-            _lesson.Close();
-            SetBackgroundHidden(false);
-        }
-
-        public void SetBackgroundHidden(bool hidden)
-        {
-            _image.SetBackgroundHidden(hidden);
-            _ui.SetBackgroundHidden(hidden);
-        }
-
-        public void MarkConvolutionCompleted()
-        {
-            ConvolutionCompleted = true;
-        }
-
-        public void ResetLab()
-        {
-            if (_image.IsFilterHeld)
+            if (_ending)
             {
-                return;
+                yield return _sceneLoader.CancelPreparedStage();
+                _switching = false;
+                yield break;
             }
-            ConvolutionCompleted = false;
-            CloseDetails();
-            _image.Reset();
-            _ui.ResetControls();
-            UpdateInstruction();
-        }
-
-        public void MoveSelection(int dx, int dy)
-        {
-            if (_image.IsRevealing || !_image.HasSelection || _image.IsFilterHeld)
+            UnbindStage();
+            yield return _sceneLoader.CommitStage();
+            _screen = _sceneLoader.Screen;
+            _convolution = _sceneLoader.Convolution;
+            SubscribeStage();
+            _completed = false;
+            if (calculation)
             {
-                return;
+                _convolution.Begin(_patch);
             }
-            _image.MoveSelection(dx, dy);
-            ShowLesson(_image.IsReadyForConvolution);
-        }
-
-        public void NextStage()
-        {
-            if (_image.IsRevealing)
+            else if (restoreSelection)
             {
-                return;
+                _screen.RestoreSelection(_selectedPixel);
             }
-            if (_image.IsReadyForConvolution)
+            _switching = false;
+        }
+
+        private void SubscribeStage()
+        {
+            if (_screen != null)
             {
-                BeginConvolution();
-                return;
+                _screen.ConvolutionRequested += HandleConvolutionRequested;
+                _screen.ResetRequested += HandleResetRequested;
             }
-            ShowDetails();
-        }
-
-        private void ShowLesson(bool calculationAvailable)
-        {
-            _lesson.Show(_image.Pixels, PixelImageManager.Columns, PixelImageManager.Rows,
-                _image.SelectedPixel, _image.SelectionWorldPosition, calculationAvailable);
-        }
-
-        private void UpdateInstruction()
-        {
-            _ui.UpdateInstruction(_image.IsReadyForConvolution, _image.HasSelection);
-        }
-
-        private void HandleSelectionChanged()
-        {
-            _ui.SetSelectionAvailable(_image.HasSelection);
-            UpdateInstruction();
-        }
-
-        private void HandleFilterGrabbed()
-        {
-            _ui.ShowFilterGrabbed();
-            CloseDetails();
-        }
-
-        private void HandlePixelsRevealed()
-        {
-            _ui.ShowPixelsRevealed(_image.HasSelection);
-            UpdateInstruction();
-        }
-
-        private void HandleAdvanceRequested()
-        {
-            CloseDetails();
-            if (!ConvolutionCompleted)
+            if (_convolution != null)
             {
-                NextStage();
+                _convolution.ReturnRequested += HandleReturnRequested;
+                _convolution.Completed += HandleCompleted;
             }
         }
 
+        private void UnsubscribeStage()
+        {
+            if (_screen != null)
+            {
+                _screen.ConvolutionRequested -= HandleConvolutionRequested;
+                _screen.ResetRequested -= HandleResetRequested;
+            }
+            if (_convolution != null)
+            {
+                _convolution.ReturnRequested -= HandleReturnRequested;
+                _convolution.Completed -= HandleCompleted;
+            }
+        }
+
+        private void UnbindStage()
+        {
+            UnsubscribeStage();
+            _screen = null;
+            _convolution = null;
+        }
+
+        private void HandleConvolutionRequested(PixelPatchData patch, Vector2Int selectedPixel)
+        {
+            if (_switching || _ending) { return; }
+            _patch = patch;
+            _selectedPixel = selectedPixel;
+            _switching = true;
+            StartCoroutine(SwitchStage(true, false));
+        }
+
+        private void HandleReturnRequested()
+        {
+            if (_switching || _ending) { return; }
+            _switching = true;
+            StartCoroutine(SwitchStage(false, true));
+        }
+
+        private void HandleResetRequested()
+        {
+            if (_switching || _ending) { return; }
+            _patch = null;
+            _completed = false;
+        }
+
+        private void HandleCompleted()
+        {
+            _completed = true;
+        }
 
         private void OnDisable()
         {
-            _image.SelectionChanged -= HandleSelectionChanged;
-            _image.FilterGrabbed -= HandleFilterGrabbed;
-            _image.PixelsRevealed -= HandlePixelsRevealed;
-            _lesson.CloseRequested -= CloseDetails;
-            _lesson.AdvanceRequested -= HandleAdvanceRequested;
-            _lesson.BackgroundHiddenChanged -= SetBackgroundHidden;
-            _lesson.SelectionMoveRequested -= MoveSelection;
-            _lesson.Completed -= MarkConvolutionCompleted;
-            _image.DisableInput(transform);
-            _input.Dispose();
-        }
-
-        private void OnDestroy()
-        {
-            _image?.Dispose();
+            UnsubscribeStage();
         }
     }
 }

@@ -139,6 +139,7 @@ namespace FactoryEnvironment
             _preparedLesson = default;
             _preparedData = null;
             ActivateFactoryScene();
+            _lessonData.Content.SetActive(true);
         }
 
         public IEnumerator CancelPreparedLesson()

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UI
+namespace UI.Editor
 {
     // A shared bevelled unit block; no textures or external model assets.
-    internal static class PixelVolumeMesh
+    internal static class PixelBlockMeshBuilder
     {
         public static Mesh Create()
         {

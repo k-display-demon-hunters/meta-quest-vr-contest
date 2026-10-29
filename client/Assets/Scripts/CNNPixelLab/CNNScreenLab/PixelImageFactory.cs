@@ -2,9 +2,21 @@ using UnityEngine;
 
 namespace UI
 {
-    public static class PixelImageFactory
+    public sealed class PixelImageFactory : MonoBehaviour
     {
-        public static Texture2D CreateTexture(Color32[] pixels, int columns, int rows, FilterMode filterMode)
+        public const int Columns = 32;
+        public const int Rows = 18;
+        [SerializeField] private Texture2D _sourceImage;
+
+        public PixelImageData Create()
+        {
+            Texture2D photo = CreateSmoothPhoto(_sourceImage);
+            Color32[] pixels = SamplePixels(photo, Columns, Rows);
+            Texture2D pixelTexture = CreateTexture(pixels, Columns, Rows, FilterMode.Point);
+            return new PixelImageData(photo, pixelTexture, pixels);
+        }
+
+        private static Texture2D CreateTexture(Color32[] pixels, int columns, int rows, FilterMode filterMode)
         {
             Texture2D texture = new Texture2D(columns, rows, TextureFormat.RGBA32, false);
             texture.filterMode = filterMode;
@@ -14,7 +26,7 @@ namespace UI
             return texture;
         }
 
-        public static Texture2D CreateSmoothPhoto(Texture2D sourceImage)
+        private static Texture2D CreateSmoothPhoto(Texture2D sourceImage)
         {
             const int Width = 128;
             const int Height = 72;
@@ -54,7 +66,7 @@ namespace UI
             return texture;
         }
 
-        public static Color32[] SamplePixels(Texture2D image, int columns, int rows)
+        private static Color32[] SamplePixels(Texture2D image, int columns, int rows)
         {
             Color32[] pixels = new Color32[columns * rows];
             for (int y = 0; y < rows; y++)

@@ -59,19 +59,19 @@ namespace UI
                 yield break;
             }
             UnbindStage();
-            yield return _sceneLoader.CommitStage();
-            _screen = _sceneLoader.Screen;
-            _convolution = _sceneLoader.Convolution;
+            _screen = _sceneLoader.PreparedScreen;
+            _convolution = _sceneLoader.PreparedConvolution;
             SubscribeStage();
             _completed = false;
             if (calculation)
             {
-                _convolution.Begin(_patch);
+                _convolution.SetInput(_patch);
             }
             else if (restoreSelection)
             {
-                _screen.RestoreSelection(_selectedPixel);
+                _screen.SetInitialSelection(_selectedPixel);
             }
+            yield return _sceneLoader.CommitStage();
             _switching = false;
         }
 

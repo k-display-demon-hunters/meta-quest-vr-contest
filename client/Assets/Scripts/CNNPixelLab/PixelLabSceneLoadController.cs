@@ -19,13 +19,20 @@ namespace UI
 
         public CNNScreenLabManager Screen { get; private set; }
         public CNNConvolutionLabManager Convolution { get; private set; }
+        public CNNScreenLabManager PreparedScreen { get; private set; }
+        public CNNConvolutionLabManager PreparedConvolution { get; private set; }
         public string LastError { get; private set; }
 
         public IEnumerator PrepareStage(bool calculation)
         {
             _loadingSceneName = calculation ? _convolutionSceneName : _screenSceneName;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
             AsyncOperation loading = BeginLoad();
-            if (loading == null) { yield break; }
+            if (loading == null)
+            {
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+                yield break;
+            }
             loading.completed += HandleLoadCompleted;
             yield return loading;
             _prepared = SceneManager.GetSceneByName(_loadingSceneName);
@@ -47,6 +54,16 @@ namespace UI
                 body.position = body.transform.position;
                 body.rotation = body.transform.rotation;
             }
+            PreparedScreen = _preparedContent.GetComponentInChildren<CNNScreenLabManager>(true);
+            PreparedConvolution = _preparedContent.GetComponentInChildren<CNNConvolutionLabManager>(true);
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name != _loadingSceneName) { return; }
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            // sceneLoaded runs before Start, so preparation can finish before initialization.
+            foreach (GameObject root in scene.GetRootGameObjects()) { root.SetActive(false); }
         }
 
         public IEnumerator CommitStage()
@@ -58,6 +75,8 @@ namespace UI
             _preparedContent = null;
             Screen = _content.GetComponentInChildren<CNNScreenLabManager>(true);
             Convolution = _content.GetComponentInChildren<CNNConvolutionLabManager>(true);
+            PreparedScreen = null;
+            PreparedConvolution = null;
             _content.SetActive(true);
         }
 
@@ -69,6 +88,8 @@ namespace UI
             }
             _prepared = default;
             _preparedContent = null;
+            PreparedScreen = null;
+            PreparedConvolution = null;
         }
 
         public IEnumerator UnloadStages()
@@ -142,6 +163,7 @@ namespace UI
         private void OnDestroy()
         {
             _destroying = true;
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
             if (!Application.isPlaying) { return; }
             if (_prepared.IsValid() && _prepared.isLoaded) { SceneManager.UnloadSceneAsync(_prepared); }
             if (_current.IsValid() && _current.isLoaded)

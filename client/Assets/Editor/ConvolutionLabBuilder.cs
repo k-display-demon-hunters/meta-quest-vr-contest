@@ -21,7 +21,7 @@ namespace UI.Editor
             if (File.Exists(ScenePath)) { Debug.Log("[CNN] Convolution lab already exists: " + ScenePath); return; }
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             SceneManager.SetActiveScene(scene);
-            GameObject root = new GameObject("CNN Convolution Workshop");
+            GameObject root = new GameObject("CNN Convolution Lab");
             CNNConvolutionLabManager manager = root.AddComponent<CNNConvolutionLabManager>();
             GameObject content = new GameObject("Floating pixel values", typeof(RectTransform),
                 typeof(Canvas), typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
@@ -37,7 +37,8 @@ namespace UI.Editor
             fields.FindProperty("_font").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             fields.ApplyModifiedPropertiesWithoutUndo();
-            root.SetActive(false);
+            manager.enabled = true;
+            root.SetActive(true);
             EditorSceneManager.SaveScene(scene, ScenePath);
             if (!EditorBuildSettings.scenes.Any(item => item.path == ScenePath))
             {

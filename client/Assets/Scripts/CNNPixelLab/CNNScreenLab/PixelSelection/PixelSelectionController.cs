@@ -1,22 +1,22 @@
+using System;
+using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace UI
 {
-    public sealed class PixelSelectionController : System.IDisposable
+    public sealed class PixelSelectionController : MonoBehaviour
     {
-        private readonly FilterVolumeController _volume;
+        [SerializeField] private SelectedPixelsController _volume;
         private const float FilterDepth = 0.22f;
-        private readonly Transform _board;
-        private readonly Vector2 _boardSize;
-        private readonly XRGrabInteractable _filter;
-        private readonly MeshRenderer _lensRenderer;
-        private readonly Transform _selectionFrame;
-        private readonly Material _lensMaterial;
-        private readonly int _columns;
-        private readonly int _rows;
-        private readonly Vector3 _dockLocalPosition;
-        private readonly Quaternion _dockLocalRotation;
+        [SerializeField] private Transform _board;
+        [SerializeField] private Vector2 _boardSize = new Vector2(2.4f, 1.35f);
+        [SerializeField] private XRGrabInteractable _filter;
+        [SerializeField] private Transform _selectionFrame;
+        private int _columns;
+        private int _rows;
+        private Vector3 _dockLocalPosition;
+        private Quaternion _dockLocalRotation;
         private bool _snapPending;
         private bool _hasSelection;
         private bool _previewValid;
@@ -27,28 +27,25 @@ namespace UI
         public Vector2Int SelectedPixel => _selected;
         public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
 
-        public PixelSelectionController(Transform board, Vector2 boardSize, XRGrabInteractable filter,
-            MeshRenderer lensRenderer, Transform selectionFrame, Material lensMaterial, int columns, int rows, Color32[] pixels)
+        private bool _selectionEnabled;
+        public bool IsFilterHeld => _filter.isSelected;
+        public event Action SelectionChanged;
+        public event Action FilterGrabbed;
+
+        public void Initialize(PixelImageData image)
         {
-            _board = board;
-            _boardSize = boardSize;
-            _filter = filter;
-            _lensRenderer = lensRenderer;
-            _selectionFrame = selectionFrame;
-            _lensMaterial = lensMaterial;
-            _columns = columns;
-            _rows = rows;
-            _volume = new FilterVolumeController(filter.transform, lensRenderer, pixels, columns);
-            // Use the same right-hand ray grab movement as the detail-view objects.
-            _filter.trackPosition = true;
-            _filter.trackRotation = false;
-            _filter.movementType = XRBaseInteractable.MovementType.Instantaneous;
-            _dockLocalPosition = _board.InverseTransformPoint(filter.transform.position);
-            _dockLocalRotation = Quaternion.Inverse(_board.rotation) * filter.transform.rotation;
+            _columns = image.Columns;
+            _rows = image.Rows;
+            _volume.Initialize(image.Pixels, _columns);
+            _selectionEnabled = true;
+            _dockLocalPosition = _board.InverseTransformPoint(_filter.transform.position);
+            _dockLocalRotation = Quaternion.Inverse(_board.rotation) * _filter.transform.rotation;
         }
 
         public void ResetSelection()
         {
+            _selectionEnabled = true;
+            _filter.gameObject.SetActive(true);
             _snapPending = false;
             _hasSelection = false;
             _previewValid = false;
@@ -57,6 +54,8 @@ namespace UI
 
         public void SuspendSelection()
         {
+            _selectionEnabled = false;
+            _filter.gameObject.SetActive(false);
             _snapPending = false;
             _selectionFrame.gameObject.SetActive(false);
         }
@@ -86,7 +85,7 @@ namespace UI
             PlaceFilter();
         }
 
-        public bool UpdateSelection()
+        private bool UpdateSelection()
         {
             if (_filter.isSelected)
             {
@@ -114,7 +113,7 @@ namespace UI
                 && Mathf.Abs(local.y) <= _boardSize.y * 0.5f
                 && local.z >= -0.85f && local.z <= 0.1f
                 && Mathf.Abs(Vector3.Dot(_filter.transform.forward, _board.forward)) > 0.65f;
-            _lensRenderer.gameObject.SetActive(_previewValid);
+            _volume.SetVisible(_previewValid);
             _selectionFrame.gameObject.SetActive(_previewValid);
             if (!_previewValid) { return; }
             _preview = new Vector2Int(
@@ -126,10 +125,8 @@ namespace UI
         private void SetPreview(Vector2Int origin)
         {
             _volume.SetOrigin(origin);
-            _lensMaterial.mainTextureScale = new Vector2(3f / _columns, 3f / _rows);
-            _lensMaterial.mainTextureOffset = new Vector2((float)origin.x / _columns, (float)origin.y / _rows);
             _selectionFrame.localPosition = SelectionCenter(origin) + Vector3.back * 0.015f;
-            _lensRenderer.gameObject.SetActive(true);
+            _volume.SetVisible(true);
             _selectionFrame.gameObject.SetActive(true);
         }
 
@@ -152,21 +149,43 @@ namespace UI
             if (_hasSelection) { SetPreview(_selected); }
             else
             {
-                _lensRenderer.gameObject.SetActive(false);
+                _volume.SetVisible(false);
                 _selectionFrame.gameObject.SetActive(false);
             }
         }
 
-        public void Dispose() { _volume.Dispose(); }
+        private void OnEnable()
+        {
+            _filter.selectEntered.AddListener(HandleGrabbed);
+            _filter.selectExited.AddListener(HandleReleased);
+        }
 
-        public void HandleReleased()
+        private void LateUpdate()
+        {
+            if (_selectionEnabled && UpdateSelection()) { SelectionChanged?.Invoke(); }
+        }
+
+        private void OnDisable()
+        {
+            _filter.selectEntered.RemoveListener(HandleGrabbed);
+            _filter.selectExited.RemoveListener(HandleReleased);
+            if (_filter.isSelected)
+            {
+                _filter.interactionManager.CancelInteractableSelection((IXRSelectInteractable)_filter);
+                _filter.transform.SetParent(transform, true);
+                _snapPending = true;
+            }
+        }
+
+        private void HandleReleased(SelectExitEventArgs args)
         {
             _snapPending = true;
         }
 
-        public void HandleGrabbed()
+        private void HandleGrabbed(SelectEnterEventArgs args)
         {
             _snapPending = false;
+            FilterGrabbed?.Invoke();
         }
 
     }

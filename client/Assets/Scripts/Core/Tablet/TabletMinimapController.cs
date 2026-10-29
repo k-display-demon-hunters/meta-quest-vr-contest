@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,7 +22,8 @@ namespace Tablet
         private readonly List<TabletMapData.Parchment> _parchments = new List<TabletMapData.Parchment>();
         private readonly List<Text> _parchmentLabels = new List<Text>();
         private readonly List<Text> _roomLabels = new List<Text>();
-        private TabletManager _tablet;
+        private TabletMapData _data;
+        private Func<int, bool> _hasParchment;
         private Transform _player;
         private Font _font;
         private Text _status;
@@ -44,9 +46,9 @@ namespace Tablet
             }
         }
 
-        public void Initialize(TabletManager tablet, Transform player, Font font, Text status, bool overview)
+        public void Initialize(Transform player, Font font, Text status, bool overview, Func<int, bool> hasParchment)
         {
-            _tablet = tablet;
+            _hasParchment = hasParchment;
             _player = player;
             _font = font;
             _status = status;
@@ -66,14 +68,23 @@ namespace Tablet
             RefreshTracking();
         }
 
-        internal void RebuildMap()
+        public void SetMapData(TabletMapData data)
+        {
+            _data = data;
+            if (_initialized)
+            {
+                RebuildMap();
+            }
+        }
+
+        private void RebuildMap()
         {
             _floors.Clear();
             _walls.Clear();
             _parchments.Clear();
             ClearLabels(_parchmentLabels);
             ClearLabels(_roomLabels);
-            TabletMapData data = _tablet.MapData;
+            TabletMapData data = _data;
             _mapBounds = data != null ? data.Bounds : default;
             if (data != null)
             {
@@ -120,7 +131,7 @@ namespace Tablet
             for (int index = 0; index < _parchments.Count; index++)
             {
                 TabletMapData.Parchment pickup = _parchments[index];
-                if (pickup.IsActive && !_tablet.HasParchment(pickup.LessonIndex))
+                if (pickup.IsActive && !_hasParchment(pickup.LessonIndex))
                 {
                     _visibleParchments |= 1 << index;
                 }

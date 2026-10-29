@@ -8,12 +8,11 @@ namespace UI
         private readonly Button _detailButton;
         private readonly Button _nextButton;
         private readonly Text _instruction;
-        private readonly GameObject[] _background;
-        private readonly bool[] _backgroundStates = new bool[3];
+        private readonly GameObject _controls;
+        private bool _controlsWereActive;
         private bool _backgroundHidden;
 
-        public PixelLabUIController(Button detailButton, Button nextButton, Font font,
-            GameObject board, GameObject filter)
+        public PixelLabUIController(Button detailButton, Button nextButton, Font font)
         {
             _detailButton = detailButton;
             _nextButton = nextButton;
@@ -23,7 +22,7 @@ namespace UI
             {
                 RectTransform rect = (RectTransform)button.transform;
                 rect.sizeDelta = new Vector2(button == nextButton ? 380 : 320, 100);
-                float x = button == detailButton ? -390 : button == nextButton ? 0 : 390;
+                float x = button == detailButton || button == nextButton ? -210 : 210;
                 rect.anchoredPosition = new Vector2(x, 20);
                 Text label = button.GetComponentInChildren<Text>();
                 label.fontSize = button == nextButton ? 48 : 34;
@@ -32,8 +31,9 @@ namespace UI
                 label.rectTransform.anchorMax = Vector2.one;
                 label.rectTransform.offsetMin = new Vector2(10, 5);
                 label.rectTransform.offsetMax = new Vector2(-10, -5);
+                if (button != detailButton && button != nextButton) { label.text = "처음으로"; }
             }
-            _background = new[] { board, filter, detailButton.transform.parent.gameObject };
+            _controls = detailButton.transform.parent.gameObject;
             RectTransform hint = new GameObject("Interaction hint", typeof(RectTransform)).GetComponent<RectTransform>();
             hint.SetParent(_detailButton.transform.parent, false);
             hint.anchorMin = hint.anchorMax = hint.pivot = Vector2.one * 0.5f;
@@ -61,8 +61,9 @@ namespace UI
         public void ShowRevealStarted()
         {
             _instruction.gameObject.SetActive(false);
-            _detailButton.interactable = false;
-            _nextButton.interactable = true;
+            _detailButton.gameObject.SetActive(false);
+            _nextButton.gameObject.SetActive(true);
+            _nextButton.interactable = false;
             _nextButton.GetComponentInChildren<Text>().text = "다음으로";
         }
 
@@ -70,16 +71,19 @@ namespace UI
         {
             if (_nextButton != null)
             {
-                _nextButton.interactable = true;
+                _nextButton.gameObject.SetActive(false);
+                _nextButton.interactable = false;
                 _nextButton.GetComponentInChildren<Text>().text = "다음으로";
             }
             _detailButton.interactable = false;
-            _detailButton.GetComponentInChildren<Text>().text = "더 자세히 보기";
+            _detailButton.gameObject.SetActive(true);
+            _detailButton.GetComponentInChildren<Text>().text = "자세히 보기";
         }
 
         public void ShowPixelsRevealed(bool hasSelection)
         {
-            _detailButton.interactable = hasSelection;
+            _detailButton.gameObject.SetActive(false);
+            _nextButton.gameObject.SetActive(true);
             _nextButton.interactable = true;
             Text lessonLabel = _nextButton.GetComponentInChildren<Text>();
             lessonLabel.text = "다음으로";
@@ -91,22 +95,22 @@ namespace UI
             _instruction.gameObject.SetActive(true);
             if (readyForConvolution)
             {
-                _instruction.text = "R/G/B를 골라 픽셀 값을 살펴보세요\n가운데 ‘다음으로’를 누르면 합성곱 연산 원리를 알아봅니다";
+                _instruction.text = "같은 픽셀의 R·G·B가 앞뒤로 펼쳐졌어요. 옆으로 움직여 세 층을 관찰하세요.\n숫자는 색의 세기(0~255)예요. ‘다음으로’에서 이 값으로 합성곱을 계산해요.";
                 return;
             }
             _instruction.text = hasSelection
-                ? "‘더 자세히 보기’를 눌러 RGB 값을 살펴보세요"
-                : "필터를 잡아 이미지 위에 놓으세요\n오른손: Grip을 누른 채 레이로 이동 · 클릭: Trigger";
+                ? "‘자세히 보기’를 누르면 선택한 픽셀이 입체적인 RGB 층으로 펼쳐져요."
+                : "필터를 찾아 이미지를 관찰하세요!\n주변을 둘러보고 필터를 Grip으로 잡아 이미지 위에 놓으세요.";
         }
 
         public void SetBackgroundHidden(bool hidden)
         {
             if (_backgroundHidden == hidden) { return; }
-            for (int i = 0; i < _background.Length; i++)
+            if (hidden)
             {
-                if (hidden) { _backgroundStates[i] = _background[i].activeSelf; }
-                _background[i].SetActive(hidden ? false : _backgroundStates[i]);
+                _controlsWereActive = _controls.activeSelf;
             }
+            _controls.SetActive(hidden ? false : _controlsWereActive);
             _backgroundHidden = hidden;
         }
     }

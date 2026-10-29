@@ -34,10 +34,10 @@ namespace Tablet
 
         private readonly Func<FocusGroup> _activeGroup;
         private readonly Func<RectTransform> _canvasRect;
-        private readonly Action<bool> _interactionRequested;
-        private readonly Action _toggleSettings;
-        private readonly Action _goBack;
-        private readonly Action<Selectable, bool> _focusChanged;
+        public event Action<bool> InteractionRequested;
+        public event Action SettingsRequested;
+        public event Action BackRequested;
+        public event Action<Selectable, bool> FocusChanged;
 
         internal enum FocusGroup { Main, Settings, Stage, Detail }
 
@@ -47,16 +47,11 @@ namespace Tablet
         private List<FocusTarget> ActiveTargets => Targets(_activeGroup());
 
         public TabletInputController(ContinuousMoveProvider moveProvider, Func<FocusGroup> activeGroup,
-            Func<RectTransform> canvasRect, Action<bool> interactionRequested, Action toggleSettings,
-            Action goBack, Action<Selectable, bool> focusChanged)
+            Func<RectTransform> canvasRect)
         {
             _moveProvider = moveProvider;
             _activeGroup = activeGroup;
             _canvasRect = canvasRect;
-            _interactionRequested = interactionRequested;
-            _toggleSettings = toggleSettings;
-            _goBack = goBack;
-            _focusChanged = focusChanged;
             _xButton = new InputAction("Tablet X", InputActionType.Button,
                 "<XRController>{LeftHand}/primaryButton");
             _yButton = new InputAction("Tablet Y", InputActionType.Button,
@@ -152,7 +147,7 @@ namespace Tablet
             {
                 if (!_isInteracting)
                 {
-                    _interactionRequested(true);
+                    InteractionRequested?.Invoke(true);
                 }
                 CaptureMovement();
             }
@@ -164,17 +159,17 @@ namespace Tablet
 
             if (_menuButton.WasPressedThisFrame())
             {
-                _toggleSettings();
+                SettingsRequested?.Invoke();
             }
             else if (_yButton.WasPressedThisFrame())
             {
-                _goBack();
+                BackRequested?.Invoke();
             }
             else if (_xButton.WasPressedThisFrame())
             {
                 if (!_isInteracting)
                 {
-                    _interactionRequested(true);
+                    InteractionRequested?.Invoke(true);
                 }
                 if (ActiveTargets[_focusIndex].Control is Button button && button.IsInteractable())
                 {
@@ -252,7 +247,7 @@ namespace Tablet
             {
                 target.Outline.enabled = false;
             }
-            _focusChanged(_isInteracting ? ActiveTargets[_focusIndex].Control : null, _activeGroup() == FocusGroup.Main);
+            FocusChanged?.Invoke(_isInteracting ? ActiveTargets[_focusIndex].Control : null, _activeGroup() == FocusGroup.Main);
             if (_isInteracting)
             {
                 Outline outline = ActiveTargets[_focusIndex].Outline;

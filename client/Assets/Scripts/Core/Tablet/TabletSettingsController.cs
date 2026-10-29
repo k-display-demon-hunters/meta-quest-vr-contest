@@ -19,20 +19,17 @@ namespace Tablet
 
         private readonly MonoBehaviour _host;
         private readonly TabletUIBuilder.SettingsView _view;
-        private readonly Action _saved;
-        private readonly Action<string, string> _feedback;
+        public event Action Saved;
+        public event Action<string, string> FeedbackRequested;
 
         public float Brightness => _brightness;
         public float Volume => _volume;
         public bool IsOpen => _view.SettingsOverlay.activeSelf;
 
-        public TabletSettingsController(MonoBehaviour host, TabletUIBuilder.SettingsView view,
-            Action saved, Action<string, string> feedback)
+        public TabletSettingsController(MonoBehaviour host, TabletUIBuilder.SettingsView view)
         {
             _host = host;
             _view = view;
-            _saved = saved;
-            _feedback = feedback;
         }
 
         public void StopAnimation()
@@ -124,7 +121,7 @@ namespace Tablet
             _isVibrationEnabled = !_isVibrationEnabled;
             RefreshSettingsValues();
             RefreshSaveLabels("저장하기");
-            _feedback("진동 " + (_isVibrationEnabled ? "사용" : "해제"),
+            FeedbackRequested?.Invoke("진동 " + (_isVibrationEnabled ? "사용" : "해제"),
                 "피드백 진동 설정이 변경되었습니다.");
         }
 
@@ -142,9 +139,9 @@ namespace Tablet
             PlayerPrefs.SetInt(SaveStageKey, stageIndex);
             PlayerPrefs.SetInt(SaveInventoryKey, itemIndex);
             PlayerPrefs.Save();
-            _saved();
+            Saved?.Invoke();
             RefreshSaveLabels("저장 완료");
-            _feedback("저장 완료",
+            FeedbackRequested?.Invoke("저장 완료",
                 "현재 단계와 태블릿 설정을 저장했습니다.\n다음 접속 때 같은 상태로 복원됩니다.");
         }
     }

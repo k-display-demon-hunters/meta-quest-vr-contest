@@ -4,41 +4,44 @@
 
 기존 `server/` 구현과 서버용 JSON·WebSocket 명세는 보관한다. 현재 Unity 씬은 로컬 학습 엔진을 사용하며, 보관된 서버는 별도로 실행할 수 있다.
 
-Quest 3S에서 준비·학습·평가를 10~15초 안에 끝내는 것이 목표다. 현재 설정은 성능 측정의 출발점이며 **실기기 시간·정확도·VR 프레임은 아직 검증하지 않았다.** 15초가 지나면 성공으로 간주하거나 임의 지표를 표시하는 동작은 없다.
+**현재 구현의 Quest 3S 학습 시간·정확도·VR 프레임은 이 문서 갱신에서 검증하지 않았다.** 완료 표시는 실제 학습·평가 결과를 사용하며, 제한 시간이 지났다는 이유로 성공이나 임의 지표를 표시하지 않는다.
 
 ## 모듈 경계
 
+씬의 모듈 연결·편집 API는 [모델 제작 씬](MODEL_DESIGN_API.md)에 정리한다. 현재 학습 코드는 모두 `client/Assets/Scripts/CNNModelDesignLab/` 아래에 있다.
+
 | 위치 | 책임 |
 | --- | --- |
-| `client/Assets/Scripts/Core/CNNTraining/` | Unity API를 참조하지 않는 순수 C# 엔진. 모델 정의·연산·역전파·최적화·학습 세션 |
-| `client/Assets/Scripts/CNNModelDesignLab/ModelDesign/` | 블록 편집 및 연결 검증, 실행 정의 스냅샷 생성 |
-| `client/Assets/Scripts/CNNModelDesignLab/` | MNIST 에셋 해석, Inspector 설정, 실행 요청과 UI 연결 |
-| `client/Assets/Data/CNNModelDesignLab/` | 학습·검증 후보 이미지와 평가 이미지의 바이너리 에셋 |
-| `client/Assets/Scripts/CNNModelDesignLab/Execution/CnnTrainingSettings.cs` | `private const` 학습 설정과 실행 옵션 생성 |
+| `Model/` | 슬롯 8개의 편집 모델, 레이어 값과 개별 설정 범위. 엔진 어셈블리를 참조하지 않는 순수 C# 어셈블리 `ModelDesign` |
+| `ModelBuilder/`, `BlockSettings/` | 블록 배치·잡기와 설정 입력. 실행 계산을 수행하지 않는다. |
+| `Execution/ModelExecutionManager.cs` | Dataset과 엔진 사이의 진입점. 실행 스냅샷·슬롯 대응표·검증·엔진 수명 조율 |
+| `Execution/ModelExecutionController.cs` | 실행 상태, 세션/작업 번호, 메인 스레드 결과 전달 |
+| `Execution/Engine/` | 순수 C# 어셈블리 `CNNTraining`. `CnnEngineManager`를 진입점으로 모델 연산·역전파·최적화·학습 세션 제공 |
+| `Dataset/` | MNIST 파일 해석·정규화·split 분리, UI 샘플과 추론 입력 제공 |
+| `ControlPanel/` | 검증 문제·학습 지표·추론 결과 표시와 실행 요청 |
+| `client/Assets/Data/CNNModelDesignLab/` | 학습·검증 후보 및 평가 이미지 바이너리 에셋 |
 
-의존성은 씬 → `ModelDesign` → `CNNTraining` 방향이다. 씬 실행 Controller도 엔진의 공개 세션·입출력 타입을 사용한다. 엔진은 블록, GameObject, 씬, MNIST 파일, 이미지 ID 규칙을 모른다. `CNNTraining.asmdef`는 `noEngineReferences: true`이며 씬 어셈블리를 참조하지 않는다.
+의존 방향은 `씬 Manager → Execution Manager → Engine Manager → 학습 세션`이다. Execution이 편집 Model과 엔진 표현을 변환한다. 엔진은 Unity API, 블록, 씬, MNIST 파일 형식과 이미지 ID 규칙을 모른다. `Execution/Engine/CNNTraining.asmdef`는 `noEngineReferences: true`이며 다른 어셈블리를 참조하지 않는다.
 
 ## 세션과 실행 수명
 
-씬의 `ModelExecutionController`가 `CnnTrainingSession` 하나를 소유하고 재사용한다. 싱글톤·전역 모델·전용 상주 스레드는 없다. 학습 또는 추론 요청마다 스레드풀 작업 하나에서 계산하며 세션당 동시에 한 작업만 허용한다. 별도의 스레드나 CPU 코어를 예약하는 구조가 아니다.
+`ModelExecutionManager`가 최초 유효한 학습 요청 때 `CnnEngineManager`를 만들고 재사용한다. Engine Manager가 `CnnTrainingSession` 하나를 소유한다. `ModelExecutionController`는 세션을 직접 소유하지 않고 실행 함수를 전달받아 상태와 결과 큐를 관리한다. 싱글톤·전역 모델·전용 상주 스레드는 없다. 요청마다 스레드풀 작업 하나에서 계산하며 세션당 동시에 한 작업만 허용한다.
 
-시작 시 모델 정의·설정·데이터는 실행용 값으로 고정한다. 학습 중 블록 설정을 바꿔도 진행 중인 모델이 바뀌지 않는다. 순전파·역전파·가중치 갱신 버퍼는 내부에서 재사용한다. 씬은 내부 레이어나 가중치에 접근하지 않고 요청·취소·진행·결과만 다룬다.
+시작 시 모델 정의·설정·데이터는 실행용 값으로 고정한다. 학습 중 블록 설정을 바꿔도 진행 중인 모델이 바뀌지 않는다. 순전파·역전파·가중치 갱신 버퍼는 엔진 내부에서 재사용한다. 씬은 내부 레이어나 가중치에 접근하지 않고 요청·취소·진행·결과만 다룬다.
 
-백그라운드 진행 알림은 메인 스레드의 Controller가 받아 UI에 전달한다. 학습·평가·추론 중 추가 실행을 거절하고 취소는 협력적으로 처리한다. 씬 종료는 취소를 요청하며, 작업이 빠져나오기 전 계산 자원을 해제하지 않는다. 세션·작업 번호로 이전 실행의 늦은 결과가 현재 화면을 갱신하지 못하게 한다. 취소와 실패를 학습 완료나 엔딩 조건 충족으로 처리하지 않는다.
+백그라운드 진행 알림은 Controller의 큐에 담고 메인 스레드 `Update()`에서 UI로 전달한다. 학습·평가·추론 중 추가 실행을 거절하고 취소는 협력적으로 처리한다. 종료 시 Execution Manager가 Controller의 세대 번호·큐를 초기화하고 엔진을 Dispose한다. 세션은 취소를 요청하며 계산이 끝나기 전 자원을 다른 작업에서 재사용하지 않는다. 이전 세션·작업의 늦은 응답은 현재 화면을 갱신하지 못한다.
 
-새 학습은 새로운 가중치와 optimizer 상태로 시작한다. 모델은 파일로 저장하지 않으며 세션 종료 후에는 다시 학습해야 한다.
-
-체험의 단계 이동 버튼은 조립·학습·예측 화면만 순서대로 넘긴다. 마지막 화면에서 사용자가 명시적으로 단계를 마치거나 건너뛰면 학습 성공과 별도인 `_lessonSkipped` 상태로 공장 출구를 허용한다. 자동 실패·취소만으로 이 상태를 설정하지 않으며, 학습 정확도나 예측 결과를 생성하지 않는다. 계산 작업이 진행 중이면 단계 종료를 보류한다.
+새 학습은 새로운 가중치와 optimizer 상태로 시작한다. 모델은 파일로 저장하지 않으며 씬 종료 후에는 다시 학습해야 한다. 공장 출구 조건은 `CNNModelDesignLabManager.ReadyForFactoryExit`의 학습 완료 상태와 작업 중이 아님이다. 현재 구현에는 단계 건너뛰기로 완료를 대체하는 상태가 없다. 취소·실패·추론만으로 학습 완료를 설정하지 않는다.
 
 ## 지원 구조와 연산
 
 ```text
 Input(28 × 28 × 1)
-→ Conv2D → [Conv2D / MaxPooling2D ...]
+→ [Conv2D / MaxPooling2D ...]
 → Flatten → [Dense ...] → Output(Dense 10, Softmax)
 ```
 
-첫 실행 레이어는 반드시 Conv2D다. 순차 연결만 허용하며 분기·합류·순환·잔차 연결은 지원하지 않는다. Flatten은 명시적으로 한 번 들어가며 이후에는 Dense만 허용한다. Dense로 시작하는 MLP와 자동 Flatten은 지원하지 않는다.
+슬롯 순서의 순차 연결만 허용하며 분기·합류·순환·잔차 연결은 지원하지 않는다. 첫 레이어를 Conv2D로 강제하지 않으며 `Flatten → Output` 같은 구성도 검사를 통과할 수 있다. Flatten은 명시적으로 한 번 들어가고 이후에는 Dense만 허용한다. 공간 입력을 Dense에 직접 연결하거나 자동으로 Flatten을 삽입하는 동작은 없다.
 
 | 연산 | 순전파 및 역전파 |
 | --- | --- |
@@ -57,11 +60,11 @@ Input(28 × 28 × 1)
 
 | 기본값 | 값 |
 | --- | --- |
-| epoch / batch size | 3 / 16 |
+| epoch / batch size | 10 / 16 |
 | learning rate / seed | 0.001 / 42 |
 | Conv 필터 / Dense 뉴런 상한 | 16 / 128 |
 
-개별 레이어의 설정 범위는 Model의 `LayerLimits`와 `LayerDefinition`에서 관리한다. Execution은 해당 범위 검사를 반복하지 않는다. 모델 전체 파라미터 수·레이어 수·중간 출력 크기·연산량·전체 학습량의 자원 한도는 적용하지 않으며, 엔진 입력 정의와 데이터의 임의 크기 상한도 두지 않는다.
+개별 레이어의 설정 범위는 Model의 `LayerLimits`와 `LayerDefinition`에서 관리한다. Execution은 해당 범위 검사를 반복하지 않는다. 씬 편집 모델은 슬롯 8개로 제한한다. 이와 별도로 모델 전체 파라미터 수·중간 출력 크기·연산량·전체 학습량의 실행 자원 한도는 적용하지 않으며, 엔진 입력 정의와 데이터의 임의 크기 상한도 두지 않는다.
 
 `Execution/ModelExecutionValidator.cs`는 학습 시작 요청 시 레이어 순서, Flatten 전환, 현재 공간 크기에 대한 커널·풀 크기, 최종 출력과 데이터 입력 형태를 검사한다. Manager는 검증 통과 후 엔진을 호출한다. 편집 시에는 기존 검사 결과만 초기화하며 재검증하지 않는다. 양수 차원·배열 길이 일치·정수 오버플로 같은 데이터 표현의 유효성 검사는 유지한다.
 
@@ -97,15 +100,17 @@ Input(28 × 28 × 1)
 
 로더는 헤더, split, 길이, 개수, 인덱스 범위·중복, 정답을 검사한다. training split과 test split에서 같은 정수 인덱스는 서로 다른 원본 샘플이다.
 
-## 검증 결과와 남은 범위
+## 과거 검증 기록
 
-2026-10-24, Windows의 Unity 6000.3.24f1 EditMode에서 이번 변경의 핵심 테스트 9개를 실행하여 모두 통과했다. 테스트 실행에 필요한 스크립트 컴파일도 성공했다.
+다음은 2026-10-24 당시 구현의 실행 기록이다. 이후 모듈 경로·편집 API·설정·검증 정책이 바뀌었으므로 현재 코드에 대한 통과 결과나 성능 보장으로 사용하지 않는다. 이번 문서 갱신에서는 현재 소스와 에셋 참조만 읽었고 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다.
+
+2026-10-24, Windows의 Unity 6000.3.24f1 EditMode에서 당시 구현의 핵심 테스트 9개를 실행하여 모두 통과했다. 테스트 실행에 필요한 스크립트 컴파일도 성공했다.
 
 - 수학 4개: 다채널·직사각형 Conv와 Tanh, Dense와 Softmax의 입력·가중치·편향 기울기를 수치 미분과 비교했다. MaxPool의 최대 위치·채널·경계·버퍼 재사용, 큰 로짓에서의 안정적인 교차엔트로피와 결합 기울기를 확인했다.
 - 세션 2개: 작은 합성 데이터에서 손실 감소, 반복 추론과 정답을 뒤집은 재학습, 동시 요청 거부, 취소 후 부분 모델 차단과 세션 재사용을 확인했다.
 - 블록 구성 3개: 역방향 체인의 실행 순서, 분리된 블록 제외, 잘못된 구조·자원 한도 거부, 실행 스냅샷의 불변성과 비교를 확인했다.
 
-실행 필터는 `CNNTraining.Tests;ModelDesign.Tests.ModelDesignTests.LocalCnn`이다. 테스트 소스는 `client/Assets/Tests/EditMode/Core/CNNTraining/`과 기존 `client/Assets/Tests/EditMode/ModelDesign/ModelDesignTests.cs`에 있다. 로컬 결과 XML은 Git에서 제외되는 `client/Logs/local-cnn-tests.xml`에 남긴다. 전체 테스트 모음이나 앱 빌드는 실행하지 않았다.
+실행 필터는 `CNNTraining.Tests;ModelDesign.Tests.ModelDesignTests.LocalCnn`이다. 당시 테스트 소스 위치는 `client/Assets/Tests/EditMode/Core/CNNTraining/`과 `client/Assets/Tests/EditMode/ModelDesign/ModelDesignTests.cs`였으며, 현재 편집 모델 API와 동일하다고 해석하지 않는다. 당시 결과 XML 기록 경로는 Git에서 제외되는 `client/Logs/local-cnn-tests.xml`이다. 전체 테스트 모음이나 앱 빌드는 실행하지 않았다.
 
 위 테스트는 PC의 소규모 기능 검증이다. 실제 씬의 VR 상호작용·종료 처리와 Quest 3S의 시간·메모리·프레임 측정은 남아 있다.
 
@@ -163,6 +168,6 @@ Input(28×28×1)
 
 원시 결과는 `client/Logs/mnist-editor-deeper-10epochs-20261024.json`, 로그는 같은 이름의 `.log`다. 임시 실행 코드는 측정 후 제거했다.
 
-## main 병합 적용 범위 (2026-10-27)
+## 현재 구현 확인 범위
 
-`feature/cnn-model-design-modules`에 `main`을 병합하면서 CNNModelDesignLab의 씬·프리팹·전용 스크립트는 작업 브랜치 버전을 유지했다. main의 모델 설계 단계 건너뛰기와 해당 UI 이벤트 연결은 반영하지 않았으며 재구현도 하지 않았다. 양쪽 문서 기록은 보존한다. 이번 병합에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았고 기존 측정·검증 결과를 현재 병합본의 검증 결과로 간주하지 않는다.
+현재 경로, 10 epoch 설정, 슬롯 기반 모델·검증, Dataset/Execution/ControlPanel의 책임과 공장 완료 조건은 소스와 씬 참조를 기준으로 정리했다. 위 PC 측정과 현재 Quest 실행 성능은 별개다. 현재 씬 전체의 VR 입력·취소·재진입 및 Quest 3S 시간·메모리·프레임은 이 문서 갱신에서 실행 확인하지 않았다.

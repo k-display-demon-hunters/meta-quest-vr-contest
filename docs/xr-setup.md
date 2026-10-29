@@ -42,6 +42,8 @@
 
 ## 태블릿 파일과 역할
 
+태블릿은 왼손의 위치를 따라가지만 `TabletFacingController`가 LateUpdate에서 화면의 앞면(local -Z)을 같은 XR 리그의 카메라 위치로 향하게 한다. 화면 위쪽은 리그의 위쪽을 기준으로 유지하므로 손목을 비틀지 않아도 읽을 수 있다. 카메라 바로 위·아래에서는 카메라의 위쪽을 보조 기준으로 사용한다. 공용 XRPlayerRig 프리팹에 연결되며 버튼 입력과 콘텐츠 진행에는 관여하지 않는다. 이 변경은 소스·프리팹 참조 검토만 수행했으며, Unity 컴파일·Play와 Quest 실기기 확인은 아직 수행하지 않았다.
+
 태블릿 코드는 `Tablet` 네임스페이스를 사용한다. `TabletManager`가 일반 C# Controller 객체를 생성하고, `TabletMinimapController`는 uGUI 그래픽 컴포넌트로 동작한다.
 
 | 파일·클래스 | 역할과 처리 방식 |

@@ -141,6 +141,7 @@ GameObject:
   m_Component:
   - component: {fileID: 810101}
   - component: {fileID: 810105}
+  - component: {fileID: 810106}
   m_Layer: 0
   m_Name: Tablet
   m_TagString: Untagged
@@ -191,6 +192,18 @@ MonoBehaviour:
   _exitRequested:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &810106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 810100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cd10924894c4a219dc7c4b33986a9f1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Tablet.TabletFacingController
 --- !u!1 &810200
 GameObject:
   m_ObjectHideFlags: 0

@@ -20,11 +20,18 @@
 | `CNNScreenLab/RGBObservation/RgbPixelStackController.cs` | 사전 배치된 RGB 3층·27블록의 색상·위치·크기를 갱신한다. UI 컴포넌트를 참조하지 않는다. |
 | `CNNScreenLab/RGBObservation/RgbValuesUIController.cs` | RGB stack에 부착해 하위 숫자 Canvas의 카메라를 초기화하고 사전 배치된 숫자 27개·제목 3개의 UI를 소유한다. 숫자·글자색·층별 투명도를 갱신한다. |
 | `CNNScreenLab/PixelLabUIController.cs` | Spatial controls에 부착해 패널 Canvas의 카메라를 초기화하고 자세히 보기·다음으로·처음으로와 안내를 갱신한다. RGB 숫자 Canvas 초기화는 RgbValuesUIController.Initialize에 위임한다. |
-| `CNNConvolutionLab/CNNConvolutionLabManager.cs` | SetInput으로 계산 데이터를 보관하고 Start에서 학습 화면과 계산을 시작한다. ReturnRequested·Completed를 상위 Manager에 알린다. |
-| `CNNConvolutionLab/Lesson/PixelLessonManager.cs` | 입력을 int[3,9]로 변환하고 학습·결과 표시를 조율한다. |
-| `CNNConvolutionLab/Lesson/RgbConvolutionView.cs` | 계산 UI와 결과, 계산 다시 보기·다른 영역 선택 요청을 표시한다. |
-| `CNNConvolutionLab/Lesson/ConvolutionExercise.cs` | 정답 계산과 R 설명·G/B 퀴즈·RGB 합산을 진행한다. |
-| `CNNConvolutionLab/Lesson/Spatial/` | Controller가 공간 애니메이션, ViewBuilder가 블록·라벨 생성, 두 InteractionController가 잡기 판정을 담당한다. |
+| `CNNConvolutionLab/CNNConvolutionLabManager.cs` | 입력과 계산 데이터를 준비하고 필터 정렬 → R 설명 → 퀴즈 → 결과 관찰의 실행 순서와 상위 완료·복귀 이벤트를 관리한다. |
+| `CNNConvolutionLab/ConvolutionCalculation.cs` | 선택 픽셀 9개를 RGB 정수로 보관하고 고정 가중치·항별 곱·채널 합을 제공한다. |
+| `CNNConvolutionLab/LessonUIController.cs` | 공통 안내·수식·피드백·답 버튼·건너뛰기·결과 UI를 표시하고 사용자 요청을 알린다. |
+| `CNNConvolutionLab/RgbVolumeController.cs` | 한 벌의 RGB·가중치·곱 결과 표시를 여러 체험에서 재사용한다. 내부 GeometryBuilder가 기존 배치대로 블록·라벨·재질을 생성한다. |
+| `CNNConvolutionLab/RgbLayerInteractionController.cs` | RGB 층 잡기·꺼내기·자동 완료·레이 대응 표시를 담당한다. 표시 강조 요청은 로컬 이벤트로 알린다. |
+| `CNNConvolutionLab/FilterAlignmentController.cs` | 전체 3층 필터의 잡기·정렬 판정·자동 정렬과 첫 체험 안내를 담당한다. |
+| `CNNConvolutionLab/ResultObservationController.cs` | 완료 후 RGB 관찰·결합 연출과 진행 대기를 관리하고 복귀 요청을 알린다. |
+| `CNNConvolutionLab/CalculationLesson/RedCalculationController.cs` | R층 꺼내기·가중치 정렬·세 줄 설명·전체 합 확인을 순서대로 진행한다. |
+| `CNNConvolutionLab/CalculationLesson/CalculationAnimationController.cs` | R 설명의 곱셈 숫자 사본 이동과 누적 연출을 담당한다. |
+| `CNNConvolutionLab/KernelInteractionController.cs` | R 설명과 G/B 퀴즈에서 공통으로 사용하는 단일 가중치판의 잡기·정렬·해제를 담당한다. |
+| `CNNConvolutionLab/Quiz/ConvolutionQuizController.cs` | G 첫 줄·전체 합, B 전체 합, RGB 최종 합산 문제와 정답·오답·건너뛰기를 처리한다. |
+| `CNNConvolutionLab/Quiz/AnswerInteractionController.cs` | 정답 숫자 블록의 잡기·슬롯 배치·복원을 담당하고 선택 항목을 전달한다. |
 
 PixelLab 내부에서 공유하는 데이터 계약과 입력 보조는 `Scripts/CNNPixelLab/PixelPatchData.cs`, `Scripts/CNNPixelLab/PixelUIInputController.cs`에 있다. 두 파일은 관찰·합성곱 하위 체험에서만 사용하므로 PixelLab 기능 루트에 둔다. PixelPatchData는 위쪽 행부터 왼쪽→오른쪽 순서의 Color32 9개를 복사하고 인덱서로 값만 공개한다. RGB는 0~255 정수이며 alpha는 계산에 사용하지 않는다. 입력 보조는 기존 EventSystem을 사용하고 필요한 경우 입력 모듈을 준비한다. 네임스페이스는 기존 `UI`를 유지하며, 기존 파일 이동 시 .meta와 GUID를 보존했다.
 
@@ -34,7 +41,8 @@ PixelLab 내부에서 공유하는 데이터 계약과 입력 보조는 `Scripts
 FactoryLearningFlowManager → CNNPixelLabManager
                               ├─ PixelLabSceneLoadController
                               ├─ CNNScreenLabManager → 이미지·선택·관찰·UI
-                              └─ CNNConvolutionLabManager → Lesson → 계산·공간 표시·입력
+                              └─ CNNConvolutionLabManager → 필터 정렬 · R 설명 · 퀴즈 · 결과 관찰
+                                                         └─ 공통 계산 · UI · RGB 표시·조작
 ```
 
 Factory는 ConvolutionCompleted만 조회하고 다음 방으로 진행한다. 관찰·합성곱 Manager나 픽셀·좌표 데이터는 참조하지 않는다. 하위 체험은 서로와 Factory를 호출하지 않고 로컬 C# 이벤트로 상위 Manager에 요청과 완료를 알린다. 구독은 활성 기간에 연결·해제하고, 체험 교체 시 이전 구독을 끊고 새 구독을 연결한다.
@@ -67,7 +75,15 @@ FactorySceneLoadController는 관리용 콘텐츠에 기존 ContentAnchor.positi
 
 ## 합성곱과 완료
 
-CNNConvolutionLabManager는 Awake에서 PixelLessonManager를 생성하고 OnEnable/OnDisable에서 이벤트를 연결·해제한다. Start에서 학습 화면을 구성하고 Canvas 카메라를 연결한 뒤 입력으로 체험을 시작한다. Start 이전 준비 과정에서 비활성화될 때는 아직 생성되지 않은 학습 화면을 닫지 않는다. 입력을 전달받지 않은 단독 실행은 RGB가 모두 0인 픽셀 9개를 기본값으로 사용한다. PixelLessonManager가 입력을 int[3,9]로 변환하고 바로 계산을 시작한다. ConvolutionExercise가 R 설명, G/B 퀴즈와 RGB 합산을 진행한다. 완료는 CNNConvolutionLabManager.Completed → CNNPixelLabManager로 전달된다. 결과 화면의 계산 다시 보기는 같은 데이터로 계산을 반복한다. 다른 영역 선택은 상위 Manager에 복귀를 요청하고, 관찰 씬을 다시 로드한 뒤 저장한 좌표를 복원한다. 관찰 전개 자체는 다시 수행한다.
+CNNConvolutionLabManager는 Start에서 공통 UI와 한 벌의 공간 표시, 필터 정렬·결과 관찰 Controller를 초기화한다. SetInput으로 전달된 PixelPatchData에서 ConvolutionCalculation을 만들며 입력 없는 단독 실행은 RGB가 모두 0인 픽셀 9개를 사용한다. 기존 _lessonRoot·_font 직렬화 필드와 씬 Manager GUID를 유지하므로 씬의 연결은 그대로 사용한다. 공용 UI와 입체 블록·XR 조작 컴포넌트는 기존처럼 런타임에 생성한다. 고정 표시의 씬·프리팹 사전 배치 전환은 이번 변경에 포함하지 않는다.
+
+씬 Manager의 코루틴은 FilterAlignmentController.Run → RedCalculationController.Run → ConvolutionQuizController.Run 순서로 진행한다. R 설명과 퀴즈는 일반 C# Controller이며 씬 Manager의 코루틴 수명에 따른다. 설명의 다음 대기는 공통 UI가 처리한다. UI 버튼과 입체 정답 블록은 같은 Choose 경로로 정답을 판정한다. 건너뛰기는 필터·층 조작의 대기 작업을 먼저 자동 완료하고, 물리 작업이 없으면 현재 퀴즈 정답을 표시한다. 문구·문제 순서·가중치·잡기 임계값·애니메이션 시간을 유지한다.
+
+결과 정리 보기까지 마치면 CNNConvolutionLabManager.Completed → CNNPixelLabManager로 완료를 전달한다. ResultObservationController는 같은 공간 표시를 결과 관찰 배치로 전환한다. 계산 다시 보기는 같은 데이터로 처음부터 반복하며, 다른 영역 선택과 결과 화면의 다음으로는 기존처럼 상위 Manager에 복귀를 요청한다. 완료 화면에서 RGB 합치기 버튼을 숨기는 기존 동작도 유지한다. 재시작·비활성화 때 코루틴과 정답 대기를 중단하고 XR 선택을 해제한다. UI 요청 이벤트와 강조 이벤트는 활성 기간에 맞춰 연결·해제한다.
+
+공통 계산·UI·RGB 표시·층 조작과 단일 파일 체험은 CNNConvolutionLab 루트에 둔다. R 설명 전용 코드는 CalculationLesson, 퀴즈 코드는 Quiz에 둔다. 기존 Lesson/Spatial 계층은 제거했다. 공통 RGB 표시 내부의 Geometry는 블록 생성과 내부 잡기 구현에서만 사용한다. 필터 체험과 R 애니메이션에는 배치·정렬 조회·표시 갱신 메서드와 좌표값만 제공하며 내부 UI·블록 배열은 공개하지 않는다. 폴더나 internal만으로 컴파일 경계가 보장된다는 의미는 아니다.
+
+이번 리팩토링은 소스·직렬화 참조·GUID를 정적으로 검토했다. 사용자 지시에 따라 Unity 실행·테스트·빌드·컴파일은 수행하지 않았다.
 
 ## 사전 배치된 표시와 UI 경계
 

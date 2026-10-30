@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -6,49 +6,41 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace UI
 {
-    // Physical actions for the RGB volume. Lesson arithmetic remains in ConvolutionExercise.
-    public sealed class SpatialVolumeInteractionController : MonoBehaviour
+    // Physical actions for the RGB volume. Arithmetic belongs to ConvolutionCalculation.
+    public sealed class RgbLayerInteractionController : MonoBehaviour
     {
         private Transform[] _layers;
         private Transform[] _weights;
         private Transform _patch;
-        private Transform _filter;
         private XRGrabInteractable _patchGrab;
-        private XRGrabInteractable _filterGrab;
         private readonly XRGrabInteractable[] _layerGrabs = new XRGrabInteractable[3];
         private readonly Vector3[] _layerHomes = new Vector3[3];
         private readonly LineRenderer[] _pairs = new LineRenderer[3];
         private LineRenderer _depthLine;
         private Text _instruction;
-        private SpatialConvolutionController _owner;
+        public event System.Action<int> PairHighlighted;
         private XRRayInteractor _ray;
         private Vector3 _patchSource;
         private bool _extracted;
-        private bool _aligned;
         private bool _closing;
         private bool _exploring;
         private int _expected = -1;
         private bool _pulled;
-        private enum PendingAction { None, Extract, Align, Pull }
+        private enum PendingAction { None, Extract, Pull }
         private PendingAction _pending;
         public bool HasPendingAction => _pending != PendingAction.None;
         private static readonly Vector3 WeightOffset = new Vector3(0.08f, 0.055f, -0.3f);
         private static readonly Vector3 FilterTarget = new Vector3(-0.38f, 0, 0.15f);
 
-        public void Initialize(SpatialConvolutionController owner, Transform[] layers, Transform[] weights,
+        public void Initialize(Transform[] layers, Transform[] weights,
             Transform patch, Text instruction, Material material)
         {
-            _owner = owner;
             _layers = layers;
             _weights = weights;
             _patch = patch;
             _instruction = instruction;
             _patchGrab = Grab(_patch, new Vector3(0.58f, 0.5f, 0.06f), Vector3.zero);
             _patchGrab.selectExited.AddListener(_ => Released(_patchGrab));
-            _filter = new GameObject("One 3x3x3 filter").transform;
-            _filter.SetParent(transform, false);
-            _filterGrab = Grab(_filter, new Vector3(0.6f, 0.52f, 1.5f), new Vector3(0.08f, 0.055f, 0.55f));
-            _filterGrab.selectExited.AddListener(_ => Released(_filterGrab));
             for (int c = 0; c < 3; c++)
             {
                 int colour = c;
@@ -94,6 +86,8 @@ namespace UI
             _instruction.text = "RGB 층을 직접 잡아 벌려 보세요. 옆으로 이동하면 세 층의 깊이가 보여요.\n이 깊이는 사진의 두께가 아니라 색 정보를 펼친 표현이에요.";
         }
 
+        public void ExplorePairs() { _exploring = true; _expected = -1; }
+
         public void Explore()
         {
             _exploring = true;
@@ -105,32 +99,6 @@ namespace UI
             }
         }
 
-        public IEnumerator FitWholeFilter()
-        {
-            StopInteraction();
-            _aligned = false;
-            _patch.gameObject.SetActive(false);
-            _filter.gameObject.SetActive(true);
-            _filter.localPosition = new Vector3(-1.65f, 0, 0.15f);
-            _filter.localRotation = Quaternion.identity;
-            for (int c = 0; c < 3; c++)
-            {
-                _layers[c].gameObject.SetActive(true);
-                _layers[c].localPosition = FilterTarget + Vector3.forward * (c * 0.65f);
-                _weights[c].gameObject.SetActive(true);
-                _weights[c].SetParent(_filter, false);
-                _weights[c].localPosition = WeightOffset + Vector3.forward * (c * 0.65f);
-            }
-            EnableGrab(_filterGrab);
-            _pending = PendingAction.Align;
-            _exploring = true;
-            _instruction.text = "왼쪽의 3층 가중치 묶음 전체가 필터 하나예요.\n묶음을 잡아 오른쪽 RGB 입력에 맞춰 놓으세요. 정면과 옆면에서 위치를 확인하세요.";
-            yield return new WaitUntil(() => _aligned);
-            _pending = PendingAction.None;
-            StopGrab(_filterGrab);
-            for (int c = 0; c < 3; c++) { _weights[c].SetParent(transform, true); }
-            _instruction.text = "R에는 R 가중치, G에는 G, B에는 B가 대응해요.\n3 × 3 × 3 = 27쌍의 곱을 더해 출력 하나를 만듭니다.";
-        }
 
         public IEnumerator PullLayer(int channel)
         {
@@ -161,22 +129,6 @@ namespace UI
             {
                 _extracted = Vector3.Distance(_patch.position, _patchSource) >= 0.15f;
                 if (!_extracted) { _patch.position = _patchSource; }
-            }
-            else if (target == _filterGrab)
-            {
-                // Compare visible RGB slices, not the offset parent pivot. Accept
-                // overlap or a small gap in front so both sets of values remain readable.
-                _aligned = true;
-                for (int c = 0; c < 3; c++)
-                {
-                    Vector3 offset = _layers[c].InverseTransformPoint(_weights[c].position);
-                    _aligned &= Mathf.Abs(offset.x) <= 0.22f && Mathf.Abs(offset.y) <= 0.20f
-                        && Mathf.Abs(offset.z) <= 0.48f
-                        && Quaternion.Angle(_weights[c].rotation, _layers[c].rotation) <= 30f;
-                }
-                _filter.localPosition = _aligned ? FilterTarget : new Vector3(-1.65f, 0, 0.15f);
-                _filter.localRotation = Quaternion.identity;
-                if (!_aligned) { _instruction.text = "세 색의 순서와 가로·세로 위치를 맞춰 다시 놓으세요."; }
             }
             else
             {
@@ -221,7 +173,7 @@ namespace UI
                 index = row * 3 + col;
                 nearest = distance;
             }
-            _owner.HighlightSpatialPair(index);
+            PairHighlighted?.Invoke(index);
             _depthLine.enabled = index >= 0;
             for (int c = 0; c < 3; c++)
             {
@@ -242,7 +194,6 @@ namespace UI
             _exploring = false;
             _expected = -1;
             StopGrab(_patchGrab);
-            StopGrab(_filterGrab);
             foreach (XRGrabInteractable grab in _layerGrabs) { StopGrab(grab); }
             foreach (LineRenderer pair in _pairs) { if (pair != null) { pair.enabled = false; } }
             if (_depthLine != null) { _depthLine.enabled = false; }
@@ -255,14 +206,7 @@ namespace UI
             if (action == PendingAction.None) { return false; }
             _pending = PendingAction.None;
             _closing = true;
-            if (action == PendingAction.Align)
-            {
-                StopGrab(_filterGrab);
-                _filter.localPosition = FilterTarget;
-                _filter.localRotation = Quaternion.identity;
-                _aligned = true;
-            }
-            else if (action == PendingAction.Extract)
+            if (action == PendingAction.Extract)
             {
                 StopGrab(_patchGrab);
                 _patch.position = _patchSource - transform.forward * 0.2f;
@@ -336,7 +280,6 @@ namespace UI
         private void OnDestroy()
         {
             DestroyDetached(_patchGrab);
-            DestroyDetached(_filterGrab);
             foreach (XRGrabInteractable grab in _layerGrabs) { DestroyDetached(grab); }
         }
 

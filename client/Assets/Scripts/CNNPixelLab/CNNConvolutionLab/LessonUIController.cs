@@ -1,12 +1,57 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace UI
 {
     // Displays lesson state and reports user intent to the lesson module.
-    public sealed class RgbConvolutionView : MonoBehaviour
+    public sealed class LessonUIController : MonoBehaviour
     {
+        private readonly Button[] _answers = new Button[3];
+        private Text _title, _explanation, _equation, _feedback, _channelSums, _guide;
+        private Button _next, _skip;
+        private bool _advance;
+        public event Action<int> AnswerRequested;
+        public event Action SkipRequested;
+        public string Title { set => _title.text = value; }
+        public string Explanation { set => _explanation.text = value; }
+        public string Equation { set => _equation.text = value; }
+        public string Feedback { set => _feedback.text = value; }
+        public string ChannelSums { set => _channelSums.text = value; }
+        public string Guide { set => _guide.text = value; }
+        public void SetEquationSize(int size) { _equation.fontSize = size; }
+        public void SetChoices(int[] choices)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                _answers[i].GetComponentInChildren<Text>().text = choices[i].ToString();
+                _answers[i].interactable = true;
+            }
+        }
+        public void SetAnswersEnabled(bool enabled)
+        {
+            foreach (Button answer in _answers) { answer.interactable = enabled; }
+        }
+        public void ShowAnswers(bool visible)
+        {
+            foreach (Button answer in _answers) { answer.gameObject.SetActive(visible); }
+        }
+        public void ShowSkip(bool physical, bool waiting)
+        {
+            _skip.gameObject.SetActive(physical || waiting);
+            _skip.GetComponentInChildren<Text>().text = physical ? "자동 맞추고 다음으로" : "정답 보고 다음으로";
+        }
+        private void RequestSkip() { SkipRequested?.Invoke(); }
+        public void BeginCalculation()
+        {
+            ShowCalculation();
+            ExerciseRoot.gameObject.SetActive(true);
+            _equation.text = _feedback.text = _guide.text = _channelSums.text = "";
+            ShowAnswers(false);
+            _next.gameObject.SetActive(false);
+        }
+
         private Font _font;
         private GameObject _observationUi;
         private Text _summary;
@@ -21,8 +66,7 @@ namespace UI
         public event Action AdvanceRequested;
         public event Action CloseRequested;
 
-        public Transform ObservationRoot => _observationUi.transform;
-        public Transform ExerciseRoot { get; private set; }
+        private Transform ExerciseRoot { get; set; }
 
         public void Initialize(Font font)
         {
@@ -46,6 +90,28 @@ namespace UI
                 () => AdvanceRequested?.Invoke());
             _nextObservationLabel = _nextObservation.GetComponentInChildren<Text>();
             ExerciseRoot = Rect(transform, "Convolution exercise", 0, 0, 1300, 1400);
+            _title = Label(ExerciseRoot, "Step", "", 0, 365, 1180, 45, 30);
+            _explanation = Label(ExerciseRoot, "Explanation", "", 0, 310, 1180, 65, 25);
+            _channelSums = Label(ExerciseRoot, "Channel sums", "", 0, -340, 1180, 42, 26);
+            _equation = Label(ExerciseRoot, "Equation", "", 0, -390, 1180, 50, 30);
+            _feedback = Label(ExerciseRoot, "Feedback", "", 900, -170, 420, 140, 24);
+            for (int i = 0; i < 3; i++)
+            {
+                int option = i;
+                _answers[i] = MakeButton(ExerciseRoot, "Answer " + i, (i - 1) * 320, -445, 270,
+                    () => AnswerRequested?.Invoke(option));
+            }
+            _next = MakeButton(ExerciseRoot, "다음", 900, -300, 420, () => _advance = true);
+            _skip = MakeButton(ExerciseRoot, "현재 단계 건너뛰기", 900, -370, 420, RequestSkip);
+            Image side = Box(ExerciseRoot, "Side explanation", 900, 20, 480, 770, UI.SceneUIStyle.Surface);
+            Label(side.transform, "Heading", "계산 원리", 0, 325, 440, 50, 30);
+            _guide = Label(side.transform, "Guide", "", 0, 100, 420, 350, 23);
+            _feedback.transform.SetAsLastSibling();
+            _next.transform.SetAsLastSibling();
+            _skip.transform.SetAsLastSibling();
+            _guide.alignment = TextAnchor.UpperLeft;
+
+            ExerciseRoot.gameObject.SetActive(false);
             Button(transform, "다른 영역 선택", -850, -340, 380,
                 () => CloseRequested?.Invoke());
         }
@@ -66,6 +132,7 @@ namespace UI
 
         public void ShowCompleted(int[] sums)
         {
+            ExerciseRoot.gameObject.SetActive(false);
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(true);
             _combine.gameObject.SetActive(false);
@@ -86,6 +153,33 @@ namespace UI
         public void ShowCombined(bool combined)
         {
             _combineLabel.text = combined ? "RGB 다시 펼치기" : "RGB 합쳐 보기";
+        }
+
+        public IEnumerator WaitForNext(string label)
+        {
+            _advance = false;
+            _next.interactable = true;
+            _next.GetComponentInChildren<Text>().text = label;
+            _next.gameObject.SetActive(true);
+            yield return new WaitUntil(() => _advance);
+            _next.gameObject.SetActive(false);
+        }
+
+        private Image Box(Transform parent, string name, float x, float y, float w, float h, Color color)
+        {
+            Image image = Rect(parent, name, x, y, w, h).gameObject.AddComponent<Image>();
+            image.color = color; image.raycastTarget = false; return image;
+        }
+
+        private Button MakeButton(Transform parent, string label, float x, float y, float width, UnityEngine.Events.UnityAction action)
+        {
+            Image image = Box(parent, label, x, y, width, 58, new Color(0.65f, 0.67f, 0.7f));
+            image.raycastTarget = true;
+            Button button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image; button.onClick.AddListener(action);
+            Label(image.transform, "Label", label, 0, 0, width, 58, 26).color = Color.black;
+            UI.SceneUIStyle.Apply(button);
+            return button;
         }
 
         private static RectTransform Rect(Transform parent, string name, float x, float y, float w, float h)

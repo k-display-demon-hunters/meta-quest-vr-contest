@@ -14,7 +14,7 @@ namespace Education.Editor
     {
         private const string ScenePath = "Assets/Scenes/FactoryEnvironment.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string FontPath = "Assets/Fonts/NanumPenScript-Regular.ttf";
+        private const string FontPath = "Assets/Fonts/Pretendard/Pretendard-Regular.otf";
         private const string SpritePath = "Assets/Textures/Common/LearningParchment.png";
         private const string GroupName = "Learning Parchments";
 
@@ -31,7 +31,7 @@ namespace Education.Editor
             Sprite sprite = LoadParchmentSprite();
             if (font == null || rigPrefab == null || sprite == null)
             {
-                throw new InvalidOperationException("Learning parchments require the handwriting font, parchment sprite and existing XRPlayerRig.");
+                throw new InvalidOperationException("Learning parchments require the Pretendard font, hologram sprite and existing XRPlayerRig.");
             }
             if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
@@ -128,23 +128,23 @@ namespace Education.Editor
             parchment.transform.rotation = Quaternion.LookRotation(position - facingPoint, Vector3.up);
 
             SpriteRenderer paper = CreateSprite(parchment.transform, "Parchment", sprite,
-                new Vector2(0.65f, 0.7f), Vector3.zero, Color.white, 2);
-            SpriteRenderer glow = CreateSprite(parchment.transform, "Soft amber outline", sprite,
-                new Vector2(0.77f, 0.81f), new Vector3(0f, 0f, 0.015f), new Color(1f, 0.7f, 0.28f, 0.14f), 1);
+                new Vector2(0.84f, 0.47f), Vector3.zero, Color.white, 2);
+            SpriteRenderer glow = CreateSprite(parchment.transform, "Soft cyan outline", sprite,
+                new Vector2(0.9f, 0.5f), new Vector3(0f, 0f, 0.015f), new Color(0.34f, 0.84f, 1f, 0.14f), 1);
 
-            GameObject lightObject = new GameObject("Subtle amber light");
+            GameObject lightObject = new GameObject("Subtle cyan light");
             lightObject.transform.SetParent(parchment.transform, false);
             lightObject.transform.localPosition = new Vector3(0f, 0f, -0.1f);
             Light glowLight = lightObject.AddComponent<Light>();
             glowLight.type = LightType.Point;
-            glowLight.color = new Color(1f, 0.72f, 0.35f);
+            glowLight.color = new Color(0.34f, 0.84f, 1f);
             glowLight.intensity = 0.5f;
             glowLight.range = 1.5f;
             glowLight.shadows = LightShadows.None;
             glowLight.renderMode = LightRenderMode.Auto;
 
             BoxCollider collider = parchment.AddComponent<BoxCollider>();
-            collider.size = new Vector3(0.7f, 0.75f, 0.08f);
+            collider.size = new Vector3(0.88f, 0.5f, 0.08f);
             XRSimpleInteractable interactable = parchment.AddComponent<XRSimpleInteractable>();
             interactable.colliders.Add(collider);
             ParchmentPickupController pickup = parchment.AddComponent<ParchmentPickupController>();
@@ -183,16 +183,12 @@ namespace Education.Editor
             canvas.sortingOrder = 3;
             labelObject.GetComponent<RectTransform>().sizeDelta = new Vector2(600f, 650f);
 
-            AddText(labelObject.transform, "Document number", "교육 자료 0" + (index + 1),
-                font, new Vector2(0f, 225f), new Vector2(420f, 55f), 32);
+            AddText(labelObject.transform, "Document number", "양피지 " + (index + 1).ToString("00"),
+                font, new Vector2(0f, 78f), new Vector2(420f, 55f), 25);
             AddText(labelObject.transform, "Lesson title", lesson.Title,
-                font, new Vector2(0f, 90f), new Vector2(420f, 170f), 54);
-            AddText(labelObject.transform, "Department", lesson.Department + " 작성",
-                font, new Vector2(0f, -50f), new Vector2(420f, 65f), 30);
-            AddText(labelObject.transform, "Collection room", lesson.Room,
-                font, new Vector2(0f, -120f), new Vector2(420f, 50f), 27);
-            AddText(labelObject.transform, "Collect instruction", "양피지를 수집하세요!\n오른손 Trigger · 3 m 이내",
-                font, new Vector2(0f, -225f), new Vector2(470f, 85f), 27);
+                font, new Vector2(0f, -3f), new Vector2(500f, 100f), 42);
+            AddText(labelObject.transform, "Collect instruction", "Trigger / Grip으로 열기",
+                font, new Vector2(0f, -100f), new Vector2(470f, 50f), 19);
         }
 
         private static void AddText(Transform parent, string name, string content, Font font,
@@ -207,7 +203,7 @@ namespace Education.Editor
             text.font = font;
             text.text = content;
             text.fontSize = fontSize;
-            text.color = new Color(0.17f, 0.11f, 0.065f);
+            text.color = Color.white;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Truncate;

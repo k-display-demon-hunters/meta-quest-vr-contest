@@ -1,6 +1,7 @@
 using System.Collections;
 using CNNFeatureMaps;
 using ModelDesignScene;
+using Tablet;
 using UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,6 +15,7 @@ namespace FactoryEnvironment
         private FactoryPlayerController _player;
         private FactorySceneLoadController _sceneLoader;
         private FactoryNavigationData _navigationData;
+        private TabletManager _tablet;
         private FactoryDestinationId _stage = FactoryDestinationId.None;
         private bool _loading;
         private float _nextCheckTime;
@@ -29,6 +31,11 @@ namespace FactoryEnvironment
         private void Start()
         {
             _player.PlaceAtEntrance();
+            _tablet = _player.Rig.GetComponentInChildren<TabletManager>(true);
+            if (_tablet == null)
+            {
+                Debug.LogError("[FactoryFlow] 양피지 진행 조건을 확인할 TabletManager가 없습니다.", this);
+            }
             foreach (FactoryNavigationData.DestinationData destination in _navigationData.Destinations)
             {
                 destination.Area.Bind(_player.CameraTransform);
@@ -49,7 +56,7 @@ namespace FactoryEnvironment
             FactoryDestinationId destination = GetDestination();
             FactoryAreaEntryController area = _navigationData.Get(destination).Area;
             _routeGuide.SetDestination(area.IsPlayerInside ? FactoryDestinationId.None : destination);
-            if (destination == _stage || !area.IsPlayerInside)
+            if (destination == _stage || !area.IsPlayerInside || !HasRequiredParchments(destination))
             {
                 return;
             }
@@ -82,6 +89,29 @@ namespace FactoryEnvironment
                         ? FactoryDestinationId.Exit : FactoryDestinationId.ModelDesignLab;
                 default:
                     return FactoryDestinationId.Exit;
+            }
+        }
+
+        private bool HasRequiredParchments(FactoryDestinationId destination)
+        {
+            if (destination == FactoryDestinationId.Exit)
+            {
+                return true;
+            }
+            if (_tablet == null)
+            {
+                return false;
+            }
+            switch (destination)
+            {
+                case FactoryDestinationId.PixelLab:
+                    return _tablet.HasParchment(0) && _tablet.HasParchment(1);
+                case FactoryDestinationId.FeatureMapLab:
+                    return _tablet.HasParchment(2) && _tablet.HasParchment(3);
+                case FactoryDestinationId.ModelDesignLab:
+                    return _tablet.HasParchment(4);
+                default:
+                    return false;
             }
         }
 

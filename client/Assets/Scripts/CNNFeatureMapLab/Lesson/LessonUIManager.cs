@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CNNFeatureMaps.Lesson
 {
@@ -17,14 +18,31 @@ namespace CNNFeatureMaps.Lesson
         public event System.Action OnEnlargeRequested;
         public event System.Action OnShrinkRequested;
 
+        [SerializeField] private GameObject _infoPopup;
+        [SerializeField] private Text _infoText;
+        [SerializeField] private Button _infoConfirm;
+
+        public void ShowInfo(string message)
+        {
+            _infoText.text = message;
+            _infoPopup.SetActive(true);
+        }
+
+        public void HideInfo() { _infoPopup.SetActive(false); }
+
+        private void CloseInfo() { HideInfo(); }
+
         private void OnEnable()
         {
             _buttonGroup.OnActionRequested += HandleActionRequested;
+            _infoConfirm.onClick.AddListener(CloseInfo);
         }
 
         private void OnDisable()
         {
             _buttonGroup.OnActionRequested -= HandleActionRequested;
+            _infoConfirm.onClick.RemoveListener(CloseInfo);
+            _infoPopup.SetActive(false);
         }
 
         private void HandleActionRequested(LessonAction action)
@@ -75,6 +93,8 @@ namespace CNNFeatureMaps.Lesson
         {
             switch (step)
             {
+                case LessonStep.ExploreFeatureMaps:
+                    return LessonContent.ExploreFeatureMaps;
                 case LessonStep.BuildFeatureMap:
                     return LessonContent.BuildFeatureMap;
                 case LessonStep.CompareFilters:
@@ -105,7 +125,7 @@ namespace CNNFeatureMaps.Lesson
 
         public void ShowReleaseBeforeAction()
         {
-            _guide.ShowReleaseBeforeAction();
+            ShowInfo(LessonContent.ReleaseBeforeActionText);
         }
 
         public void ShowStepFinished(bool skipped)
@@ -115,7 +135,7 @@ namespace CNNFeatureMaps.Lesson
 
         public void ShowSelectScaleTarget()
         {
-            _guide.ShowSelectScaleTarget();
+            ShowInfo("맵이나 층을 선택한 다음 확대·축소를 눌러 주세요.");
         }
     }
 }

@@ -34,7 +34,9 @@ namespace CNNFeatureMaps.Lesson
             foreach (LessonButton button in _buttons)
             {
                 LessonContent.ButtonState state = content.Buttons[button.Action];
-                button.SetAvailable(state.Available);
+                button.gameObject.SetActive(state.Available);
+                if (!state.Available) { continue; }
+                button.SetAvailable(true);
 
                 string label = state.Label;
                 if (button.Action == LessonAction.Scan && scanning)

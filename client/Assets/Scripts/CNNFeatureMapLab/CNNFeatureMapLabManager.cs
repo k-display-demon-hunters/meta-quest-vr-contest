@@ -1,3 +1,6 @@
+using System.Collections;
+using Education;
+using CNNFeatureMaps.Activation;
 using CNNFeatureMaps.FeatureMaps;
 using CNNFeatureMaps.Lesson;
 using UnityEngine;
@@ -9,22 +12,37 @@ namespace CNNFeatureMaps
     {
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
+        [SerializeField] private FilterComparisonManager _filterComparison;
+        [SerializeField] private ParchmentPickupController _nextParchment;
+        [SerializeField] private Transform[] _featureMapVisuals;
+        [SerializeField] private ParchmentPickupController _activationParchment;
+        [SerializeField] private ActivationLessonManager _activationLesson;
+        private bool _activationLessonComplete;
+        private bool _filterLessonComplete;
         private bool _ready;
-        private LessonStep _step = LessonStep.BuildFeatureMap;
+        private LessonStep _step = LessonStep.ExploreFeatureMaps;
+        private bool _mapLessonComplete;
         private int _channel;
         private bool _lastStepSkipped;
 
-        public bool ReadyForModelDesign => _ready && _step == LessonStep.EditInput
-            && (_featureMaps.EditCount > 0 || _lastStepSkipped) && !_featureMaps.HasHeldTargets;
+        public bool ReadyForModelDesign => _mapLessonComplete && _activationLessonComplete && !_featureMaps.HasHeldTargets;
 
         private void Awake()
         {
             // Wire modules before child grab components begin receiving XR events.
             _featureMaps.Initialize();
+            _nextParchment.gameObject.SetActive(false);
+            _activationParchment.gameObject.SetActive(false);
+            _activationLesson.gameObject.SetActive(false);
+            foreach (Transform visual in _featureMapVisuals) { visual.gameObject.SetActive(false); }
         }
 
         private void OnEnable()
         {
+            _filterComparison.OnCompleted += FinishFilterLesson;
+            _nextParchment.OnCollected += HandleFeatureMapParchmentCollected;
+            _activationParchment.OnCollected += HandleActivationParchmentCollected;
+            _activationLesson.OnCompleted += HandleActivationCompleted;
             _lessonUI.OnPreviousRequested += HandlePreviousRequested;
             _lessonUI.OnNextRequested += HandleNextRequested;
             _lessonUI.OnScanRequested += HandleScanRequested;
@@ -40,13 +58,72 @@ namespace CNNFeatureMaps
             _featureMaps.OnInputEdited += _lessonUI.ShowInputEdited;
         }
 
-        private void Start()
+        private void FinishFilterLesson()
         {
+            if (!_filterLessonComplete) { StartCoroutine(RevealNextParchment()); }
+        }
+
+        private IEnumerator RevealNextParchment()
+        {
+            _filterLessonComplete = true;
+            // Finish the uGUI click before disabling its entire spatial lesson.
+            yield return null;
+            _filterComparison.gameObject.SetActive(false);
+            _nextParchment.gameObject.SetActive(true);
+        }
+
+        private void HandleFeatureMapParchmentCollected()
+        {
+            StartCoroutine(BeginFeatureMapLesson());
+        }
+
+        private IEnumerator BeginFeatureMapLesson()
+        {
+            // Let the reader close and XRI finish collection before showing the next experience.
+            yield return null;
             _ready = _featureMaps.TryStart();
             if (_ready)
             {
+                foreach (Transform visual in _featureMapVisuals) { visual.gameObject.SetActive(true); }
                 ApplyStep();
+                _lessonUI.ShowInfo("피쳐맵을 살펴보세요!\n\n입력 픽셀을 누르면 연결된 칸이 빛나요.\n맵의 테두리는 잡아서 옮길 수 있고,\n맵이나 칸을 누르면 채널이 합쳐지는 계산을 볼 수 있어요.");
             }
+        }
+
+        private IEnumerator RevealActivationParchment()
+        {
+            _mapLessonComplete = true;
+            _ready = false;
+            // Finish the button event before hiding all of parchment 4.
+            yield return null;
+            _featureMaps.CloseCalculation();
+            _lessonUI.HideInfo();
+            foreach (Transform visual in _featureMapVisuals) { visual.gameObject.SetActive(false); }
+            _activationParchment.gameObject.SetActive(true);
+        }
+
+        private void HandleActivationParchmentCollected()
+        {
+            StartCoroutine(BeginActivationLesson());
+        }
+
+        private IEnumerator BeginActivationLesson()
+        {
+            yield return null;
+            _activationLesson.BeginLesson(_featureMaps.CopyFirstLayerMap(0), _featureMaps.CopyFirstLayerMap(1));
+        }
+
+        private void HandleActivationCompleted()
+        {
+            StartCoroutine(FinishActivationLesson());
+        }
+
+        private IEnumerator FinishActivationLesson()
+        {
+            // The final explanation is confirmed before the factory exit condition becomes true.
+            yield return null;
+            _activationLesson.gameObject.SetActive(false);
+            _activationLessonComplete = true;
         }
 
         private bool CanPerformAction()
@@ -154,6 +231,11 @@ namespace CNNFeatureMaps
 
         private void MoveToNextStep()
         {
+            if (_step == LessonStep.ExploreFeatureMaps)
+            {
+                if (!_mapLessonComplete) { StartCoroutine(RevealActivationParchment()); }
+                return;
+            }
             switch (_step)
             {
                 case LessonStep.BuildFeatureMap:
@@ -185,6 +267,7 @@ namespace CNNFeatureMaps
                 return;
             }
             _lastStepSkipped = false;
+            _mapLessonComplete = false;
             ApplyStep();
         }
 
@@ -195,6 +278,10 @@ namespace CNNFeatureMaps
 
         private void OnDisable()
         {
+            _filterComparison.OnCompleted -= FinishFilterLesson;
+            _nextParchment.OnCollected -= HandleFeatureMapParchmentCollected;
+            _activationParchment.OnCollected -= HandleActivationParchmentCollected;
+            _activationLesson.OnCompleted -= HandleActivationCompleted;
             _lessonUI.OnPreviousRequested -= HandlePreviousRequested;
             _lessonUI.OnNextRequested -= HandleNextRequested;
             _lessonUI.OnScanRequested -= HandleScanRequested;

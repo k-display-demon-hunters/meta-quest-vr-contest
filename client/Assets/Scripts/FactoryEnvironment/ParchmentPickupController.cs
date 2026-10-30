@@ -32,6 +32,7 @@ namespace Education
         private bool _readingRequested;
 
         public int LessonIndex => _lessonIndex;
+        public event System.Action OnCollected;
 
         private void Awake()
         {
@@ -195,6 +196,7 @@ namespace Education
             if (collected)
             {
                 _isCollected = true;
+                OnCollected?.Invoke();
                 StartCoroutine(HideAfterInteraction());
             }
             else

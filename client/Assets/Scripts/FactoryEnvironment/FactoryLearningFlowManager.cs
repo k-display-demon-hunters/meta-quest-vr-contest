@@ -107,7 +107,7 @@ namespace FactoryEnvironment
                 case FactoryDestinationId.PixelLab:
                     return _tablet.HasParchment(0) && _tablet.HasParchment(1);
                 case FactoryDestinationId.FeatureMapLab:
-                    return _tablet.HasParchment(2) && _tablet.HasParchment(3);
+                    return _tablet.HasParchment(2);
                 case FactoryDestinationId.ModelDesignLab:
                     return _tablet.HasParchment(4);
                 default:

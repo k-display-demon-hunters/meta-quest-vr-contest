@@ -56,6 +56,8 @@ namespace Education.Editor
             Vector3[] directions = { Vector3.forward, Vector3.left, Vector3.forward, Vector3.left, Vector3.right };
             for (int i = 0; i < positions.Length; i++)
             {
+                // Parchments 4 and 5 appear sequentially inside the feature-map workspace.
+                if (i >= 3) { continue; }
                 CreateParchment(i == 0 ? convolutionPapers : mlpPapers, i, positions[i],
                     positions[i] - directions[i], sprite, font);
             }
@@ -66,7 +68,7 @@ namespace Education.Editor
             {
                 throw new InvalidOperationException("Could not save the learning parchments in FactoryEnvironment.");
             }
-            Debug.Log("[Education] Placed five learning parchments along the approach routes.");
+            Debug.Log("[Education] Placed route parchments 1-3. Parchments 4-5 belong to the feature-map workspace.");
         }
 
         private static Sprite LoadParchmentSprite()

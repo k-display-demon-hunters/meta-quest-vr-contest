@@ -36,3 +36,15 @@ Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking
 | 기타 공장 배경·음원·주민 애니메이션·MNIST | 위 표의 기록을 유지. | 제출 범위에 포함되는 모든 외부 에셋의 누락 여부와 실제 배포 고지 확인. 이번 컨트롤러 검토만으로 프로젝트 전체의 권리 확인이 완료된 것은 아님. |
 
 Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculussdk/), [컨트롤러 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/). SDK 제거 후에도 선택한 런타임 에셋에 필요한 원래 LICENSE/Notice를 에셋 옆에 보존한다. 제출 기록용 ZIP·별도 라이선스 보관 폴더는 추가하지 않는다.
+
+## 양피지 3 RGB 입력 (2026-10-30)
+
+| 에셋·사용 위치 | 원출처·제작 방법 | 제작·권리 및 수정 |
+| --- | --- | --- |
+| `client/Assets/Textures/CNNFeatureMapLab/FilterComparisonInput.png` · 양피지 3의 RGB 분리 입력·필터 비교 | 사용자의 색 블록 배치 구상을 참고해 Codex 보조로 Python/Pillow에서 RGB 숫자 배열을 직접 작성한 6×6 PNG. 외부 사진이나 첨부 이미지의 픽셀을 복사하지 않음 | 프로젝트용 직접 합성 이미지. AI/Codex 보조 제작. 별도 공개 라이선스는 지정하지 않음. 픽셀 간격 없이 제작 |
+
+양피지 4 수집물은 기존 `LearningParchment.png`와 기존 Pretendard 폰트를 재사용하며 해당 출처·고지는 위 기록을 따른다.
+
+## 양피지 4 컬러 입력 (2026-10-30)
+
+`client/Assets/Textures/CNNFeatureMapLab/FeatureMapColorInput.png`는 위의 직접 제작 `FilterComparisonInput.png`를 Codex 보조로 Python/Pillow의 최근접 보간으로 8×8로 변환한 파생 입력이다. 외부 이미지 사용 없음. RGB 계산과 피쳐맵 표시용이며 별도 공개 라이선스는 지정하지 않았다. 계산 창은 기존 Noto Sans CJK KR 폰트와 프로젝트 도형을 사용한다.

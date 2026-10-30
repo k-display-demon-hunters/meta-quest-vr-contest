@@ -174,6 +174,7 @@ namespace Tablet
                 if (ActiveTargets[_focusIndex].Control is Button button && button.IsInteractable())
                 {
                     button.onClick.Invoke();
+                    if (!_xButton.enabled) { return; }
                 }
                 else if (ActiveTargets[_focusIndex].Control is Slider slider && slider.IsInteractable())
                 {

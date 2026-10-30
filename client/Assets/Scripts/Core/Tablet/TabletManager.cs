@@ -1,3 +1,4 @@
+using Parchment;
 using System;
 using UnityEngine;
 using UnityEngine.Events;
@@ -24,14 +25,16 @@ namespace Tablet
         private TabletUIBuilder _ui;
         private TabletInputController _input;
         private TabletParchmentController _parchment;
+        private ParchmentManager _reader;
         private TabletSettingsController _settings;
         private TabletLearningController _learning;
         private TabletDetailController _detail;
         private TabletMapData _mapData;
         private int _detailReturnFocusIndex;
         private bool _initialized;
-        internal Font ParchmentFont => _parchmentFont != null ? _parchmentFont : _resolvedFont;
-        internal Font ParchmentTitleFont => _parchmentTitleFont != null ? _parchmentTitleFont : ParchmentFont;
+        private int _inputResumeFrame = -1;
+        private bool _interactionBeforeReader;
+        private int _focusBeforeReader;
 
         private TabletInputController.FocusGroup ActiveGroup => _detail.IsOpen
             ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
@@ -44,9 +47,9 @@ namespace Tablet
             _resources = new TabletVisualResources();
             _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(),
                 () => ActiveGroup, () => _ui.CanvasRect);
-            _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentFont,
-                _parchmentTitleFont, _parchmentSprite, _input);
-            _parchment = new TabletParchmentController(_ui, _resources);
+            _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
+            _reader = FindFirstObjectByType<ParchmentManager>();
+            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetInventoryItem);
             _settings = new TabletSettingsController(this, _ui.Settings);
             _learning = new TabletLearningController(_ui.Learning, _resources);
             _detail = new TabletDetailController(_ui.Shell);
@@ -54,7 +57,7 @@ namespace Tablet
             _learning.RestoreSelection(stageIndex);
             _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
-            _ui.Build(_settings.Brightness, _settings.Volume, _parchment.HasParchment);
+            _ui.Build(_settings.Brightness, _settings.Volume, _reader.HasCollected);
             RefreshAll();
             _initialized = true;
         }
@@ -63,16 +66,34 @@ namespace Tablet
         {
             SubscribeEvents();
             _input.Enable();
+            _parchment.RefreshInventory();
+            if (_reader.IsOpen) { SuspendForParchment(); }
         }
 
         private void Update()
         {
-            _input.Tick();
+            if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); }
         }
 
-        // Keep the pickup, minimap and serialized component links on the existing entry point.
-        public bool HasParchment(int index) => _parchment.HasParchment(index);
-        public bool CollectParchment(int index) => _parchment.CollectParchment(index);
+        private void SuspendForParchment()
+        {
+            _interactionBeforeReader = _input.IsInteracting;
+            _focusBeforeReader = _input.FocusIndex;
+            _input.Disable();
+        }
+        private void RestoreAfterParchment()
+        {
+            _inputResumeFrame = Time.frameCount;
+            _input.SetInteraction(_interactionBeforeReader, _focusBeforeReader);
+            _input.Enable();
+        }
+        private void RefreshCollectedParchment(int index)
+        {
+            _parchment.RefreshInventory();
+            UpdateFeedback(TabletParchmentController.ItemName(index) + " 완료",
+                ParchmentCatalog.Get(index).Title + "\n\n양피지가 태블릿에 보관되었습니다.");
+        }
+        private void RequestParchmentOpen(int index, Pose origin) => _reader.OpenCollected(index, GetComponentInParent<Unity.XR.CoreUtils.XROrigin>().Camera, origin);
 
         public void SetFactoryMission(int phase, int collected, int completed, string mission)
         {
@@ -253,10 +274,6 @@ namespace Tablet
             {
                 ToggleSettings();
             }
-            else if (_parchment.IsOpen)
-            {
-                _parchment.CloseParchment();
-            }
             else
             {
                 SetInteraction(false);
@@ -266,9 +283,10 @@ namespace Tablet
         private void SubscribeEvents()
         {
             _ui.ParchmentSelected += _parchment.SelectItem;
-            _ui.ParchmentPageRequested += _parchment.ChangeParchmentPage;
-            _ui.ParchmentCloseRequested += _parchment.CloseParchment;
-            _ui.FeatureMapToggleRequested += _parchment.ToggleFeatureMap;
+            _parchment.OpenRequested += RequestParchmentOpen;
+            _reader.Opened += SuspendForParchment;
+            _reader.Closed += RestoreAfterParchment;
+            _reader.Collected += RefreshCollectedParchment;
             _ui.CurrentTaskRequested += _learning.ConfirmCurrentTask;
             _ui.StageRequested += _learning.MoveToStage;
             _ui.BrightnessChanged += _settings.SetBrightness;
@@ -289,9 +307,6 @@ namespace Tablet
             _ui.QuitConfirmationRequested += RequestApplicationQuit;
             _ui.QuitRequested += ConfirmApplicationQuit;
             _ui.StageMenuRequested += ShowStageMenu;
-            _parchment.FocusRequested += _input.ResetFocus;
-            _parchment.FeedbackVisibilityChanged += SetFeedbackVisible;
-            _parchment.FeedbackRequested += UpdateFeedback;
             _settings.Saved += HandleSettingsSaved;
             _settings.FeedbackRequested += UpdateFeedback;
             _learning.FeedbackRequested += UpdateFeedback;
@@ -300,9 +315,10 @@ namespace Tablet
         private void UnsubscribeEvents()
         {
             _ui.ParchmentSelected -= _parchment.SelectItem;
-            _ui.ParchmentPageRequested -= _parchment.ChangeParchmentPage;
-            _ui.ParchmentCloseRequested -= _parchment.CloseParchment;
-            _ui.FeatureMapToggleRequested -= _parchment.ToggleFeatureMap;
+            _parchment.OpenRequested -= RequestParchmentOpen;
+            _reader.Opened -= SuspendForParchment;
+            _reader.Closed -= RestoreAfterParchment;
+            _reader.Collected -= RefreshCollectedParchment;
             _ui.CurrentTaskRequested -= _learning.ConfirmCurrentTask;
             _ui.StageRequested -= _learning.MoveToStage;
             _ui.BrightnessChanged -= _settings.SetBrightness;
@@ -323,18 +339,11 @@ namespace Tablet
             _ui.QuitConfirmationRequested -= RequestApplicationQuit;
             _ui.QuitRequested -= ConfirmApplicationQuit;
             _ui.StageMenuRequested -= ShowStageMenu;
-            _parchment.FocusRequested -= _input.ResetFocus;
-            _parchment.FeedbackVisibilityChanged -= SetFeedbackVisible;
-            _parchment.FeedbackRequested -= UpdateFeedback;
             _settings.Saved -= HandleSettingsSaved;
             _settings.FeedbackRequested -= UpdateFeedback;
             _learning.FeedbackRequested -= UpdateFeedback;
         }
 
-        private void SetFeedbackVisible(bool visible)
-        {
-            _ui.Shell.FeedbackRoot.SetActive(visible);
-        }
 
         private void HandleSettingsSaved()
         {

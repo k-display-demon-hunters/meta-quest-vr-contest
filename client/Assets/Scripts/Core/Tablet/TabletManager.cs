@@ -48,13 +48,8 @@ namespace Tablet
             _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(),
                 () => ActiveGroup, () => _ui.CanvasRect);
             _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
-            _parchment = new TabletParchmentController(_ui, _resources);
-            // Create the common session as a separate root, not as a rig/tablet component.
             _reader = FindFirstObjectByType<ParchmentManager>();
-            if (_reader == null)
-            {
-                _reader = new GameObject("Parchment Session").AddComponent<ParchmentManager>();
-            }
+            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected);
             _settings = new TabletSettingsController(this, _ui.Settings);
             _learning = new TabletLearningController(_ui.Learning, _resources);
             _detail = new TabletDetailController(_ui.Shell);
@@ -62,8 +57,7 @@ namespace Tablet
             _learning.RestoreSelection(stageIndex);
             _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
-            _ui.Build(_settings.Brightness, _settings.Volume, _parchment.HasParchment);
-            _parchment.BindInventory(_reader.HasCollected);
+            _ui.Build(_settings.Brightness, _settings.Volume, _reader.HasCollected);
             RefreshAll();
             _initialized = true;
         }
@@ -81,8 +75,6 @@ namespace Tablet
             if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); }
         }
 
-        // Minimap reads collection state through this tablet entry point.
-        public bool HasParchment(int index) => _parchment.HasParchment(index);
         private void SuspendForParchment()
         {
             _interactionBeforeReader = _input.IsInteracting;

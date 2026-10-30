@@ -22,6 +22,12 @@ namespace Parchment
         public event Action Closed;
         public event Action<int> Collected;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitializeSession()
+        {
+            new GameObject("Parchment Session").AddComponent<ParchmentManager>();
+        }
+
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);

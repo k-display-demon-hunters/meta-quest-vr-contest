@@ -46,7 +46,7 @@
 
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
-| [TabletManager](../client/Assets/Scripts/Core/Tablet/TabletManager.cs) | 기능별 Controller와 UIBuilder를 생성하고 저장된 설정·선택 인덱스를 복원한 뒤 화면을 구성한다. 입력의 화면 전환 요청을 받아 상세·설정·단계 목록의 우선순위와 뒤로 가기를 조율한다. 공장의 수집·지도 요청은 해당 Controller로 넘기고 단계 이동·저장·종료는 Inspector의 UnityEvent로 외부에 알린다. |
+| [TabletManager](../client/Assets/Scripts/Core/Tablet/TabletManager.cs) | 기능별 Controller와 UIBuilder를 생성하고 저장된 설정·선택 인덱스를 복원한 뒤 화면을 구성한다. 입력의 화면 전환 요청을 받아 상세·설정·단계 목록의 우선순위와 뒤로 가기를 조율한다. 공장의 지도 데이터를 표시하고 공용 ParchmentManager의 수집 이벤트로 아이템함을 갱신하며 단계 이동·저장·종료는 Inspector의 UnityEvent로 외부에 알린다. |
 | [TabletInputController](../client/Assets/Scripts/Core/Tablet/TabletInputController.cs) | 왼손 버튼·스틱을 읽고 현재 화면의 활성 항목 중 입력 방향에 있는 다음 항목을 찾는다. 선택은 버튼 콜백 실행이나 슬라이더 조절로 바꾸며, 화면 전환·뒤로 가기는 Manager에 요청한다. Trigger 탐색 중에는 이동 입력을 0으로 교체하고 해제 후 스틱 중앙 복귀 또는 비활성화 시 원래 입력을 복원한다. |
 | [TabletParchmentController](../client/Assets/Scripts/Core/Tablet/TabletParchmentController.cs) | 아이템함과 선택 항목을 관리한다. 수집 여부는 공통 세션의 조회 함수로 읽고, 선택 시 같은 공용 프리팹으로 재열람을 요청한다. |
 | [TabletSettingsController](../client/Assets/Scripts/Core/Tablet/TabletSettingsController.cs) | 시작 시 PlayerPrefs에서 밝기·음량·진동과 선택 인덱스를 읽고 Manager에 인덱스를 돌려준다. 값 변경은 밝기·음량 API와 설정 UI에 반영하며, 저장 요청 시 선택 단계·문서 인덱스를 받아 설정값과 함께 기록한다. 설정 시트의 등장 애니메이션과 저장 완료 피드백도 담당한다. |
@@ -156,6 +156,6 @@ Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (
 
 SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 당시에는 공장 씬에서 별도 마우스 미리보기를 실행하지 않아 공용 XR 리그를 유지했다. 현재는 픽셀 씬 전용 마우스 미리보기와 설치 메뉴를 제거했으며 공용 XR 시뮬레이터를 사용한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.
 
-공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. XR 리그와 씬 진행 Manager의 변경 없이 Pickup → ParchmentManager ← Tablet 연결을 사용한다.
+공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용하며 공장 진행은 양피지 수집과 독립적이다. 공용 세션은 Core/Parchment에서 첫 씬 로드 전에 생성하며 태블릿은 수집 조회를 중계하지 않는다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·위치 안내·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.

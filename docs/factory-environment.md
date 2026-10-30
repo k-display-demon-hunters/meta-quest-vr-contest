@@ -35,7 +35,7 @@ FactoryIntro
 `FactoryLearningFlowManager.Start`는 `FactoryPlayerController.PlaceAtEntrance()`를 호출해 유지된 XR 리그를 FactoryNavigationData의 `Entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. Controller가 제공한 카메라를 진입 영역에 연결한 뒤 `FactorySceneLoadController.RunTutorial()`을 요청한다. Controller가 `FactoryTutorial`을 Additive로 로드하고 초기화한 뒤 `FactoryTutorialManager.IsComplete`를 기다려 언로드한다. SceneLoadController는 성공한 뒤 씬에 미리 배치한 안내판을 켠다. Manager는 시작 시 첫 경로를 켜고 튜토리얼 완료 여부와 관계없이 학습 진입을 허용한다. 첫 학습 진입 시 `EndTutorial()`을 요청하고, 튜토리얼 언로드가 끝나면 학습 씬을 로드한다. 튜토리얼이 로딩 중이면 로드 완료 후 초기화하지 않고 바로 언로드한다. 튜토리얼 로딩 실패 또는 완료 전 안내 오브젝트 해제는 Controller에서 로그로 알린다. 안내는 공장 배경을 유지한 입구에서 수행 판정 없는 14페이지로 진행한다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
 
 1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
-2. 플레이어가 다음 영역에 머물러도 해당 방의 양피지를 모두 열람하고 `완료`하지 않았다면 체험 씬을 로드하지 않는다. Pixel Lab은 01·02, Feature Map Lab은 03·04, Model Design Lab은 05가 필요하다. 조건을 충족하면 대상 씬을 Additive로 로드하며, 로딩 중 중복 요청은 차단한다. 공장 Manager는 잡기 상태를 별도 검사하지 않지만 피처맵 완료 프로퍼티는 자체 잡기 상태를 포함한다.
+2. 플레이어가 진행 순서에 맞는 다음 영역에 들어가면 대상 씬을 Additive로 로드한다. 양피지 수집 여부는 검사하지 않는다. 로딩 중 중복 요청은 차단하며 기존 체험 완료 조건은 유지한다.
 3. `CNNPixelLabManager`, `CNNFeatureMapLabManager`, `CNNModelDesignLabManager` 중 하나가 포함된 루트를 체험 콘텐츠로 찾는다.
 4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠 위치에 `ContentAnchor.position - Vector3.forward * 1.5f` 오프셋을 더하고 Rigidbody 위치·회전을 Transform에 맞춘다. 콘텐츠 회전은 이 배치 함수에서 변경하지 않는다. 픽셀 체험은 보드 기준 로컬 좌표로 필터 복귀 위치와 회전을 관리하므로 공장에서 별도로 보정하지 않는다.
 5. 다음 콘텐츠 준비가 끝나면 완료 조건을 다시 확인한다. PixelLab에서 나갈 때는 CNNPixelLabManager.EndSession으로 내부 체험의 전환·정리가 끝나기를 기다린다. 이후 이전 학습 씬에서 잡고 있던 물체를 XRI `SelectExit`로 놓은 뒤 이전 체험을 언로드한다. 엔딩 전환도 같은 선택 해제를 수행하며, 태블릿처럼 다른 씬에 속한 물체는 해제하지 않는다. 씬 로드에 실패하면 기존 체험을 유지한다. 씬 내부의 필수 콘텐츠 구성 누락은 런타임 복구 대상으로 처리하지 않는다. 로드 실패는 Console에 알리고, 해당 영역에 머무르면 다음 진입 검사 주기(0.1초)에 다시 로딩을 요청한다.
@@ -44,9 +44,9 @@ FactoryIntro
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab 영역에 들어가면 튜토리얼 종료를 요청하고 언로드를 기다린 뒤 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
-| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 Feature Map Lab을 안내한다. 해당 영역에서 양피지 03·04 완료 조건까지 충족하면 Feature Map Lab 체험을 불러온다. 픽셀 데이터·내부 체험 전환·완료 상태는 CNNPixelLabManager가 소유한다. |
-| 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이면 Model Design Lab을 안내한다. 해당 영역에서 양피지 05 완료 조건까지 충족하면 Model Design Lab 체험을 불러온다. |
+| 공장 진입 | Pixel Lab 영역에 들어가면 튜토리얼 종료를 요청하고 언로드를 기다린 뒤 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
+| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 Feature Map Lab을 안내한다. 해당 영역에 들어가면 Feature Map Lab 체험을 불러온다. 픽셀 데이터·내부 체험 전환·완료 상태는 CNNPixelLabManager가 소유한다. |
+| 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이면 Model Design Lab을 안내한다. 해당 영역에 들어가면 Model Design Lab 체험을 불러온다. |
 | 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 완료 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 새 학습의 Training 상태에서 완료 상태를 초기화한다. 단계 건너뛰기는 현재 모델 씬의 완료 조건이 아니다. |
 
 각 체험의 계산과 입력은 해당 씬의 Manager·Controller가 담당한다. 픽셀 체험의 계산 결과를 피처맵 씬으로 전달하지 않으며, 피처맵은 자체 예제 데이터를 사용한다. 자세한 구현은 [픽셀·합성곱](pixel-inspection.md), [피처맵](cnn-feature-map-explorer.md), [모델 제작](MODEL_DESIGN_API.md)에 정리한다.
@@ -90,11 +90,11 @@ FactoryMapController.ReadMap()
 
 바닥과 벽은 읽는 시점의 정적 데이터다. 양피지 마커는 원본 Transform의 위치와 활성 상태를 참조한다. `FactoryMapController`는 시작 및 재활성화 때 데이터를 읽어 게시하고, 비활성화될 때 자신이 게시한 데이터를 해제한다.
 
-`TabletManager`는 UIBuilder의 `SetMapData()`를 통해 생성 시 보관한 주변 지도·전체 지도에 데이터를 전달한다. 상세 지도 창의 표시 전환은 `TabletDetailController`가 담당한다. `TabletMinimapController`는 전달받은 같은 데이터를 주변 지도와 전체 지도에 사용하며, 수집 상태는 Manager 대신 `HasParchment` 조회 함수로 읽는다. 카메라의 X/Z 위치·방향과 획득 상태는 0.1초 간격으로 갱신한다. 마커는 원본이 활성 상태이고 전달받은 수집 여부 조회 결과가 거짓일 때 표시한다. 지도 도형은 `MaskableGraphic`으로 그리며 공장 전용 카메라나 RenderTexture에 의존하지 않는다.
+`TabletManager`는 UIBuilder의 `SetMapData()`를 통해 생성 시 보관한 주변 지도·전체 지도에 데이터를 전달한다. 상세 지도 창의 표시 전환은 `TabletDetailController`가 담당한다. `TabletMinimapController`는 전달받은 같은 데이터를 주변 지도와 전체 지도에 사용하며, 수집 상태는 `ParchmentManager.HasCollected` 조회 함수를 직접 전달받아 읽는다. 카메라의 X/Z 위치·방향과 획득 상태는 0.1초 간격으로 갱신한다. 마커는 원본이 활성 상태이고 전달받은 수집 여부 조회 결과가 거짓일 때 표시한다. 지도 도형은 `MaskableGraphic`으로 그리며 공장 전용 카메라나 RenderTexture에 의존하지 않는다.
 
 ## 공장과 Tablet의 경계
 
-공장은 기존 TabletManager 진입점으로 지도·수집 정보를 연결한다. Pickup은 ParchmentManager.OpenPickup/CancelPickup으로 열람을 직접 요청·취소하고 진행 Manager는 기존 TabletManager.HasParchment 조회를 사용한다. Tablet의 UI·포커스·설정·양피지 열람은 공장 흐름이 직접 조작하지 않는다.
+공장은 TabletManager에 지도 표시 데이터를 전달한다. Pickup은 ParchmentManager.OpenPickup/CancelPickup으로 열람을 직접 요청·취소하고, 진행 Manager는 양피지 모듈을 참조하지 않는다. 공용 세션은 첫 씬 로드 전에 Core/Parchment에서 생성하므로 태블릿 존재나 초기화에 의존하지 않는다. Tablet의 UI·포커스·설정·양피지 열람은 공장 흐름이 직접 조작하지 않는다.
 
 `TabletManager`는 UIBuilder의 버튼 요청과 Input·Settings·Parchment·Learning의 로컬 C# 이벤트를 `OnEnable()`에서 연결하고 `OnDisable()`에서 해제한다. UIBuilder는 화면 구성과 생성한 지도 참조를 보관하고, Manager나 수집·설정·학습 Controller를 직접 호출하지 않는다. 설정값은 Settings, 획득 배열은 독립 공용 ParchmentManager, 열람 페이지는 공용 Reader, 미션·진행률은 Learning이 소유한다. 상세 안내·지도·종료 확인 화면의 표시 책임은 `TabletDetailController`에 있고, 단계·초기 작업 문구는 `TabletLearningContent`에 있다.
 
@@ -104,11 +104,11 @@ Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. �
 
 `ParchmentPickupController`는 `XRSimpleInteractable.activated`와 `selectEntered`에서 같은 열람 경로를 사용한다. 입력을 보낸 Interactor가 3m 이내인지 확인하고 공용 `ParchmentManager`에 직접 열람을 요청한다. 클릭하면 공장에 있는 양피지가 플레이어 앞에서 확대되고, 세 페이지를 순서대로 넘겨 마지막 페이지에 도달해야 `완료` 버튼이 나타난다. 완료를 누르면 공통 세션에 수집 상태가 기록되어 태블릿 인벤토리에 보관되고 공장의 원본 양피지는 다음 프레임에 숨겨진다. 중간에 닫으면 획득 상태를 변경하지 않고 원본으로 돌아간다.
 
-체험 씬은 해당 방에 필요한 양피지를 모두 완료할 때까지 로드하지 않는다. Pixel Lab에는 01·02, Feature Map Lab에는 03·04, Model Design Lab에는 05가 필요하다. `FactoryLearningFlowManager`가 방 진입을 검사할 때 수집 상태를 먼저 확인한 뒤에만 `PrepareLesson`을 시작한다. 이미 방 안에 있을 때 마지막 양피지를 완료해도 다음 검사 주기에 체험이 시작된다.
+체험 씬 로딩은 양피지 수집과 무관하다. FactoryLearningFlowManager는 기존 체험의 완료 상태와 플레이어의 구역 진입을 0.1초마다 확인하여 PrepareLesson을 시작한다. 양피지는 선택적으로 수집·재열람할 수 있다.
 
 획득 상태는 독립 루트의 `ParchmentManager`의 배열에 보관된다. 공용 리그가 유지되는 씬 이동에서는 상태가 남고, 앱을 다시 시작하면 초기화된다. 공장을 다시 로드하면 각 양피지가 `Start`에서 획득 상태를 확인해 이미 수집한 오브젝트를 숨긴다.
 
-`LessonIndex`는 기존 0~4 문서 ID이며 `ParchmentCatalog.Get(id)`로 조회한다. 각 문서는 세 페이지로 구성된다. Pickup의 `_placementRoom`은 기존 `FactoryDestinationId` enum이며 `PlacementRoom`으로 조회한다. 정확한 위치·회전은 Pickup 자신의 Transform에만 저장한다. 아래 배치 방은 현재 씬 기준이며 방 입장에 필요한 양피지 조건이나 문서의 LocationHint와 별개다.
+`LessonIndex`는 기존 0~4 문서 ID이며 `ParchmentCatalog.Get(id)`로 조회한다. 각 문서는 세 페이지로 구성된다. Pickup의 `_placementRoom`은 기존 `FactoryDestinationId` enum이며 `PlacementRoom`으로 조회한다. 정확한 위치·회전은 Pickup 자신의 Transform에만 저장한다. 아래 배치 방은 현재 씬 기준이며 체험 진행 조건이나 문서의 LocationHint와 별개다.
 
 | 인덱스 | 주제 | 배치 방 |
 | --- | --- | --- |
@@ -135,7 +135,7 @@ Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. �
 
 ## 현재 연결과 안내 문구의 차이
 
-현재 공장 흐름은 양피지 완료 조건을 충족한 뒤 허용된 영역에 진입하면 체험을 자동으로 로드한다. 방별 소개 모달과 `체험 시작` 버튼을 기다리는 경로는 없다. 마지막 모델 체험을 완료한 뒤에는 별도의 양피지 조건 없이 출구로 진행한다.
+현재 공장 흐름은 진행 순서에 맞는 영역에 진입하면 체험을 자동으로 로드한다. 방별 소개 모달과 `체험 시작` 버튼을 기다리는 경로는 없다. 마지막 모델 체험을 완료한 뒤에는 별도의 양피지 조건 없이 출구로 진행한다.
 
 태블릿에는 `SetFactoryMission(phase, collected, completed, mission)`과 8개 목표의 진행률 표시 기능이 있지만, 현재 FactoryEnvironment와 세 학습 씬에는 이를 호출하여 방 완료를 게시하는 코드가 없다. `FactoryTutorialManager`의 14페이지 안내에는 8개 목표와 방 입구 소개 문구가 남아 있으므로, 안내 문구만으로 현재 공장 흐름의 실제 연동을 판단하면 안 된다. 이 문서는 존재하는 연결을 기록하며 누락된 연동을 새로 구현하지 않는다.
 
@@ -147,6 +147,6 @@ Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. �
 
 Factory는 CNNPixelLab 관리용 씬만 로드·배치한다. CNNScreenLab과 CNNConvolutionLab의 이름·Manager·선택 데이터·복귀 좌표는 FactoryNavigationData에 두지 않는다. CNNPixelLabManager가 내부 로더와 두 체험을 조율하며, Factory는 ConvolutionCompleted 조회와 EndSession 종료 요청만 사용한다. 관리용 콘텐츠는 배치·이전 체험 언로드가 끝난 뒤 활성화한다. 내부 씬은 관리용 루트 위치를 기준으로 배치되므로 공장 기준점 보정을 반복하지 않는다.
 
-공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. XR 리그와 씬 진행 Manager의 변경 없이 Pickup → ParchmentManager ← Tablet 연결을 사용한다.
+공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용한다. 공장 진행 Manager는 양피지 수집 상태를 조회하지 않는다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·위치 안내·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.

@@ -53,6 +53,8 @@ namespace FactoryEnvironment
             }
         }
 
+        [SerializeField] private FactoryShutterController _convolutionEntranceDoor;
+        public FactoryShutterController ConvolutionEntranceDoor => _convolutionEntranceDoor;
         [SerializeField] private Transform _entrance;
         [SerializeField] private Transform _tutorialStart;
         [SerializeField] private string _tutorialSceneName = "FactoryTutorial";

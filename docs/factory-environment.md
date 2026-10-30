@@ -115,7 +115,7 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 미니맵은 기존 TabletMapData와 TabletMinimapController를 사용한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역을 읽는다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
 
-FactoryEnvironment의 ROOM #1에 양피지 01·02, ROOM #2에 03·04, ROOM #3에 05를 씬 오브젝트로 배치했다. 공장 Manager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 튜토리얼·체험 완료와 구역 진입으로 셔터와 학습 흐름을 진행한다. 양피지 수집·열람은 공용 ParchmentManager가 소유하고, Pickup과 태블릿 아이템함은 Prefabs/Common/ParchmentReader.prefab 하나를 사용한다. 각 Pickup은 문서 ID·Core의 ParchmentRoom·공용 열람 프리팹을 Manager에 등록하고 입력을 전달한다. 외형 처리는 별도 ParchmentPickupVisualController에 연결하며, 태블릿의 위치 안내는 등록된 방 enum을 사용한다. 지도는 기존 FactoryMapController가 방 아래의 Pickup을 찾아 위치를 게시하며 수집한 문서는 태블릿에서 재열람한다. 공용 세션·프리팹·입력 연결은 [공용 양피지 열람](parchment.md)에 정리한다. 기존 튜토리얼에는 양피지와 태블릿 목표 안내가 남아 있지만, 목표 진행률 게시는 연결되어 있지 않다.
+양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 현재 배분은 None이며 실제 배치는 임시 위치에 남아 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 ## 씬·에셋 관리
 
@@ -136,3 +136,5 @@ EscapeLayout_*.asset 74개는 이 공간의 기본 도형을 부모·재질별�
 ROOM #1 벽·아치 셔터·두 체험 기준점과 Screen/Convolution 전환 신호, 화살촉 크기·간격, ROOM #3 기준점의 1.5배 배율은 소스·씬·메시 참조와 기존 오브젝트별 변경 범위를 정적으로 대조했다. 이 후속 수정에 대한 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
 
 캐비닛·선반·박스·연구 데스크 교체는 씬의 장식 참조와 가구 표시 경계, 체험·문·경로의 위치를 정적으로 대조했다. 기존 체험·문·경로·건축 오브젝트와 스크립트는 수정하지 않았다. 이 교체에 대한 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
+
+공장 코드의 합성곱 진입문은 `FactoryNavigationData.ConvolutionEntranceDoor`로 참조한다. FlowManager의 `_convolutionArea`·`_convolutionAnchor`는 합성곱 구역과 콘텐츠 기준점이며, RouteGuide의 `SetConvolutionRouteVisible`은 해당 진입 경로를 표시한다. 화면에 표시하는 ROOM 번호와 씬 오브젝트 이름은 유지한다.

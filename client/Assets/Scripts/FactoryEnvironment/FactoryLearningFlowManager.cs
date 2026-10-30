@@ -1,4 +1,5 @@
 using System.Collections;
+using Parchment;
 using CNNFeatureMaps;
 using ModelDesignScene;
 using UI;
@@ -10,10 +11,11 @@ namespace FactoryEnvironment
     // Owns the room sequence. Each lesson owns its existing completion criteria.
     public sealed class FactoryLearningFlowManager : MonoBehaviour
     {
-        [SerializeField] private FactoryShutterController _room1Passage;
-        [SerializeField] private FactoryAreaEntryController _room1SecondArea;
-        [SerializeField] private Transform _room1SecondAnchor;
-        private CNNPixelLabManager _room1Pixels;
+        private ParchmentManager _parchment;
+        private bool _refreshGates;
+        [SerializeField] private FactoryAreaEntryController _convolutionArea;
+        [SerializeField] private Transform _convolutionAnchor;
+        private CNNPixelLabManager _pixelLab;
 
         private FactoryRouteGuideController _routeGuide;
         private FactoryPlayerController _player;
@@ -26,38 +28,39 @@ namespace FactoryEnvironment
 
         public bool HasReachedExit => _stage == FactoryDestinationId.Exit;
 
-        public void NotifyRoom1FirstExperienceCompleted()
+        public void NotifyScreenCompleted()
         {
-            _room1Passage.Open();
-            _routeGuide.SetRoom1PassageVisible(true);
+            _refreshGates = true;
         }
 
-        public void NotifyRoom1SecondExperienceStarted()
+        public void NotifyConvolutionStarted()
         {
-            _room1Passage.Close();
-            _routeGuide.SetRoom1PassageVisible(false);
+            _navigationData.ConvolutionEntranceDoor.Close();
+            _routeGuide.SetConvolutionRouteVisible(false);
         }
 
-        private void OnEnable() => SubscribeRoom1();
-        private void OnDisable() => UnsubscribeRoom1();
+        private void OnEnable() { SubscribePixelLab(); _parchment.Collected += OnCollected; _refreshGates = true; }
+        private void OnDisable() { UnsubscribePixelLab(); _parchment.Collected -= OnCollected; }
+        private void OnCollected(int id) => _refreshGates = true;
 
-        private void SubscribeRoom1()
+        private void SubscribePixelLab()
         {
             // This module is absent until ROOM #1 has been prepared.
-            if (_room1Pixels == null) { return; }
-            _room1Pixels.ScreenCompleted += NotifyRoom1FirstExperienceCompleted;
-            _room1Pixels.ConvolutionStarted += NotifyRoom1SecondExperienceStarted;
+            if (_pixelLab == null) { return; }
+            _pixelLab.ScreenCompleted += NotifyScreenCompleted;
+            _pixelLab.ConvolutionStarted += NotifyConvolutionStarted;
         }
 
-        private void UnsubscribeRoom1()
+        private void UnsubscribePixelLab()
         {
-            if (_room1Pixels == null) { return; }
-            _room1Pixels.ScreenCompleted -= NotifyRoom1FirstExperienceCompleted;
-            _room1Pixels.ConvolutionStarted -= NotifyRoom1SecondExperienceStarted;
+            if (_pixelLab == null) { return; }
+            _pixelLab.ScreenCompleted -= NotifyScreenCompleted;
+            _pixelLab.ConvolutionStarted -= NotifyConvolutionStarted;
         }
 
         private void Awake()
         {
+            _parchment = FindFirstObjectByType<ParchmentManager>();
             _player = GetComponent<FactoryPlayerController>();
             _sceneLoader = GetComponent<FactorySceneLoadController>();
             _navigationData = GetComponent<FactoryNavigationData>();
@@ -67,8 +70,8 @@ namespace FactoryEnvironment
         private void Start()
         {
             _player.PlaceAtEntrance();
-            _room1Passage.Bind(_player.CameraTransform);
-            _room1SecondArea.Bind(_player.CameraTransform);
+            _navigationData.ConvolutionEntranceDoor.Bind(_player.CameraTransform);
+            _convolutionArea.Bind(_player.CameraTransform);
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
             {
                 room.Area.Bind(_player.CameraTransform);
@@ -85,11 +88,26 @@ namespace FactoryEnvironment
         {
             if (_loading || HasReachedExit || Time.time < _nextCheckTime) { return; }
             _nextCheckTime = Time.time + .1f;
-            if (_stage == FactoryDestinationId.PixelLab && _room1Pixels.WaitingForFactoryConvolution
-                && _room1SecondArea.IsPlayerInside)
+            if (_refreshGates)
+            {
+                _refreshGates = false;
+                if (_destination != _stage && _destination != FactoryDestinationId.Tutorial
+                    && _destination != FactoryDestinationId.Exit
+                    && _parchment.IsGroupCollected(EntranceLocation(_destination)))
+                    _navigationData.Get(_destination).EntryDoor.Open();
+                if (_stage == FactoryDestinationId.PixelLab && _pixelLab.WaitingForFactoryConvolution
+                    && _parchment.IsGroupCollected(ParchmentLocation.ConvolutionLabEntrance))
+                {
+                    _navigationData.ConvolutionEntranceDoor.Open();
+                    _routeGuide.SetConvolutionRouteVisible(true);
+                }
+            }
+            if (_stage == FactoryDestinationId.PixelLab && _pixelLab.WaitingForFactoryConvolution
+                && _parchment.IsGroupCollected(ParchmentLocation.ConvolutionLabEntrance)
+                && _convolutionArea.IsPlayerInside)
             {
                 _loading = true;
-                StartCoroutine(StartRoom1Convolution());
+                StartCoroutine(StartConvolution());
                 return;
             }
             if (_destination != _stage)
@@ -107,6 +125,14 @@ namespace FactoryEnvironment
             }
         }
 
+        private static ParchmentLocation EntranceLocation(FactoryDestinationId id) => id switch
+        {
+            FactoryDestinationId.PixelLab => ParchmentLocation.PixelLabEntrance,
+            FactoryDestinationId.FeatureMapLab => ParchmentLocation.FeatureMapLabEntrance,
+            FactoryDestinationId.ModelDesignLab => ParchmentLocation.ModelDesignLabEntrance,
+            _ => ParchmentLocation.None
+        };
+
         private bool IsRoomComplete()
         {
             switch (_stage)
@@ -119,11 +145,11 @@ namespace FactoryEnvironment
             }
         }
 
-        private IEnumerator StartRoom1Convolution()
+        private IEnumerator StartConvolution()
         {
-            yield return _room1Pixels.StartFactoryConvolution();
+            yield return _pixelLab.StartFactoryConvolution();
             _loading = false;
-            _nextCheckTime = Time.time + (_room1Pixels.WaitingForFactoryConvolution ? 3f : .1f);
+            _nextCheckTime = Time.time + (_pixelLab.WaitingForFactoryConvolution ? 3f : .1f);
         }
 
         private static FactoryDestinationId NextRoom(FactoryDestinationId current)
@@ -154,7 +180,7 @@ namespace FactoryEnvironment
                 if (next == FactoryDestinationId.PixelLab)
                 {
                     data.Pixels.ConfigureFactoryConvolution(
-                        new Pose(_room1SecondAnchor.position, _room1SecondAnchor.rotation));
+                        new Pose(_convolutionAnchor.position, _convolutionAnchor.rotation));
                 }
                 if (!IsRoomComplete())
                 {
@@ -165,7 +191,8 @@ namespace FactoryEnvironment
             }
             // Unlock once per visit; resetting a finished lesson cannot close an exit on the user.
             _navigationData.Get(_stage).ExitDoor.Open();
-            _navigationData.Get(next).EntryDoor.Open();
+            if (next == FactoryDestinationId.Exit) _navigationData.Get(next).EntryDoor.Open();
+            _refreshGates = true;
             _destination = next;
             _routeGuide.SetDestination(next);
             _loading = false;
@@ -178,8 +205,8 @@ namespace FactoryEnvironment
             _routeGuide.SetDestination(FactoryDestinationId.None);
             if (_stage == FactoryDestinationId.PixelLab)
             {
-                UnsubscribeRoom1();
-                _room1Pixels = null;
+                UnsubscribePixelLab();
+                _pixelLab = null;
                 yield return _navigationData.Get(_stage).Pixels.EndSession();
             }
             if (_destination == FactoryDestinationId.Tutorial)
@@ -207,8 +234,8 @@ namespace FactoryEnvironment
             {
                 if (_destination == FactoryDestinationId.PixelLab)
                 {
-                    _room1Pixels = room.Pixels;
-                    SubscribeRoom1();
+                    _pixelLab = room.Pixels;
+                    SubscribePixelLab();
                 }
                 yield return _sceneLoader.CommitPreparedLesson();
             }

@@ -55,7 +55,7 @@
 | [TabletVisualResources](../client/Assets/Scripts/Core/Tablet/TabletVisualResources.cs) | 태블릿 배경·심볼·픽셀·본체 메시를 생성·정리한다. 문서 전용 예시는 공용 프리팹의 UI 도형을 사용한다. |
 | [TabletMinimapController](../client/Assets/Scripts/Core/Tablet/TabletMinimapController.cs) | `TabletManager.MapData`에서 바닥·벽·양피지 목록을 읽어 `MaskableGraphic`의 UI 도형과 라벨을 만든다. 카메라 위치·방향과 수집 상태를 주기적으로 갱신하고 변경이 있을 때 다시 그린다. 주변 지도는 플레이어를 따라가고 전체 지도는 공장 경계 전체를 맞춰 표시한다. |
 | [TabletMapData](../client/Assets/Scripts/Core/Tablet/TabletMapData.cs) | 공장 판독 결과인 바닥·벽·지도 범위를 읽기 전용 목록과 경계로 묶는다. 양피지는 원본 Behaviour와 문서 인덱스를 보관해 현재 위치·활성 상태를 조회하게 한다. 공장 코드가 이 데이터를 게시하면 태블릿은 씬의 이름 규칙을 알지 않아도 지도를 그릴 수 있다. |
-| [ParchmentLesson](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs) | 제목·주제·부서·본문의 공통 원본. 위치 안내는 Pickup이 등록한 ParchmentRoom을 태블릿에서 문자열로 변환한다. 수집 상태는 독립 공용 ParchmentManager, 페이지는 공용 Reader가 관리한다. |
+양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 현재 배분은 None이며 실제 배치는 임시 위치에 남아 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 ### 초기화와 UI 연결
 
@@ -89,7 +89,7 @@ Manager의 주요 Inspector 참조는 `_font`, `_parchmentFont`, `_parchmentSpri
 
 ### 수집과 지도 데이터
 
-Pickup은 활성 기간에 ParchmentManager에 문서 ID와 ParchmentRoom을 등록하고 선택 입력을 RequestPickup으로 전달한다. 공용 Manager가 열람 가능 여부·수집 상태·열람·코루틴 수명을 관리한다. 태블릿은 수집 상태와 배치 방 조회 함수를 사용하며 Collected·LocationsChanged 이벤트로 아이템함을 갱신한다. 재열람도 같은 프리팹을 사용한다.
+양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 현재 배분은 None이며 실제 배치는 임시 위치에 남아 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 `FactoryMapController`가 `TabletMapData`를 만들어 `SetMapData()`로 전달하면 모든 미니맵이 다시 구성된다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지워서 이전 씬의 해제가 새 지도를 지우지 않게 한다. 공장 배치 판독 방식은 [공장 환경 구현](factory-environment.md)에 있다.
 
@@ -158,6 +158,6 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 
 ## 공용 양피지 연결
 
-공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용하며 공장 진행은 양피지 수집과 독립적이다. 공용 세션은 Core/Parchment에서 첫 씬 로드 전에 생성하며 태블릿은 수집 조회를 중계하지 않는다. 현재 FactoryEnvironment의 ROOM #1에 2개, ROOM #2에 2개, ROOM #3에 1개의 Pickup이 배치되어 있다. 기존 지도 게시 경로로 미수집 위치를 표시하고, 수집 후 아이템함에서 재열람한다. 공장 진행 Manager는 태블릿에 수집 수나 목표 진행률을 게시하지 않는다.
+양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 현재 배분은 None이며 실제 배치는 임시 위치에 남아 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.

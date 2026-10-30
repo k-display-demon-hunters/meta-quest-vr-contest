@@ -9,23 +9,33 @@ namespace Parchment
     // Shared session: pickups and tablet UI use this entry point independently.
     public sealed class ParchmentManager : MonoBehaviour
     {
+        public bool IsGroupCollected(ParchmentLocation location)
+        {
+            if (location == ParchmentLocation.None) return false;
+            bool assigned = false;
+            foreach (ParchmentLesson lesson in ParchmentCatalog.All)
+            {
+                if (lesson.Location != location) continue;
+                assigned = true;
+                if (!HasCollected(lesson.Id)) return false;
+            }
+            return assigned;
+        }
+        public ParchmentInventoryItem GetInventoryItem(int id) =>
+            new ParchmentInventoryItem(ParchmentCatalog.Get(id).Title, HasCollected(id), ParchmentCatalog.Get(id).Location);
         private const float CollectionDistance = 3f;
         private readonly PickupRegistration[] _pickups = new PickupRegistration[ParchmentCatalog.All.Count];
-        private Action _pickupOpened;
         private readonly bool[] _collected = new bool[ParchmentCatalog.All.Count];
         private ParchmentReaderController _prefab;
         private ParchmentReaderController _reader;
         private Camera _camera;
         private XRPlayerInputController _playerInput;
         private Coroutine _opening;
-        private Action<bool> _pickupFinished;
         private int _index;
-        private bool _collecting;
         public bool IsOpen { get; private set; }
         public event Action Opened;
         public event Action Closed;
         public event Action<int> Collected;
-        public event Action LocationsChanged;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitializeSession()
@@ -47,25 +57,18 @@ namespace Parchment
             Collected?.Invoke(index);
             return true;
         }
-        public ParchmentRoom GetPlacementRoom(int index)
+        public void RegisterPickup(int index, Transform source,
+            ParchmentReaderController prefab, Action collected)
         {
-            return _pickups[index]?.Room ?? ParchmentRoom.None;
-        }
-
-        public void RegisterPickup(int index, ParchmentRoom room, Transform source,
-            ParchmentReaderController prefab, Action opened, Action<bool> finished)
-        {
-            _pickups[index] = new PickupRegistration(room, source, prefab, opened, finished);
-            LocationsChanged?.Invoke();
-            if (HasCollected(index)) { finished(true); }
+            _pickups[index] = new PickupRegistration(source, prefab, collected);
+            _prefab = prefab;
+            if (HasCollected(index)) { collected(); }
         }
 
         public void UnregisterPickup(int index, Transform source)
         {
             if (_pickups[index]?.Source != source) { return; }
             _pickups[index] = null;
-            if (IsOpen && _collecting && _index == index) { Close(); }
-            LocationsChanged?.Invoke();
         }
 
         public void RequestPickup(int index, Transform interactor)
@@ -82,19 +85,21 @@ namespace Parchment
             _prefab = pickup.Prefab;
             _camera = rig.Camera;
             _playerInput = _camera.GetComponentInParent<XRPlayerInputController>();
-            _pickupOpened = pickup.Opened;
-            _pickupFinished = pickup.Finished;
-            Open(index, new Pose(pickup.Source.position, pickup.Source.rotation), true);
+            pickup.Collected();
+            Collect(index);
+            Open(index, new Pose(pickup.Source.position, pickup.Source.rotation));
         }
 
-        public void OpenCollected(int index, Pose origin)
+        public void OpenCollected(int index, Camera camera, Pose origin)
         {
-            if (!IsOpen && HasCollected(index)) { Open(index, origin, false); }
+            if (IsOpen || !HasCollected(index)) return;
+            _camera = camera;
+            _playerInput = camera.GetComponentInParent<XRPlayerInputController>();
+            Open(index, origin);
         }
-        private void Open(int index, Pose origin, bool collecting)
+        private void Open(int index, Pose origin)
         {
             _index = index;
-            _collecting = collecting;
             IsOpen = true;
             _playerInput.SetParchmentMovementBlocked(true);
             Opened?.Invoke();
@@ -103,18 +108,13 @@ namespace Parchment
         private IEnumerator PresentAfterInteraction(Pose origin)
         {
             yield return null;
-            _pickupOpened?.Invoke();
             _reader = Instantiate(_prefab, transform);
             _reader.Completed += Complete;
             _reader.CloseRequested += Close;
             _reader.Present(_index, _camera, origin);
             _opening = null;
         }
-        private void Complete()
-        {
-            if (_collecting) { Collect(_index); }
-            Close();
-        }
+        private void Complete() => Close();
         private void Close()
         {
             if (!IsOpen) { return; }
@@ -130,29 +130,21 @@ namespace Parchment
             IsOpen = false;
             // The player may already be destroyed during application shutdown.
             if (_playerInput != null) { _playerInput.SetParchmentMovementBlocked(false); }
-            Action<bool> finished = _pickupFinished;
-            _pickupOpened = null;
-            _pickupFinished = null;
-            finished?.Invoke(HasCollected(_index));
             Closed?.Invoke();
         }
 
         private sealed class PickupRegistration
         {
-            public ParchmentRoom Room { get; }
             public Transform Source { get; }
             public ParchmentReaderController Prefab { get; }
-            public Action Opened { get; }
-            public Action<bool> Finished { get; }
+            public Action Collected { get; }
 
-            public PickupRegistration(ParchmentRoom room, Transform source,
-                ParchmentReaderController prefab, Action opened, Action<bool> finished)
+            public PickupRegistration(Transform source,
+                ParchmentReaderController prefab, Action collected)
             {
-                Room = room;
                 Source = source;
                 Prefab = prefab;
-                Opened = opened;
-                Finished = finished;
+                Collected = collected;
             }
         }
     }

@@ -49,7 +49,7 @@ namespace Tablet
                 () => ActiveGroup, () => _ui.CanvasRect);
             _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
             _reader = FindFirstObjectByType<ParchmentManager>();
-            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetPlacementRoom);
+            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetInventoryItem);
             _settings = new TabletSettingsController(this, _ui.Settings);
             _learning = new TabletLearningController(_ui.Learning, _resources);
             _detail = new TabletDetailController(_ui.Shell);
@@ -93,7 +93,7 @@ namespace Tablet
             UpdateFeedback(TabletParchmentController.ItemName(index) + " 완료",
                 ParchmentCatalog.Get(index).Title + "\n\n양피지가 태블릿에 보관되었습니다.");
         }
-        private void RequestParchmentOpen(int index, Pose origin) => _reader.OpenCollected(index, origin);
+        private void RequestParchmentOpen(int index, Pose origin) => _reader.OpenCollected(index, GetComponentInParent<Unity.XR.CoreUtils.XROrigin>().Camera, origin);
 
         public void SetFactoryMission(int phase, int collected, int completed, string mission)
         {
@@ -287,7 +287,6 @@ namespace Tablet
             _reader.Opened += SuspendForParchment;
             _reader.Closed += RestoreAfterParchment;
             _reader.Collected += RefreshCollectedParchment;
-            _reader.LocationsChanged += _parchment.RefreshInventory;
             _ui.CurrentTaskRequested += _learning.ConfirmCurrentTask;
             _ui.StageRequested += _learning.MoveToStage;
             _ui.BrightnessChanged += _settings.SetBrightness;
@@ -320,7 +319,6 @@ namespace Tablet
             _reader.Opened -= SuspendForParchment;
             _reader.Closed -= RestoreAfterParchment;
             _reader.Collected -= RefreshCollectedParchment;
-            _reader.LocationsChanged -= _parchment.RefreshInventory;
             _ui.CurrentTaskRequested -= _learning.ConfirmCurrentTask;
             _ui.StageRequested -= _learning.MoveToStage;
             _ui.BrightnessChanged -= _settings.SetBrightness;

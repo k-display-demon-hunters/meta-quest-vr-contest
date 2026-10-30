@@ -1,23 +1,20 @@
-using Parchment;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace Education
+namespace Parchment
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BoxCollider), typeof(XRSimpleInteractable))]
     public sealed class ParchmentPickupController : MonoBehaviour
     {
         [SerializeField, Range(0, 4)] private int _lessonIndex;
-        [SerializeField, Tooltip("양피지가 실제 배치된 방입니다.")] private ParchmentRoom _placementRoom;
         [SerializeField] private ParchmentReaderController _readerPrefab;
         [SerializeField] private ParchmentPickupVisualController _visuals;
         private XRSimpleInteractable _interactable;
         private ParchmentManager _parchment;
 
         public int LessonIndex => _lessonIndex;
-        public ParchmentRoom PlacementRoom => _placementRoom;
 
         private void Awake()
         {
@@ -29,8 +26,8 @@ namespace Education
         {
             _interactable.activated.AddListener(HandleActivated);
             _interactable.selectEntered.AddListener(HandleSelected);
-            _parchment.RegisterPickup(_lessonIndex, _placementRoom, transform, _readerPrefab,
-                _visuals.HideForReading, _visuals.FinishReading);
+            _parchment.RegisterPickup(_lessonIndex, transform, _readerPrefab,
+                _visuals.ShowCollected);
         }
 
         private void OnDisable()

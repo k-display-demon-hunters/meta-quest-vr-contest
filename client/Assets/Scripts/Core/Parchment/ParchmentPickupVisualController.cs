@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace Education
+namespace Parchment
 {
     public sealed class ParchmentPickupVisualController : MonoBehaviour
     {
@@ -45,25 +45,10 @@ namespace Education
             _paperRenderer.color = Color.Lerp(_paperColor * 0.97f, _paperColor, pulse);
         }
 
-        public void HideForReading()
+        public void ShowCollected()
         {
             _hidden = true;
-            SetVisible(false);
-        }
-
-        public void FinishReading(bool collected)
-        {
-            StopAllCoroutines();
-            if (!isActiveAndEnabled) { return; }
-            if (collected)
-            {
-                StartCoroutine(HideAfterInteraction());
-            }
-            else
-            {
-                _hidden = false;
-                SetVisible(true);
-            }
+            StartCoroutine(HideAfterInteraction());
         }
 
         private void SetVisible(bool visible)
@@ -119,7 +104,7 @@ namespace Education
                         text.fontStyle = FontStyle.Bold;
                         break;
                     case "Collect instruction":
-                        text.text = "Trigger / Grip으로 열기";
+                        text.text = "Trigger / Grip으로 수집하고 읽기";
                         text.rectTransform.anchoredPosition = new Vector2(0f, -100f);
                         text.fontSize = 19;
                         break;

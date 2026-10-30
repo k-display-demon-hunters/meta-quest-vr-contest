@@ -34,22 +34,22 @@ namespace Tablet
             _selectedItemIndex = Mathf.Clamp(index, 0, ParchmentLesson.All.Length - 1);
         }
 
-        public static string ItemName(int index) => "양피지 #" + (index + 1);
+        public static string ItemName(int index) => "양피지 " + (index + 1).ToString("00");
 
         private void RefreshParchmentPage()
         {
             ParchmentLesson lesson = ParchmentLesson.All[_selectedItemIndex];
-            _view.ParchmentSource.text = "사내 교육 자료 " + (_selectedItemIndex + 1).ToString("00") + "  /  " + lesson.Department;
+            _view.ParchmentSource.text = ItemName(_selectedItemIndex) + "  /  " + lesson.Department;
             _view.ParchmentTitle.text = lesson.Title;
             _view.ParchmentBody.text = _parchmentPages[_parchmentPageIndex];
             _view.ParchmentPageLabel.text = (_parchmentPageIndex + 1) + " / " + _parchmentPages.Length;
             _view.PreviousParchmentPage.interactable = _parchmentPageIndex > 0;
             _view.NextParchmentPage.interactable = _parchmentPageIndex < _parchmentPages.Length - 1;
             bool illustrated = _parchmentPageIndex == _parchmentPages.Length - 1;
-            _view.ParchmentBody.rectTransform.sizeDelta = new Vector2(510f, illustrated ? 278f : 386f);
+            _view.ParchmentBody.rectTransform.sizeDelta = new Vector2(850f, illustrated ? 220f : 306f);
             // ReferencePosition uses the centre of the old rectangle; keep the top edge fixed when its height changes.
             _view.ParchmentBody.rectTransform.anchoredPosition = _ui.ReferencePosition(_view.ParchmentReader.transform,
-                780f, 444f + (illustrated ? 278f : 386f) * 0.5f);
+                770f, 383f + (illustrated ? 220f : 306f) * 0.5f);
             _ui.RebuildParchmentIllustration(illustrated, _selectedItemIndex, _featureMapVisible);
         }
 
@@ -107,6 +107,7 @@ namespace Tablet
             _parchmentPageIndex = 0;
             RefreshInventory();
             _view.ParchmentReader.SetActive(true);
+            _view.ParchmentReader.transform.SetAsLastSibling();
             FeedbackVisibilityChanged?.Invoke(false);
             RefreshParchmentPage();
         }
@@ -124,8 +125,8 @@ namespace Tablet
             }
             _collectedParchments[index] = true;
             RefreshInventory();
-            FeedbackRequested?.Invoke(ItemName(index) + " 획득",
-                ParchmentLesson.All[index].Title + "\n\n오른쪽 아이템함에서 선택하면\n교육 문서를 읽을 수 있습니다.");
+            FeedbackRequested?.Invoke(ItemName(index) + " 완료",
+                ParchmentLesson.All[index].Title + "\n\n양피지가 태블릿에 보관되었습니다.\n오른쪽 아이템함에서 다시 읽을 수 있습니다.");
             return true;
         }
     }

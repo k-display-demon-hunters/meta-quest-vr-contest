@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 namespace UI
@@ -10,16 +11,18 @@ namespace UI
         [SerializeField] private PixelSelectionController _selection;
         [SerializeField] private PixelRevealStage _revealStage;
         [SerializeField] private PixelLabUIController _ui;
+        [SerializeField] private PixelPracticeManager _practice;
         private PixelImageData _imageData;
         private PixelPatchData _selectedPatch;
         private Vector2Int _patchOrigin;
         private Vector2Int? _initialSelection;
+        private int _pixelPage = -1;
+        private int _rgbPage;
+        private bool _expanding;
+        private bool _practicing;
+        private bool _learningComplete;
         public event Action<PixelPatchData, Vector2Int> ConvolutionRequested;
         public event Action ResetRequested;
-
-        private bool IsRevealing => _revealStage.Phase == PixelObservationPhase.AwaitingClick
-            || _revealStage.Phase == PixelObservationPhase.Revealing
-            || _revealStage.Phase == PixelObservationPhase.Unfolding;
 
         private void Start()
         {
@@ -34,80 +37,98 @@ namespace UI
                 HandleSelectionChanged();
             }
         }
-
         private void OnEnable()
         {
             _selection.SelectionChanged += HandleSelectionChanged;
             _selection.FilterGrabbed += HandleFilterGrabbed;
             _revealStage.PixelsRevealed += HandlePixelsRevealed;
-            _revealStage.PhaseChanged += HandlePhaseChanged;
+            _practice.Completed += HandlePracticeCompleted;
             _ui.DetailsRequested += ShowDetails;
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
             _ui.EnableInput();
         }
-
         public void ShowDetails()
         {
-            if (_selection.IsFilterHeld || !_selection.HasSelection
+            if (_pixelPage < 2 || _selection.IsFilterHeld || !_selection.HasSelection || _expanding || _practicing
                 || _revealStage.Phase != PixelObservationPhase.Inactive) { return; }
             _patchOrigin = _selection.SelectedPixel;
             _selectedPatch = _imageData.CapturePatch(_patchOrigin);
-            _ui.ShowRevealStarted();
+            _expanding = true;
             _selection.SuspendSelection();
+            _ui.ShowMoving();
+            StartCoroutine(ExpandSelection());
+        }
+        private IEnumerator ExpandSelection()
+        {
+            yield return _board.MoveAside();
             _revealStage.ShowImage(_imageData.Pixels, _imageData.Columns, _imageData.Rows, _patchOrigin);
             _revealStage.RevealPixels(_selectedPatch);
         }
-
         public void NextStage()
         {
-            if (IsRevealing) { return; }
-            if (!_revealStage.IsReadyForConvolution) { ShowDetails(); return; }
-            ConvolutionRequested?.Invoke(_selectedPatch, _patchOrigin);
+            if (_selection.IsFilterHeld || _expanding || _practicing) { return; }
+            if (_learningComplete) { ConvolutionRequested?.Invoke(_selectedPatch, _patchOrigin); return; }
+            if (_revealStage.IsReadyForConvolution)
+            {
+                _rgbPage++;
+                if (_rgbPage < 3) { _ui.ShowRgbPage(_rgbPage); return; }
+                _practicing = true;
+                _revealStage.ResetStage();
+                _ui.SetVisible(false);
+                _practice.BeginPractice(_selectedPatch);
+                return;
+            }
+            if (_pixelPage >= 0 && _pixelPage < 2)
+            {
+                _pixelPage++;
+                _ui.ShowPixelPage(_pixelPage);
+            }
         }
-
         public void ResetLab()
         {
             if (_selection.IsFilterHeld) { return; }
+            StopAllCoroutines();
+            _practice.StopPractice();
+            _expanding = _practicing = _learningComplete = false;
+            _pixelPage = -1;
             _selectedPatch = null;
             _revealStage.ResetStage();
-            _board.SetPhotoVisible(true);
+            _board.RestorePresentation();
             _selection.ResetSelection();
+            _ui.SetVisible(true);
             _ui.ResetControls();
-            UpdateInstruction();
             ResetRequested?.Invoke();
         }
-
-        public void SetInitialSelection(Vector2Int selected)
-        {
-            _initialSelection = selected;
-        }
-
+        public void SetInitialSelection(Vector2Int selected) { _initialSelection = selected; }
         private void HandleSelectionChanged()
         {
-            _selectedPatch = null;
-            _ui.SetSelectionAvailable(_selection.HasSelection);
-            UpdateInstruction();
+            if (!_selection.HasSelection) { _ui.ResetControls(); return; }
+            if (_pixelPage < 0) { _pixelPage = 0; }
+            _ui.ShowPixelPage(_pixelPage);
         }
         private void HandleFilterGrabbed() { _ui.ShowFilterGrabbed(); }
         private void HandlePixelsRevealed()
         {
-            _ui.ShowPixelsRevealed(_selection.HasSelection);
-            UpdateInstruction();
+            _expanding = false;
+            _rgbPage = 0;
+            _ui.ShowRgbPage(0);
         }
-        private void HandlePhaseChanged(PixelObservationPhase phase)
+        private void HandlePracticeCompleted()
         {
-            _board.SetPhotoVisible(phase != PixelObservationPhase.Unfolding && phase != PixelObservationPhase.Revealed);
-            _ui.ShowRevealPhase(phase);
+            _practicing = false;
+            _learningComplete = true;
+            _ui.SetVisible(true);
+            _ui.ShowExitGuide();
+            ConvolutionRequested?.Invoke(_selectedPatch, _patchOrigin);
         }
-        private void UpdateInstruction() { _ui.UpdateInstruction(_revealStage.IsReadyForConvolution, _selection.HasSelection); }
-
         private void OnDisable()
         {
+            StopAllCoroutines();
             _selection.SelectionChanged -= HandleSelectionChanged;
             _selection.FilterGrabbed -= HandleFilterGrabbed;
             _revealStage.PixelsRevealed -= HandlePixelsRevealed;
-            _revealStage.PhaseChanged -= HandlePhaseChanged;
+            _practice.Completed -= HandlePracticeCompleted;
             _ui.DetailsRequested -= ShowDetails;
             _ui.NextRequested -= NextStage;
             _ui.ResetRequested -= ResetLab;

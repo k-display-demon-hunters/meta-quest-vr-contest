@@ -13,6 +13,8 @@ namespace UI
         [SerializeField] private Vector2 _boardSize = new Vector2(2.4f, 1.35f);
         [SerializeField] private XRGrabInteractable _filter;
         [SerializeField] private Transform _selectionFrame;
+        [SerializeField] private GameObject _pickupBoundary;
+        private Vector3 _filterScale;
         private int _columns;
         private int _rows;
         private Vector3 _dockLocalPosition;
@@ -38,6 +40,7 @@ namespace UI
             _rows = image.Rows;
             _volume.Initialize(image.Pixels, _columns);
             _selectionEnabled = true;
+            _filterScale = _filter.transform.localScale;
             _dockLocalPosition = _board.InverseTransformPoint(_filter.transform.position);
             _dockLocalRotation = Quaternion.Inverse(_board.rotation) * _filter.transform.rotation;
         }
@@ -45,6 +48,11 @@ namespace UI
         public void ResetSelection()
         {
             _selectionEnabled = true;
+            _filter.transform.SetParent(transform, true);
+            _filter.transform.localScale = _filterScale;
+            _filter.enabled = true;
+            foreach (Collider collider in _filter.colliders) { collider.enabled = true; }
+            _pickupBoundary.SetActive(true);
             _filter.gameObject.SetActive(true);
             _snapPending = false;
             _hasSelection = false;
@@ -55,13 +63,17 @@ namespace UI
         public void SuspendSelection()
         {
             _selectionEnabled = false;
-            _filter.gameObject.SetActive(false);
+            _filter.enabled = false;
+            foreach (Collider collider in _filter.colliders) { collider.enabled = false; }
+            _filter.transform.SetParent(_board, true);
+            _pickupBoundary.SetActive(false);
             _snapPending = false;
             _selectionFrame.gameObject.SetActive(false);
         }
 
         public void RestoreSelection(Vector2Int selected)
         {
+            _pickupBoundary.SetActive(false);
             _selected = selected;
             _hasSelection = true;
             _snapPending = false;
@@ -185,6 +197,9 @@ namespace UI
         private void HandleGrabbed(SelectEnterEventArgs args)
         {
             _snapPending = false;
+            _pickupBoundary.SetActive(false);
+            _filter.transform.rotation = _board.rotation;
+            _filter.GetComponent<Rigidbody>().rotation = _board.rotation;
             FilterGrabbed?.Invoke();
         }
 

@@ -137,7 +137,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &185311924
 RectTransform:
   m_ObjectHideFlags: 0
@@ -147,9 +147,11 @@ RectTransform:
   m_GameObject: {fileID: 185311923}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 1.25}
-  m_LocalScale: {x: 0.0022, y: 0.0022, z: 0.0022}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 820000041}
+  - {fileID: 820000021}
   m_Father: {fileID: 2024448783}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -263,8 +265,91 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI.CNNConvolutionLabManager
   _lessonRoot: {fileID: 185311923}
   _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
+  _ui: {fileID: 820000023}
+  _spatial: {fileID: 820000042}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 2024448783}
+--- !u!1001 &820000020
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 185311924}
+    m_Modifications:
+    - target: {fileID: 100001, guid: bf7f2bac1e2f43fa8031b044c9b5016f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bf7f2bac1e2f43fa8031b044c9b5016f, type: 3}
+--- !u!224 &820000021 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 100002, guid: bf7f2bac1e2f43fa8031b044c9b5016f, type: 3}
+  m_PrefabInstance: {fileID: 820000020}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &820000022 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100001, guid: bf7f2bac1e2f43fa8031b044c9b5016f, type: 3}
+  m_PrefabInstance: {fileID: 820000020}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &820000023 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 100006, guid: bf7f2bac1e2f43fa8031b044c9b5016f, type: 3}
+  m_PrefabInstance: {fileID: 820000020}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820000022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1209d8fa9d607741afbfabc4b20972f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::UI.LessonUIController
+--- !u!1 &820000040
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 820000041}
+  - component: {fileID: 820000042}
+  m_Layer: 0
+  m_Name: "B quiz blocks"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &820000041
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820000040}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 185311924}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &820000042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 820000040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72ab7e0925614ae6a69ea1da3c191bad, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbVolumeController

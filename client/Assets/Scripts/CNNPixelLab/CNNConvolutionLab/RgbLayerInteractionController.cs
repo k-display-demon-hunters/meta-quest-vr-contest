@@ -110,13 +110,13 @@ namespace UI
             for (int c = 0; c < 3; c++)
             {
                 _layers[c].gameObject.SetActive(true);
-                _layerHomes[c] = FilterTarget + new Vector3(c * 0.22f, c * 0.05f, c * 0.65f);
+                _layerHomes[c] = FilterTarget + new Vector3(c * 0.24f, c * 0.1f, c * 0.14f);
                 _layers[c].localPosition = _layerHomes[c];
                 _weights[c].gameObject.SetActive(true);
-                _weights[c].localPosition = _layers[c].localPosition + WeightOffset;
+                _weights[c].localPosition = new Vector3(0.65f + c * 0.14f, c * 0.1f, 0.15f + c * 0.14f);
                 if (c == channel) { EnableGrab(_layerGrabs[c]); }
             }
-            _instruction.text = "RGB"[channel] + " 층을 직접 잡아 앞으로 또는 옆으로 꺼내 놓으세요.\n같은 색의 가중치도 함께 따라옵니다. 값은 바뀌지 않아요.";
+            _instruction.text = "RGB"[channel] + " 층을 Grip으로 잡아 앞으로 꺼내세요.";
             yield return new WaitUntil(() => _pulled);
             StopInteraction();
         }
@@ -147,10 +147,6 @@ namespace UI
         private void LateUpdate()
         {
             if (!_exploring) { return; }
-            if (_expected >= 0)
-            {
-                for (int c = 0; c < 3; c++) { _weights[c].position = _layers[c].TransformPoint(WeightOffset); }
-            }
             if (_ray != null && _ray.isActiveAndEnabled)
             {
                 Highlight(new Ray(_ray.transform.position, _ray.transform.forward));

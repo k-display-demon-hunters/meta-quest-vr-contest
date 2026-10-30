@@ -25,7 +25,7 @@
 
 ROOM #1의 외곽 16×16m는 유지하고 X=-20에 남북 방향 콘크리트 벽을 두어 동쪽의 체험 1-1(CNNScreenLab)과 서쪽의 체험 1-2(CNNConvolutionLab) 공간을 명목상 8×16m씩 나눈다. 통로 중심은 (-20, 0, -8.8)이며 폭 3.2m·최고 높이 3.2m의 아치다. 벽은 천장까지 이어지고 아치형 금속 셔터가 통로를 닫는다. 같은 FactoryShutterController로 기존 문과 동일하게 1.6초 동안 3.3m 상하 이동한다. 벽·아치 상부와 셔터에 충돌 영역을 저장한다.
 
-동쪽 입구에서 1-1을 시작한다. 기존 RGB 관찰을 마치고 다음으로를 누르면 CNNPixelLabManager.ScreenCompleted를 받아 내부 문과 왼쪽 공간까지의 안내선을 연다. 카메라가 서쪽 진입 영역(X=-21.4보다 안쪽)에 들어오면 StartFactoryConvolution을 요청한다. 합성곱 씬이 준비·활성화되어 ConvolutionStarted가 전달되면 내부 문을 닫고 안내선을 숨긴다. 로드 실패 시 스크린과 열린 통로를 유지하고 3초 뒤 재시도한다. 최종 ConvolutionCompleted 판정 후 북쪽 출구로 ROOM #2에 진행하는 조건은 유지한다.
+동쪽 입구에서 1-1을 시작한다. 픽셀·RGB 관찰과 R·G 계산 학습을 마치고 다음 공간으로를 누른 뒤 합성곱 입구 양피지를 수집하면 CNNPixelLabManager.ScreenCompleted를 받아 내부 문과 왼쪽 공간까지의 안내선을 연다. 카메라가 서쪽 진입 영역(X=-21.4보다 안쪽)에 들어오면 StartFactoryConvolution을 요청한다. B 퀴즈용 합성곱 씬이 준비·활성화되어 ConvolutionStarted가 전달되면 내부 문을 닫고 안내선을 숨긴다. 로드 실패 시 스크린과 열린 통로를 유지하고 3초 뒤 재시도한다. 최종 ConvolutionCompleted 판정 후 북쪽 출구로 ROOM #2에 진행하는 조건은 유지한다.
 
 ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 왼쪽에서 시작하며, 두 체험 사이에는 남쪽 아치를 지나는 별도 경로를 둔다.
 

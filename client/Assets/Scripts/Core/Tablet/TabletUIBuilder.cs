@@ -1,3 +1,4 @@
+using Parchment;
 using System;
 using System.Collections.Generic;
 using Unity.XR.CoreUtils;
@@ -36,8 +37,6 @@ namespace Tablet
         private readonly Transform _tabletTransform;
         private readonly TabletVisualResources _resources;
         private readonly Font _resolvedFont;
-        private readonly Font _parchmentFont;
-        private readonly Font _parchmentTitleFont;
         private readonly Sprite _parchmentSprite;
         private readonly TabletInputController _input;
         private readonly List<TabletMinimapController> _maps = new List<TabletMinimapController>();
@@ -50,9 +49,6 @@ namespace Tablet
         private TabletInputController.FocusGroup _buildingGroup;
 
         public event Action<int> ParchmentSelected;
-        public event Action<int> ParchmentPageRequested;
-        public event Action ParchmentCloseRequested;
-        public event Action<int> FeatureMapToggleRequested;
         public event Action CurrentTaskRequested;
         public event Action<int> StageRequested;
         public event Action<float> BrightnessChanged;
@@ -77,13 +73,11 @@ namespace Tablet
         public RectTransform CanvasRect => _canvasRect;
 
         public TabletUIBuilder(Transform tabletTransform, TabletVisualResources resources, Font font,
-            Font parchmentFont, Font parchmentTitleFont, Sprite parchmentSprite, TabletInputController input)
+            Sprite parchmentSprite, TabletInputController input)
         {
             _tabletTransform = tabletTransform;
             _resources = resources;
             _resolvedFont = font;
-            _parchmentFont = parchmentFont;
-            _parchmentTitleFont = parchmentTitleFont;
             _parchmentSprite = parchmentSprite;
             _input = input;
         }
@@ -146,7 +140,6 @@ namespace Tablet
             // Keep the five inventory targets first so saved selection still restores focus.
             BuildInventory();
             BuildMainFeedback();
-            BuildParchmentReader();
             BuildDashboardActions();
             BuildHeader();
             BuildLeftStatus();
@@ -283,7 +276,7 @@ namespace Tablet
             PlaceSymbol(_surfaceRect, "Inventory Symbol", TabletSymbol.Box, 1179f, 215f, 40f, AccentColor);
             PlaceText(_surfaceRect, "Inventory Caption", "아이템", 1241f, 215f, 206f, 40f,
                 26, FontStyle.Bold, TextColor);
-            for (int index = 0; index < ParchmentLesson.All.Length; index++)
+            for (int index = 0; index < ParchmentCatalog.All.Count; index++)
             {
                 int itemIndex = index;
                 float top = 272f + index * 103f;
@@ -307,154 +300,6 @@ namespace Tablet
                 icon.preserveAspect = true;
                 PlaceSymbol(item.transform, "Disclosure", TabletSymbol.ChevronRight, 1434f, top + 36f, 18f, AccentColor);
             }
-        }
-
-        private void BuildParchmentReader()
-        {
-            Color ink = Color.white;
-            Image paper = PlaceImage(_surfaceRect, "Parchment Reader", 77f, 112f, 1400f, 788f, Color.white);
-            paper.sprite = _parchmentSprite;
-            paper.type = Image.Type.Simple;
-            Parchment.ParchmentReader = paper.gameObject;
-            Parchment.ParchmentSource = PlaceText(paper.transform, "Document Source", "", 345f, 269f, 840f, 32f,
-                22, FontStyle.Normal, ink);
-            Parchment.ParchmentTitle = PlaceText(paper.transform, "Document Title", "", 345f, 307f, 850f, 54f,
-                42, FontStyle.Normal, ink);
-            PlaceImage(paper.transform, "Hologram Rule", 345f, 369f, 850f, 2f,
-                new Color(0.55f, 0.9f, 1f, 0.75f)).sprite = null;
-            Parchment.ParchmentBody = PlaceText(paper.transform, "Document Body", "", 345f, 383f, 850f, 306f,
-                24, FontStyle.Normal, ink, TextAnchor.UpperLeft);
-            Parchment.ParchmentBody.lineSpacing = 1.06f;
-            Parchment.ParchmentBody.resizeTextForBestFit = true;
-            Parchment.ParchmentBody.resizeTextMinSize = 21;
-            Parchment.ParchmentBody.resizeTextMaxSize = 24;
-            Font parchmentFont = _parchmentFont != null ? _parchmentFont : _resolvedFont;
-            Parchment.ParchmentTitle.font = _parchmentTitleFont != null ? _parchmentTitleFont : parchmentFont;
-            Parchment.ParchmentSource.font = parchmentFont;
-            Parchment.ParchmentBody.font = parchmentFont;
-
-            Parchment.ParchmentExample = new GameObject("Lesson Illustration", typeof(RectTransform));
-            Parchment.ParchmentExample.transform.SetParent(paper.transform, false);
-            RectTransform exampleRect = (RectTransform)Parchment.ParchmentExample.transform;
-            exampleRect.sizeDelta = paper.rectTransform.sizeDelta;
-
-            PlaceImage(paper.transform, "Reader Controls Backdrop", 345f, 744f, 850f, 72f,
-                new Color(0.015f, 0.08f, 0.15f, 0.96f)).sprite = _resources.RoundedSprite;
-            Color buttonColor = new Color(0.03f, 0.17f, 0.27f, 0.96f);
-            Parchment.PreviousParchmentPage = PlaceButton(paper.transform, "Previous Document Page", "이전", 420f, 758f, 140f, 50f,
-                () => ParchmentPageRequested?.Invoke(-1), buttonColor);
-            Parchment.ParchmentPageLabel = PlaceText(paper.transform, "Document Page Count", "", 585f, 758f, 154f, 50f,
-                22, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
-            Parchment.ParchmentPageLabel.font = parchmentFont;
-            Parchment.NextParchmentPage = PlaceButton(paper.transform, "Next Document Page", "다음", 760f, 758f, 140f, 50f,
-                () => ParchmentPageRequested?.Invoke(1), buttonColor);
-            Button close = PlaceButton(paper.transform, "Close Document", "닫기", 1040f, 758f, 140f, 50f,
-                () => ParchmentCloseRequested?.Invoke(), buttonColor);
-            foreach (Button button in new[] { Parchment.PreviousParchmentPage, Parchment.NextParchmentPage, close })
-            {
-                Text label = button.GetComponentInChildren<Text>();
-                label.font = parchmentFont;
-                label.fontStyle = FontStyle.Normal;
-                label.color = ink;
-            }
-            paper.gameObject.SetActive(false);
-        }
-
-        public void RebuildParchmentIllustration(bool visible, int lessonIndex, IReadOnlyList<bool> featureMapVisible)
-        {
-            // Remove old controls from navigation before destroying their visuals at the end of this frame.
-            _input.RemoveControls(Parchment.FeatureMapButtons);
-            Parchment.FeatureMapButtons.Clear();
-            Parchment.FeatureMapImages.Clear();
-            Parchment.FeatureMapLabels.Clear();
-            for (int index = Parchment.ParchmentExample.transform.childCount - 1; index >= 0; index--)
-            {
-                GameObject child = Parchment.ParchmentExample.transform.GetChild(index).gameObject;
-                child.SetActive(false);
-                Destroy(child);
-            }
-            Parchment.ParchmentExample.SetActive(visible);
-            if (!visible)
-            {
-                return;
-            }
-
-            Transform parent = Parchment.ParchmentExample.transform;
-            Color ink = Color.white;
-            if (lessonIndex == 0)
-            {
-                string[] labels = { "R 채널", "G 채널", "B 채널" };
-                for (int index = 0; index < 3; index++)
-                {
-                    float x = 452f + index * 260f;
-                    Image grid = PlaceImage(parent, labels[index], x, 625f, 110f, 76f, Color.white);
-                    grid.sprite = _resources.PixelSprites[index + 1];
-                    grid.type = Image.Type.Simple;
-                    PlaceParchmentText(parent, "Channel Caption " + index, labels[index], x, 704f, 110f, 27f,
-                        19, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
-                }
-            }
-            else if (lessonIndex == 1)
-            {
-                PlaceParchmentText(parent, "Padding Example", "입력 5×5  ·  필터 3×3  ·  이동 1칸\n\n패딩 없음 → 출력 3×3\n사방에 1칸 패딩 → 출력 5×5", 434f, 608f, 760f, 119f,
-                    23, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
-            }
-            else if (lessonIndex == 2 || lessonIndex == 3)
-            {
-                BuildFeatureMapExample(parent, lessonIndex, featureMapVisible);
-            }
-            else
-            {
-                PlaceParchmentText(parent, "ReLU Example", "입력     −3     −1      0      2      5\n\nReLU      0       0      0      2      5", 434f, 612f, 760f, 108f,
-                    24, FontStyle.Normal, ink, TextAnchor.MiddleCenter);
-            }
-        }
-
-        private void BuildFeatureMapExample(Transform parent, int lessonIndex, IReadOnlyList<bool> featureMapVisible)
-        {
-            PlaceParchmentText(parent, "Example Display Note", "필터 반응의 절댓값을 밝기로 표시한 예시", 434f, 608f, 760f, 23f,
-                16, FontStyle.Normal, new Color(0.73f, 0.91f, 1f), TextAnchor.MiddleCenter);
-            string[] captions = lessonIndex == 3
-                ? new[] { "세로 경계", "가로 경계", "주변 경계" }
-                : new[] { "원본", "세로 경계", "가로 경계" };
-            TabletInputController.FocusGroup previousGroup = _buildingGroup;
-            _buildingGroup = TabletInputController.FocusGroup.Main;
-            for (int index = 0; index < 3; index++)
-            {
-                int mapIndex = index;
-                float x = 454f + index * 260f;
-                Image map = PlaceImage(parent, "Example Map " + index, x + 34f, 632f, 70f, 70f, Color.white);
-                map.sprite = _resources.LessonMapSprites[lessonIndex == 3 ? index + 1 : index];
-                map.type = Image.Type.Simple;
-                if (lessonIndex == 3)
-                {
-                    Parchment.FeatureMapImages.Add(map);
-                    map.enabled = featureMapVisible[index];
-                    Button toggle = PlaceButton(parent, "Toggle Example Map " + index, "", x, 706f, 138f, 30f,
-                        () => FeatureMapToggleRequested?.Invoke(mapIndex), new Color(0.03f, 0.17f, 0.27f, 0.96f));
-                    Text label = toggle.GetComponentInChildren<Text>();
-                    label.fontSize = 17;
-                    label.font = _parchmentFont != null ? _parchmentFont : _resolvedFont;
-                    label.color = Color.white;
-                    label.text = captions[index] + (featureMapVisible[index] ? " · 켜짐" : " · 꺼짐");
-                    Parchment.FeatureMapLabels.Add(label);
-                    Parchment.FeatureMapButtons.Add(toggle);
-                }
-                else
-                {
-                    PlaceParchmentText(parent, "Example Caption " + index, captions[index], x, 706f, 138f, 30f,
-                        20, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
-                }
-            }
-            _buildingGroup = previousGroup;
-        }
-
-        private Text PlaceParchmentText(Transform parent, string name, string value, float x, float y,
-            float width, float height, int fontSize, FontStyle style, Color color, TextAnchor alignment)
-        {
-            Text label = PlaceText(parent, name, value, x, y, width, height, fontSize, style, color, alignment);
-            label.font = _parchmentFont != null ? _parchmentFont : _resolvedFont;
-            return label;
         }
 
         private void BuildMainFeedback()
@@ -852,17 +697,7 @@ namespace Tablet
             internal readonly List<Text> InventoryLabels = new List<Text>();
             internal readonly List<Text> InventoryDescriptions = new List<Text>();
             internal readonly List<Button> InventoryButtons = new List<Button>();
-            internal GameObject ParchmentReader;
-            internal Text ParchmentTitle;
-            internal Text ParchmentSource;
-            internal Text ParchmentBody;
-            internal Text ParchmentPageLabel;
-            internal Button PreviousParchmentPage;
-            internal Button NextParchmentPage;
-            internal readonly List<Button> FeatureMapButtons = new List<Button>();
-            internal readonly List<Image> FeatureMapImages = new List<Image>();
-            internal readonly List<Text> FeatureMapLabels = new List<Text>();
-            internal GameObject ParchmentExample;
+
         }
 
         internal sealed class LearningView

@@ -20,7 +20,6 @@ namespace Tablet
         private Sprite _underlineSprite;
         private readonly List<Sprite> _generatedSprites = new List<Sprite>();
         private readonly List<Sprite> _pixelSprites = new List<Sprite>();
-        private readonly List<Sprite> _lessonMapSprites = new List<Sprite>();
         private MeshFilter _bodyFilter;
         private Mesh _originalBodyMesh;
         private Mesh _bodyMesh;
@@ -39,7 +38,6 @@ namespace Tablet
         public Sprite MutedCircleSprite => _mutedCircleSprite;
         public Sprite UnderlineSprite => _underlineSprite;
         public IReadOnlyList<Sprite> PixelSprites => _pixelSprites;
-        public IReadOnlyList<Sprite> LessonMapSprites => _lessonMapSprites;
         public IReadOnlyDictionary<TabletSymbol, Sprite> SymbolSprites => _symbolSprites;
 
         public void CreateRuntimeSprites()
@@ -58,10 +56,6 @@ namespace Tablet
             for (int channel = -1; channel < 3; channel++)
             {
                 _pixelSprites.Add(CreatePixelSprite(channel));
-            }
-            for (int index = 0; index < 4; index++)
-            {
-                _lessonMapSprites.Add(CreateLessonMapSprite(index));
             }
         }
 
@@ -112,69 +106,6 @@ namespace Tablet
             Sprite sprite = CreateRoundedSprite(256, radius, 0f, top, bottom);
             _generatedSprites.Add(sprite);
             return sprite;
-        }
-
-        private Sprite CreateLessonMapSprite(int kind)
-        {
-            // These small examples use actual 3x3 correlations. Absolute responses are mapped to brightness.
-            float[,] input = new float[7, 7];
-            for (int y = 0; y < 7; y++)
-            {
-                for (int x = 0; x < 7; x++)
-                {
-                    input[y, x] = x >= 3 && y >= 3 ? 1f : x >= 3 || y >= 3 ? 0.4f : 0f;
-                }
-            }
-            int[][,] kernels =
-            {
-                new int[,] { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } },
-                new int[,] { { -1, -1, -1 }, { 0, 0, 0 }, { 1, 1, 1 } },
-                new int[,] { { -1, -1, -1 }, { -1, 8, -1 }, { -1, -1, -1 } }
-            };
-            int size = kind == 0 ? 7 : 5;
-            float[,] values = new float[size, size];
-            float maximum = 1f;
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float value = input[y, x];
-                    if (kind != 0)
-                    {
-                        value = 0f;
-                        for (int ky = 0; ky < 3; ky++)
-                        {
-                            for (int kx = 0; kx < 3; kx++)
-                            {
-                                value += input[y + ky, x + kx] * kernels[kind - 1][ky, kx];
-                            }
-                        }
-                        value = Mathf.Abs(value);
-                    }
-                    values[y, x] = value;
-                    maximum = Mathf.Max(maximum, value);
-                }
-            }
-            const int cell = 16;
-            Texture2D texture = new Texture2D(size * cell, size * cell, TextureFormat.RGBA32, false)
-            {
-                name = "Parchment Example " + kind,
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            Color[] pixels = new Color[texture.width * texture.height];
-            for (int y = 0; y < texture.height; y++)
-            {
-                for (int x = 0; x < texture.width; x++)
-                {
-                    float brightness = values[y / cell, x / cell] / maximum;
-                    Color color = Color.Lerp(new Color(0.08f, 0.12f, 0.18f), new Color(0.94f, 0.86f, 0.62f), brightness);
-                    pixels[y * texture.width + x] = x % cell == 0 || y % cell == 0 ? new Color(0.27f, 0.29f, 0.3f) : color;
-                }
-            }
-            texture.SetPixels(pixels);
-            texture.Apply(false, true);
-            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * 0.5f, 100f);
         }
 
         private Sprite CreatePixelSprite(int channel)
@@ -508,10 +439,6 @@ namespace Tablet
                 DestroyRuntimeSprite(sprite);
             }
             foreach (Sprite sprite in _pixelSprites)
-            {
-                DestroyRuntimeSprite(sprite);
-            }
-            foreach (Sprite sprite in _lessonMapSprites)
             {
                 DestroyRuntimeSprite(sprite);
             }

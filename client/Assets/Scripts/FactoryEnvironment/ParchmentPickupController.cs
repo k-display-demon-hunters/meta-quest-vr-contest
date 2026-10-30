@@ -1,4 +1,5 @@
-using Tablet;
+using FactoryEnvironment;
+using Parchment;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -17,21 +18,22 @@ namespace Education
         private static readonly Color HologramColor = new Color(0.34f, 0.84f, 1f);
 
         [SerializeField, Range(0, 4)] private int _lessonIndex;
+        [SerializeField, Tooltip("양피지가 실제 배치된 방입니다.")] private FactoryDestinationId _placementRoom;
         [SerializeField] private SpriteRenderer _paperRenderer;
         [SerializeField] private SpriteRenderer _glowRenderer;
         [SerializeField] private Light _glowLight;
 
         private XRSimpleInteractable _interactable;
-        private TabletManager _tablet;
+        private ParchmentManager _parchment;
         private Canvas _labelCanvas;
-        private ParchmentReaderController _reader;
+        [SerializeField] private ParchmentReaderController _readerPrefab;
         private Vector3 _restPosition;
         private Color _paperColor;
-        private bool _hasSearchedForTablet;
         private bool _isCollected;
         private bool _readingRequested;
 
         public int LessonIndex => _lessonIndex;
+        public FactoryDestinationId PlacementRoom => _placementRoom;
 
         private void Awake()
         {
@@ -49,8 +51,8 @@ namespace Education
 
         private void Start()
         {
-            ResolveTablet(null);
-            if (_tablet != null && _tablet.HasParchment(_lessonIndex))
+            _parchment = FindFirstObjectByType<ParchmentManager>();
+            if (_parchment.HasCollected(_lessonIndex))
             {
                 gameObject.SetActive(false);
             }
@@ -116,29 +118,6 @@ namespace Education
             }
         }
 
-        private void ResolveTablet(Transform interactor)
-        {
-            if (interactor != null)
-            {
-                XROrigin rig = interactor.GetComponentInParent<XROrigin>();
-                if (rig != null)
-                {
-                    TabletManager rigTablet = rig.GetComponentInChildren<TabletManager>(true);
-                    if (rigTablet != null)
-                    {
-                        _tablet = rigTablet;
-                        return;
-                    }
-                }
-            }
-
-            if (_tablet == null && !_hasSearchedForTablet)
-            {
-                _hasSearchedForTablet = true;
-                _tablet = FindFirstObjectByType<TabletManager>();
-            }
-        }
-
         private void TryOpen(Transform interactor)
         {
             if (_isCollected || _readingRequested || interactor == null ||
@@ -148,21 +127,19 @@ namespace Education
             }
 
             XROrigin rig = interactor.GetComponentInParent<XROrigin>();
-            if (rig == null || rig.Camera == null || FindFirstObjectByType<ParchmentReaderController>() != null)
+            if (rig == null || rig.Camera == null)
             {
                 return;
             }
-            ResolveTablet(interactor);
-            if (_tablet == null)
+            if (_parchment.OpenPickup(_lessonIndex, new Pose(transform.position, transform.rotation),
+                rig.Camera, _readerPrefab, FinishReading))
             {
-                return;
+                _readingRequested = true;
+                StartCoroutine(HideForReading());
             }
-
-            _readingRequested = true;
-            StartCoroutine(OpenAfterInteraction(rig.Camera));
         }
 
-        private IEnumerator OpenAfterInteraction(Camera camera)
+        private IEnumerator HideForReading()
         {
             // Let XRI finish the pickup event before replacing its visual with the reader.
             yield return null;
@@ -175,49 +152,16 @@ namespace Education
                 _labelCanvas.enabled = false;
             }
 
-            GameObject readerObject = new GameObject("양피지 " + (_lessonIndex + 1).ToString("00") + " 열람",
-                typeof(RectTransform), typeof(Canvas),
-                typeof(UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster));
-            _reader = readerObject.AddComponent<ParchmentReaderController>();
-            _reader.Initialize(_lessonIndex, camera, _paperRenderer.sprite,
-                _tablet.ParchmentFont, _tablet.ParchmentTitleFont, transform.position, transform.rotation,
-                CompleteReading, CancelReading);
         }
 
-        private void CompleteReading()
+        private void FinishReading(bool collected)
         {
-            if (_reader == null)
-            {
-                return;
-            }
-            bool collected = _tablet.CollectParchment(_lessonIndex) || _tablet.HasParchment(_lessonIndex);
-            RemoveReader();
-            if (collected)
-            {
-                _isCollected = true;
-                StartCoroutine(HideAfterInteraction());
-            }
-            else
-            {
-                RestorePickup();
-            }
-        }
-
-        private void CancelReading()
-        {
-            RemoveReader();
-            RestorePickup();
-        }
-
-        private void RemoveReader()
-        {
-            if (_reader != null)
-            {
-                _reader.gameObject.SetActive(false);
-                Destroy(_reader.gameObject);
-                _reader = null;
-            }
             _readingRequested = false;
+            StopAllCoroutines();
+            _isCollected = collected;
+            if (!isActiveAndEnabled) { return; }
+            if (collected) { StartCoroutine(HideAfterInteraction()); }
+            else { RestorePickup(); }
         }
 
         private void RestorePickup()
@@ -253,7 +197,7 @@ namespace Education
         {
             _interactable.activated.RemoveListener(HandleActivated);
             _interactable.selectEntered.RemoveListener(HandleSelected);
-            RemoveReader();
+            if (_readingRequested) { _parchment.CancelPickup(_lessonIndex); }
         }
     }
 }

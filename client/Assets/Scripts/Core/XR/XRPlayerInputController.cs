@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 
@@ -17,6 +18,9 @@ namespace XR
         [SerializeField, Range(0f, 80f)] private float _maximumPitch = 60f;
 
         private XROrigin _rig;
+        private ContinuousMoveProvider _moveProvider;
+        private bool _parchmentMovementBlocked;
+        private float _moveSpeedBeforeParchment;
         private Transform _viewOffset;
         private Quaternion _initialViewRotation;
         private Vector3 _frontDirection;
@@ -39,6 +43,21 @@ namespace XR
         private bool _tutorialRayForcedOn;
         private bool _laserStateBeforeTutorial;
         private bool _bound;
+
+        public void SetParchmentMovementBlocked(bool blocked)
+        {
+            if (_parchmentMovementBlocked == blocked) { return; }
+            _parchmentMovementBlocked = blocked;
+            if (blocked)
+            {
+                _moveSpeedBeforeParchment = _moveProvider.moveSpeed;
+                _moveProvider.moveSpeed = 0f;
+            }
+            else
+            {
+                _moveProvider.moveSpeed = _moveSpeedBeforeParchment;
+            }
+        }
 
         public bool TutorialInputSuppressed
         {
@@ -78,6 +97,7 @@ namespace XR
         private void Awake()
         {
             _rig = GetComponent<XROrigin>();
+            _moveProvider = GetComponent<ContinuousMoveProvider>();
             _viewOffset = _rig.CameraFloorOffsetObject.transform;
             _initialViewRotation = _viewOffset.localRotation;
             _frontDirection = Vector3.ProjectOnPlane(_rig.Origin.transform.forward, Vector3.up).normalized;

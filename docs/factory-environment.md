@@ -13,12 +13,12 @@
 | [FactorySceneLoadController](../client/Assets/Scripts/FactoryEnvironment/FactorySceneLoadController.cs) | 공유 목적지 데이터에서 튜토리얼·학습·엔딩 씬 이름을 읽어 Additive/Single 로드를 담당한다. 튜토리얼 초기화·완료 대기·언로드와 체험 콘텐츠 배치·조명 정리·Rigidbody 동기화, 준비한 씬의 확정·취소, 이전 씬 언로드와 파괴 시 정리를 처리한다. 로딩 결과와 오류를 Manager에 제공하며 학습 완료 조건은 판단하지 않는다. |
 | [FactoryPlayerController](../client/Assets/Scripts/FactoryEnvironment/FactoryPlayerController.cs) | Manager의 입구 배치 요청 때 유지된 XR 리그와 Interactor를 찾고, 추적 높이를 보존해 위치·방향을 맞춘다. 에디터 눈높이 보정, ray 입력 준비, 카메라·리그 참조와 언로드할 학습 씬의 물체 선택 해제를 담당한다. |
 | [FactoryMapController](../client/Assets/Scripts/FactoryEnvironment/FactoryMapController.cs) | 공장 루트 아래 BoxCollider의 이름·높이·월드 경계를 읽어 바닥과 벽을 구분한다. 방 이름과 양피지 문서 인덱스·참조를 모아 `TabletMapData`를 만들고 태블릿에 게시한다. 시작·재활성화 때 읽어 게시하고 비활성화 때 자신이 게시한 지도를 해제한다. |
-| [ParchmentPickupController](../client/Assets/Scripts/FactoryEnvironment/ParchmentPickupController.cs) | XRI Activate와 선택 시작을 같은 열람 요청으로 처리한다. 입력 거리와 리그를 확인하고 양피지 확대 화면을 연다. 마지막 페이지의 완료를 누른 뒤에만 `TabletManager.CollectParchment()`를 호출하고 원래 수집물을 숨긴다. |
-| [ParchmentReaderController](../client/Assets/Scripts/FactoryEnvironment/ParchmentReaderController.cs) | 양피지를 플레이어 앞에 확대하고 세 페이지 본문과 이전·다음·완료·닫기 버튼을 표시한다. 완료 버튼은 마지막 페이지에서만 나타나며 닫으면 수집물로 돌아간다. |
+| [ParchmentPickupController](../client/Assets/Scripts/FactoryEnvironment/ParchmentPickupController.cs) | 기존 거리·XRI 입력을 확인하고 공용 ParchmentManager에 프리팹 열람을 직접 요청한다. 종료 결과로 공장 원본을 숨기거나 복원한다. |
+| [ParchmentReaderController](../client/Assets/Scripts/Core/Parchment/ParchmentReaderController.cs) | 공용 프리팹의 페이지·버튼·확대 연출을 갱신하며 완료·닫기 요청을 알린다. |
 | [TabletMapData](../client/Assets/Scripts/Core/Tablet/TabletMapData.cs) | 판독한 바닥·벽 목록과 지도 경계를 읽기 전용 데이터로 묶는다. 양피지는 원본 컴포넌트 참조와 문서 인덱스를 보관해 위치·활성 상태를 조회할 수 있게 한다. 공장 배치를 읽는 코드와 지도 그래픽을 그리는 코드 사이의 전달 형식이다. |
 | [TabletMinimapController](../client/Assets/Scripts/Core/Tablet/TabletMinimapController.cs) | 전달받은 바닥·벽의 XZ 영역을 태블릿 좌표로 투영해 uGUI 도형으로 그린다. 카메라 위치·방향과 수집 여부를 주기적으로 읽어 플레이어 표시와 남은 양피지를 갱신한다. 같은 데이터로 플레이어 주변 지도와 전체 공장 지도를 구성한다. |
-| [TabletParchmentController](../client/Assets/Scripts/Core/Tablet/TabletParchmentController.cs) | 문서 인덱스별 획득 배열과 선택 문서·페이지를 보관한다. 수집되면 인벤토리를 갱신하고, 보유한 항목을 선택하면 `ParchmentLesson`의 페이지를 화면에 연결한다. 수집 여부는 리그의 메모리에 남고 지도도 같은 상태를 읽어 획득한 양피지 마커를 숨긴다. |
-| [ParchmentLesson](../client/Assets/Scripts/Core/Tablet/ParchmentLesson.cs) | 문서별 제목·부서·배치 방·본문 페이지를 정적 목록으로 제공한다. 수집 오브젝트의 `LessonIndex`가 이 목록의 항목을 가리키며, 태블릿의 인벤토리 설명과 열람 화면이 같은 데이터를 사용한다. 획득 여부나 현재 읽는 페이지는 Controller가 관리한다. |
+| [TabletParchmentController](../client/Assets/Scripts/Core/Tablet/TabletParchmentController.cs) | 아이템함과 선택 항목을 관리한다. 수집 여부는 공통 세션의 조회 함수로 읽고, 선택 시 같은 공용 프리팹으로 재열람을 요청한다. |
+| [ParchmentLesson](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs) | 제목·주제·부서·위치 안내·본문의 공통 원본. 수집 상태는 독립 공용 ParchmentManager, 페이지는 공용 Reader가 관리한다. |
 
 ## 체험 실행 흐름
 
@@ -61,7 +61,7 @@ FactoryIntro
 
 `FactoryNavigationData._destinations`의 각 목적지 항목에 경로를 연결한다. 배열 순서는 동작에 영향을 주지 않으며 `FactoryDestinationId`로 조회한다. Controller는 `Start()`에서 현재 목적지와 일치하는 경로만 켠다. Manager가 먼저 첫 목적지를 지정했다면 그 경로가 유지된다. Inspector의 필수 연결은 런타임에서 재검증하지 않는다. 모든 경로는 같은 `FactoryRoute.mat`을 사용하며 Collider와 그림자는 없다. `SetDestination()`은 표시 상태만 바꾼다.
 
-방 간판은 `FactoryEnvironment.unity`에 World Space Canvas와 Text로 미리 배치한다. 기존 간판 프레임과 위치를 유지하고 인쇄 면은 `RoomSignSurface.mat`의 공통 어두운 배경을 사용한다. 방 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며, 런타임 생성이나 재질 덮어쓰기 없이 씬에 저장된 상태로 표시한다. 간판 문구·배치·스타일은 씬에서 편집한다. 기존 간판 PNG/GUID나 공장 내부 탐색용 오브젝트명을 바꾸지 않는다. `FactoryMapController`는 같은 새 방 이름을 지도 데이터로 전달한다. 양피지 인벤토리의 방 이름은 지도와 별개로 `ParchmentLesson.Room`에 정의되어 있다.
+방 간판은 `FactoryEnvironment.unity`에 World Space Canvas와 Text로 미리 배치한다. 기존 간판 프레임과 위치를 유지하고 인쇄 면은 `RoomSignSurface.mat`의 공통 어두운 배경을 사용한다. 방 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며, 런타임 생성이나 재질 덮어쓰기 없이 씬에 저장된 상태로 표시한다. 간판 문구·배치·스타일은 씬에서 편집한다. 기존 간판 PNG/GUID나 공장 내부 탐색용 오브젝트명을 바꾸지 않는다. `FactoryMapController`는 같은 새 방 이름을 지도 데이터로 전달한다. 양피지 인벤토리의 방 이름은 지도와 별개로 `ParchmentLesson.LocationHint`에 정의되어 있다.
 
 공용 스틱 이동 속도와 에디터 FPS 모드의 WASD 몸 이동 속도는 5m/s다. 입력 동작은 공용 XR 리그와 [조작법](xr-simulator.md)을 따른다.
 
@@ -94,31 +94,31 @@ FactoryMapController.ReadMap()
 
 ## 공장과 Tablet의 경계
 
-공장은 `TabletManager.SetMapData/ClearMapData`, `CollectParchment/HasParchment`만 통해 지도·수집 데이터를 연결한다. Tablet의 UI·포커스·설정·양피지 열람은 공장 흐름이 직접 조작하지 않는다.
+공장은 기존 TabletManager 진입점으로 지도·수집 정보를 연결한다. Pickup은 ParchmentManager.OpenPickup/CancelPickup으로 열람을 직접 요청·취소하고 진행 Manager는 기존 TabletManager.HasParchment 조회를 사용한다. Tablet의 UI·포커스·설정·양피지 열람은 공장 흐름이 직접 조작하지 않는다.
 
-`TabletManager`는 UIBuilder의 버튼 요청과 Input·Settings·Parchment·Learning의 로컬 C# 이벤트를 `OnEnable()`에서 연결하고 `OnDisable()`에서 해제한다. UIBuilder는 화면 구성과 생성한 지도 참조를 보관하고, Manager나 수집·설정·학습 Controller를 직접 호출하지 않는다. 설정값은 Settings, 획득 배열·열람 페이지는 Parchment, 미션·진행률은 Learning이 소유한다. 상세 안내·지도·종료 확인 화면의 표시 책임은 `TabletDetailController`에 있고, 단계·초기 작업 문구는 `TabletLearningContent`에 있다.
+`TabletManager`는 UIBuilder의 버튼 요청과 Input·Settings·Parchment·Learning의 로컬 C# 이벤트를 `OnEnable()`에서 연결하고 `OnDisable()`에서 해제한다. UIBuilder는 화면 구성과 생성한 지도 참조를 보관하고, Manager나 수집·설정·학습 Controller를 직접 호출하지 않는다. 설정값은 Settings, 획득 배열은 독립 공용 ParchmentManager, 열람 페이지는 공용 Reader, 미션·진행률은 Learning이 소유한다. 상세 안내·지도·종료 확인 화면의 표시 책임은 `TabletDetailController`에 있고, 단계·초기 작업 문구는 `TabletLearningContent`에 있다.
 
 Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. 매번 Manager를 찾아 지도 데이터를 읽거나 생성한 지도를 계층 탐색으로 다시 수집하지 않는다.
 
 ## 양피지 수집과 문서
 
-`ParchmentPickupController`는 `XRSimpleInteractable.activated`와 `selectEntered`에서 같은 열람 경로를 사용한다. 입력을 보낸 Interactor가 3m 이내인지 확인하고 해당 리그의 `TabletManager`를 찾는다. 클릭하면 공장에 있는 양피지가 플레이어 앞에서 확대되고, 세 페이지를 순서대로 넘겨 마지막 페이지에 도달해야 `완료` 버튼이 나타난다. 완료를 누르면 `CollectParchment`가 실행되어 태블릿 인벤토리에 보관되고 공장의 원본 양피지는 다음 프레임에 숨겨진다. 중간에 닫으면 획득 상태를 변경하지 않고 원본으로 돌아간다.
+`ParchmentPickupController`는 `XRSimpleInteractable.activated`와 `selectEntered`에서 같은 열람 경로를 사용한다. 입력을 보낸 Interactor가 3m 이내인지 확인하고 공용 `ParchmentManager`에 직접 열람을 요청한다. 클릭하면 공장에 있는 양피지가 플레이어 앞에서 확대되고, 세 페이지를 순서대로 넘겨 마지막 페이지에 도달해야 `완료` 버튼이 나타난다. 완료를 누르면 공통 세션에 수집 상태가 기록되어 태블릿 인벤토리에 보관되고 공장의 원본 양피지는 다음 프레임에 숨겨진다. 중간에 닫으면 획득 상태를 변경하지 않고 원본으로 돌아간다.
 
 체험 씬은 해당 방에 필요한 양피지를 모두 완료할 때까지 로드하지 않는다. Pixel Lab에는 01·02, Feature Map Lab에는 03·04, Model Design Lab에는 05가 필요하다. `FactoryLearningFlowManager`가 방 진입을 검사할 때 수집 상태를 먼저 확인한 뒤에만 `PrepareLesson`을 시작한다. 이미 방 안에 있을 때 마지막 양피지를 완료해도 다음 검사 주기에 체험이 시작된다.
 
-획득 상태는 `TabletParchmentController`의 배열에 보관된다. 공용 리그가 유지되는 씬 이동에서는 상태가 남고, 앱을 다시 시작하면 초기화된다. 공장을 다시 로드하면 각 양피지가 `Start`에서 획득 상태를 확인해 이미 수집한 오브젝트를 숨긴다.
+획득 상태는 독립 루트의 `ParchmentManager`의 배열에 보관된다. 공용 리그가 유지되는 씬 이동에서는 상태가 남고, 앱을 다시 시작하면 초기화된다. 공장을 다시 로드하면 각 양피지가 `Start`에서 획득 상태를 확인해 이미 수집한 오브젝트를 숨긴다.
 
-`LessonIndex`는 `ParchmentLesson.All`의 0부터 시작하는 인덱스다. 각 문서는 세 페이지로 구성된다.
+`LessonIndex`는 기존 0~4 문서 ID이며 `ParchmentCatalog.Get(id)`로 조회한다. 각 문서는 세 페이지로 구성된다. Pickup의 `_placementRoom`은 기존 `FactoryDestinationId` enum이며 `PlacementRoom`으로 조회한다. 정확한 위치·회전은 Pickup 자신의 Transform에만 저장한다. 아래 배치 방은 현재 씬 기준이며 방 입장에 필요한 양피지 조건이나 문서의 LocationHint와 별개다.
 
 | 인덱스 | 주제 | 배치 방 |
 | --- | --- | --- |
-| 0 | 이미지와 픽셀, 밝기·RGB·채널 | Pixel Lab 접근 동선 |
-| 1 | 합성곱과 패딩 | Pixel Lab 접근 동선 |
-| 2 | 필터와 특징 추출 | Feature Map Lab 접근 동선 |
-| 3 | 특징 맵 | Feature Map Lab 접근 동선 |
-| 4 | 활성화 함수와 ReLU | Model Design Lab 접근 동선 |
+| 0 | 이미지와 픽셀, 밝기·RGB·채널 | Pixel Lab (`03 Original image inspection room`) |
+| 1 | 합성곱과 패딩 | Model Design Lab (`05 Model assembly room`) |
+| 2 | 필터와 특징 추출 | Model Design Lab (`05 Model assembly room`) |
+| 3 | 특징 맵 | Model Design Lab (`05 Model assembly room`) |
+| 4 | 활성화 함수와 ReLU | Model Design Lab (`05 Model assembly room`) |
 
-특징 맵 문서의 표시 전환은 `TabletParchmentController.ToggleFeatureMap`이 삽화 Image와 문구를 갱신하는 기능이다. 모델 계산 데이터에는 영향을 주지 않는다.
+공용 `ParchmentIllustrationController`는 현재 페이지에 지정된 삽화 패널만 표시한다. 특징 맵 세 개는 고정 캡션과 함께 항상 표시하며 별도 토글이나 포커스가 없다. 모델 계산 데이터에는 영향을 주지 않는다.
 
 ## 씬 구성과 에디터 도구
 
@@ -146,3 +146,7 @@ Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. �
 ## PixelLab 내부 체험과 공장 경계
 
 Factory는 CNNPixelLab 관리용 씬만 로드·배치한다. CNNScreenLab과 CNNConvolutionLab의 이름·Manager·선택 데이터·복귀 좌표는 FactoryNavigationData에 두지 않는다. CNNPixelLabManager가 내부 로더와 두 체험을 조율하며, Factory는 ConvolutionCompleted 조회와 EndSession 종료 요청만 사용한다. 관리용 콘텐츠는 배치·이전 체험 언로드가 끝난 뒤 활성화한다. 내부 씬은 관리용 루트 위치를 기준으로 배치되므로 공장 기준점 보정을 반복하지 않는다.
+
+공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. XR 리그와 씬 진행 Manager의 변경 없이 Pickup → ParchmentManager ← Tablet 연결을 사용한다.
+
+양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·위치 안내·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.

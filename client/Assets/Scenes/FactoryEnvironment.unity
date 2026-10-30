@@ -112059,6 +112059,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
   _lessonIndex: 3
+  _placementRoom: 3
+  _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _paperRenderer: {fileID: 1312276564}
   _glowRenderer: {fileID: 755998639}
   _glowLight: {fileID: 489609336}
@@ -113210,6 +113212,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
   _lessonIndex: 4
+  _placementRoom: 3
+  _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _paperRenderer: {fileID: 1537444553}
   _glowRenderer: {fileID: 698433712}
   _glowLight: {fileID: 817519408}
@@ -116908,6 +116912,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
   _lessonIndex: 0
+  _placementRoom: 1
+  _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _paperRenderer: {fileID: 812757852}
   _glowRenderer: {fileID: 1769260422}
   _glowLight: {fileID: 945357412}
@@ -118606,6 +118612,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
   _lessonIndex: 2
+  _placementRoom: 3
+  _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _paperRenderer: {fileID: 1638056841}
   _glowRenderer: {fileID: 1327801158}
   _glowLight: {fileID: 1846498378}
@@ -121570,6 +121578,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
   _lessonIndex: 1
+  _placementRoom: 3
+  _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _paperRenderer: {fileID: 1338376595}
   _glowRenderer: {fileID: 1958211205}
   _glowLight: {fileID: 950259313}

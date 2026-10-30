@@ -26,6 +26,7 @@ namespace FactoryEnvironment
         public Scene PreparedScene => _preparedLesson;
         public string LastError { get; private set; }
         public bool IsLeaving { get; private set; }
+        public bool TutorialCompleted { get; private set; }
 
         private void Awake()
         {
@@ -41,6 +42,7 @@ namespace FactoryEnvironment
         public IEnumerator RunTutorial(XROrigin rig)
         {
             _tutorialRunning = true;
+            TutorialCompleted = false;
             AsyncOperation loading = BeginLoad(_navigationData.TutorialSceneName, LoadSceneMode.Additive);
             if (loading == null)
             {
@@ -66,6 +68,7 @@ namespace FactoryEnvironment
                 {
                     yield return null;
                 }
+                TutorialCompleted = tutorial != null && tutorial.IsComplete;
                 if (tutorial == null)
                 {
                     Debug.LogError("[FactoryFlow] 완료 전에 공장 입구 안내가 제거되었습니다.", this);
@@ -76,7 +79,7 @@ namespace FactoryEnvironment
                 yield return SceneManager.UnloadSceneAsync(_tutorialScene);
             }
             _tutorialScene = default;
-            _routeInstruction.SetActive(true);
+            _routeInstruction.SetActive(TutorialCompleted);
             _tutorialRunning = false;
         }
 

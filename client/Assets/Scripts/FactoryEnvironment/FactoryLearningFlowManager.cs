@@ -18,6 +18,7 @@ namespace FactoryEnvironment
         private TabletManager _tablet;
         private FactoryDestinationId _stage = FactoryDestinationId.None;
         private bool _loading;
+        private bool _tutorialComplete;
         private float _nextCheckTime;
 
         private void Awake()
@@ -28,7 +29,18 @@ namespace FactoryEnvironment
             _routeGuide = GetComponentInChildren<FactoryRouteGuideController>(true);
         }
 
-        private void Start()
+        private IEnumerator Start()
+        {
+            InitializeFactory();
+            yield return _sceneLoader.RunTutorial(_player.Rig);
+            _tutorialComplete = _sceneLoader.TutorialCompleted;
+            if (_tutorialComplete)
+            {
+                _routeGuide.SetDestination(FactoryDestinationId.PixelLab);
+            }
+        }
+
+        private void InitializeFactory()
         {
             _player.PlaceAtEntrance();
             _tablet = _player.Rig.GetComponentInChildren<TabletManager>(true);
@@ -42,13 +54,12 @@ namespace FactoryEnvironment
             }
             _sceneLoader.ActivateFactoryScene();
             _player.PrepareRayInput();
-            _routeGuide.SetDestination(FactoryDestinationId.PixelLab);
-            StartCoroutine(_sceneLoader.RunTutorial(_player.Rig));
+            _routeGuide.SetDestination(FactoryDestinationId.None);
         }
 
         private void Update()
         {
-            if (_loading || _sceneLoader.IsLeaving || Time.time < _nextCheckTime)
+            if (!_tutorialComplete || _loading || _sceneLoader.IsLeaving || Time.time < _nextCheckTime)
             {
                 return;
             }
@@ -119,10 +130,6 @@ namespace FactoryEnvironment
         private IEnumerator LoadLesson(FactoryDestinationId destination)
         {
             yield return null;
-            if (_stage == FactoryDestinationId.None)
-            {
-                yield return _sceneLoader.EndTutorial();
-            }
             yield return _sceneLoader.PrepareLesson(destination);
             if (_sceneLoader.LastError != null)
             {

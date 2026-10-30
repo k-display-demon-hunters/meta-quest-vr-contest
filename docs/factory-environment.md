@@ -32,7 +32,7 @@ FactoryIntro
       → 뒤쪽 출구 → FactoryEnding
 ```
 
-`FactoryLearningFlowManager.Start`는 `FactoryPlayerController.PlaceAtEntrance()`를 호출해 유지된 XR 리그를 FactoryNavigationData의 `Entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. Controller가 제공한 카메라를 진입 영역에 연결한 뒤 `FactorySceneLoadController.RunTutorial()`을 요청한다. Controller가 `FactoryTutorial`을 Additive로 로드하고 초기화한 뒤 `FactoryTutorialManager.IsComplete`를 기다려 언로드한다. SceneLoadController는 성공한 뒤 씬에 미리 배치한 안내판을 켠다. Manager는 시작 시 첫 경로를 켜고 튜토리얼 완료 여부와 관계없이 학습 진입을 허용한다. 첫 학습 진입 시 `EndTutorial()`을 요청하고, 튜토리얼 언로드가 끝나면 학습 씬을 로드한다. 튜토리얼이 로딩 중이면 로드 완료 후 초기화하지 않고 바로 언로드한다. 튜토리얼 로딩 실패 또는 완료 전 안내 오브젝트 해제는 Controller에서 로그로 알린다. 안내는 공장 배경을 유지한 입구에서 수행 판정 없는 14페이지로 진행한다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
+`FactoryLearningFlowManager.Start`는 `FactoryPlayerController.PlaceAtEntrance()`를 호출해 유지된 XR 리그를 FactoryNavigationData의 `Entrance` 기준점 `(0, 0, -20)`에 한 번 배치한다. 카메라 추적 높이를 보존하고 입구 방향을 맞추며, 에디터 시뮬레이터의 초기 눈높이 보정을 유지한다. Controller가 제공한 카메라를 진입 영역에 연결한 뒤 `FactorySceneLoadController.RunTutorial()`을 요청한다. Controller가 `FactoryTutorial`을 Additive로 로드하고 초기화한 뒤 `FactoryTutorialManager.IsComplete`를 기다려 언로드한다. SceneLoadController는 성공한 뒤 씬에 미리 배치한 안내판을 켠다. Manager는 튜토리얼 완료 전 첫 경로와 실습 진입을 보류한다. 조작·태블릿 안내 11개 화면 뒤 [미션 시작]과 최종 미션 안내의 [확인]을 눌러야 IsComplete가 설정된다. RunTutorial 종료 후 TutorialCompleted가 참인 경우에만 첫 경로와 실습 진입을 허용한다. 튜토리얼 로딩 실패 또는 완료 전 안내 오브젝트 해제는 Controller에서 로그로 알리며 완료로 취급하지 않는다. 안내 씬에는 리그·카메라·배경·EventSystem을 중복 배치하지 않으며 공장의 공용 EventSystem은 안내 언로드 뒤에도 유지한다. 안내 코드와 입력 복원은 [오프닝·입구 안내](factory-intro-ending.md)에 정리한다. 이후 체험은 다음 순서로 진행한다.
 
 1. 현재 체험이 미완료면 그 방을, 완료했으면 다음 방을 목적지로 삼는다. 바닥선을 따라 직접 이동하며 목적지 영역 안에서는 선을 숨긴다. 순서보다 앞선 방에 들어가도 체험을 불러오지 않는다.
 2. 플레이어가 다음 영역에 머물러도 해당 방의 양피지를 모두 열람하고 `완료`하지 않았다면 체험 씬을 로드하지 않는다. Pixel Lab은 01·02, Feature Map Lab은 03·04, Model Design Lab은 05가 필요하다. 조건을 충족하면 대상 씬을 Additive로 로드하며, 로딩 중 중복 요청은 차단한다. 공장 Manager는 잡기 상태를 별도 검사하지 않지만 피처맵 완료 프로퍼티는 자체 잡기 상태를 포함한다.
@@ -44,7 +44,7 @@ FactoryIntro
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab 영역에 들어가면 튜토리얼 종료를 요청하고 언로드를 기다린 뒤 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
+| 공장 진입 | 튜토리얼의 최종 [확인]을 누른 뒤 양피지 01·02를 완료하고 Pixel Lab 영역에 들어가면 CNNPixelLab을 불러온다. |
 | 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 Feature Map Lab을 안내한다. 해당 영역에서 양피지 03·04 완료 조건까지 충족하면 Feature Map Lab 체험을 불러온다. 픽셀 데이터·내부 체험 전환·완료 상태는 CNNPixelLabManager가 소유한다. |
 | 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이면 Model Design Lab을 안내한다. 해당 영역에서 양피지 05 완료 조건까지 충족하면 Model Design Lab 체험을 불러온다. |
 | 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 완료 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 새 학습의 Training 상태에서 완료 상태를 초기화한다. 단계 건너뛰기는 현재 모델 씬의 완료 조건이 아니다. |

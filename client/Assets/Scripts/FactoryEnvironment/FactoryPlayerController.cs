@@ -40,6 +40,13 @@ namespace FactoryEnvironment
             rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
         }
 
+        public void MoveTo(Transform arrival)
+        {
+            float height = CameraTransform.position.y - Rig.Origin.transform.position.y;
+            Rig.MatchOriginUpCameraForward(Vector3.up, arrival.forward);
+            Rig.MoveCameraToWorldLocation(arrival.position + Vector3.up * height);
+        }
+
         public void ReleaseSceneObjects(Scene scene)
         {
             foreach (XRBaseInteractor interactor in _interactors)

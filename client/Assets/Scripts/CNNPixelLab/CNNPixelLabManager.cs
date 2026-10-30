@@ -17,14 +17,18 @@ namespace UI
         private bool _factoryHosted;
         private bool _closingFactoryDisplay;
         private Pose _factoryConvolutionPose;
+        private bool _startWithConvolution;
+        public bool IsSwitching => _switching;
+        public string LoadError => _sceneLoader.LastError;
 
         public bool ConvolutionCompleted => _completed && !_switching && !_ending;
         public bool WaitingForFactoryConvolution { get; private set; }
         public event Action ScreenCompleted;
         public event Action ConvolutionStarted;
 
-        public void ConfigureFactoryConvolution(Pose pose)
+        public void ConfigureFactoryConvolution(Pose pose, bool startWithConvolution = false)
         {
+            _startWithConvolution = startWithConvolution;
             _factoryHosted = true;
             _factoryConvolutionPose = pose;
         }
@@ -58,6 +62,13 @@ namespace UI
         {
             _switching = true;
             yield return SwitchStage(false, false);
+            if (_startWithConvolution && !_ending && _sceneLoader.LastError == null)
+            {
+                _patch = _screen.CreateConvolutionInput();
+                _switching = true;
+                yield return SwitchStage(true, false);
+                if (!_ending && _sceneLoader.LastError == null) { ConvolutionStarted?.Invoke(); }
+            }
         }
 
         public IEnumerator EndSession()

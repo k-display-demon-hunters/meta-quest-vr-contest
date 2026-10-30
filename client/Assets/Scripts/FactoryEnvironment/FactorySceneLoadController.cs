@@ -20,6 +20,7 @@ namespace FactoryEnvironment
         private bool _destroying;
 
         public Scene PreparedScene => _preparedLesson;
+        public bool HasPreparedLesson => _preparedLesson.IsValid() && _preparedLesson.isLoaded;
         public string LastError { get; private set; }
         public bool TutorialCompleted { get; private set; }
         public bool IsLeaving { get; private set; }

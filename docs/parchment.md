@@ -1,8 +1,8 @@
 # 공용 양피지 열람
 
-공장 pickup과 태블릿 아이템함은 `client/Assets/Prefabs/Common/ParchmentReader.prefab` 하나를 사용한다. 배경·제목·본문·버튼·삽화는 프리팹에 배치되어 있다.
+공장 pickup과 태블릿 양피지 목록은 `client/Assets/Prefabs/Common/ParchmentReader.prefab` 하나를 사용한다. 배경·제목·본문·버튼·삽화는 프리팹에 배치되어 있다.
 
-FactoryEnvironment에 양피지 Pickup 5개를 각 방의 자식 씬 오브젝트로 배치했다. 문서 ID 0~4와 공용 열람 프리팹을 연결하며, 수집 전에는 아이템함에 미발견으로 표시하고 수집 후 같은 열람창으로 다시 읽는다.
+FactoryEnvironment에 양피지 Pickup 5개를 각 방의 자식 씬 오브젝트로 배치했다. 문서 ID 0~4와 공용 열람 프리팹을 연결하며, 수집 전 문서는 태블릿 목록에 표시하지 않고 수집한 문서만 같은 열람창으로 다시 읽는다.
 
 ## 소유 관계
 
@@ -25,11 +25,11 @@ ParchmentPickupController는 Awake에서 공용 Manager와 XRI 컴포넌트를 �
 
 Core의 ParchmentManager가 등록된 위치를 기준으로 3m 거리와 중복 열람·수집 여부를 확인하고 XR 카메라를 연결한다. XRI 콜백이 끝난 다음 프레임에 표시 콜백으로 원본을 숨기고 공용 열람창을 연다. 완료하면 수집 상태를 기록하고, 닫으면 수집 결과를 표시 콜백에 전달한다. 공장 전용 ParchmentPickupVisualController가 완료 시 원본을 다음 프레임에 비활성화하고 취소 시 외형과 상호작용을 복원한다. Core는 공장 Controller 타입을 참조하지 않는다.
 
-Pickup의 `_placementRoom`은 Core/Parchment의 `ParchmentRoom`이며 PlacementRoom으로 조회한다. Inspector에 저장된 값이 위치 정보의 원본이다. Manager의 GetPlacementRoom은 활성 등록의 enum을 반환하고, TabletParchmentController가 이를 ROOM #1~#3 안내 문자열로 변환한다. 등록되지 않은 문서는 위치 정보 없음으로 표시한다. 등록·해제 시 LocationsChanged 이벤트로 아이템함을 갱신하고, 태블릿이 다시 활성화될 때도 현재 값을 조회한다. TabletManager의 이벤트 구독·해제는 OnEnable/OnDisable에서 대칭으로 수행한다. 문서 데이터에는 위치 문자열을 저장하지 않는다.
+Pickup의 `_placementRoom`은 Core/Parchment의 ParchmentRoom이며 PlacementRoom으로 조회한다. 공용 Manager는 위치 등록값과 LocationsChanged 이벤트를 유지한다. 태블릿 목록은 HasCollected로 수집 여부만 조회하고 보유한 문서의 제목·주제를 표시한다. TabletManager는 Collected 이벤트와 재활성화 시 목록을 갱신하며, 수집 전 위치 힌트 행은 표시하지 않는다. 문서 데이터에는 위치 문자열을 저장하지 않는다.
 
 기존 ParchmentSceneSetup 도구도 공용 enum과 열람 프리팹을 사용하며 새 표시 Controller의 Renderer·Light 참조와 Pickup의 `_visuals`를 연결한다. 이 도구의 배치 좌표는 여전히 이전 공장 기준이므로 현재 공간의 배치 도구가 아니다.
 
-FactoryEnvironment 씬에는 기존 Pickup의 외형·상호작용 설정을 재사용하고 현재 방에 맞게 위치·회전·배치 방을 지정했다. FactoryLearningFlowManager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 현재 튜토리얼·체험 완료와 구역 진입 조건으로 학습 씬과 셔터를 조율한다. ROOM #1의 스크린·합성곱 공간 전환과 후문 엔딩 흐름은 [공장 공간과 체험 연결](factory-environment.md)을 따른다.
+FactoryEnvironment 씬에는 기존 Pickup의 외형·상호작용 설정을 재사용하고 현재 방에 맞게 위치·회전·배치 방을 지정했다. FactoryLearningFlowManager는 양피지 수집을 진행 조건으로 사용하지 않으며, 현재 튜토리얼·체험 완료와 구역 진입 조건으로 학습 씬과 셔터를 조율한다. ROOM #1의 스크린·합성곱 공간 전환과 후문 엔딩 흐름은 [공장 공간과 체험 연결](factory-environment.md)을 따른다.
 
 ## 씬 배치
 
@@ -43,7 +43,7 @@ FactoryEnvironment 씬에는 기존 Pickup의 외형·상호작용 설정을 재
 | 04 특징 맵 | ROOM #2 남동쪽 | 4, 1.45, 8 | 180 |
 | 05 활성화 함수와 ReLU | ROOM #3 남서쪽 | 17, 1.45, 8 | 180 |
 
-FactoryMapController의 기존 하위 Pickup 탐색으로 지도에 게시한다. 태블릿 위치 안내는 각 Pickup의 PlacementRoom 등록값으로 결정한다. 씬 직렬화 참조와 배치 좌표를 정적으로 확인했으며 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
+FactoryMapController의 기존 하위 Pickup 탐색으로 지도에 게시한다. 태블릿 미니맵은 게시된 위치를 사용하고 수집 목록은 보유 문서만 표시한다. 씬 직렬화 참조와 배치 좌표를 정적으로 확인했으며 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
 
 ## 태블릿 재열람과 수명
 

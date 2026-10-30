@@ -171,7 +171,7 @@ namespace Tablet
                 {
                     InteractionRequested?.Invoke(true);
                 }
-                if (ActiveTargets[_focusIndex].Control is Button button && button.IsInteractable())
+                if (ActiveTargets[_focusIndex].Control is Button button && button.IsActive() && button.IsInteractable())
                 {
                     button.onClick.Invoke();
                     if (!_xButton.enabled) { return; }

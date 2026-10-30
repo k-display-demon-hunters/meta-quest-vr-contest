@@ -78,6 +78,15 @@ namespace UI
             ResetRequested?.Invoke();
         }
 
+        // Direct stage entry uses the same source image without claiming pixel-lesson completion.
+        public PixelPatchData CreateConvolutionInput()
+        {
+            using (PixelImageData image = _imageFactory.Create())
+            {
+                return image.CapturePatch(new Vector2Int(image.Columns / 2, image.Rows / 2));
+            }
+        }
+
         public void SetInitialSelection(Vector2Int selected)
         {
             _initialSelection = selected;

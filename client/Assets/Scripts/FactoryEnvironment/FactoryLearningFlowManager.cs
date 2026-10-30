@@ -1,4 +1,5 @@
 using System.Collections;
+using Tablet;
 using CNNFeatureMaps;
 using ModelDesignScene;
 using UI;
@@ -13,7 +14,15 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryShutterController _room1Passage;
         [SerializeField] private FactoryAreaEntryController _room1SecondArea;
         [SerializeField] private Transform _room1SecondAnchor;
+        [SerializeField] private Transform[] _stageArrivals;
         private CNNPixelLabManager _room1Pixels;
+        private TabletManager _tablet;
+        private int _completedStages;
+        private int _currentLesson = -1;
+        private int _publishedMask = -1;
+        private int _publishedStage = -2;
+        private bool _publishedTravel;
+
 
         private FactoryRouteGuideController _routeGuide;
         private FactoryPlayerController _player;
@@ -28,18 +37,34 @@ namespace FactoryEnvironment
 
         public void NotifyRoom1FirstExperienceCompleted()
         {
+            _completedStages |= 1;
+            PublishTablet();
             _room1Passage.Open();
             _routeGuide.SetRoom1PassageVisible(true);
         }
 
         public void NotifyRoom1SecondExperienceStarted()
         {
+            _currentLesson = 1;
+            PublishTablet();
             _room1Passage.Close();
             _routeGuide.SetRoom1PassageVisible(false);
         }
 
-        private void OnEnable() => SubscribeRoom1();
-        private void OnDisable() => UnsubscribeRoom1();
+        private void OnEnable()
+        {
+            SubscribeRoom1();
+            _tablet.StageMoveRequested += RequestStageMove;
+        }
+        private void OnDisable()
+        {
+            UnsubscribeRoom1();
+            if (_tablet != null)
+            {
+                _tablet.StageMoveRequested -= RequestStageMove;
+                _tablet.SetLearningState(_currentLesson, _completedStages, false);
+            }
+        }
 
         private void SubscribeRoom1()
         {
@@ -58,6 +83,7 @@ namespace FactoryEnvironment
 
         private void Awake()
         {
+            _tablet = FindFirstObjectByType<TabletManager>();
             _player = GetComponent<FactoryPlayerController>();
             _sceneLoader = GetComponent<FactorySceneLoadController>();
             _navigationData = GetComponent<FactoryNavigationData>();
@@ -67,6 +93,7 @@ namespace FactoryEnvironment
         private void Start()
         {
             _player.PlaceAtEntrance();
+            PublishTablet();
             _room1Passage.Bind(_player.CameraTransform);
             _room1SecondArea.Bind(_player.CameraTransform);
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
@@ -83,7 +110,8 @@ namespace FactoryEnvironment
 
         private void Update()
         {
-            if (_loading || HasReachedExit || Time.time < _nextCheckTime) { return; }
+            PublishTablet();
+            if (_loading || HasReachedExit || _destination == FactoryDestinationId.None || Time.time < _nextCheckTime) { return; }
             _nextCheckTime = Time.time + .1f;
             if (_stage == FactoryDestinationId.PixelLab && _room1Pixels.WaitingForFactoryConvolution
                 && _room1SecondArea.IsPlayerInside)
@@ -102,6 +130,8 @@ namespace FactoryEnvironment
             }
             else if (IsRoomComplete())
             {
+                if (_currentLesson >= 0) { _completedStages |= 1 << _currentLesson; }
+                PublishTablet();
                 _loading = true;
                 StartCoroutine(PrepareNextRoom());
             }
@@ -213,7 +243,11 @@ namespace FactoryEnvironment
                 yield return _sceneLoader.CommitPreparedLesson();
             }
             _stage = _destination;
+            _currentLesson = _stage == FactoryDestinationId.PixelLab ? 0
+                : _stage == FactoryDestinationId.FeatureMapLab ? 2
+                : _stage == FactoryDestinationId.ModelDesignLab ? 3 : -1;
             _loading = false;
+            PublishTablet();
         }
 
         private static GameObject FindContent(Scene scene, FactoryNavigationData.DestinationData data)
@@ -237,6 +271,96 @@ namespace FactoryEnvironment
                 }
             }
             return null;
+        }
+
+        private void PublishTablet()
+        {
+            bool canTravel = !_loading && !HasReachedExit && isActiveAndEnabled;
+            if (_publishedMask == _completedStages && _publishedStage == _currentLesson && _publishedTravel == canTravel) { return; }
+            _publishedMask = _completedStages;
+            _publishedStage = _currentLesson;
+            _publishedTravel = canTravel;
+            _tablet.SetLearningState(_currentLesson, _completedStages, canTravel);
+        }
+
+        private void RequestStageMove(int index)
+        {
+            if (_loading || HasReachedExit || index < 0 || index >= _stageArrivals.Length) { return; }
+            if (_currentLesson >= 0 && IsRoomComplete()) { _completedStages |= 1 << _currentLesson; }
+            _loading = true;
+            PublishTablet();
+            _tablet.ShowTravelStatus("선택한 단계로 이동 중…");
+            StartCoroutine(MoveToLesson(index));
+        }
+
+        private IEnumerator MoveToLesson(int index)
+        {
+            // Leave the button callback before unloading any lesson objects.
+            yield return null;
+            if (_sceneLoader.HasPreparedLesson) { yield return _sceneLoader.CancelPreparedLesson(); }
+            if (_room1Pixels != null)
+            {
+                UnsubscribeRoom1();
+                yield return _room1Pixels.EndSession();
+                _room1Pixels = null;
+            }
+            yield return _sceneLoader.UnloadCurrentLesson();
+            _stage = FactoryDestinationId.None;
+            _destination = FactoryDestinationId.None;
+            _currentLesson = -1;
+            FactoryDestinationId destination = index < 2 ? FactoryDestinationId.PixelLab
+                : index == 2 ? FactoryDestinationId.FeatureMapLab : FactoryDestinationId.ModelDesignLab;
+            yield return _sceneLoader.PrepareLesson(destination);
+            if (_sceneLoader.LastError != null)
+            {
+                _tablet.ShowTravelStatus("이동하지 못했습니다. 단계를 다시 선택하세요.");
+                Fail(_sceneLoader.LastError);
+                PublishTablet();
+                yield break;
+            }
+            FactoryNavigationData.DestinationData data = _navigationData.Get(destination);
+            data.Content = FindContent(_sceneLoader.PreparedScene, data);
+            _sceneLoader.PlacePreparedContent();
+            if (destination == FactoryDestinationId.PixelLab)
+            {
+                data.Pixels.ConfigureFactoryConvolution(new Pose(_room1SecondAnchor.position, _room1SecondAnchor.rotation), index == 1);
+                _room1Pixels = data.Pixels;
+                SubscribeRoom1();
+            }
+            CloseRoomDoors();
+            _room1Passage.Close();
+            _routeGuide.SetRoom1PassageVisible(false);
+            _routeGuide.SetDestination(FactoryDestinationId.None);
+            yield return _sceneLoader.CommitPreparedLesson();
+            _stage = destination;
+            _destination = destination;
+            _currentLesson = index;
+            _player.MoveTo(_stageArrivals[index]);
+            // PixelLab starts its nested screen/convolution loader in Start.
+            yield return null;
+            if (_room1Pixels != null)
+            {
+                while (_room1Pixels.IsSwitching) { yield return null; }
+                if (_room1Pixels.LoadError != null)
+                {
+                    _tablet.ShowTravelStatus("체험을 열지 못했습니다. 단계를 다시 선택하세요.");
+                    Fail(_room1Pixels.LoadError);
+                    PublishTablet();
+                    yield break;
+                }
+            }
+            _loading = false;
+            _tablet.ShowTravelStatus("");
+            PublishTablet();
+        }
+
+        private void CloseRoomDoors()
+        {
+            foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
+            {
+                room.EntryDoor.Close();
+                if (room.Id != FactoryDestinationId.Exit) { room.ExitDoor.Close(); }
+            }
         }
 
         private void Fail(string message)

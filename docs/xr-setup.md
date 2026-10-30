@@ -42,58 +42,41 @@
 
 ## 태블릿 파일과 역할
 
-태블릿 코드는 `Tablet` 네임스페이스를 사용한다. `TabletManager`가 일반 C# Controller 객체를 생성하고, `TabletMinimapController`는 uGUI 그래픽 컴포넌트로 동작한다.
+태블릿은 상단 학습 진행률과 왼쪽의 지도·학습 단계·양피지 앱으로 구성한다. 4:3 화면(1200×900, 월드 폭 0.3m)에 진주색 바탕, 금속 테두리와 짙은 베젤, 대비가 있는 글자·선택 표시를 사용한다. 기존 왼손 부착 위치와 조작 입력은 유지한다. 기본 설정은 설정 버튼 또는 Menu로 연다.
 
-| 파일·클래스 | 역할과 처리 방식 |
+고정 버튼·캡션·카드·빈 목록 안내는 `Prefabs/Common/TabletUI.prefab`에 배치되어 있고 `XRPlayerRig.prefab`의 TabletManager가 해당 프리팹을 참조한다. `TabletUIBuilder`는 MonoBehaviour로 직렬화된 화면 참조를 연결하고 표면 스프라이트·앱 표시를 설정한다. 실행 중 화면 계층을 코드로 재작성하지 않는다. 기존 Runtime UI Preview와 Background는 리그에서 비활성화했다.
+
+| 파일·클래스 | 역할 |
 | --- | --- |
-| [TabletManager](../client/Assets/Scripts/Core/Tablet/TabletManager.cs) | 기능별 Controller와 UIBuilder를 생성하고 저장된 설정·선택 인덱스를 복원한 뒤 화면을 구성한다. 입력의 화면 전환 요청을 받아 상세·설정·단계 목록의 우선순위와 뒤로 가기를 조율한다. 공장의 지도 데이터를 표시하고 공용 ParchmentManager의 수집 이벤트로 아이템함을 갱신하며 단계 이동·저장·종료는 Inspector의 UnityEvent로 외부에 알린다. |
-| [TabletInputController](../client/Assets/Scripts/Core/Tablet/TabletInputController.cs) | 왼손 버튼·스틱을 읽고 현재 화면의 활성 항목 중 입력 방향에 있는 다음 항목을 찾는다. 선택은 버튼 콜백 실행이나 슬라이더 조절로 바꾸며, 화면 전환·뒤로 가기는 Manager에 요청한다. Trigger 탐색 중에는 이동 입력을 0으로 교체하고 해제 후 스틱 중앙 복귀 또는 비활성화 시 원래 입력을 복원한다. |
-| [TabletParchmentController](../client/Assets/Scripts/Core/Tablet/TabletParchmentController.cs) | 아이템함과 선택 항목을 관리한다. 수집 여부는 공통 세션의 조회 함수로 읽고, 선택 시 같은 공용 프리팹으로 재열람을 요청한다. |
-| [TabletSettingsController](../client/Assets/Scripts/Core/Tablet/TabletSettingsController.cs) | 시작 시 PlayerPrefs에서 밝기·음량·진동과 선택 인덱스를 읽고 Manager에 인덱스를 돌려준다. 값 변경은 밝기·음량 API와 설정 UI에 반영하며, 저장 요청 시 선택 단계·문서 인덱스를 받아 설정값과 함께 기록한다. 설정 시트의 등장 애니메이션과 저장 완료 피드백도 담당한다. |
-| [TabletLearningController](../client/Assets/Scripts/Core/Tablet/TabletLearningController.cs) | 선택 단계와 할 일 목록을 보관하고 단계 강조·완료 개수·진행률 표시를 갱신한다. 단계 선택 시 Manager에 이동 요청을 알리고 연결된 시작 Transform이 있으면 리그를 옮긴다. 진행률은 자체 예시 값이고 할 일은 확인 버튼으로 갱신되므로 공장 체험의 완료 상태와 별도로 동작한다. |
-| [TabletUIBuilder](../client/Assets/Scripts/Core/Tablet/TabletUIBuilder.cs) | 태블릿 화면과 아이템함을 구성한다. 양피지 열람창은 별도 생성하지 않고 공용 프리팹을 사용한다. |
-| [TabletVisualResources](../client/Assets/Scripts/Core/Tablet/TabletVisualResources.cs) | 태블릿 배경·심볼·픽셀·본체 메시를 생성·정리한다. 문서 전용 예시는 공용 프리팹의 UI 도형을 사용한다. |
-| [TabletMinimapController](../client/Assets/Scripts/Core/Tablet/TabletMinimapController.cs) | `TabletManager.MapData`에서 바닥·벽·양피지 목록을 읽어 `MaskableGraphic`의 UI 도형과 라벨을 만든다. 카메라 위치·방향과 수집 상태를 주기적으로 갱신하고 변경이 있을 때 다시 그린다. 주변 지도는 플레이어를 따라가고 전체 지도는 공장 경계 전체를 맞춰 표시한다. |
-| [TabletMapData](../client/Assets/Scripts/Core/Tablet/TabletMapData.cs) | 공장 판독 결과인 바닥·벽·지도 범위를 읽기 전용 목록과 경계로 묶는다. 양피지는 원본 Behaviour와 문서 인덱스를 보관해 현재 위치·활성 상태를 조회하게 한다. 공장 코드가 이 데이터를 게시하면 태블릿은 씬의 이름 규칙을 알지 않아도 지도를 그릴 수 있다. |
-| [ParchmentLesson](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs) | 제목·주제·부서·본문의 공통 원본. 위치 안내는 Pickup이 등록한 ParchmentRoom을 태블릿에서 문자열로 변환한다. 수집 상태는 독립 공용 ParchmentManager, 페이지는 공용 Reader가 관리한다. |
+| TabletManager | 태블릿 모듈 진입점. 앱·설정·종료 확인창, 입력 중단·복원, 공장과 공용 양피지 연결을 조율한다. |
+| TabletUIBuilder | 저장된 프리팹의 UI 참조·버튼 콜백·표면 스타일·앱 선택 표시를 연결한다. |
+| TabletInputController | 기존 Trigger+스틱 탐색, X 선택, Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
+| TabletLearningController | 전달받은 현재 단계·완료 비트·이동 가능 여부로 네 카드와 진행률을 갱신한다. 완료 상태를 소유하거나 씬을 로드하지 않는다. |
+| TabletParchmentController | 공용 수집 상태를 조회해 보유 문서만 빈틈 없이 목록에 표시하고 선택 시 재열람을 요청한다. |
+| TabletSettingsController | 밝기·음량·진동·선택 문서 인덱스를 기존 PlayerPrefs 키로 읽고 저장한다. |
+| TabletDetailController | 앱 종료 확인창의 표시·닫기. |
+| TabletMinimapController | 플레이어를 중심에 두고 주변 세로 22m의 바닥·벽·미수집 양피지·바라보는 방향을 0.1초 간격으로 갱신한다. 전체 지도 화면은 사용하지 않는다. |
+| TabletVisualResources | 둥근 표면·금속 그라데이션과 4:3 본체 메시의 생성·정리. |
 
-### 초기화와 UI 연결
+### 학습과 이동 연결
 
-`TabletManager.Awake()`는 폰트를 결정하고 리소스·입력·UIBuilder·기능별 Controller를 생성한다. 설정을 읽어 선택 단계와 문서 인덱스를 복원한 뒤 런타임 이미지와 UI를 만들고 각 화면을 갱신한다.
+학습 단계는 픽셀(0), 합성곱(1), 특징 맵(2), 모델 제작(3)이다. 완료한 단계 하나당 25%이며 양피지 수는 학습 진행률에 포함하지 않는다. 태블릿은 `StageMoveRequested(int)` 로컬 C# 이벤트로 이동 의도를 전달한다. FactoryLearningFlowManager가 활성 기간에 구독·해제하고 씬 준비·정리, 셔터·안내선, 플레이어 위치를 조율한다. 결과는 `SetLearningState(currentStage, completedMask, canTravel)`와 `ShowTravelStatus(message)`로 전달한다. 공장 밖에서는 이동 카드가 비활성화된다.
 
-`TabletUIBuilder`는 기존 `Tablet Canvas`를 찾거나 생성하고 자식 UI를 재구성한다. 태블릿의 GraphicRaycaster는 비활성화하고 `TabletInputController`의 포커스로 버튼을 실행한다. UI를 추가할 때는 생성한 `Selectable`을 해당 `FocusGroup`에 등록해야 한다. 인벤토리 항목이 메인 포커스 목록의 앞부분에 등록되며, 문서 선택 복원에도 이 순서를 사용한다.
+네 단계 모두 완료 여부와 무관하게 선택할 수 있다. 로딩 중에는 이동 요청을 받지 않으며, 재방문한 체험은 처음부터 시작한다. 공장 Manager의 완료 기록과 공용 양피지 수집 기록은 해당 세션 동안 유지한다. 이동만으로 완료 처리하지 않는다. 기존 픽셀·합성곱·특징 맵·모델 제작 완료 판정을 사용한다. 합성곱 직접 진입은 기존 픽셀 이미지의 중앙 3×3 입력을 준비해 시작하고 픽셀 완료 신호를 발생시키지 않는다.
 
-Manager의 주요 Inspector 참조는 `_font`, `_parchmentFont`, `_parchmentSprite`, `_stageStartPoints`다. `_stageMoveRequested`, `_saveRequested`, `_exitRequested`는 외부 동작을 연결하는 UnityEvent다.
+### 포커스·양피지·설정
 
-### 포커스와 이동 입력
+포커스 우선순위는 종료 확인 → 설정 → 앱 화면이다. 메인 그룹에 앱 버튼·단계 카드·수집 목록·설정 버튼을 등록한다. 앱 전환 후 해당 앱 버튼으로 포커스를 돌린다. Trigger 탐색이 끝나고 스틱이 중앙으로 돌아와야 원래 이동 입력을 복원한다. 양피지 열람 동안 태블릿 입력은 중단하며 닫은 다음 프레임부터 기존 조작 상태·포커스를 복원한다.
 
-활성 포커스 그룹의 우선순위는 상세 화면 → 단계 목록 → 설정 → 메인이다. `TabletInputController.Navigate()`는 화면 좌표에서 입력 방향에 있는 활성 항목을 찾으며, 비활성·선택 불가능 항목을 건너뛴다. 포커스 그룹이나 슬라이더 모드가 바뀌면 스틱이 중앙으로 돌아온 뒤 탐색을 재개한다.
+수집 전 문서는 목록에 표시하지 않는다. 문서가 없으면 빈 목록 안내를 표시하며, 수집된 문서는 기존 `ParchmentReader.prefab`으로 다시 읽는다. 문서 본문·수집 여부는 공용 ParchmentManager와 ParchmentCatalog가 소유한다. `Tablet.Brightness`, `Tablet.Volume`, `Tablet.Vibration`, `Tablet.Inventory` 저장 키를 유지한다. 이전 `Tablet.Stage` 값은 학습 완료 상태로 사용하지 않는다. 학습 진행률과 양피지 수집 기록은 디스크에 저장하지 않는다.
 
-양피지 열람 중 이동 차단은 `XRPlayerInputController.SetParchmentMovementBlocked`가 담당한다. `ParchmentManager`가 열기·닫기 시 호출하며 `ContinuousMoveProvider.moveSpeed`를 0으로 설정했다가 기존 값으로 복원한다. 오른손 시점 조작과 레이로 화면 버튼을 누르는 조작은 유지한다. `TabletManager`는 열람 중 태블릿 입력을 비활성화하고, 닫은 다음 프레임부터 다시 받는다.
+지도는 FactoryMapController가 게시한 TabletMapData를 사용한다. 이전 씬의 해제가 새 지도를 지우지 않도록 ClearMapData는 동일한 데이터만 해제한다.
 
-태블릿 탐색 중에는 `ContinuousMoveProvider.leftHandMoveInput`을 0을 반환하는 입력으로 교체한다. Trigger 해제와 스틱 중앙 복귀가 모두 충족되면 이전 입력을 복원한다. `Disable()`과 `Dispose()`에서도 이동 입력을 반환한다.
+### 뒷면 로고와 확인 범위
 
-`TabletManager.GoBack()`은 상세 화면 → 슬라이더 조절 → 단계 목록 → 설정 → 태블릿 조작 종료 순서로 현재 상태를 닫는다. 상세 화면을 닫을 때는 진입 전 포커스를 복원한다.
+제공된 원본은 `Textures/Common/KDHuntersLogo.png`에 내용 변경 없이 저장하고 리그의 Tablet Rear Logo에서 참조한다. `Shaders/Common/TabletLogo.shader`와 `Materials/Common/TabletLogo.mat`가 원본의 흰색을 곱셈 혼합의 중립색으로 처리해 청회색 본체 위에 잉크처럼 표시한다. 양쪽 눈의 인스턴싱 변환을 포함한다. 로고·폰트 및 이전 이미지 아이콘 기록은 ASSET_CREDITS.md에 있다. 현재 앱·양피지 목록 아이콘은 TabletAppIconGraphic이 그리는 평면 도형이며 이미지 텍스처·그라데이션·광택·그림자를 사용하지 않는다. 지도는 위치 핀, 학습 단계는 네 칸, 양피지는 선으로 된 문서 모양이다.
 
-### 상태와 저장
-
-| 상태 | 소유·저장 방식 |
-| --- | --- |
-| 밝기·음량·진동 선택 | `TabletSettingsController`. `Tablet.Brightness`, `Tablet.Volume`, `Tablet.Vibration`으로 저장한다. 밝기·음량은 각각 `Screen.brightness`, `AudioListener.volume`에 적용한다. 진동은 설정값과 표시 상태를 관리한다. |
-| 선택 단계·문서 인덱스 | Learning/Parchment Controller가 소유하고 저장 시 `Tablet.Stage`, `Tablet.Inventory`에 기록한다. |
-| 양피지 수집 여부 | 독립 루트의 `ParchmentManager`의 메모리 배열. 공용 세션이 살아 있는 동안 유지되며 PlayerPrefs에는 저장하지 않는다. |
-| 문서 페이지·예시 표시·포커스 | 각 Controller의 런타임 상태다. |
-| 진행률·할 일 | `TabletLearningController`의 예시 데이터. 진행률은 `DefaultProgress`를 사용하고 할 일은 `ConfirmCurrentTask()`로 갱신한다. 공장 체험 완료 판정과는 별개다. |
-
-`MoveToStage()`는 선택 상태를 갱신하고 `_stageMoveRequested`를 호출한 뒤, 연결된 `_stageStartPoints`가 있으면 리그를 해당 Transform으로 이동시킨다. 단계 인덱스는 튜토리얼, 기본 오프닝, 필터 조작, MLP, CNN, AI 업스케일링 순서다. 실제 공장 콘텐츠의 Additive 로드는 [FactoryLearningFlowManager](factory-environment.md)가 담당한다.
-
-### 수집과 지도 데이터
-
-Pickup은 활성 기간에 ParchmentManager에 문서 ID와 ParchmentRoom을 등록하고 선택 입력을 RequestPickup으로 전달한다. 공용 Manager가 열람 가능 여부·수집 상태·열람·코루틴 수명을 관리한다. 태블릿은 수집 상태와 배치 방 조회 함수를 사용하며 Collected·LocationsChanged 이벤트로 아이템함을 갱신한다. 재열람도 같은 프리팹을 사용한다.
-
-`FactoryMapController`가 `TabletMapData`를 만들어 `SetMapData()`로 전달하면 모든 미니맵이 다시 구성된다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지워서 이전 씬의 해제가 새 지도를 지우지 않게 한다. 공장 배치 판독 방식은 [공장 환경 구현](factory-environment.md)에 있다.
-
-미니맵은 XZ 평면을 +Z 위쪽으로 투영한다. 주변 지도는 카메라를 따라가며, 전체 지도는 전체 범위를 표시한다. 위치·방향·수집 여부는 일정 간격으로 갱신하고 변경 시 그래픽을 다시 그린다.
+2026-10-31: 소스·직렬화 참조·에셋 경로를 정적으로 점검했다. 사용자 허가로 Unity를 열고 코루틴 안의 ReadOnlySpan 반복문 컴파일 오류를 일반 메서드로 분리해 수정했다. 일반 에디터 모드와 FactoryEnvironment Play에서 진행률·앱 아이콘·주변 미니맵 표시를 확인했다. 당시 설정 버튼의 글자 잘림을 발견했으며 미수정 상태다. 이후 평면 아이콘으로 교체했고 이 교체 후 화면은 재확인하지 않았다. 앱 전환·텔레포트·재진입·뒷면 로고·Quest 실기기 및 빌드는 확인하지 않았다.
 
 ## 에디터 시뮬레이터
 
@@ -158,6 +141,6 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 
 ## 공용 양피지 연결
 
-공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용하며 공장 진행은 양피지 수집과 독립적이다. 공용 세션은 Core/Parchment에서 첫 씬 로드 전에 생성하며 태블릿은 수집 조회를 중계하지 않는다. 현재 FactoryEnvironment의 ROOM #1에 2개, ROOM #2에 2개, ROOM #3에 1개의 Pickup이 배치되어 있다. 기존 지도 게시 경로로 미수집 위치를 표시하고, 수집 후 아이템함에서 재열람한다. 공장 진행 Manager는 태블릿에 수집 수나 목표 진행률을 게시하지 않는다.
+공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용하며 공장 진행은 양피지 수집과 독립적이다. 공용 세션은 Core/Parchment에서 첫 씬 로드 전에 생성하며 태블릿은 수집 조회를 중계하지 않는다. 현재 FactoryEnvironment의 ROOM #1에 2개, ROOM #2에 2개, ROOM #3에 1개의 Pickup이 배치되어 있다. 기존 지도 게시 경로로 미수집 위치를 표시하고, 수집 후 양피지 앱의 목록에서 재열람한다. 공장 진행 Manager는 네 학습 단계의 완료 상태만 태블릿에 게시하며 수집 수는 공용 양피지 모듈이 관리한다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.

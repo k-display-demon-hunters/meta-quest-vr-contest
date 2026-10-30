@@ -161,3 +161,7 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 현재 배분은 None이며 실제 배치는 임시 위치에 남아 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.
+
+## Quest 빌드의 중복 기능 설정 정리 (2026-10-30)
+
+프로젝트의 활성 OpenXR 설정은 OpenXRPackageSettings.asset이다. 기존 OpenXR Package Settings.asset의 중복 MetaQuestFeature 하위 에셋 때문에 OpenXR 1.16.1 빌드 훅의 단일 기능 검색이 실패했다. 비활성 설정 파일의 중복 하위 에셋만 제거하고 활성 설정의 MetaQuestFeature를 공유 참조하도록 연결했다. 폴더·파일 위치와 활성 프로젝트 설정은 유지한다.

@@ -35,7 +35,7 @@
 
 관람 공간은 중앙 보행로 바깥의 두 목조 지붕 아래에 배치하고, 작은 뉴스 안내판은 길가에 둔다. 네 벤치는 방송 화면을 향하며 좌면은 포장면에서 약 47cm 높이다. 관람용 화면은 지붕 구조물의 지지대에 연결하고, 뉴스 안내판은 바닥 받침과 차양을 갖춘다. 산책 주민은 중앙 보행로 가장자리에, 시청 주민은 해당 화면 앞 관람 공간에 배치한다. 공장 입구와 코어를 가리지 않도록 중앙 시야를 비운다.
 
-주민 외형은 기존 메시·재질을 유지한다. Quaternius **Universal Animation Library Standard**의 실제 관절 곡선을 주민 비율에 맞춘 Unity 직렬화 에셋 `Meshes/Common/QuaterniusVillageMotion.asset`으로 변환한다. 원본은 30fps이며, 재생 중에는 프레임 사이 회전을 보간한다. `Scripts/Core/VillageResidentMotionLibrary.cs`가 동작 데이터를 제공하고 `VillageResidentMotionController.cs`가 기존 허리·머리·팔·다리와 보강한 팔꿈치를 구동한다. 새 캐릭터 팩이나 런타임 모델 임포트 패키지는 사용하지 않는다.
+주민 외형은 기존 메시·재질을 유지한다. Quaternius **Universal Animation Library Standard**의 실제 관절 곡선을 주민 비율에 맞춘 Unity 직렬화 에셋 `Meshes/Common/QuaterniusVillageMotion.asset`으로 변환한다. 원본은 30fps이며, 재생 중에는 프레임 사이 회전을 보간한다. `Scripts/Core/VillageResident/VillageResidentMotionLibrary.cs`가 동작 데이터를 제공하고 `VillageResidentMotionController.cs`가 기존 허리·머리·팔·다리와 보강한 팔꿈치를 구동한다. 새 캐릭터 팩이나 런타임 모델 임포트 패키지는 사용하지 않는다.
 
 대기·걷기는 `Idle_Loop`·`Walk_Loop`, 대화와 화면 고장 반응은 `Idle_Talking_Loop`, 악령 출현·타격 반응은 `Hit_Chest`·`Hit_Head`·`Crouch_Idle_Loop`, 엔딩 축하는 `Dance_Loop`를 혼합한다. 무료 Standard에는 전용 Surprise 클립이 없으므로 충격·웅크림 동작과 시선·몸 방향 전환으로 놀람을 표현한다. 출처와 CC0 확인은 제출용 Markdown에 기록한다.
 
@@ -92,11 +92,17 @@
 
 2026-10-24: 현재 실행 흐름과 별개인 `Scenes/kdy_scene1~17.unity`, `Prefabs/Common/KdyLessonTablet.prefab`·`KdyFactoryHall.prefab`·`KdyCoreFault.prefab`, `Materials/Common/KdyLessonFilter.mat`·`KdyLessonPhoto.mat`·`KdyBlack.mat`·`KdyCyan.mat`·`KdyFloor.mat`·`KdySteelEdge.mat`·`KdyLessonPixel.mat`, `Textures/Common/KdyFactoryInput.png`를 해당 `.meta`와 함께 제거했다. 스크립트는 아래 보존 대상 9개를 제외한 Kdy 스크립트 23개를 제거했다. 비게 된 `Scripts/kdy_scene*` 폴더 11개와 `Prefabs/Common` 폴더 및 각 폴더 `.meta`도 제거했다. `Textures/Common`에는 태블릿에서 사용하는 `LearningParchment.png`가 있으므로 유지한다. 전체 삭제 범위는 원본 파일 51개와 `.meta` 63개다.
 
-현재 오프닝에서 사용하는 에셋 6개는 경로·내용·GUID를 유지한다. 프리팹은 `Prefabs/kdy_scene2/PixelWraith.prefab`이며, 재질은 `Materials/Common`의 `KdyAmber.mat`, `KdySteel.mat`, `KdyViolet.mat`, `KdyWraith.mat`와 `Materials/kdy_scene2/KdyAttackRay.mat`다. 이전 공장 배경과 그 전용 재질은 현재 씬 및 보존 코드의 의존성이 없어 제거했다.
+2026-10-24 정리 당시에는 오프닝에서 사용하는 에셋 6개의 경로·내용·GUID를 유지했다. 프리팹은 `Prefabs/kdy_scene2/PixelWraith.prefab`이며, 재질은 `Materials/Common`의 `KdyAmber.mat`, `KdySteel.mat`, `KdyViolet.mat`, `KdyWraith.mat`와 `Materials/kdy_scene2/KdyAttackRay.mat`다. 이전 공장 배경과 그 전용 재질은 현재 씬 및 보존 코드의 의존성이 없어 제거했다.
 
 2026-10-30: 이전 정리에서 재사용 참고용으로 남긴 스크립트 9개도 현재 실행 흐름에서 사용하지 않아 제거했다. 삭제 대상은 `Scripts/kdy_scene6/KdyConvolutionController.cs`, `Scripts/kdy_scene9/KdyActivationLeverController.cs`, `Scripts/kdy_scene16/KdySignComparisonController.cs`와 `Scripts/Core/`의 `KdyLessonGrabController.cs`, `KdyLessonProgressController.cs`, `KdyNetworkConfiguration.cs`, `KdyFactorySignExampleData.cs`, `KdyTrainingExampleData.cs`, `KdySignExampleData.cs`다. 각 스크립트의 `.meta`와 비게 된 `Scripts/kdy_scene6`, `Scripts/kdy_scene9`, `Scripts/kdy_scene16` 폴더 및 폴더 `.meta`를 함께 제거했다. 이번 삭제 범위는 스크립트 9개와 `.meta` 12개다.
 
-현재 오프닝에서 사용하는 위 에셋 6개와 해당 `.meta`, `Prefabs/kdy_scene2`·`Materials/kdy_scene2` 폴더는 유지한다. `FactoryIntro` 씬과 `PixelWraith` 프리팹의 GUID 참조, `FactoryIntroSceneBuilder`의 에셋 경로도 그대로 유지한다. 이전 Kdy 씬과 참고 스크립트는 현재 프로젝트에 남아 있지 않다.
+2026-10-30 참고 스크립트 삭제 당시에는 오프닝에서 사용하는 위 에셋 6개와 해당 `.meta`, `Prefabs/kdy_scene2`·`Materials/kdy_scene2` 폴더는 유지한다. `FactoryIntro` 씬과 `PixelWraith` 프리팹의 GUID 참조, `FactoryIntroSceneBuilder`의 에셋 경로도 그대로 유지한다. 이전 Kdy 씬과 참고 스크립트는 현재 프로젝트에 남아 있지 않다.
+
+## 에셋 이름과 주민 코드 배치 정리 (2026-10-30)
+
+현재 악령 프리팹은 `Prefabs/FactoryIntro/PixelWraith.prefab`에 둔다. 이 프리팹의 재질은 `Materials/FactoryIntro`의 `WraithAmber.mat`, `WraithSteel.mat`, `WraithViolet.mat`, `WraithBody.mat`, `WraithAttackRay.mat`이다. 기존 `Kdy` 재질 이름을 역할에 맞게 변경하고 `Common` 및 `kdy_scene2`에서 이동했다. 비게 된 `Prefabs/kdy_scene2`·`Materials/kdy_scene2`와 폴더 `.meta`는 제거했다. 위 과거 정리 기록의 경로는 당시 배치를 뜻한다.
+
+인트로·엔딩 주민 동작 코드는 `Scripts/Core/VillageResident/`의 `VillageResidentMotionController.cs`와 `VillageResidentMotionLibrary.cs`로 모았다. 클래스명·네임스페이스·동작 구현은 유지한다. 이동한 에셋·스크립트의 `.meta`와 GUID를 보존하고, 재질 내부 이름과 `FactoryIntroSceneBuilder`의 에셋 로드 경로를 갱신했다.
 
 ## 확인 범위
 

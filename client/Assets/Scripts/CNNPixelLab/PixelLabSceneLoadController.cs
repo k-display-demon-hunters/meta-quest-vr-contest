@@ -16,20 +16,12 @@ namespace UI
         private GameObject _preparedContent;
         private string _loadingSceneName;
         private bool _destroying;
-        private bool _hasFactoryConvolutionPose;
-        private Pose _factoryConvolutionPose;
 
         public CNNScreenLabManager Screen { get; private set; }
         public CNNConvolutionLabManager Convolution { get; private set; }
         public CNNScreenLabManager PreparedScreen { get; private set; }
         public CNNConvolutionLabManager PreparedConvolution { get; private set; }
         public string LastError { get; private set; }
-
-        public void SetFactoryConvolutionPose(Pose pose)
-        {
-            _factoryConvolutionPose = pose;
-            _hasFactoryConvolutionPose = true;
-        }
 
         public IEnumerator PrepareStage(bool calculation)
         {
@@ -52,9 +44,7 @@ namespace UI
                 root.SetActive(false);
                 if (isContent) { _preparedContent = root; }
             }
-            Pose placement = calculation && _hasFactoryConvolutionPose
-                ? _factoryConvolutionPose : new Pose(transform.position, transform.rotation);
-            _preparedContent.transform.SetPositionAndRotation(placement.position, placement.rotation);
+            _preparedContent.transform.SetPositionAndRotation(transform.position, transform.rotation);
             foreach (Light light in _preparedContent.GetComponentsInChildren<Light>(true))
             {
                 light.enabled = false;

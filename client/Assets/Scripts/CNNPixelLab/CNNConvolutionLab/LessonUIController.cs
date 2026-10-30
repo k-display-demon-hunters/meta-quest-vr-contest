@@ -11,7 +11,6 @@ namespace UI
         private readonly Button[] _answers = new Button[3];
         private Text _title, _explanation, _equation, _feedback, _channelSums, _guide;
         private Button _next, _skip;
-        private Button _return;
         private bool _advance;
         public event Action<int> AnswerRequested;
         public event Action SkipRequested;
@@ -113,11 +112,9 @@ namespace UI
             _guide.alignment = TextAnchor.UpperLeft;
 
             ExerciseRoot.gameObject.SetActive(false);
-            _return = Button(transform, "다른 영역 선택", -850, -340, 380,
+            Button(transform, "다른 영역 선택", -850, -340, 380,
                 () => CloseRequested?.Invoke());
         }
-
-        public void SetReturnAvailable(bool available) { _return.gameObject.SetActive(available); }
 
         public void ShowObservation()
         {

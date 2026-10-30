@@ -67,33 +67,16 @@ namespace FactoryEnvironment
 
         private static string FloorName(string objectName)
         {
-            if (objectName.StartsWith("Exterior", System.StringComparison.Ordinal))
+            if (objectName.StartsWith("Entrance", System.StringComparison.Ordinal)) { return "공장 입구"; }
+            if (objectName.StartsWith("Rear", System.StringComparison.Ordinal)) { return "공장 출구"; }
+            if (objectName.StartsWith("Tutorial to", System.StringComparison.Ordinal)) { return "연결 통로"; }
+            if (objectName.StartsWith("Tutorial", System.StringComparison.Ordinal)) { return "튜토리얼"; }
+            if (objectName.StartsWith("Inspection", System.StringComparison.Ordinal)) { return "ROOM #1 · Pixel Lab"; }
+            if (objectName.StartsWith("Feature", System.StringComparison.Ordinal)) { return "ROOM #2 · Feature Map Lab"; }
+            if (objectName.StartsWith("Assembly", System.StringComparison.Ordinal)) { return "ROOM #3 · Model Design Lab"; }
+            if (objectName.StartsWith("Corridor ", System.StringComparison.Ordinal))
             {
-                return "하역장";
-            }
-            if (objectName.StartsWith("Security", System.StringComparison.Ordinal))
-            {
-                return "보안 구역";
-            }
-            if (objectName.StartsWith("Spine", System.StringComparison.Ordinal))
-            {
-                return "중앙 복도";
-            }
-            if (objectName.StartsWith("Inspection", System.StringComparison.Ordinal))
-            {
-                return "Pixel Lab";
-            }
-            if (objectName.StartsWith("Feature", System.StringComparison.Ordinal))
-            {
-                return "Feature Map Lab";
-            }
-            if (objectName.StartsWith("Assembly", System.StringComparison.Ordinal))
-            {
-                return "Model Design Lab";
-            }
-            if (objectName.StartsWith("Outbound", System.StringComparison.Ordinal))
-            {
-                return "출하 구역";
+                return "복도 " + objectName["Corridor ".Length];
             }
             return "공장";
         }

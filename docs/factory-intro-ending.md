@@ -1,6 +1,6 @@
 # 공장 오프닝·입구 안내와 엔딩
 
-실제 실행 흐름은 `FactoryIntro → FactoryEnvironment → FactoryTutorial → CNNPixelLab → CNNFeatureMapLab → CNNModelDesignLab → FactoryEnding`이다. 튜토리얼과 세 학습 씬은 공장을 유지한 채 Additive로 실행한다. 방의 표시 이름은 Pixel Lab, Feature Map Lab, Model Design Lab이며 학습 씬 파일명과 완료 조건은 유지한다.
+이 문서는 기존 FactoryIntro·FactoryEnding 연출과 FactoryTutorial 안내 구현을 설명한다. 현재 FactoryEnvironment는 별도의 정문·튜토리얼실·세 체험실·후문 공간으로 개편되어 있으며, 모델 제작을 완료하고 후문에 진입하면 기존 FactoryEnding을 Single로 실행한다. 새 공간의 동선·셔터·학습 연결은 [공장 환경](factory-environment.md)을 따른다. 오프닝·엔딩 연출 씬과 스크립트는 이번 공간 변경에서 수정하지 않았으며, 후문 전환은 공장 SceneLoadController에서 기존 엔딩을 호출한다.
 
 ## 시작 화면과 18초 마을 오프닝
 
@@ -47,25 +47,24 @@
 
 입력 잠금과 복원은 기존 `FactoryIntroInputController`가 담당한다. 이동·잡기를 보류하되 머리·손 추적은 유지한다. `SetUIVisible()`은 연출 중 UI ray와 선을 함께 숨겨 보이지 않는 클릭도 차단하며, 패널을 다시 표시하면 ray를 활성화한다. 공장을 열기 전에 저장해 둔 입력 상태를 복원한다. 연출용 하늘·주변광은 이전 값을 보관하고, 같은 씬에서 비활성화될 때 복원한다. 다음 씬이 활성화된 뒤에는 그 씬의 환경 설정을 덮어쓰지 않는다. 현재 학습 흐름은 유지하며, 사용하지 않는 `kdy_scene1~17`은 아래 정리 범위에 따라 제거했다.
 
-## 실제 공장 입구에서 한 번 안내
+## 튜토리얼실 안내
 
-`FactoryLearningFlowManager`는 `FactoryPlayerController`에 요청해 실제 공장 입구에 플레이어를 배치한 뒤 `FactorySceneLoadController`에 요청해 `FactoryTutorial`을 Additive로 한 번 불러온다. 튜토리얼 로드·초기화·완료 대기·언로드는 Controller가 담당한다. Controller는 튜토리얼 언로드 후 안내판도 표시한다. Manager는 튜토리얼 완료를 기다리지 않고 학습 진입을 허용하며, 첫 학습 진입 시 종료·언로드를 요청한 뒤 학습 씬을 로드한다. 공장 배경과 공용 리그는 그대로 유지하며, 튜토리얼 씬에는 별도 리그·카메라·배경·EventSystem을 두지 않는다.
+현재 FactoryEnvironment는 정문에서 튜토리얼실까지 걸어 들어가는 공간이다. 방의 진입 영역에 카메라가 들어오면 입구 셔터를 닫고 FactoryTutorial을 Additive로 로드한다. 공장 SceneLoadController가 기존 FactoryTutorialManager를 (0, 0, -1.5) 기준점으로 초기화하며, 패널은 그 앞 3m에 표시한다.
+
+기존 14페이지와 이전/다음/안내 마치기·건너뛰기 입력을 사용한다. 수행 판정이나 입력 순서 검사는 없다. IsComplete가 참이 되면 튜토리얼을 언로드하고, 첫 학습 콘텐츠를 준비한 뒤 ROOM #1로 가는 출구를 연다. 안내 화면의 양피지·태블릿 목표 설명은 유지되어 있지만 새 공간에는 양피지가 배치되어 있지 않다.
 
 | 파일·클래스 | 책임 |
 | --- | --- |
-| `Scenes/FactoryTutorial.unity` | 공장 입구에 추가로 표시하는 안내 씬이다. 공장과 공용 리그가 로드된 상태에서 실행한다. |
-| `Scripts/FactoryTutorial/FactoryTutorialManager.cs` | 안내 페이지 순서·시작·완료와 안내 중 ray 유지를 담당한다. `IsComplete`로 공장 진행 코드에 완료 여부를 제공한다. |
-| `Scripts/FactoryTutorial/FactoryTutorialPanelController.cs` | 안내 Canvas와 이전/다음/안내 마치기 버튼을 구성하고 페이지 내용을 표시한다. |
+| Scenes/FactoryTutorial.unity | 공장·공용 리그 위에서 표시하는 안내 씬. 별도 리그·카메라·배경·EventSystem은 배치하지 않는다. |
+| Scripts/FactoryTutorial/FactoryTutorialManager.cs | 안내 페이지 순서와 완료 상태, 안내 중 ray 유지 |
+| Scripts/FactoryTutorial/FactoryTutorialPanelController.cs | 안내 Canvas, 이전/다음/마치기 버튼과 페이지 표시 |
+| Scripts/FactoryTutorial/FactoryTutorialVisualController.cs | 확대된 컨트롤러와 태블릿 연습 그림 표시 |
 
-이동·선택·잡기·정면 복원·태블릿 설명의 다섯 페이지를 이전/다음/안내 마치기로 넘긴다. 고개 회전, 이동 목표 도착, 잡기 성공, 태블릿 입력 순서 등 수행 판정은 없다. 안내 중에는 ray를 켠 상태로 유지하며, 안내를 완료하지 않고 첫 학습에 진입하면 튜토리얼을 종료·언로드한다. 이동·잡기·태블릿 조작을 페이지별로 제한하지 않는다.
-
-공장 SceneLoadController는 `FactoryTutorialManager.IsComplete` 또는 첫 학습 진입에 따른 종료 요청을 기다린 뒤 튜토리얼 씬을 언로드하고 고정 표지판을 표시한다. Manager는 시작 시 첫 바닥 경로를 표시한다. 공장의 공용 EventSystem은 안내 씬과 함께 언로드되지 않으므로 이후 학습 UI에도 사용한다. 공장 세션 안에서는 방 재방문·Additive 학습 전환으로 안내를 다시 열지 않는다. 엔딩 후 처음부터 새 체험을 시작하면 다시 한 번 표시한다. 별도 저장 키나 전역 상태는 추가하지 않았다.
-
-기존 `FactoryTutorialController.cs`는 `FactoryTutorialManager.cs`로 이름을 바꾸고 Panel 코드와 함께 `Scripts/FactoryTutorial`로 옮겼으며 각 `.meta` GUID를 보존했다. 태블릿 코드·프리팹·폰트·저장 형식은 변경하지 않았다.
+공장 진입과 방별 셔터·콘텐츠 로딩의 현재 구현은 [공장 공간과 체험 연결](factory-environment.md)에 정리한다.
 
 ## 공장 복구와 엔딩
 
-`FactoryEndingManager`는 기존대로 정상 학습 완료 뒤 공장 출구를 통해 진입하며, 23초 마을 복구 연출 → 축하 메시지 → 처음으로/앱 종료를 조율한다. 별도 개념 복습 카드는 제거한다. 참고 브랜치 전용의 간판 검사나 가상 학습 조건에 의존하지 않는다.
+`FactoryEndingManager`는 FactoryEnding 씬이 실행되면 23초 마을 복구 연출 → 축하 메시지 → 처음으로/앱 종료를 조율한다. 별도 개념 복습 카드는 제거한다. 참고 브랜치 전용의 간판 검사나 가상 학습 조건에 의존하지 않는다.
 
 엔딩은 인트로와 같은 `VillageOpening.prefab`을 참조해 같은 마을·공장·주민·방송 화면에서 진행한다. 마을 에셋을 엔딩용으로 복사하지 않는다. 기존 에셋의 경로와 GUID는 유지한다. 카메라를 강제로 이동시키지 않고 공용 XR 리그의 머리 추적을 유지한다.
 

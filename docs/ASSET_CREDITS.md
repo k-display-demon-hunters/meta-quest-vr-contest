@@ -4,10 +4,12 @@
 
 | 에셋명 / 종류 | 사용처 | 출처 또는 생성 방법 | 저작권·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
+| **WraithAttackWarning.wav** / 습격·경고 효과음 | client/Assets/Audio/OpeningEnding/WraithAttackWarning.wav; 오프닝 4.3초부터 경고·충전·타격·화면 고장 | Codex 보조로 Python math/random/wave를 사용해 사인파·잡음·엔벌로프를 직접 합성. seed 30102026, 9초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
+| **FactoryDoorOpen.wav** / 공장문 효과음 | client/Assets/Audio/OpeningEnding/FactoryDoorOpen.wav; 오프닝 문 열기 | Codex 보조로 Python math/random/wave의 저음·잡음·마찰·충격 엔벌로프를 직접 합성. seed 30102026, 3.2초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
 | **InputPixels.png** / 입력 이미지 | `client/Assets/Textures/CNNFeatureMapLab/InputPixels.png`; CNNFeatureMapInput의 InputMapController 및 기존 InputSurface 재질 | 기존 프로젝트 에셋. 원출처 URL·생성 도구·제작 방법·AI 보조 여부 미확인 | 제작자·권리자·라이선스 미확인 | 이미지 파일 수정 없음. Codex 보조로 이미지 참조를 Workspace Manager에서 입력 맵 컴포넌트로 이전 |
 | **OpeningBroadcast.png** / 오프닝 방송 정지 이미지 | CNNPixelLab 원본 이미지·픽셀 및 RGB 계산 입력 | 프로젝트의 `FactoryIntro/VillageDisplay` 셰이더를 Unity에서 뉴스 방송(_Channel=0), 재생 3초, 손상·간섭 0으로 렌더링. Codex 보조로 1024×576 PNG 추출 | 프로젝트 내부 절차적 방송 그래픽에서 제작. 외부 방송 영상·로고 사용 없음. 별도 공개 라이선스 지정 없음 | 원본 셰이더 수정 없음. 체험 실행 시 저해상도·블러 처리 후 동일 이미지에서 RGB 샘플링 |
 | **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판, CNNModelDesignLab 제작 콘솔의 저장된 구성 검사·학습·예측 UI | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
-| **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1 유래)** | `client/Assets`의 `Meshes/Common/MetaQuestTouchPlus`, `Textures/Common/MetaQuestTouchPlus`, `Materials/Common/MetaQuestTouchPlus`; 공용 XRPlayerRig 컨트롤러 표시와 FactoryTutorial 확대 안내 | [Meta 공식 패키지](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 207.0.1에서 표시용 에셋만 분리. [공식 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | 원본 LICENSE.md 표기: Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/). 원래 LICENSE.md·NOTICE.txt를 모델 폴더에 보존. 별도 공개 라이선스로 재허가하지 않음. 확인: 2026-10-27 | FBX·PNG·Animator Controller와 원본 `.meta`는 내용 수정 없이 보존. Codex 보조로 재질 3개의 SDK 셰이더 참조를 기존 URP로 변경하고 텍스처·색상·투명도 속성을 연결. 기존 Codex 보조 코드가 Unity XR 입력과 애니메이션·버튼 표식을 연결 |
+| **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1 유래)** | `client/Assets`의 `Meshes/Common/MetaQuestTouchPlus`, `Textures/Common/MetaQuestTouchPlus`, `Materials/Common/MetaQuestTouchPlus`; 공용 XRPlayerRig 컨트롤러 표시, 오프닝 입장 시 왼손 조이스틱 강조와 FactoryTutorial 확대 안내 | [Meta 공식 패키지](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 207.0.1에서 표시용 에셋만 분리. [공식 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | 원본 LICENSE.md 표기: Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/). 원래 LICENSE.md·NOTICE.txt를 모델 폴더에 보존. 별도 공개 라이선스로 재허가하지 않음. 확인: 2026-10-27 | FBX·PNG·Animator Controller와 원본 `.meta`는 내용 수정 없이 보존. Codex 보조로 재질 3개의 SDK 셰이더 참조를 기존 URP로 변경하고 텍스처·색상·투명도 속성을 연결. 기존 Codex 보조 코드가 Unity XR 입력과 애니메이션·버튼 표식을 연결 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
 | **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개와 공용 ParchmentReader 프리팹 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
 | **Lucide / Feather 기반 아이콘** / 아이콘 | 태블릿 UI | [Lucide 공식 저장소 및 라이선스](https://github.com/lucide-icons/lucide/blob/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE) | © 2026 Lucide Icons and Contributors, ISC. Feather 유래 도형: © 2013–present Cole Bemis, MIT | 선 도형을 간략화하고 아이콘 아틀라스로 변환 |
@@ -19,7 +21,7 @@
 
 Meta 컨트롤러 에셋은 좌·우 FBX(모델 내 애니메이션 포함), Animator Controller 2개, PNG 텍스처 5개, 재질 3개입니다. 주 원출처는 SDK의 `Meshes/MetaQuestTouchPlus`, `Textures/MetaQuestTouchPlus`이며, 모델이 참조하는 `batteryIndicator_mat.mat`와 `batteryIndicatorTexture32.png`는 각각 SDK의 `Meshes/MetaQuestTouchPro/Materials`, `Textures/MetaQuestTouchPro`에서 가져왔습니다. 모델 옆의 [LICENSE.md](../client/Assets/Meshes/Common/MetaQuestTouchPlus/LICENSE.md)와 [NOTICE.txt](../client/Assets/Meshes/Common/MetaQuestTouchPlus/NOTICE.txt)는 패키지 원문을 보존합니다. SDK 코드·네이티브 플러그인·셰이더 파일은 포함하지 않습니다.
 
-Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking_Loop`, `Walk_Loop`, `Hit_Chest`, `Hit_Head`, `Crouch_Idle_Loop`, `Dance_Loop`입니다. 무료판에 전용 놀람 동작이 없어 충격·웅크림 동작을 조합했습니다. 관절 곡선을 변환한 런타임 데이터는 `client/Assets/Meshes/Common/QuaterniusVillageMotion.asset`에 두며, 제출용 사본·ZIP·별도 라이선스 보관 폴더는 만들지 않습니다.
+Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking_Loop`, `Walk_Loop`, `Hit_Chest`, `Hit_Head`, `Crouch_Idle_Loop`, `Dance_Loop`입니다. 무료판에 전용 놀람 동작이 없어 충격·웅크림 동작을 조합했습니다. 관절 곡선을 변환한 런타임 데이터는 `client/Assets/Meshes/OpeningEnding/QuaterniusVillageMotion.asset`에 두며, 제출용 사본·ZIP·별도 라이선스 보관 폴더는 만들지 않습니다.
 
 폰트와 아이콘의 원래 저작권·라이선스 고지는 유지합니다. 생성 도구의 표기는 저작권자를 뜻하지 않으며, 생성 이미지의 메타데이터만으로 권리 귀속이나 재배포 허가를 확인한 것은 아닙니다.
 
@@ -36,3 +38,21 @@ Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking
 | 기타 공장 배경·음원·주민 애니메이션·MNIST | 위 표의 기록을 유지. | 제출 범위에 포함되는 모든 외부 에셋의 누락 여부와 실제 배포 고지 확인. 이번 컨트롤러 검토만으로 프로젝트 전체의 권리 확인이 완료된 것은 아님. |
 
 Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculussdk/), [컨트롤러 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/). SDK 제거 후에도 선택한 런타임 에셋에 필요한 원래 LICENSE/Notice를 에셋 옆에 보존한다. 제출 기록용 ZIP·별도 라이선스 보관 폴더는 추가하지 않는다.
+
+2026-10-30 폴더 통합: Codex 보조로 주민 동작 데이터를 위 OpeningEnding 경로로, 합성 효과음을 client/Assets/Audio/OpeningEnding/VillageOpening.wav로 이동했다. 미디어 내용과 기존 라이선스는 변경하지 않았다.
+# 오프닝 제목용 주아체 (2026-10-30)
+
+- 에셋: Jua-Regular.ttf. 사용 위치: `client/Assets/Fonts/Jua/`, FactoryIntro 제목과 GAME START, VillageOpening 프리팹의 CNN FACTORY 간판.
+- 원출처: https://github.com/google/fonts/tree/main/ofl/jua
+- 저작권 표기: Copyright 2018 The Jua Project Authors.
+- 라이선스: SIL Open Font License 1.1. 원본 폰트 수정 없음. 앱 포함 배포에 필요한 원본 `OFL.txt`를 폰트와 함께 보존한다.
+
+## 시작 화면 음악 — Cipher
+
+- 에셋: `client/Assets/Audio/OpeningEnding/Cipher.mp3` (원본 파일명 Cipher2.mp3, ISRC USUAN1100844).
+- 제작자·저작권자: Kevin MacLeod. 공식 출처: https://incompetech.com/music/royalty-free/music.html 및 https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cipher2.mp3
+- 공식 카탈로그의 Attribution Code에서 CC BY 4.0 확인: https://creativecommons.org/licenses/by/4.0/
+- 사용: 오프닝 타이틀 반복 재생. 원본 파일 편집 없음. 런타임에서 볼륨 조절 및 1.5초 크로스페이드 적용. 시작 화면의 음악 크레딧 표시는 제거했다.
+- 확인일: 2026-10-30. 공식 `pieces.json`의 제목 Cipher·원본 파일명 Cipher2.mp3·ISRC를 대조하고, 곡 상세의 Attribution Code가 CC BY 4.0임을 확인했다. 구버전 미러의 다른 라이선스 표기보다 이번 공식 다운로드 페이지의 표기를 기준으로 기록했다.
+- 배포 시 유지할 고지: `Cipher — Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License. https://creativecommons.org/licenses/by/4.0/` 원곡에 대한 보증·제작자 후원을 암시하지 않는다. 원본 파일은 변형하지 않았으며 앱 내 반복·볼륨·크로스페이드만 적용했다.
+- CC BY 4.0에 따라 출처·저작자·라이선스 링크를 유지하고, 추후 음원 편집 시 변경 사실을 추가한다. 현재 기록을 유지하며, 최종 제출·배포 시 이용자가 확인할 수 있는 크레딧이나 동봉 문서 등에 위 고지를 포함해야 한다. 시작 화면 표시 제거만으로 출처 고지 의무가 없어지지는 않는다. 별도 저작권 폴더·원본 사본은 생성하지 않는다.

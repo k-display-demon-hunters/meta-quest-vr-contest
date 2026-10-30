@@ -15,7 +15,7 @@ namespace UI.Editor
 {
     public static class SpatialPixelLabBuilder
     {
-        public const string ScenePath = "Assets/Scenes/CNNPixelLab.unity";
+        public const string ScenePath = "Assets/Scenes/CNNScreenLab.unity";
         private const string MaterialFolder = "Assets/Materials/CNNPixelLab";
         private static Font _font;
         private static Material _dark;
@@ -41,19 +41,24 @@ namespace UI.Editor
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/XR/XRPlayerRig.prefab"), scene);
             Camera camera = player.GetComponentInChildren<Camera>();
 
-            GameObject lab = new GameObject("CNN Pixel Workshop");
-            CNNPixelLabManager controller = lab.AddComponent<CNNPixelLabManager>();
+            GameObject lab = new GameObject("CNN Screen Lab");
+            CNNScreenLabManager controller = lab.AddComponent<CNNScreenLabManager>();
+            PixelImageFactory imageFactory = lab.AddComponent<PixelImageFactory>();
+            GameObject selectionRoot = new GameObject("Pixel Selection");
+            selectionRoot.transform.SetParent(lab.transform, false);
+            PixelSelectionController selectionController = selectionRoot.AddComponent<PixelSelectionController>();
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
-            board.localPosition = new Vector3(0, 1.65f, 1.8f);
+            board.localPosition = new Vector3(0, 2.45f, 1.8f);
             board.localScale = Vector3.one * 2f;
             MeshRenderer image = Quad(board, "Low resolution image", Vector3.zero, new Vector2(2.4f, 1.35f), _white);
+            PixelBoardController boardController = image.gameObject.AddComponent<PixelBoardController>();
             Transform selection = new GameObject("Selected source pixels").transform;
             selection.SetParent(board, false);
             Frame(selection, "Selection", 0.225f, 0.225f, 0.006f, _amber);
             selection.gameObject.SetActive(false);
             GameObject filter = new GameObject("Grab the filter", typeof(Rigidbody), typeof(BoxCollider));
-            filter.transform.SetParent(lab.transform, false);
+            filter.transform.SetParent(selectionRoot.transform, false);
             filter.transform.localPosition = new Vector3(-2.4f, 1.15f, -0.6f);
             Rigidbody filterBody = filter.GetComponent<Rigidbody>();
             filterBody.isKinematic = true;
@@ -75,45 +80,36 @@ namespace UI.Editor
             grab.useDynamicAttach = true;
             grab.attachEaseInTime = 0.08f;
             Canvas controls = Canvas(lab.transform, "Spatial controls", new Vector3(0, 0.74f, 1.7f), new Vector2(1200, 155), 0.002f, camera);
+            PixelLabUIController ui = controls.gameObject.AddComponent<PixelLabUIController>();
             Button details = Button(controls.transform, "더 자세히 보기", -360, 25, 320, 70);
-            UnityEventTools.AddPersistentListener(details.onClick, controller.ShowDetails);
-            UnityEventTools.AddPersistentListener(Button(controls.transform, "처음부터", 0, 25, 270, 70).onClick, controller.ResetLab);
-            Canvas detail = Canvas(lab.transform, "Floating pixel values", new Vector3(0, 1.7f, 1.25f), new Vector2(1000, 620), 0.0022f, camera);
-            Box(detail.transform, "Panel", 0, 0, 1000, 620, new Color32(13, 27, 43, 255));
-            Image[] cells = new Image[9];
-            Text[] values = new Text[9];
-            for (int row = 0; row < 3; row++)
-            {
-                for (int column = 0; column < 3; column++)
-                {
-                    int index = row * 3 + column;
-                    RectTransform cell = Box(detail.transform, "Pixel " + index, -138 + column * 138, 148 - row * 138, 132, 132, Color.black);
-                    cells[index] = cell.GetComponent<Image>();
-                    values[index] = Label(cell, "Value", "", 0, 0, 128, 128, 32, Color.white);
-                }
-            }
-            UnityEventTools.AddPersistentListener(Button(detail.transform, "이미지로 돌아가기", 0, -245, 410, 76).onClick, controller.CloseDetails);
-            detail.gameObject.SetActive(false);
-
+            UnityEventTools.AddPersistentListener(details.onClick, ui.RequestDetails);
+            UnityEventTools.AddPersistentListener(Button(controls.transform, "처음부터", 0, 25, 270, 70).onClick, ui.RequestReset);
             SerializedObject fields = new SerializedObject(controller);
-            Assign(fields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/OpeningBroadcast.png"));
-            Assign(fields, "_board", board);
-            Assign(fields, "_boardRenderer", image);
-            Assign(fields, "_filter", grab);
-            Assign(fields, "_lensRenderer", lens);
-            Assign(fields, "_selectionFrame", selection);
-            Assign(fields, "_camera", camera);
-            Assign(fields, "_detailButton", details);
-            Assign(fields, "_detail", detail.gameObject);
-            fields.FindProperty("_cells").arraySize = fields.FindProperty("_values").arraySize = 9;
-            for (int i = 0; i < 9; i++)
-            {
-                fields.FindProperty("_cells").GetArrayElementAtIndex(i).objectReferenceValue = cells[i];
-                fields.FindProperty("_values").GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-            }
+            Assign(fields, "_imageFactory", imageFactory);
+            SerializedObject factoryFields = new SerializedObject(imageFactory);
+            Assign(factoryFields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/OpeningBroadcast.png"));
+            factoryFields.ApplyModifiedPropertiesWithoutUndo();
+            Assign(fields, "_board", boardController);
+            Assign(fields, "_selection", selectionController);
+            SerializedObject boardFields = new SerializedObject(boardController);
+            Assign(boardFields, "_boardRenderer", image);
+            boardFields.ApplyModifiedPropertiesWithoutUndo();
+            SerializedObject selectionFields = new SerializedObject(selectionController);
+            Assign(selectionFields, "_board", board);
+            Assign(selectionFields, "_filter", grab);
+            Assign(selectionFields, "_selectionFrame", selection);
+            selectionFields.ApplyModifiedPropertiesWithoutUndo();
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            SerializedObject uiFields = new SerializedObject(ui);
+            Assign(uiFields, "_detailButton", details);
+            uiFields.ApplyModifiedPropertiesWithoutUndo();
+            Assign(fields, "_ui", ui);
             fields.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, ScenePath);
             PixelRevealStageBuilder.Install();
+            controller.enabled = true;
+            lab.SetActive(true);
+            EditorSceneManager.SaveScene(scene);
             if (!EditorBuildSettings.scenes.Any(item => item.path == ScenePath))
             {
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes.Concat(new[] { new EditorBuildSettingsScene(ScenePath, true) }).ToArray();

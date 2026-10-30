@@ -26,7 +26,7 @@
 FactoryIntro
   → FactoryEnvironment
       → FactoryTutorial (안내 완료 또는 첫 학습 진입 시 언로드)
-      → CNNPixelLab
+      → CNNPixelLab (내부에서 CNNScreenLab ↔ CNNConvolutionLab 교체)
       → CNNFeatureMapLab
       → CNNModelDesignLab
       → 뒤쪽 출구 → FactoryEnding
@@ -38,16 +38,16 @@ FactoryIntro
 2. 플레이어가 다음 영역에 머물러도 해당 방의 양피지를 모두 열람하고 `완료`하지 않았다면 체험 씬을 로드하지 않는다. Pixel Lab은 01·02, Feature Map Lab은 03·04, Model Design Lab은 05가 필요하다. 조건을 충족하면 대상 씬을 Additive로 로드하며, 로딩 중 중복 요청은 차단한다. 공장 Manager는 잡기 상태를 별도 검사하지 않지만 피처맵 완료 프로퍼티는 자체 잡기 상태를 포함한다.
 3. `CNNPixelLabManager`, `CNNFeatureMapLabManager`, `CNNModelDesignLabManager` 중 하나가 포함된 루트를 체험 콘텐츠로 찾는다.
 4. 콘텐츠 외의 루트와 콘텐츠 내부 조명을 비활성화하고 공장의 바닥·조명을 사용한다. 콘텐츠 위치에 `ContentAnchor.position - Vector3.forward * 1.5f` 오프셋을 더하고 Rigidbody 위치·회전을 Transform에 맞춘다. 콘텐츠 회전은 이 배치 함수에서 변경하지 않는다. 픽셀 체험은 보드 기준 로컬 좌표로 필터 복귀 위치와 회전을 관리하므로 공장에서 별도로 보정하지 않는다.
-5. 다음 콘텐츠 준비가 끝나면 완료 조건을 다시 확인하고, 이전 학습 씬에서 잡고 있던 물체를 XRI `SelectExit`로 놓은 뒤 이전 체험을 언로드한다. 엔딩 전환도 같은 선택 해제를 수행하며, 태블릿처럼 다른 씬에 속한 물체는 해제하지 않는다. 씬 로드에 실패하면 기존 체험을 유지한다. 씬 내부의 필수 콘텐츠 구성 누락은 런타임 복구 대상으로 처리하지 않는다. 로드 실패는 Console에 알리고, 해당 영역에 머무르면 다음 진입 검사 주기(0.1초)에 다시 로딩을 요청한다.
+5. 다음 콘텐츠 준비가 끝나면 완료 조건을 다시 확인한다. PixelLab에서 나갈 때는 CNNPixelLabManager.EndSession으로 내부 체험의 전환·정리가 끝나기를 기다린다. 이후 이전 학습 씬에서 잡고 있던 물체를 XRI `SelectExit`로 놓은 뒤 이전 체험을 언로드한다. 엔딩 전환도 같은 선택 해제를 수행하며, 태블릿처럼 다른 씬에 속한 물체는 해제하지 않는다. 씬 로드에 실패하면 기존 체험을 유지한다. 씬 내부의 필수 콘텐츠 구성 누락은 런타임 복구 대상으로 처리하지 않는다. 로드 실패는 Console에 알리고, 해당 영역에 머무르면 다음 진입 검사 주기(0.1초)에 다시 로딩을 요청한다.
 6. 공장 씬을 활성 씬으로 유지한다. 체험 전환 때 플레이어를 이동시키지 않는다. 현재 방을 잠깐 나가도 체험은 유지되며, 다음 체험으로 진행한 뒤 이전 체험의 재실행·진행 복원은 제공하지 않는다.
 7. 모델 학습 성공·결과 표시 후에는 뒤쪽 출구를 안내한다. 출구 진입 시 `FactoryEnding`을 Single로 열어 공장과 체험을 정리한다. 이 전환에서는 Controller의 `IsLeaving` 상태로 파괴 콜백의 중복 언로드를 막는다.
 
 | 현재 단계 | 다음 단계로 넘어가는 조건 |
 | --- | --- |
-| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab에 들어가면 튜토리얼 언로드 후 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
-| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이고 양피지 03·04를 완료하면 Feature Map Lab 체험을 불러온다. |
-| 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이고 양피지 05를 완료하면 Model Design Lab 체험을 불러온다. |
-| 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 완료 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 새 학습의 Training 상태에서 완료 상태를 초기화한다. 단계 건너뛰기는 완료 조건이 아니다. |
+| 공장 진입 | 양피지 01·02를 완료하고 Pixel Lab 영역에 들어가면 튜토리얼 종료를 요청하고 언로드를 기다린 뒤 `CNNPixelLab`을 불러온다. 튜토리얼을 끝까지 읽는 것은 체험 진입 조건이 아니다. |
+| 픽셀·합성곱 | `CNNPixelLabManager.ConvolutionCompleted`가 참이면 Feature Map Lab을 안내한다. 해당 영역에서 양피지 03·04 완료 조건까지 충족하면 Feature Map Lab 체험을 불러온다. 픽셀 데이터·내부 체험 전환·완료 상태는 CNNPixelLabManager가 소유한다. |
+| 피처맵 | `CNNFeatureMapLabManager.ReadyForModelDesign`이 참이면 Model Design Lab을 안내한다. 해당 영역에서 양피지 05 완료 조건까지 충족하면 Model Design Lab 체험을 불러온다. |
+| 모델 제작 | `CNNModelDesignLabManager.ReadyForFactoryExit`가 참이면 뒤쪽 출구를 안내한다. 정상 학습 완료 결과 표시가 필요하며 실행 중에는 출구 전환을 보류한다. 새 학습의 Training 상태에서 완료 상태를 초기화한다. 단계 건너뛰기는 현재 모델 씬의 완료 조건이 아니다. |
 
 각 체험의 계산과 입력은 해당 씬의 Manager·Controller가 담당한다. 픽셀 체험의 계산 결과를 피처맵 씬으로 전달하지 않으며, 피처맵은 자체 예제 데이터를 사용한다. 자세한 구현은 [픽셀·합성곱](pixel-inspection.md), [피처맵](cnn-feature-map-explorer.md), [모델 제작](MODEL_DESIGN_API.md)에 정리한다.
 
@@ -57,7 +57,7 @@ FactoryIntro
 
 바닥 안내는 씬에 배치한 네 개의 고정 경로 오브젝트다. 입구→Pixel Lab, Pixel Lab→Feature Map Lab, Feature Map Lab→Model Design Lab, Model Design Lab→출구 순서이며 기존 경유점의 안전한 복도·출입구 동선을 사용한다. Model Design Lab의 랙 북쪽과 출하 구역 서쪽 입구를 우회한다. 선과 화살표는 고정 위치에 있고 사용자 이동으로 시작점이나 형태가 바뀌지 않는다. 현재 목적지 영역에서는 숨기고, 영역 밖이나 다음 단계에서는 해당 경로를 표시한다. 경로를 벗어난 사용자 위치와 연결하는 자동 재탐색은 제공하지 않는다.
 
-각 목적지의 `Content`, `Pixels`, `Maps`, `Model` 프로퍼티는 로드된 콘텐츠와 학습 컴포넌트의 런타임 참조를 보관한다. Manager의 `FindContent()`가 목적지에 맞는 학습 컴포넌트를 한 번 찾아 콘텐츠 루트와 함께 저장하며, Feature Map도 `CNNFeatureMapLabManager`로 루트를 식별한다. SceneLoadController는 `PrepareLesson()`으로 씬을 로드해 `PreparedScene`을 제공하고, 탐색이 끝난 뒤 `PlacePreparedContent()`로 저장된 콘텐츠를 배치한다. Manager는 완료 판정과 상세 화면 정리에 저장된 참조를 사용하며 전환 후 재탐색하지 않는다. SceneLoadController는 기존 씬 언로드·준비 취소·종료 시 해당 런타임 참조를 비운다.
+각 목적지의 `Content`, `Pixels`, `Maps`, `Model` 프로퍼티는 로드된 콘텐츠와 학습 컴포넌트의 런타임 참조를 보관한다. Manager의 `FindContent()`가 목적지에 맞는 학습 컴포넌트를 한 번 찾아 콘텐츠 루트와 함께 저장하며, Feature Map도 `CNNFeatureMapLabManager`로 루트를 식별한다. SceneLoadController는 `PrepareLesson()`으로 씬을 로드해 `PreparedScene`을 제공하고, 탐색이 끝난 뒤 `PlacePreparedContent()`로 저장된 콘텐츠를 배치한다. Manager는 완료 판정과 PixelLab 종료 요청에 저장된 참조를 사용하며 전환 후 재탐색하지 않는다. SceneLoadController는 기존 씬 언로드·준비 취소·종료 시 해당 런타임 참조를 비운다.
 
 `FactoryNavigationData._destinations`의 각 목적지 항목에 경로를 연결한다. 배열 순서는 동작에 영향을 주지 않으며 `FactoryDestinationId`로 조회한다. Controller는 `Start()`에서 현재 목적지와 일치하는 경로만 켠다. Manager가 먼저 첫 목적지를 지정했다면 그 경로가 유지된다. Inspector의 필수 연결은 런타임에서 재검증하지 않는다. 모든 경로는 같은 `FactoryRoute.mat`을 사용하며 Collider와 그림자는 없다. `SetDestination()`은 표시 상태만 바꾼다.
 
@@ -142,3 +142,7 @@ Minimap은 `TabletMapData`와 수집 여부 조회 함수만 전달받는다. �
 ## 확인 범위
 
 현재 FactoryEnvironment 전용 소스, 세 학습 씬의 완료 프로퍼티, 공장 씬·지도·Tablet API 참조를 읽어 문서를 갱신했다. 이번 갱신에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다. 이전 구현에서 기록한 방 소개·미션 진행률·개발자 건너뛰기 실행 결과를 현재 공장 코드의 검증 결과로 사용하지 않는다. 실제 Quest 입력·가독성·잡기·씬 전환과 APK 동작은 별도 실행 확인이 필요하다.
+
+## PixelLab 내부 체험과 공장 경계
+
+Factory는 CNNPixelLab 관리용 씬만 로드·배치한다. CNNScreenLab과 CNNConvolutionLab의 이름·Manager·선택 데이터·복귀 좌표는 FactoryNavigationData에 두지 않는다. CNNPixelLabManager가 내부 로더와 두 체험을 조율하며, Factory는 ConvolutionCompleted 조회와 EndSession 종료 요청만 사용한다. 관리용 콘텐츠는 배치·이전 체험 언로드가 끝난 뒤 활성화한다. 내부 씬은 관리용 루트 위치를 기준으로 배치되므로 공장 기준점 보정을 반복하지 않는다.

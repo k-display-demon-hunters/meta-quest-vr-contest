@@ -1,6 +1,6 @@
 # 공장 오프닝·입구 안내와 엔딩
 
-실행 흐름은 FactoryIntro → FactoryEnvironment + FactoryTutorial → CNNPixelLab → CNNFeatureMapLab → CNNModelDesignLab → FactoryEnding이다. 공장에 들어간 뒤 조작 안내와 최종 미션 안내를 확인해야 실습 진입이 시작된다. 공장 배경과 XR 리그는 기존 구조를 유지한다.
+이 문서는 기존 FactoryIntro·FactoryEnding 연출과 FactoryTutorial 안내 구현을 설명한다. 현재 FactoryEnvironment는 별도의 정문·튜토리얼실·세 체험실·후문 공간으로 개편되어 있으며, 모델 제작을 완료하고 후문에 진입하면 기존 FactoryEnding을 Single로 실행한다. 새 공간의 동선·셔터·학습 연결은 [공장 환경](factory-environment.md)을 따른다.
 
 ## 오프닝·엔딩 폴더와 책임
 

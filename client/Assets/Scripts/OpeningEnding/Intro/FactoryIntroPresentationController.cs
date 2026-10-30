@@ -80,16 +80,10 @@ namespace OpeningEnding.Intro
             buttonImage.type = Image.Type.Sliced;
             buttonImage.pixelsPerUnitMultiplier = 0.3f;
             _inputHint.gameObject.SetActive(false);
-            _instruction.text = "Music: Cipher — Kevin MacLeod (incompetech.com)\nCC BY 4.0 · creativecommons.org/licenses/by/4.0/";
-            _instruction.fontSize = 20;
-            _instruction.rectTransform.anchoredPosition = new Vector2(0f, -265f);
-            _instruction.rectTransform.sizeDelta = new Vector2(1200f, 70f);
         }
 
         public void EndTitle()
         {
-            _instruction.fontSize = 40;
-            _instruction.rectTransform.sizeDelta = new Vector2(1000f, 180f);
             _continueButton.GetComponent<RectTransform>().sizeDelta = new Vector2(600f, 100f);
             _continueLabel.rectTransform.sizeDelta = new Vector2(568f, 88f);
             _heading.color = Color.white;

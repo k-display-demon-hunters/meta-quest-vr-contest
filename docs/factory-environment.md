@@ -115,11 +115,11 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 미니맵은 기존 TabletMapData와 TabletMinimapController를 사용한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역을 읽는다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
 
-새 FactoryEnvironment에는 양피지 오브젝트를 배치하지 않았다. 공장 Manager의 양피지 열람 선행 조건도 제거했다. 양피지 에셋과 열람·수집·태블릿 코드는 유지한다. 기존 튜토리얼에는 양피지와 태블릿 목표 안내가 남아 있지만, 이 공간 씬에는 수집물이나 목표 진행률 게시가 연결되어 있지 않다.
+현재 FactoryEnvironment에는 양피지 오브젝트가 배치되어 있지 않다. 공장 Manager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 튜토리얼·체험 완료와 구역 진입으로 셔터와 학습 흐름을 진행한다. 양피지 수집·열람은 공용 ParchmentManager가 소유하고, Pickup과 태블릿 아이템함은 Prefabs/Common/ParchmentReader.prefab 하나를 사용한다. 현재 공간에는 Pickup이 없으므로 새 세션에서 수집하거나 태블릿으로 재열람할 항목은 없다. 공용 세션·프리팹·입력 연결은 [공용 양피지 열람](parchment.md)에 정리한다. 기존 튜토리얼에는 양피지와 태블릿 목표 안내가 남아 있지만, 이 공간 씬에는 수집물이나 목표 진행률 게시가 연결되어 있지 않다.
 
 ## 씬·에셋 관리
 
-씬 경로와 .meta GUID는 유지한다. 런타임 코드는 Scripts/FactoryEnvironment, 재질과 결합 메시는 각각 Materials/FactoryEnvironment, Meshes/FactoryEnvironment에 있다. 새로운 폴더 이동이나 이름 변경은 하지 않았다.
+씬 경로와 .meta GUID는 유지한다. 공장 공간·진행 코드는 Scripts/FactoryEnvironment, 재질과 결합 메시는 각각 Materials/FactoryEnvironment, Meshes/FactoryEnvironment에 있다. 공용 양피지 코드는 Scripts/Core/Parchment에 두며, 기존 ParchmentReaderController와 ParchmentLesson은 .meta GUID를 유지해 해당 폴더로 이동했다. 공장 배치와 공간 전용 에셋의 경로는 유지한다.
 
 EscapeLayout_*.asset 74개는 이 공간의 기본 도형을 부모·재질별로 결합한 Unity 메시다. 동일한 셔터 형태는 같은 메시 에셋을 참조한다. 구조물 Collider는 별도 오브젝트로 보존하고, 움직이는 패널의 메시와 Collider는 같은 이동 루트 아래에 둔다. ROOM #1 벽·아치 프레임·셔터·셔터 슬랫·내부 경로 메시 5개와 새 가구 메시 33개를 사용한다. 이전 장식 22개와 전기함 전용 20개 Renderer를 제거해 씬에는 MeshRenderer 174개와 간판용 Canvas·uGUI Text 각각 22개가 저장되어 있다. 실제 Quest 성능 측정값은 아니다.
 

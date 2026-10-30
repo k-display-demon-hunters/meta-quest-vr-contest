@@ -1,4 +1,5 @@
-using Tablet;
+using FactoryEnvironment;
+using Parchment;
 using System;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -56,7 +57,8 @@ namespace Education.Editor
             Vector3[] directions = { Vector3.forward, Vector3.left, Vector3.forward, Vector3.left, Vector3.right };
             for (int i = 0; i < positions.Length; i++)
             {
-                CreateParchment(i == 0 ? convolutionPapers : mlpPapers, i, positions[i],
+                CreateParchment(i == 0 ? convolutionPapers : mlpPapers,
+                    i == 0 ? FactoryDestinationId.PixelLab : FactoryDestinationId.ModelDesignLab, i, positions[i],
                     positions[i] - directions[i], sprite, font);
             }
 
@@ -117,10 +119,10 @@ namespace Education.Editor
             return group;
         }
 
-        private static void CreateParchment(Transform parent, int index, Vector3 position,
+        private static void CreateParchment(Transform parent, FactoryDestinationId placementRoom, int index, Vector3 position,
             Vector3 facingPoint, Sprite sprite, Font font)
         {
-            ParchmentLesson lesson = ParchmentLesson.All[index];
+            ParchmentLesson lesson = ParchmentCatalog.Get(index);
             GameObject parchment = new GameObject("Parchment " + (index + 1) + " - " + lesson.Title);
             parchment.transform.SetParent(parent, false);
             parchment.transform.position = position;
@@ -150,6 +152,10 @@ namespace Education.Editor
             ParchmentPickupController pickup = parchment.AddComponent<ParchmentPickupController>();
             SerializedObject fields = new SerializedObject(pickup);
             fields.FindProperty("_lessonIndex").intValue = index;
+            fields.FindProperty("_placementRoom").intValue = (int)placementRoom;
+            fields.FindProperty("_readerPrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/ParchmentReader.prefab")
+                    .GetComponent<ParchmentReaderController>();
             fields.FindProperty("_paperRenderer").objectReferenceValue = paper;
             fields.FindProperty("_glowRenderer").objectReferenceValue = glow;
             fields.FindProperty("_glowLight").objectReferenceValue = glowLight;

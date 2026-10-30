@@ -1,7 +1,7 @@
 using System;
 using System.IO;
-using OpeningEnding.Ending;
-using OpeningEnding;
+using FactoryEnding;
+using FactoryIntro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -16,7 +16,7 @@ namespace FactoryScenes.Editor
     {
         public const string ScenePath = "Assets/Scenes/FactoryEnding.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string VillagePath = "Assets/Prefabs/OpeningEnding/VillageOpening.prefab";
+        private const string VillagePath = "Assets/Prefabs/FactoryIntro/VillageOpening.prefab";
         private const string FontPath = "Assets/Fonts/NotoSansCJKkr-Regular.otf";
 
         [MenuItem("Tools/Factory/Create Ending Scene")]
@@ -34,8 +34,8 @@ namespace FactoryScenes.Editor
             GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPath);
             GameObject villagePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VillagePath);
             Font font = AssetDatabase.LoadAssetAtPath<Font>(FontPath);
-            Material glow = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/VillageCyan.mat");
-            Material sky = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/VillageSky.mat");
+            Material glow = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/VillageCyan.mat");
+            Material sky = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/VillageSky.mat");
             if (rigPrefab == null || villagePrefab == null || font == null || glow == null || sky == null)
             {
                 throw new InvalidOperationException("FactoryEnding requires the existing XR rig, opening village, Korean font and village materials.");

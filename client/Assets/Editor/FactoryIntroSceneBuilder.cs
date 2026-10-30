@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using OpeningEnding;
-using OpeningEnding.Intro;
+using FactoryIntro;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,14 +21,13 @@ namespace FactoryScenes.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play before creating a scene.");
             if (File.Exists(ScenePath)) return;
             GameObject rigAsset = RequiredPrefab("Assets/Prefabs/XR/XRPlayerRig.prefab");
-            GameObject villageAsset = RequiredPrefab("Assets/Prefabs/OpeningEnding/VillageOpening.prefab");
-            GameObject entranceAsset = RequiredPrefab("Assets/Prefabs/OpeningEnding/FactoryEntrance.prefab");
-            GameObject wraithAsset = RequiredPrefab("Assets/Prefabs/OpeningEnding/PixelWraith.prefab");
+            GameObject villageAsset = RequiredPrefab("Assets/Prefabs/FactoryIntro/VillageOpening.prefab");
+            GameObject wraithAsset = RequiredPrefab("Assets/Prefabs/FactoryIntro/PixelWraith.prefab");
             Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             if (font == null) throw new InvalidOperationException("The shared Korean font is required.");
-            Material effectMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/WraithAttackRay.mat");
-            Material skyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/VillageSky.mat");
-            AudioClip soundtrack = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/VillageOpening.wav");
+            Material effectMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/WraithAttackRay.mat");
+            Material skyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/VillageSky.mat");
+            AudioClip soundtrack = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/FactoryIntro/VillageOpening.wav");
             if (villageAsset.GetComponent<FactoryVillageController>() == null ||
                 wraithAsset.GetComponent<FactoryWraithController>() == null ||
                 effectMaterial == null || skyMaterial == null || soundtrack == null)
@@ -45,8 +44,12 @@ namespace FactoryScenes.Editor
                 FactoryIntroManager manager = root.AddComponent<FactoryIntroManager>();
                 FactoryIntroPresentationController presentation = root.AddComponent<FactoryIntroPresentationController>();
                 FactoryIntroCinematicController cinematic = root.AddComponent<FactoryIntroCinematicController>();
-                FactoryIntroInputController input = root.AddComponent<FactoryIntroInputController>();
-                GameObject entrance = (GameObject)PrefabUtility.InstantiatePrefab(entranceAsset, root.transform);
+                root.AddComponent<FactoryIntroInputController>();
+                AudioSource audio = root.AddComponent<AudioSource>();
+                audio.playOnAwake = false;
+                audio.loop = false;
+                audio.spatialBlend = 0f;
+                audio.volume = 0.7f;
                 GameObject village = (GameObject)PrefabUtility.InstantiatePrefab(villageAsset, root.transform);
                 GameObject wraith = (GameObject)PrefabUtility.InstantiatePrefab(wraithAsset, root.transform);
                 wraith.transform.localPosition = new Vector3(1.45f, 2.2f, 7.2f);
@@ -58,36 +61,28 @@ namespace FactoryScenes.Editor
                 fill.transform.SetParent(root.transform, false);
                 fill.type = LightType.Directional;
                 fill.intensity = 1.25f;
-                fill.color = new Color(1f, 0.95f, 0.87f);
+                fill.color = new Color(1f, 0.87f, 0.68f);
                 fill.transform.localRotation = Quaternion.Euler(35f, -25f, 0f);
                 RenderSettings.skybox = skyMaterial;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-                RenderSettings.ambientLight = new Color(0.76f, 0.82f, 0.84f);
+                RenderSettings.ambientLight = new Color(0.72f, 0.8f, 0.83f);
                 Canvas canvas = CreateCanvas(root.transform, player.GetComponentInChildren<Camera>());
-                Image background = Panel(canvas.transform, "Guide background", Vector2.zero, new Vector2(1080f, 560f),
-                    new Color(0.025f, 0.065f, 0.09f, 0.9f));
-                Text heading = Label(canvas.transform, font, "Heading", "CNN 공장에 오신 것을 환영합니다", new Vector2(0f, 195f), new Vector2(1000f, 80f), 44, Color.white);
-                Text instruction = Label(canvas.transform, font, "Instruction", "오른손 A 버튼을 눌러 시작하세요.", new Vector2(0f, 35f), new Vector2(1000f, 180f), 40, Color.white);
-                Button next = Button(canvas.transform, font, "Continue", "다음", new Vector2(0f, -135f), new Vector2(600f, 100f));
-                Text inputHint = Label(canvas.transform, font, "A button hint", "A 버튼으로 계속",
-                    new Vector2(0f, -225f), new Vector2(800f, 56f), 28, Color.white);
+                Panel(canvas.transform, "Guide background", Vector2.zero, new Vector2(1000f, 620f), UI.SceneUIStyle.Surface);
+                Text heading = Label(canvas.transform, font, "Heading", "뭉개진 세상을 구해라!", new Vector2(0f, 225f), new Vector2(930f, 100f), 42, Color.white);
+                Text instruction = Label(canvas.transform, font, "Instruction", "오른손 ray로 시작하기를 선택하세요.", new Vector2(0f, 50f), new Vector2(900f, 235f), 31, UI.SceneUIStyle.Muted);
+                Button next = Button(canvas.transform, font, "Continue", "시작하기", new Vector2(0f, -150f), new Vector2(630f, 80f));
+                UnityEventTools.AddPersistentListener(next.onClick, manager.Continue);
                 SerializedObject flow = new SerializedObject(manager);
                 Assign(flow, "_presentation", presentation);
                 Assign(flow, "_cinematic", cinematic);
                 Assign(flow, "_exteriorStart", arrival);
-                Assign(flow, "_input", input);
-                Assign(flow, "_entry", entrance.GetComponent<FactoryIntroEntryController>());
                 flow.ApplyModifiedPropertiesWithoutUndo();
                 SerializedObject view = new SerializedObject(presentation);
                 Assign(view, "_canvas", canvas);
-                Assign(view, "_background", background);
-                Assign(view, "_inputHint", inputHint);
                 Assign(view, "_heading", heading);
                 Assign(view, "_instruction", instruction);
                 Assign(view, "_continueLabel", next.GetComponentInChildren<Text>());
                 Assign(view, "_continueButton", next);
-                Assign(view, "_titleFont", AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Jua/Jua-Regular.ttf"));
-                Assign(view, "_titleButtonSprite", AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd"));
                 view.ApplyModifiedPropertiesWithoutUndo();
                 SerializedObject opening = new SerializedObject(cinematic);
                 Assign(opening, "_village", village.GetComponent<FactoryVillageController>());
@@ -95,10 +90,8 @@ namespace FactoryScenes.Editor
                 Assign(opening, "_effectMaterial", effectMaterial);
                 Assign(opening, "_skyMaterial", skyMaterial);
                 Assign(opening, "_sun", fill);
+                Assign(opening, "_audio", audio);
                 Assign(opening, "_soundtrack", soundtrack);
-                Assign(opening, "_titleMusic", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Cipher.mp3"));
-                Assign(opening, "_attackSound", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/WraithAttackWarning.wav"));
-                Assign(opening, "_doorSound", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/FactoryDoorOpen.wav"));
                 opening.ApplyModifiedPropertiesWithoutUndo();
                 if (!EditorSceneManager.SaveScene(scene, ScenePath))
                 {
@@ -125,7 +118,7 @@ namespace FactoryScenes.Editor
             root.transform.SetParent(parent, false);
             root.transform.localPosition = new Vector3(0f, 1.05f, 3.4f);
             root.transform.localScale = Vector3.one * 0.0022f;
-            ((RectTransform)root.transform).sizeDelta = new Vector2(1080, 560);
+            ((RectTransform)root.transform).sizeDelta = new Vector2(1000, 620);
             Canvas canvas = root.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = camera;
@@ -170,7 +163,7 @@ namespace FactoryScenes.Editor
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             button.navigation = new Navigation { mode = Navigation.Mode.None };
-            Label(rect, font, "Label", caption, Vector2.zero, size - new Vector2(32, 12), 46, Color.white);
+            Label(rect, font, "Label", caption, Vector2.zero, size - new Vector2(20, 8), 30, Color.white);
             UI.SceneUIStyle.Apply(button);
             return button;
         }

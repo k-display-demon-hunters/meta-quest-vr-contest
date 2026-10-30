@@ -1,32 +1,29 @@
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using XR;
 
 namespace FactoryTutorial
 {
     public sealed class FactoryTutorialManager : MonoBehaviour
     {
-        private static readonly string[] Titles =
-        {
-            "수리 준비부터 해볼까요?", "버튼 선택", "이동과 방향 전환", "물체 잡기", "정면 맞추기",
-            "나의 미션 도우미", "태블릿 항목 이동", "X · 선택", "Y · 뒤로", "설정 열기",
-            "이제 준비됐어요!"
-        };
+        private static readonly string[] Titles = { "당신의 미션", "태블릿이 필요한 이유", "진행률과 지도", "양피지를 수집하세요!", "이동과 둘러보기", "버튼 선택", "물체 잡기", "정면 복원", "태블릿 조작 시작", "태블릿 항목 이동", "X · 선택", "Y · 뒤로", "Menu · 설정", "첫 번째 목적지" };
         private static readonly string[] Instructions =
         {
-            "컨트롤러와 태블릿 사용법을\n먼저 알아보세요.",
-            "오른손으로 버튼을 가리키고\n검지 버튼(트리거)을 누르세요.",
-            "왼쪽 조이스틱으로 이동해요.\n오른쪽 조이스틱으로 돌아보세요.",
-            "오른손 옆면 버튼(그립)을\n눌러 잡고, 놓아 내려놓으세요.",
-            "오른손 A 버튼으로\n정면을 다시 맞추세요.",
-            "태블릿에서 미션과 지도를 보고,\n수집한 양피지를 다시 읽어요.",
-            "왼손 트리거를 누른 채\n조이스틱으로 항목을 고르세요.",
-            "왼손 X 버튼을 눌러\n선택한 항목을 여세요.",
-            "왼손 Y 버튼을 눌러\n이전 화면으로 돌아가세요.",
-            "왼손 메뉴 버튼으로\n밝기와 음량을 조절하세요.",
-            "배운 조작으로\n공장 수리를 시작해 볼까요?"
+            "당신은 이미지 복구 공장의 새 담당자입니다.\n양피지로 원리를 배우고 세 방의 체험을 완료하세요.\n픽셀·합성곱 → 피처맵 → 모델 제작 순서로 CNN을 이해합니다.",
+            "태블릿은 미션 수행을 돕는 보조 도구예요.\n할 일을 잊으면 현재 미션, 길을 잃으면 지도를 확인하세요.\n수집한 양피지는 언제든 다시 읽을 수 있어요.",
+            "진행률은 양피지 5개와 방 체험 3개,\n총 8개 목표 중 완료한 비율이에요.\n지도에는 방과 아직 수집하지 않은 양피지가 표시됩니다.",
+            "방으로 가는 길에서 양피지를 찾아보세요.\n3m 안에서 오른손으로 가리키고 Trigger를 누르면 수집됩니다.\n놓쳐도 입장할 수 있어요. 지도에서 찾아 다시 돌아오세요.",
+            "왼손 스틱을 움직여 걸어보세요.\n고개를 돌려 주변을 보고, 오른손 스틱으로 방향을 조절하세요.",
+            "오른손 앞쪽 검지 버튼이 Trigger예요.\n레이로 화면 버튼을 가리키고 눌러 선택하세요.",
+            "오른손 옆면 버튼이 Grip이에요.\nGrip을 누른 채 물체를 가리켜 잡고, 손을 움직여 옮기세요.\n놓으면 물체를 놓습니다.",
+            "오른손 A를 누르면 현재 위치에서 정면을 복원해요.\nB는 레이를 켜거나 끕니다.\n안내 중에는 버튼 선택을 위해 레이가 유지됩니다.",
+            "왼손 Trigger를 누르고 있어 보세요.\n태블릿을 조작하는 동안에는 이동 대신 항목을 고릅니다.",
+            "왼손 Trigger를 누른 채 스틱을 움직이세요.\n노란 선택 표시가 다른 항목으로 이동하는지 확인하세요.",
+            "왼손 X를 눌러 선택한 항목을 여세요.\n실제 태블릿과 왼쪽 연습 그림의 반응을 확인하세요.",
+            "왼손 Y를 누르면 이전 화면으로 돌아갑니다.\n문서를 읽은 후 체험을 계속할 때 사용하세요.",
+            "왼손 Menu로 설정을 열 수 있어요.\n밝기와 음량을 조절한 뒤 Y로 돌아오세요.",
+            "첫 미션: Pixel Lab으로 이동하세요.\n가는 길에서 ‘이미지와 픽셀’, ‘합성곱과 패딩’ 양피지를 수집하세요.\n방 입구에서 역할 설명을 읽고 체험을 시작합니다."
         };
         private FactoryTutorialVisualController _visuals;
         [SerializeField] private FactoryTutorialPanelController _panel;
@@ -36,27 +33,15 @@ namespace FactoryTutorial
         private bool _initialized;
         private bool _ownsRay;
         private bool _previousForcedRay;
-        private bool _previousInputSuppressed;
-        private InputAction _startGuide;
         private int _page;
         private bool _finishing;
-        private bool _showingMission;
-        private int _advancedFrame = -1;
 
         public bool IsComplete { get; private set; }
 
-        private void Awake()
-        {
-            _startGuide = new InputAction("Start control guide", InputActionType.Button,
-                "<XRController>{RightHand}/primaryButton");
-        }
-
         private void OnEnable()
         {
-            _startGuide.Enable();
             if (_initialized && !IsComplete)
             {
-                SubscribePanel();
                 HoldGuideRay();
             }
         }
@@ -75,19 +60,12 @@ namespace FactoryTutorial
             _panel.ConfigureVisualGuide();
             _visuals = _panel.gameObject.AddComponent<FactoryTutorialVisualController>();
             _visuals.Initialize(rig.GetComponent<PersistentXRPlayerRig>(), _font);
+            _panel.OnPrevious += Previous;
+            _panel.OnNext += Next;
+            _panel.OnFinish += Finish;
             _initialized = true;
-            SubscribePanel();
             HoldGuideRay();
             Refresh();
-        }
-
-        private void Update()
-        {
-            if (_initialized && !_finishing && !IsComplete && _page == 0 &&
-                _startGuide.WasPressedThisFrame())
-            {
-                Next();
-            }
         }
 
         private void Previous()
@@ -102,22 +80,13 @@ namespace FactoryTutorial
 
         private void Next()
         {
-            if (_finishing || IsComplete || _advancedFrame == Time.frameCount)
+            if (_finishing || IsComplete)
             {
-                return;
-            }
-            _advancedFrame = Time.frameCount;
-            if (_showingMission)
-            {
-                Finish();
                 return;
             }
             if (_page == Titles.Length - 1)
             {
-                _showingMission = true;
-                _visuals.SetVisible(false);
-                _panel.ShowBriefing("CNN 공장 복구 미션",
-                    "양피지에서 원리를 배우고,\n세 실습실의 미션을 완료하세요!");
+                Finish();
                 return;
             }
             _page++;
@@ -126,16 +95,8 @@ namespace FactoryTutorial
 
         private void Refresh()
         {
-            string caption = _page == 0 ? "조작 배우기" : _page == Titles.Length - 1 ? "미션 시작" : "다음";
-            _panel.ShowPage(_page, Titles.Length, Titles[_page], Instructions[_page], caption);
+            _panel.ShowPage(_page, Titles.Length, Titles[_page], Instructions[_page]);
             _visuals.ShowPage(_page);
-        }
-
-        private void LateUpdate()
-        {
-            // Do not let the A press that dismisses the first page also recenter this frame.
-            if (_ownsRay)
-                _playerInput.TutorialInputSuppressed = _page == 0 || _previousInputSuppressed;
         }
 
         private void Finish()
@@ -165,8 +126,6 @@ namespace FactoryTutorial
             }
             _playerInput.EnsureRayReady();
             _previousForcedRay = _playerInput.TutorialRayForcedOn;
-            _previousInputSuppressed = _playerInput.TutorialInputSuppressed;
-            _playerInput.TutorialInputSuppressed = _page == 0 || _previousInputSuppressed;
             _playerInput.TutorialRayForcedOn = true;
             _ownsRay = true;
         }
@@ -180,25 +139,12 @@ namespace FactoryTutorial
             if (_playerInput != null)
             {
                 _playerInput.TutorialRayForcedOn = _previousForcedRay;
-                _playerInput.TutorialInputSuppressed = _previousInputSuppressed;
             }
             _ownsRay = false;
         }
 
-        private void SubscribePanel()
-        {
-            _panel.OnPrevious += Previous;
-            _panel.OnNext += Next;
-        }
-
         private void OnDisable()
         {
-            _startGuide.Disable();
-            if (_initialized)
-            {
-                _panel.OnPrevious -= Previous;
-                _panel.OnNext -= Next;
-            }
             ReleaseGuideRay();
             if (_finishing && !IsComplete)
             {
@@ -209,7 +155,12 @@ namespace FactoryTutorial
 
         private void OnDestroy()
         {
-            _startGuide.Dispose();
+            if (_panel != null)
+            {
+                _panel.OnPrevious -= Previous;
+                _panel.OnNext -= Next;
+                _panel.OnFinish -= Finish;
+            }
         }
     }
 }

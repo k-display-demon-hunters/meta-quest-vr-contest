@@ -184,8 +184,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 195}
-  m_SizeDelta: {x: 1000, y: 80}
+  m_AnchoredPosition: {x: 0, y: 225}
+  m_SizeDelta: {x: 930, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &573980064
 CanvasRenderer:
@@ -217,7 +217,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
-    m_FontSize: 44
+    m_FontSize: 42
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -228,7 +228,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "CNN 공장에 오신 것을 환영합니다"
+  m_Text: "\uBB49\uAC1C\uC9C4 \uC138\uC0C1\uC744 \uAD6C\uD574\uB77C!"
 --- !u!1 &694754008
 GameObject:
   m_ObjectHideFlags: 0
@@ -264,7 +264,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1080, y: 560}
+  m_SizeDelta: {x: 1000, y: 620}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &694754010
 MonoBehaviour:
@@ -378,7 +378,7 @@ GameObject:
   - component: {fileID: 1413934374}
   - component: {fileID: 1413934376}
   - component: {fileID: 1413934373}
-  - component: {fileID: 1413934377}
+  - component: {fileID: 1413934371}
   m_Layer: 0
   m_Name: Factory Intro
   m_TagString: Untagged
@@ -386,6 +386,103 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!82 &1413934371
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1413934370}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &1413934373
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -397,16 +494,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 486bc2eb37034689bd273d34cd701bce, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Intro.FactoryIntroPresentationController
-  _background: {fileID: 694754010}
-  _inputHint: {fileID: 6500020003}
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryIntroPresentationController
   _canvas: {fileID: 1438137104}
   _heading: {fileID: 573980065}
   _instruction: {fileID: 1465028339}
   _continueLabel: {fileID: 1907318634}
   _continueButton: {fileID: 1826757092}
-  _titleButtonSprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  _titleFont: {fileID: 12800000, guid: 58d90dfe6f7b6a147a7959dfbdbe0ca1, type: 3}
 --- !u!114 &1413934374
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -418,11 +511,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cb5f03cebce42af868a65b424b550b2, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Intro.FactoryIntroManager
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryIntroManager
   _presentation: {fileID: 1413934373}
   _cinematic: {fileID: 1413934376}
-  _entry: {fileID: 6500030002}
-  _input: {fileID: 1413934377}
   _exteriorStart: {fileID: 93790174}
   _nextSceneName: FactoryEnvironment
 --- !u!4 &1413934375
@@ -443,7 +534,6 @@ Transform:
   - {fileID: 6000000001}
   - {fileID: 6000000201}
   - {fileID: 6500012601}
-  - {fileID: 6500030001}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1438137100
@@ -473,7 +563,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1438137100}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.05, z: 3.4}
+  m_LocalPosition: {x: 0, y: 0, z: 3.4}
   m_LocalScale: {x: 0.0022, y: 0.0022, z: 0.0022}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -481,13 +571,12 @@ RectTransform:
   - {fileID: 573980063}
   - {fileID: 1465028337}
   - {fileID: 1826757089}
-  - {fileID: 6500020001}
   m_Father: {fileID: 1413934375}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 1.05}
-  m_SizeDelta: {x: 1080, y: 560}
+  m_SizeDelta: {x: 1000, y: 620}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1438137102
 MonoBehaviour:
@@ -588,8 +677,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 35}
-  m_SizeDelta: {x: 1000, y: 180}
+  m_AnchoredPosition: {x: 0, y: 50}
+  m_SizeDelta: {x: 900, y: 235}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1465028338
 CanvasRenderer:
@@ -612,7 +701,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.82, g: 0.9, b: 0.94, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -621,7 +710,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
-    m_FontSize: 40
+    m_FontSize: 31
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -632,7 +721,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "오른손 A 버튼을 눌러 시작하세요."
+  m_Text: "\uC624\uB978\uC190 \uB808\uC774\uB85C Game Start\uB97C \uAC00\uB9AC\uD0A4\uACE0
+    Trigger\uB97C \uB204\uB974\uC138\uC694."
 --- !u!1 &1826757088
 GameObject:
   m_ObjectHideFlags: 0
@@ -669,8 +759,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -135}
-  m_SizeDelta: {x: 600, y: 100}
+  m_AnchoredPosition: {x: 0, y: -150}
+  m_SizeDelta: {x: 630, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1826757090
 MonoBehaviour:
@@ -753,7 +843,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1826757090}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1413934374}
+        m_TargetAssemblyTypeName: FactoryIntro.FactoryIntroManager, Assembly-CSharp
+        m_MethodName: Continue
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1907318631
 GameObject:
   m_ObjectHideFlags: 0
@@ -789,7 +891,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 568, y: 88}
+  m_SizeDelta: {x: 610, y: 72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1907318633
 CanvasRenderer:
@@ -821,7 +923,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
-    m_FontSize: 46
+    m_FontSize: 30
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -832,7 +934,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "다음"
+  m_Text: Game Start
 --- !u!1 &6500012600
 GameObject:
   m_ObjectHideFlags: 0
@@ -875,7 +977,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
-  m_Color: {r: 1, g: 0.95, b: 0.87, a: 1}
+  m_Color: {r: 1, g: 0.87, b: 0.68, a: 1}
   m_Intensity: 1.25
   m_Range: 8
   m_SpotAngle: 30
@@ -1080,7 +1182,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af9c0a7bcea8534c8091d2021d1a6c7c, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Intro.FactoryWraithController
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryWraithController
 --- !u!114 &6000000003 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1002, guid: 80ceaf49a9b644c78cc7ee54d4858a63, type: 3}
@@ -1091,7 +1193,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6bef24b867cd4c23b995cc846cfcc29e, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.FactoryVillageController
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryVillageController
 --- !u!114 &1413934376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1103,182 +1205,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 32c958bc8319421f99167eb08a1ad4b3, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Intro.FactoryIntroCinematicController
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryIntroCinematicController
   _village: {fileID: 6000000003}
   _wraith: {fileID: 6000000203}
   _effectMaterial: {fileID: 2100000, guid: 463f82457d725d7b94ab374eea41d226, type: 2}
   _skyMaterial: {fileID: 2100000, guid: 4cba31eaf99f4a45ba5d658c8172a417, type: 2}
   _sun: {fileID: 6500012602}
+  _audio: {fileID: 1413934371}
   _soundtrack: {fileID: 8300000, guid: 1edbfa8bcef140769e7fc00f8f9e052a, type: 3}
-  _titleMusic: {fileID: 8300000, guid: ff9e3f33e158f974a81e3ada46cc5017, type: 3}
-  _attackSound: {fileID: 8300000, guid: b01cbb450f46497d953491c86eddc474, type: 3}
-  _doorSound: {fileID: 8300000, guid: c754850c11414f268f8ad01df26e89d6, type: 3}
---- !u!114 &1413934377
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1413934370}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 799d89f4320248d49542f4fdd17b7b8c, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.FactoryIntroInputController
---- !u!1 &6500020000
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6500020001}
-  - component: {fileID: 6500020002}
-  - component: {fileID: 6500020003}
-  m_Layer: 0
-  m_Name: A button hint
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &6500020001
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6500020000}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1438137101}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -225}
-  m_SizeDelta: {x: 800, y: 56}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &6500020002
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6500020000}
-  m_CullTransparentMesh: 1
---- !u!114 &6500020003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6500020000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FontData:
-    m_Font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
-    m_FontSize: 28
-    m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 10
-    m_MaxSize: 40
-    m_Alignment: 4
-    m_AlignByGeometry: 0
-    m_RichText: 1
-    m_HorizontalOverflow: 0
-    m_VerticalOverflow: 0
-    m_LineSpacing: 1
-  m_Text: "A 버튼으로 계속"
---- !u!1001 &6500030000
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1413934375}
-    m_Modifications:
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2000, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
---- !u!4 &6500030001 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2001, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-  m_PrefabInstance: {fileID: 6500030000}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &6500030002 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2005, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-  m_PrefabInstance: {fileID: 6500030000}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6500030003}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9b50d2d565845358a732735d26bd6ea, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Intro.FactoryIntroEntryController
---- !u!1 &6500030003 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2000, guid: 36da8bf7c8ba4e21b147a6230aa50748, type: 3}
-  m_PrefabInstance: {fileID: 6500030000}
-  m_PrefabAsset: {fileID: 0}

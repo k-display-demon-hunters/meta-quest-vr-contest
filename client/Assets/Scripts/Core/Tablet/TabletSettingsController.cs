@@ -17,7 +17,6 @@ namespace Tablet
         private bool _isVibrationEnabled = true;
         private Coroutine _settingsAnimation;
 
-        private readonly Action<float> _setMasterVolume;
         private readonly MonoBehaviour _host;
         private readonly TabletUIBuilder.SettingsView _view;
         public event Action Saved;
@@ -27,9 +26,8 @@ namespace Tablet
         public float Volume => _volume;
         public bool IsOpen => _view.SettingsOverlay.activeSelf;
 
-        public TabletSettingsController(MonoBehaviour host, TabletUIBuilder.SettingsView view, Action<float> setMasterVolume)
+        public TabletSettingsController(MonoBehaviour host, TabletUIBuilder.SettingsView view)
         {
-            _setMasterVolume = setMasterVolume;
             _host = host;
             _view = view;
         }
@@ -50,7 +48,7 @@ namespace Tablet
             _isVibrationEnabled = PlayerPrefs.GetInt(SaveVibrationKey, _isVibrationEnabled ? 1 : 0) == 1;
             stageIndex = PlayerPrefs.GetInt(SaveStageKey, 0);
             itemIndex = PlayerPrefs.GetInt(SaveInventoryKey, 0);
-            _setMasterVolume(_volume);
+            AudioListener.volume = _volume;
             Screen.brightness = _brightness;
         }
 
@@ -113,7 +111,7 @@ namespace Tablet
         public void SetVolume(float value)
         {
             _volume = Mathf.Clamp01(value);
-            _setMasterVolume(_volume);
+            AudioListener.volume = _volume;
             RefreshSettingsValues();
             RefreshSaveLabels("저장하기");
         }

@@ -50,7 +50,7 @@ namespace Tablet
             _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
             _reader = FindFirstObjectByType<ParchmentManager>();
             _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetInventoryItem);
-            _settings = new TabletSettingsController(this, _ui.Settings, GetComponentInParent<Core.AudioManager>().SetMasterVolume);
+            _settings = new TabletSettingsController(this, _ui.Settings);
             _learning = new TabletLearningController(_ui.Learning, _resources);
             _detail = new TabletDetailController(_ui.Shell);
             _settings.LoadSettings(out int stageIndex, out int itemIndex);

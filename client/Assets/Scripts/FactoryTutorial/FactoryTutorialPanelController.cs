@@ -12,9 +12,10 @@ namespace FactoryTutorial
         private Text _body;
         private Text _nextLabel;
         private Button _previous;
-        private Text _step;
+        private Button _finish;
         public event Action OnPrevious;
         public event Action OnNext;
+        public event Action OnFinish;
 
         public void Initialize(Font font, Camera camera)
         {
@@ -29,22 +30,20 @@ namespace FactoryTutorial
             Image background = Rect(panel.transform, "Panel", Vector2.zero, new Vector2(1000f, 580f)).gameObject.AddComponent<Image>();
             background.color = SceneUIStyle.Surface;
             background.raycastTarget = false;
-            _title = Label(panel.transform, font, "Title", new Vector2(0f, 205f), new Vector2(920f, 80f), 48);
-            _body = Label(panel.transform, font, "Instructions", new Vector2(0f, 25f), new Vector2(890f, 250f), 40);
-            _previous = MakeButton(panel.transform, font, "이전", new Vector2(-180f, -205f), () => OnPrevious?.Invoke());
-            Button next = MakeButton(panel.transform, font, "다음", new Vector2(180f, -205f), () => OnNext?.Invoke());
+            _title = Label(panel.transform, font, "Title", new Vector2(0f, 205f), new Vector2(920f, 80f), 38);
+            _body = Label(panel.transform, font, "Instructions", new Vector2(0f, 25f), new Vector2(890f, 250f), 30);
+            _previous = MakeButton(panel.transform, font, "이전", new Vector2(-290f, -205f), () => OnPrevious?.Invoke());
+            Button next = MakeButton(panel.transform, font, "다음", new Vector2(0f, -205f), () => OnNext?.Invoke());
             _nextLabel = next.GetComponentInChildren<Text>();
-            _step = Label(panel.transform, font, "Step", new Vector2(0f, -140f), new Vector2(800f, 48f), 26);
-            _step.color = SceneUIStyle.Muted;
+            _finish = MakeButton(panel.transform, font, "건너뛰기", new Vector2(290f, -205f), () => OnFinish?.Invoke());
         }
 
-        public void ShowPage(int page, int count, string title, string body, string nextCaption)
+        public void ShowPage(int page, int count, string title, string body)
         {
-            _title.text = title;
-            _step.text = page == 0 ? "A 버튼으로 계속" : $"{page} / {count - 1}";
+            _title.text = $"공장 안내 {page + 1} / {count} · {title}";
             _body.text = body;
             _previous.interactable = page > 0;
-            _nextLabel.text = nextCaption;
+            _nextLabel.text = page == count - 1 ? "탐색 시작" : "다음";
         }
 
         public void ConfigureVisualGuide()
@@ -53,11 +52,11 @@ namespace FactoryTutorial
             panel.Find("Panel").GetComponent<RectTransform>().sizeDelta = new Vector2(1450, 750);
             _title.rectTransform.anchoredPosition = new Vector2(0, 300);
             _title.rectTransform.sizeDelta = new Vector2(1350, 80);
-            _body.rectTransform.anchoredPosition = new Vector2(290, 50);
-            _body.rectTransform.sizeDelta = new Vector2(760, 380);
-            _previous.GetComponent<RectTransform>().anchoredPosition = new Vector2(-180, -300);
-            _nextLabel.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(180, -300);
-            _step.rectTransform.anchoredPosition = new Vector2(0, -220);
+            _body.rectTransform.anchoredPosition = new Vector2(300, 50);
+            _body.rectTransform.sizeDelta = new Vector2(650, 380);
+            _previous.GetComponent<RectTransform>().anchoredPosition = new Vector2(-290, -300);
+            _nextLabel.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
+            _finish.GetComponent<RectTransform>().anchoredPosition = new Vector2(290, -300);
         }
 
         public void ShowBriefing(string title, string body)
@@ -65,11 +64,8 @@ namespace FactoryTutorial
             _title.text = title;
             _body.text = body;
             _previous.gameObject.SetActive(false);
-            _step.text = "";
-            _body.rectTransform.anchoredPosition = new Vector2(0, 50);
-            _body.rectTransform.sizeDelta = new Vector2(1250, 300);
-            _nextLabel.transform.parent.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -300);
-            _nextLabel.text = "확인";
+            _finish.gameObject.SetActive(false);
+            _nextLabel.text = "체험 시작";
         }
 
         private static RectTransform Rect(Transform parent, string name, Vector2 position, Vector2 size)
@@ -94,11 +90,11 @@ namespace FactoryTutorial
 
         private static Button MakeButton(Transform parent, Font font, string caption, Vector2 position, UnityEngine.Events.UnityAction action)
         {
-            RectTransform rect = Rect(parent, caption, position, new Vector2(320f, 96f));
+            RectTransform rect = Rect(parent, caption, position, new Vector2(250f, 72f));
             Image surface = rect.gameObject.AddComponent<Image>();
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = surface;
-            Label(rect, font, "Label", Vector2.zero, new Vector2(296f, 84f), 42).text = caption;
+            Label(rect, font, "Label", Vector2.zero, new Vector2(230f, 64f), 27).text = caption;
             button.onClick.AddListener(action);
             SceneUIStyle.Apply(button);
             return button;

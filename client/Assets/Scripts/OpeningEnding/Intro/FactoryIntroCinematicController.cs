@@ -18,12 +18,18 @@ namespace OpeningEnding.Intro
         [SerializeField] private Material _effectMaterial;
         [SerializeField] private Material _skyMaterial;
         [SerializeField] private Light _sun;
-        [SerializeField] private AudioSource _audio;
+        private Core.AudioManager _audio;
         [SerializeField] private AudioClip _soundtrack;
+        [SerializeField] private AudioClip _titleMusic;
         [SerializeField] private AudioClip _attackSound;
         [SerializeField] private AudioClip _doorSound;
 
         private FactoryVillageDisplayController[] _displays;
+        private Vector3[] _displayPositions;
+        private Quaternion[] _displayRotations;
+        private Vector3[] _displayScales;
+        private Vector3 _villagePosition;
+        private Vector3 _villageScale;
         private LineRenderer _portal;
         private LineRenderer _portalInner;
         private LineRenderer _shockwave;
@@ -51,6 +57,18 @@ namespace OpeningEnding.Intro
                 return;
             }
             _displays = _village.GetComponentsInChildren<FactoryVillageDisplayController>(true);
+            _villagePosition = _village.transform.localPosition;
+            _villageScale = _village.transform.localScale;
+            _displayPositions = new Vector3[_displays.Length];
+            _displayRotations = new Quaternion[_displays.Length];
+            _displayScales = new Vector3[_displays.Length];
+            for (int i = 0; i < _displays.Length; i++)
+            {
+                Transform housing = _displays[i].transform.parent;
+                _displayPositions[i] = housing.localPosition;
+                _displayRotations[i] = housing.localRotation;
+                _displayScales[i] = housing.localScale;
+            }
             _effectsRoot = new GameObject("Opening portal and impact");
             _effectsRoot.transform.SetParent(transform, false);
             _portal = CreateRing("Spirit rift");
@@ -59,6 +77,8 @@ namespace OpeningEnding.Intro
             CreateSparks();
             _skyInstance = new Material(_skyMaterial) { name = "Opening sky instance" };
         }
+
+        public void BindAudio(Core.AudioManager audio) => _audio = audio;
 
         public void BindCamera(Camera camera)
         {
@@ -85,7 +105,7 @@ namespace OpeningEnding.Intro
             StopHaptics();
             if (_audio != null)
             {
-                _audio.Stop();
+                _audio.StopEffects();
             }
             SetAtmosphere(0f);
         }
@@ -99,6 +119,55 @@ namespace OpeningEnding.Intro
             }
         }
 
+        public void ShowTitleComposition()
+        {
+            // One frozen village frame: factory at centre, three displays around it,
+            // and the existing wraith above its right edge. No idle/story time advances.
+            ResetOpening();
+            _village.transform.localScale = _villageScale * 1.5f;
+            _village.transform.localPosition = _villagePosition + new Vector3(0f, -2f, -13f);
+            Vector3[] positions = {
+                new Vector3(-5.6f, 4.4f, 10f),
+                new Vector3(-3.6f, 1.8f, 8.5f),
+                new Vector3(5.2f, 2.5f, 10f)
+            };
+            for (int i = 0; i < _displays.Length; i++)
+            {
+                Transform housing = _displays[i].transform.parent;
+                housing.SetPositionAndRotation(
+                    positions[i], _village.transform.rotation);
+                housing.localScale = Vector3.one * 0.48f;
+                _displays[i].EvaluateIdle(3f);
+            }
+            _wraith.gameObject.SetActive(true);
+            _wraith.transform.SetPositionAndRotation(
+                new Vector3(4.4f, 5.1f, 11f),
+                _village.transform.rotation * Quaternion.Euler(0f, -28f, 18f));
+            _wraith.transform.localScale = Vector3.one * 1.2f;
+            _wraith.SetCinematicFrame(3.9f, 1f, _village.CorePosition, 1f);
+            _effectsRoot.SetActive(true);
+            DrawRing(_portal, new Vector3(4.4f, 5.1f, 11.8f), 2.2f, 0.12f, 0.4f, false, 0.16f);
+            DrawRing(_portalInner, new Vector3(4.4f, 5.1f, 11.7f), 1.85f, 0.045f, 0.9f, false, 0.12f);
+            AnimateImpact(ImpactTime + 0.35f);
+            DrawRing(_shockwave, _village.CorePosition, 1.2f, 0.16f, 0f, false, 0.18f);
+            SetAtmosphere(0.7f);
+            _audio.PlayMusic(_titleMusic, true, 0.3f);
+        }
+
+        public void RestoreVillageComposition()
+        {
+            _village.transform.localPosition = _villagePosition;
+            _village.transform.localScale = _villageScale;
+            for (int i = 0; i < _displays.Length; i++)
+            {
+                Transform housing = _displays[i].transform.parent;
+                housing.localPosition = _displayPositions[i];
+                housing.localRotation = _displayRotations[i];
+                housing.localScale = _displayScales[i];
+            }
+            ResetOpening();
+        }
+
         public void BeginOpening(float ambientTime)
         {
             _lastCueTime = -1f;
@@ -110,14 +179,7 @@ namespace OpeningEnding.Intro
             }
             _effectsRoot.SetActive(true);
             Evaluate(0f);
-            if (_audio != null && _soundtrack != null)
-            {
-                _audio.clip = _soundtrack;
-                _audio.loop = false;
-                _audio.spatialBlend = 0f;
-                _audio.volume = 0.7f;
-                _audio.Play();
-            }
+            _audio.PlayMusic(_soundtrack, false, 0.7f, 1.5f);
         }
 
         public void Evaluate(float elapsed)
@@ -135,14 +197,14 @@ namespace OpeningEnding.Intro
 
         public void PlayDoorSound()
         {
-            _audio.PlayOneShot(_doorSound, 0.85f);
+            _audio.PlayEffect(_doorSound, 0.85f);
         }
 
         private void EvaluateSoundAndHaptics(float elapsed)
         {
             if (_lastCueTime < 4.3f && elapsed >= 4.3f)
             {
-                _audio.PlayOneShot(_attackSound, 0.8f);
+                _audio.PlayEffect(_attackSound, 0.8f);
                 PulseHands(0.25f, 0.16f);
             }
             if (_lastCueTime < 7.2f && elapsed >= 7.2f)
@@ -329,16 +391,18 @@ namespace OpeningEnding.Intro
 
         private void OnDisable()
         {
+            // The persistent rig may already be shutting down when Play or the app exits.
+            if (_audio != null && _audio.isActiveAndEnabled)
+            {
+                _audio.StopMusic();
+                _audio.StopEffects();
+            }
             StopHaptics();
             // The shared XR camera survives this scene and needs its original clear mode back.
             if (_camera != null)
             {
                 _camera.clearFlags = _previousClearFlags;
                 _camera = null;
-            }
-            if (_audio != null)
-            {
-                _audio.Stop();
             }
             if (_hasEnvironmentSnapshot && SceneManager.GetActiveScene() == gameObject.scene)
             {

@@ -40,3 +40,19 @@ Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking
 Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculussdk/), [컨트롤러 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/). SDK 제거 후에도 선택한 런타임 에셋에 필요한 원래 LICENSE/Notice를 에셋 옆에 보존한다. 제출 기록용 ZIP·별도 라이선스 보관 폴더는 추가하지 않는다.
 
 2026-10-30 폴더 통합: Codex 보조로 주민 동작 데이터를 위 OpeningEnding 경로로, 합성 효과음을 client/Assets/Audio/OpeningEnding/VillageOpening.wav로 이동했다. 미디어 내용과 기존 라이선스는 변경하지 않았다.
+# 오프닝 제목용 주아체 (2026-10-30)
+
+- 에셋: Jua-Regular.ttf. 사용 위치: `client/Assets/Fonts/Jua/`, FactoryIntro 제목과 GAME START, VillageOpening 프리팹의 CNN FACTORY 간판.
+- 원출처: https://github.com/google/fonts/tree/main/ofl/jua
+- 저작권 표기: Copyright 2018 The Jua Project Authors.
+- 라이선스: SIL Open Font License 1.1. 원본 폰트 수정 없음. 앱 포함 배포에 필요한 원본 `OFL.txt`를 폰트와 함께 보존한다.
+
+## 시작 화면 음악 — Cipher
+
+- 에셋: `client/Assets/Audio/OpeningEnding/Cipher.mp3` (원본 파일명 Cipher2.mp3, ISRC USUAN1100844).
+- 제작자·저작권자: Kevin MacLeod. 공식 출처: https://incompetech.com/music/royalty-free/music.html 및 https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cipher2.mp3
+- 공식 카탈로그의 Attribution Code에서 CC BY 4.0 확인: https://creativecommons.org/licenses/by/4.0/
+- 사용: 오프닝 타이틀 반복 재생. 원본 파일 편집 없음. 런타임에서 볼륨 조절 및 1.5초 크로스페이드 적용. 시작 화면에 곡명·제작자·사이트·라이선스 링크를 표시한다.
+- 확인일: 2026-10-30. 공식 `pieces.json`의 제목 Cipher·원본 파일명 Cipher2.mp3·ISRC를 대조하고, 곡 상세의 Attribution Code가 CC BY 4.0임을 확인했다. 구버전 미러의 다른 라이선스 표기보다 이번 공식 다운로드 페이지의 표기를 기준으로 기록했다.
+- 배포 시 유지할 고지: `Cipher — Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License. https://creativecommons.org/licenses/by/4.0/` 원곡에 대한 보증·제작자 후원을 암시하지 않는다. 원본 파일은 변형하지 않았으며 앱 내 반복·볼륨·크로스페이드만 적용했다.
+- CC BY 4.0에 따라 출처·저작자·라이선스 링크를 유지하고, 추후 음원 편집 시 변경 사실을 추가한다. 현재 기록과 게임 내 크레딧을 최종 제출·배포물에도 유지해야 한다. 별도 저작권 폴더·원본 사본은 생성하지 않는다.

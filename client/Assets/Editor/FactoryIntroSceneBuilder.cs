@@ -47,11 +47,6 @@ namespace FactoryScenes.Editor
                 FactoryIntroCinematicController cinematic = root.AddComponent<FactoryIntroCinematicController>();
                 FactoryIntroInputController input = root.AddComponent<FactoryIntroInputController>();
                 GameObject entrance = (GameObject)PrefabUtility.InstantiatePrefab(entranceAsset, root.transform);
-                AudioSource audio = root.AddComponent<AudioSource>();
-                audio.playOnAwake = false;
-                audio.loop = false;
-                audio.spatialBlend = 0f;
-                audio.volume = 0.7f;
                 GameObject village = (GameObject)PrefabUtility.InstantiatePrefab(villageAsset, root.transform);
                 GameObject wraith = (GameObject)PrefabUtility.InstantiatePrefab(wraithAsset, root.transform);
                 wraith.transform.localPosition = new Vector3(1.45f, 2.2f, 7.2f);
@@ -91,6 +86,8 @@ namespace FactoryScenes.Editor
                 Assign(view, "_instruction", instruction);
                 Assign(view, "_continueLabel", next.GetComponentInChildren<Text>());
                 Assign(view, "_continueButton", next);
+                Assign(view, "_titleFont", AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Jua/Jua-Regular.ttf"));
+                Assign(view, "_titleButtonSprite", AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd"));
                 view.ApplyModifiedPropertiesWithoutUndo();
                 SerializedObject opening = new SerializedObject(cinematic);
                 Assign(opening, "_village", village.GetComponent<FactoryVillageController>());
@@ -98,8 +95,8 @@ namespace FactoryScenes.Editor
                 Assign(opening, "_effectMaterial", effectMaterial);
                 Assign(opening, "_skyMaterial", skyMaterial);
                 Assign(opening, "_sun", fill);
-                Assign(opening, "_audio", audio);
                 Assign(opening, "_soundtrack", soundtrack);
+                Assign(opening, "_titleMusic", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Cipher.mp3"));
                 Assign(opening, "_attackSound", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/WraithAttackWarning.wav"));
                 Assign(opening, "_doorSound", AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/FactoryDoorOpen.wav"));
                 opening.ApplyModifiedPropertiesWithoutUndo();

@@ -7,7 +7,7 @@ namespace OpeningEnding.Intro
 {
     public sealed class FactoryIntroManager : MonoBehaviour
     {
-        private enum IntroStage { Title, World, Technology, Story, Mission, Door, Entry, Loading, Retry }
+        private enum IntroStage { Title, Story, Mission, Door, Entry, Loading, Retry }
         [SerializeField] private FactoryIntroPresentationController _presentation;
         [SerializeField] private FactoryIntroCinematicController _cinematic;
         [SerializeField] private FactoryIntroEntryController _entry;
@@ -17,7 +17,6 @@ namespace OpeningEnding.Intro
         private IntroStage _stage;
         private XROrigin _rig;
         private SceneTransitionController _transition;
-        private float _ambientTime;
         private int _continuedFrame = -1;
         private bool _isReady;
 
@@ -36,25 +35,20 @@ namespace OpeningEnding.Intro
             _input.Bind(_rig);
             _presentation.BindPlayer(_rig);
             _entry.BindPlayer(_rig);
+            _cinematic.BindAudio(_rig.GetComponent<Core.AudioManager>());
             _cinematic.BindCamera(_rig.Camera);
-            _cinematic.ResetOpening();
+            _cinematic.ShowTitleComposition();
             _isReady = true;
             _stage = IntroStage.Title;
-            _input.SetUIVisible(false);
-            _input.EnableContinueInput(true);
-            _presentation.Show("CNN 공장에 오신 것을 환영합니다",
-                "오른손 <b>A 버튼</b>을 눌러 시작하세요.", "", false);
+            _input.SetUIVisible(true);
+            _input.EnableContinueInput(false);
+            _presentation.ShowTitle();
         }
 
         private void Update()
         {
             if (!_isReady) return;
-            if (_stage == IntroStage.Title || _stage == IntroStage.World || _stage == IntroStage.Technology)
-            {
-                _ambientTime += Time.deltaTime;
-                _cinematic.EvaluateIdle(_ambientTime);
-            }
-            else if (_stage == IntroStage.Entry && _entry.HasEntered)
+            if (_stage == IntroStage.Entry && _entry.HasEntered)
             {
                 StartCoroutine(EnterFactory());
             }
@@ -68,19 +62,9 @@ namespace OpeningEnding.Intro
             switch (_stage)
             {
                 case IntroStage.Title:
-                    _stage = IntroStage.World;
-                    _input.SetUIVisible(true);
-                    _presentation.Show("선명한 화면의 비밀",
-                        "이 마을의 사진과 영상은\n<b>CNN 공장의 AI 업스케일링</b>으로 선명해져요.", "다음", true);
-                    break;
-                case IntroStage.World:
-                    _stage = IntroStage.Technology;
-                    _presentation.Show("작은 이미지를 더 선명하게",
-                        "CNN은 학습한 이미지의 특징을 활용해\n저해상도 이미지를 고해상도로 바꿔요.", "계속", true);
-                    break;
-                case IntroStage.Technology:
                     _stage = IntroStage.Story;
-                    _input.EnableContinueInput(false);
+                    _presentation.EndTitle();
+                    _cinematic.RestoreVillageComposition();
                     StartCoroutine(PlayStory());
                     break;
                 case IntroStage.Mission:
@@ -98,7 +82,7 @@ namespace OpeningEnding.Intro
         {
             _presentation.BeginCinematic();
             _input.SetUIVisible(false);
-            _cinematic.BeginOpening(_ambientTime);
+            _cinematic.BeginOpening(0f);
             float elapsed = 0f;
             bool warningShown = false;
             bool warningHidden = false;

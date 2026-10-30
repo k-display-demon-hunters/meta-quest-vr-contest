@@ -15,6 +15,10 @@ namespace OpeningEnding.Intro
         [SerializeField] private Text _continueLabel;
         [SerializeField] private Text _inputHint;
         [SerializeField] private Button _continueButton;
+        [SerializeField] private Font _titleFont;
+        [SerializeField] private Sprite _titleButtonSprite;
+        private Font _bodyFont;
+        private Sprite _buttonSprite;
 
         private Camera _camera;
         private bool _warning;
@@ -30,6 +34,8 @@ namespace OpeningEnding.Intro
             _camera = rig.Camera;
             _canvas.worldCamera = _camera;
             SceneUIStyle.ApplyButtons(_canvas.transform);
+            _bodyFont = _heading.font;
+            _buttonSprite = ((Image)_continueButton.targetGraphic).sprite;
         }
 
         public void Show(string heading, string instruction, string button, bool canContinue)
@@ -54,6 +60,48 @@ namespace OpeningEnding.Intro
             Show("CNN 공장에 이상 발생!",
                 "악령이 공장을 공격했어요!\n마을의 화면이 망가지고 있어요.", "", false);
             _warning = true;
+        }
+
+        public void ShowTitle()
+        {
+            Show("<size=66>CNN 체험으로 배우는</size>\n<size=104>AI 업스케일링</size>", "", "GAME START", true);
+            _background.color = Color.clear;
+            _heading.rectTransform.anchoredPosition = new Vector2(0f, 45f);
+            _heading.rectTransform.sizeDelta = new Vector2(1400f, 250f);
+            _heading.font = _titleFont;
+            _heading.supportRichText = true;
+            _heading.color = new Color(1f, 0.94f, 0.72f, 1f);
+            _continueButton.GetComponent<RectTransform>().sizeDelta = new Vector2(900f, 150f);
+            _continueLabel.rectTransform.sizeDelta = new Vector2(868f, 138f);
+            _continueLabel.font = _titleFont;
+            _continueLabel.fontSize = 90;
+            Image buttonImage = (Image)_continueButton.targetGraphic;
+            buttonImage.sprite = _titleButtonSprite;
+            buttonImage.type = Image.Type.Sliced;
+            buttonImage.pixelsPerUnitMultiplier = 0.3f;
+            _inputHint.gameObject.SetActive(false);
+            _instruction.text = "Music: Cipher — Kevin MacLeod (incompetech.com)\nCC BY 4.0 · creativecommons.org/licenses/by/4.0/";
+            _instruction.fontSize = 20;
+            _instruction.rectTransform.anchoredPosition = new Vector2(0f, -265f);
+            _instruction.rectTransform.sizeDelta = new Vector2(1200f, 70f);
+        }
+
+        public void EndTitle()
+        {
+            _instruction.fontSize = 40;
+            _instruction.rectTransform.sizeDelta = new Vector2(1000f, 180f);
+            _continueButton.GetComponent<RectTransform>().sizeDelta = new Vector2(600f, 100f);
+            _continueLabel.rectTransform.sizeDelta = new Vector2(568f, 88f);
+            _heading.color = Color.white;
+            _heading.font = _bodyFont;
+            _heading.rectTransform.sizeDelta = new Vector2(1000f, 100f);
+            _continueLabel.font = _bodyFont;
+            Image buttonImage = (Image)_continueButton.targetGraphic;
+            buttonImage.sprite = _buttonSprite;
+            buttonImage.type = Image.Type.Simple;
+            buttonImage.pixelsPerUnitMultiplier = 1f;
+            _continueLabel.fontSize = 46;
+            BeginCinematic();
         }
 
         public void ShowEntryGuide()

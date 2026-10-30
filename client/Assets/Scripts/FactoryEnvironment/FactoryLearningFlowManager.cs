@@ -10,6 +10,11 @@ namespace FactoryEnvironment
     // Owns the room sequence. Each lesson owns its existing completion criteria.
     public sealed class FactoryLearningFlowManager : MonoBehaviour
     {
+        [SerializeField] private FactoryShutterController _room1Passage;
+        [SerializeField] private FactoryAreaEntryController _room1SecondArea;
+        [SerializeField] private Transform _room1SecondAnchor;
+        private CNNPixelLabManager _room1Pixels;
+
         private FactoryRouteGuideController _routeGuide;
         private FactoryPlayerController _player;
         private FactorySceneLoadController _sceneLoader;
@@ -20,6 +25,36 @@ namespace FactoryEnvironment
         private float _nextCheckTime;
 
         public bool HasReachedExit => _stage == FactoryDestinationId.Exit;
+
+        public void NotifyRoom1FirstExperienceCompleted()
+        {
+            _room1Passage.Open();
+            _routeGuide.SetRoom1PassageVisible(true);
+        }
+
+        public void NotifyRoom1SecondExperienceStarted()
+        {
+            _room1Passage.Close();
+            _routeGuide.SetRoom1PassageVisible(false);
+        }
+
+        private void OnEnable() => SubscribeRoom1();
+        private void OnDisable() => UnsubscribeRoom1();
+
+        private void SubscribeRoom1()
+        {
+            // This module is absent until ROOM #1 has been prepared.
+            if (_room1Pixels == null) { return; }
+            _room1Pixels.ScreenCompleted += NotifyRoom1FirstExperienceCompleted;
+            _room1Pixels.ConvolutionStarted += NotifyRoom1SecondExperienceStarted;
+        }
+
+        private void UnsubscribeRoom1()
+        {
+            if (_room1Pixels == null) { return; }
+            _room1Pixels.ScreenCompleted -= NotifyRoom1FirstExperienceCompleted;
+            _room1Pixels.ConvolutionStarted -= NotifyRoom1SecondExperienceStarted;
+        }
 
         private void Awake()
         {
@@ -32,6 +67,8 @@ namespace FactoryEnvironment
         private void Start()
         {
             _player.PlaceAtEntrance();
+            _room1Passage.Bind(_player.CameraTransform);
+            _room1SecondArea.Bind(_player.CameraTransform);
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
             {
                 room.Area.Bind(_player.CameraTransform);
@@ -48,6 +85,13 @@ namespace FactoryEnvironment
         {
             if (_loading || HasReachedExit || Time.time < _nextCheckTime) { return; }
             _nextCheckTime = Time.time + .1f;
+            if (_stage == FactoryDestinationId.PixelLab && _room1Pixels.WaitingForFactoryConvolution
+                && _room1SecondArea.IsPlayerInside)
+            {
+                _loading = true;
+                StartCoroutine(StartRoom1Convolution());
+                return;
+            }
             if (_destination != _stage)
             {
                 if (_navigationData.Get(_destination).Area.IsPlayerInside)
@@ -75,6 +119,13 @@ namespace FactoryEnvironment
             }
         }
 
+        private IEnumerator StartRoom1Convolution()
+        {
+            yield return _room1Pixels.StartFactoryConvolution();
+            _loading = false;
+            _nextCheckTime = Time.time + (_room1Pixels.WaitingForFactoryConvolution ? 3f : .1f);
+        }
+
         private static FactoryDestinationId NextRoom(FactoryDestinationId current)
         {
             switch (current)
@@ -100,6 +151,11 @@ namespace FactoryEnvironment
                 FactoryNavigationData.DestinationData data = _navigationData.Get(next);
                 data.Content = FindContent(_sceneLoader.PreparedScene, data);
                 _sceneLoader.PlacePreparedContent();
+                if (next == FactoryDestinationId.PixelLab)
+                {
+                    data.Pixels.ConfigureFactoryConvolution(
+                        new Pose(_room1SecondAnchor.position, _room1SecondAnchor.rotation));
+                }
                 if (!IsRoomComplete())
                 {
                     yield return _sceneLoader.CancelPreparedLesson();
@@ -122,6 +178,8 @@ namespace FactoryEnvironment
             _routeGuide.SetDestination(FactoryDestinationId.None);
             if (_stage == FactoryDestinationId.PixelLab)
             {
+                UnsubscribeRoom1();
+                _room1Pixels = null;
                 yield return _navigationData.Get(_stage).Pixels.EndSession();
             }
             if (_destination == FactoryDestinationId.Tutorial)
@@ -147,6 +205,11 @@ namespace FactoryEnvironment
             }
             else
             {
+                if (_destination == FactoryDestinationId.PixelLab)
+                {
+                    _room1Pixels = room.Pixels;
+                    SubscribeRoom1();
+                }
                 yield return _sceneLoader.CommitPreparedLesson();
             }
             _stage = _destination;

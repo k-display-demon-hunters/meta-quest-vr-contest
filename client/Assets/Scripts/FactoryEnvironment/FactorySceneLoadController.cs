@@ -87,6 +87,7 @@ namespace FactoryEnvironment
             GameObject content = _preparedData.Content;
             Transform anchor = _preparedData.ContentAnchor;
             content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+            content.transform.localScale = anchor.lossyScale;
             foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
             foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
             {

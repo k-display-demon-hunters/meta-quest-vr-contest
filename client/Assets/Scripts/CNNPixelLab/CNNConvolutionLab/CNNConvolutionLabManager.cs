@@ -17,6 +17,7 @@ namespace UI
         private ConvolutionQuizController _quiz;
         private ConvolutionCalculation _calculation;
         private bool _initialized, _calculating;
+        private bool _factoryHosted;
         private readonly PixelUIInputController _input = new PixelUIInputController();
         public event Action ReturnRequested;
         public event Action Completed;
@@ -30,6 +31,7 @@ namespace UI
         {
             _ui = _lessonRoot.AddComponent<LessonUIController>();
             _ui.Initialize(_font);
+            _ui.SetReturnAvailable(!_factoryHosted);
             GameObject spatial = new GameObject("Spatial calculation");
             spatial.transform.SetParent(_lessonRoot.transform, false);
             _spatial = spatial.AddComponent<RgbVolumeController>();
@@ -45,6 +47,7 @@ namespace UI
             BeginCalculation();
         }
         public void SetInput(PixelPatchData patch) { _patch = patch; }
+        public void SetFactoryHosted(bool hosted) { _factoryHosted = hosted; }
         private void Subscribe()
         {
             _ui.CloseRequested += HandleReturn;

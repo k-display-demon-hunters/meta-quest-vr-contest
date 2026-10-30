@@ -22,10 +22,10 @@ namespace FactoryScenes.Editor
             if (File.Exists(ScenePath)) return;
             GameObject rigAsset = RequiredPrefab("Assets/Prefabs/XR/XRPlayerRig.prefab");
             GameObject villageAsset = RequiredPrefab("Assets/Prefabs/FactoryIntro/VillageOpening.prefab");
-            GameObject wraithAsset = RequiredPrefab("Assets/Prefabs/kdy_scene2/PixelWraith.prefab");
+            GameObject wraithAsset = RequiredPrefab("Assets/Prefabs/FactoryIntro/PixelWraith.prefab");
             Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             if (font == null) throw new InvalidOperationException("The shared Korean font is required.");
-            Material effectMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/kdy_scene2/KdyAttackRay.mat");
+            Material effectMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/WraithAttackRay.mat");
             Material skyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/FactoryIntro/VillageSky.mat");
             AudioClip soundtrack = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/FactoryIntro/VillageOpening.wav");
             if (villageAsset.GetComponent<FactoryVillageController>() == null ||

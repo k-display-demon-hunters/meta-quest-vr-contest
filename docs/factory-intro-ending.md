@@ -94,13 +94,13 @@
 
 현재 오프닝에서 사용하는 에셋 6개는 경로·내용·GUID를 유지한다. 프리팹은 `Prefabs/kdy_scene2/PixelWraith.prefab`이며, 재질은 `Materials/Common`의 `KdyAmber.mat`, `KdySteel.mat`, `KdyViolet.mat`, `KdyWraith.mat`와 `Materials/kdy_scene2/KdyAttackRay.mat`다. 이전 공장 배경과 그 전용 재질은 현재 씬 및 보존 코드의 의존성이 없어 제거했다.
 
-재사용 후보는 `kdy_scene6/KdyConvolutionController.cs`의 패딩 전후 비교, `kdy_scene9/KdyActivationLeverController.cs`의 ReLU/Sigmoid 비교, `kdy_scene16/KdySignComparisonController.cs`의 이미지 전후 비교·확대 표시다. 이 세 파일과 필요한 보조 코드 6개, 각 `.meta`를 보존한다. 보조 코드는 `Core/KdyLessonGrabController.cs`, `KdyLessonProgressController.cs`, `KdyNetworkConfiguration.cs`, `KdyFactorySignExampleData.cs`, `KdyTrainingExampleData.cs`, `KdySignExampleData.cs`다. 세 후보의 내용과 보존 파일의 경로·GUID는 유지한다.
+2026-10-30: 이전 정리에서 재사용 참고용으로 남긴 스크립트 9개도 현재 실행 흐름에서 사용하지 않아 제거했다. 삭제 대상은 `Scripts/kdy_scene6/KdyConvolutionController.cs`, `Scripts/kdy_scene9/KdyActivationLeverController.cs`, `Scripts/kdy_scene16/KdySignComparisonController.cs`와 `Scripts/Core/`의 `KdyLessonGrabController.cs`, `KdyLessonProgressController.cs`, `KdyNetworkConfiguration.cs`, `KdyFactorySignExampleData.cs`, `KdyTrainingExampleData.cs`, `KdySignExampleData.cs`다. 각 스크립트의 `.meta`와 비게 된 `Scripts/kdy_scene6`, `Scripts/kdy_scene9`, `Scripts/kdy_scene16` 폴더 및 폴더 `.meta`를 함께 제거했다. 이번 삭제 범위는 스크립트 9개와 `.meta` 12개다.
 
-`KdyLessonManager`는 현재 Factory 실행 흐름이 아닌 이전 `kdy_scene4~17`의 진행을 담당하므로 제거했다. `KdyLessonGrabController`에서 이 Manager 필드, Manager를 받는 `Initialize`, 전환 중 여부 검사를 제거해 불필요한 학습 Controller 의존을 끊었다. 초기 잡기 위치 저장은 기존 `Awake`와 `ResetPose`에서 계속 수행하며, 오른손 선택 제한과 `SetInteractionEnabled`는 유지한다. 이 연결 때문에 남아 있던 Controller들도 함께 제거했고, 공용 `SceneTransitionController`에서는 Kdy 씬 이름에 따른 자기 정리 예외만 제거했다.
-
-보존한 코드는 현재 실행 흐름에 새로 연결하지 않은 재사용 참고 자료다. 이전 씬과 Inspector 연결은 제거했으므로 기존 17개 씬 체험을 그대로 실행할 수는 없다. 실제 재사용 시 필요한 표시·입력과 현재 진행 흐름을 연결해야 한다. `KdyLessonProgressController`에는 Kdy 외 씬을 로드할 때 자신을 제거하는 이전 수명 처리가 남아 있으며, 예제 데이터의 사전 지정 학습 결과는 실제 서버 학습·추론 결과로 취급하지 않는다.
+현재 오프닝에서 사용하는 위 에셋 6개와 해당 `.meta`, `Prefabs/kdy_scene2`·`Materials/kdy_scene2` 폴더는 유지한다. `FactoryIntro` 씬과 `PixelWraith` 프리팹의 GUID 참조, `FactoryIntroSceneBuilder`의 에셋 경로도 그대로 유지한다. 이전 Kdy 씬과 참고 스크립트는 현재 프로젝트에 남아 있지 않다.
 
 ## 확인 범위
+
+2026-10-30 Kdy 후속 정리: fetch 후 로컬 `main`과 최신 `origin/main`의 커밋·파일 차이가 없음을 확인하고 새 작업 브랜치에서 정리했다. 삭제 대상 코드의 타입 참조가 해당 9개 파일 내부에만 있고 씬·프리팹 등에서 스크립트 GUID를 참조하지 않음을 정적으로 확인했다. 삭제 후 유지 파일의 타입·GUID 참조와 변경 목록을 확인했다. 사용 중인 에셋 6개 및 `.meta`, 씬·프리팹·에디터 도구는 변경하지 않았다. Unity 실행·Play·테스트·빌드·컴파일·프로젝트 복사본 생성은 수행하지 않았다.
 
 2026-10-24 Kdy 정리: 최신 `main`에서 별도 브랜치와 워크트리를 만들고 코드 타입 참조와 Unity GUID 참조를 정적으로 검토했다. 삭제 대상 타입·GUID를 유지 파일에서 참조하지 않는지, 보존한 9개 스크립트의 의존성이 연결되는지, 지정한 에셋과 재사용 후보의 내용 및 보존 파일의 `.meta`가 유지되는지 확인했다. Unity 실행·Play·테스트·빌드·컴파일은 수행하지 않았다.
 

@@ -115,7 +115,7 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 미니맵은 기존 TabletMapData와 TabletMinimapController를 사용한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역을 읽는다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
 
-현재 FactoryEnvironment에는 양피지 오브젝트가 배치되어 있지 않다. 공장 Manager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 튜토리얼·체험 완료와 구역 진입으로 셔터와 학습 흐름을 진행한다. 양피지 수집·열람은 공용 ParchmentManager가 소유하고, Pickup과 태블릿 아이템함은 Prefabs/Common/ParchmentReader.prefab 하나를 사용한다. 현재 공간에는 Pickup이 없으므로 새 세션에서 수집하거나 태블릿으로 재열람할 항목은 없다. 공용 세션·프리팹·입력 연결은 [공용 양피지 열람](parchment.md)에 정리한다. 기존 튜토리얼에는 양피지와 태블릿 목표 안내가 남아 있지만, 이 공간 씬에는 수집물이나 목표 진행률 게시가 연결되어 있지 않다.
+FactoryEnvironment의 ROOM #1에 양피지 01·02, ROOM #2에 03·04, ROOM #3에 05를 씬 오브젝트로 배치했다. 공장 Manager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 튜토리얼·체험 완료와 구역 진입으로 셔터와 학습 흐름을 진행한다. 양피지 수집·열람은 공용 ParchmentManager가 소유하고, Pickup과 태블릿 아이템함은 Prefabs/Common/ParchmentReader.prefab 하나를 사용한다. 각 Pickup은 문서 ID·Core의 ParchmentRoom·공용 열람 프리팹을 Manager에 등록하고 입력을 전달한다. 외형 처리는 별도 ParchmentPickupVisualController에 연결하며, 태블릿의 위치 안내는 등록된 방 enum을 사용한다. 지도는 기존 FactoryMapController가 방 아래의 Pickup을 찾아 위치를 게시하며 수집한 문서는 태블릿에서 재열람한다. 공용 세션·프리팹·입력 연결은 [공용 양피지 열람](parchment.md)에 정리한다. 기존 튜토리얼에는 양피지와 태블릿 목표 안내가 남아 있지만, 목표 진행률 게시는 연결되어 있지 않다.
 
 ## 씬·에셋 관리
 

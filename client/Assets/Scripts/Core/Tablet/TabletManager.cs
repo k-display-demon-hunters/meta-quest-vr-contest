@@ -49,7 +49,7 @@ namespace Tablet
                 () => ActiveGroup, () => _ui.CanvasRect);
             _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
             _reader = FindFirstObjectByType<ParchmentManager>();
-            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected);
+            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetPlacementRoom);
             _settings = new TabletSettingsController(this, _ui.Settings);
             _learning = new TabletLearningController(_ui.Learning, _resources);
             _detail = new TabletDetailController(_ui.Shell);
@@ -287,6 +287,7 @@ namespace Tablet
             _reader.Opened += SuspendForParchment;
             _reader.Closed += RestoreAfterParchment;
             _reader.Collected += RefreshCollectedParchment;
+            _reader.LocationsChanged += _parchment.RefreshInventory;
             _ui.CurrentTaskRequested += _learning.ConfirmCurrentTask;
             _ui.StageRequested += _learning.MoveToStage;
             _ui.BrightnessChanged += _settings.SetBrightness;
@@ -319,6 +320,7 @@ namespace Tablet
             _reader.Opened -= SuspendForParchment;
             _reader.Closed -= RestoreAfterParchment;
             _reader.Collected -= RefreshCollectedParchment;
+            _reader.LocationsChanged -= _parchment.RefreshInventory;
             _ui.CurrentTaskRequested -= _learning.ConfirmCurrentTask;
             _ui.StageRequested -= _learning.MoveToStage;
             _ui.BrightnessChanged -= _settings.SetBrightness;

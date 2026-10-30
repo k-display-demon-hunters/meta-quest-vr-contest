@@ -1,4 +1,3 @@
-using FactoryEnvironment;
 using Parchment;
 using System;
 using UnityEditor;
@@ -58,7 +57,7 @@ namespace Education.Editor
             for (int i = 0; i < positions.Length; i++)
             {
                 CreateParchment(i == 0 ? convolutionPapers : mlpPapers,
-                    i == 0 ? FactoryDestinationId.PixelLab : FactoryDestinationId.ModelDesignLab, i, positions[i],
+                    i == 0 ? ParchmentRoom.PixelLab : ParchmentRoom.ModelDesignLab, i, positions[i],
                     positions[i] - directions[i], sprite, font);
             }
 
@@ -119,7 +118,7 @@ namespace Education.Editor
             return group;
         }
 
-        private static void CreateParchment(Transform parent, FactoryDestinationId placementRoom, int index, Vector3 position,
+        private static void CreateParchment(Transform parent, ParchmentRoom placementRoom, int index, Vector3 position,
             Vector3 facingPoint, Sprite sprite, Font font)
         {
             ParchmentLesson lesson = ParchmentCatalog.Get(index);
@@ -149,6 +148,13 @@ namespace Education.Editor
             collider.size = new Vector3(0.88f, 0.5f, 0.08f);
             XRSimpleInteractable interactable = parchment.AddComponent<XRSimpleInteractable>();
             interactable.colliders.Add(collider);
+            ParchmentPickupVisualController visuals = parchment.AddComponent<ParchmentPickupVisualController>();
+            SerializedObject visualFields = new SerializedObject(visuals);
+            visualFields.FindProperty("_paperRenderer").objectReferenceValue = paper;
+            visualFields.FindProperty("_glowRenderer").objectReferenceValue = glow;
+            visualFields.FindProperty("_glowLight").objectReferenceValue = glowLight;
+            visualFields.FindProperty("_floatPhase").floatValue = index * 0.7f;
+            visualFields.ApplyModifiedPropertiesWithoutUndo();
             ParchmentPickupController pickup = parchment.AddComponent<ParchmentPickupController>();
             SerializedObject fields = new SerializedObject(pickup);
             fields.FindProperty("_lessonIndex").intValue = index;
@@ -156,9 +162,7 @@ namespace Education.Editor
             fields.FindProperty("_readerPrefab").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/ParchmentReader.prefab")
                     .GetComponent<ParchmentReaderController>();
-            fields.FindProperty("_paperRenderer").objectReferenceValue = paper;
-            fields.FindProperty("_glowRenderer").objectReferenceValue = glow;
-            fields.FindProperty("_glowLight").objectReferenceValue = glowLight;
+            fields.FindProperty("_visuals").objectReferenceValue = visuals;
             fields.ApplyModifiedPropertiesWithoutUndo();
             CreateLabel(parchment.transform, index, lesson, font);
         }

@@ -22,6 +22,11 @@ namespace Parchment
             _parchment = FindFirstObjectByType<ParchmentManager>();
         }
 
+        private void Start()
+        {
+            _visuals.ConfigureLesson(ParchmentCatalog.Get(_lessonIndex));
+        }
+
         private void OnEnable()
         {
             _interactable.activated.AddListener(HandleActivated);

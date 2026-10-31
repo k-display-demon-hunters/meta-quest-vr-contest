@@ -28,6 +28,7 @@ namespace Parchment
         private Camera _camera;
         private XRPlayerInputController _playerInput;
         private Coroutine _opening;
+        private PickupRegistration _activePickup;
         private int _index;
         public bool IsOpen { get; private set; }
         public event Action Opened;
@@ -46,6 +47,7 @@ namespace Parchment
         }
 
         private void OnDisable() => Close();
+        // Acquisition is committed only by the reader's final-page completion, not by the initial click.
         public bool HasCollected(int index) => index >= 0 && index < _collected.Length && _collected[index];
         private bool Collect(int index)
         {
@@ -93,14 +95,16 @@ namespace Parchment
             _prefab = pickup.Prefab;
             _camera = rig.Camera;
             _playerInput = _camera.GetComponentInParent<XRPlayerInputController>();
+            _activePickup = pickup;
+            Pose origin = new Pose(pickup.Source.position, pickup.Source.rotation);
             pickup.Collected();
-            Collect(index);
-            Open(index, new Pose(pickup.Source.position, pickup.Source.rotation));
+            Open(index, origin);
         }
 
         public void OpenCollected(int index, Camera camera, Pose origin)
         {
             if (IsOpen || !HasCollected(index)) return;
+            _activePickup = null;
             _camera = camera;
             _playerInput = camera.GetComponentInParent<XRPlayerInputController>();
             Open(index, origin);
@@ -122,7 +126,12 @@ namespace Parchment
             _reader.Present(_index, _camera, origin);
             _opening = null;
         }
-        private void Complete() => Close();
+        private void Complete()
+        {
+            // A parchment is acquired only after its final page has been completed.
+            Collect(_index);
+            Close();
+        }
         private void Close()
         {
             if (!IsOpen) { return; }
@@ -136,6 +145,12 @@ namespace Parchment
                 _reader = null;
             }
             IsOpen = false;
+            PickupRegistration pickup = _activePickup;
+            _activePickup = null;
+            if (!HasCollected(_index) && pickup != null && pickup.Source != null)
+            {
+                pickup.Source.gameObject.SetActive(true);
+            }
             // The player may already be destroyed during application shutdown.
             if (_playerInput != null) { _playerInput.SetParchmentMovementBlocked(false); }
             Closed?.Invoke();

@@ -10,12 +10,12 @@ namespace Tablet
     {
         private const float RefreshInterval = 0.1f;
         private const float NearbyWorldHeight = 22f;
-        private static readonly Color BackgroundColor = new Color(0.035f, 0.085f, 0.15f);
-        private static readonly Color GridColor = new Color(0.08f, 0.15f, 0.23f);
-        private static readonly Color FloorColor = new Color(0.10f, 0.23f, 0.35f);
-        private static readonly Color WallColor = new Color(0.40f, 0.67f, 0.85f);
-        private static readonly Color PaperColor = new Color(0.70f, 0.88f, 1f);
-        private static readonly Color PlayerColor = new Color(0.24f, 0.90f, 1f);
+        private static readonly Color BackgroundColor = new Color(.91f, .95f, .97f);
+        private static readonly Color GridColor = new Color(.86f, .91f, .94f);
+        private static readonly Color FloorColor = new Color(.97f, .99f, 1f);
+        private static readonly Color WallColor = new Color(.56f, .68f, .76f);
+        private static readonly Color PaperColor = new Color(.65f, .49f, .30f);
+        private static readonly Color PlayerColor = new Color(.22f, .44f, .59f);
 
         private readonly List<TabletMapData.Floor> _floors = new List<TabletMapData.Floor>();
         private readonly List<Rect> _walls = new List<Rect>();
@@ -196,7 +196,7 @@ namespace Tablet
             string value = "공장 외부";
             if (_floors.Count == 0)
             {
-                value = "공장 지도 미연결";
+                value = "공장에 입장하면 주변 지도가 표시됩니다";
             }
             else if (_overview)
             {

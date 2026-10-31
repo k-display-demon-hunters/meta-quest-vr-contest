@@ -55,9 +55,9 @@ namespace FactoryTutorial
             face.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 340);
             face.GetComponent<Image>().color = new Color(.035f, .055f, .08f);
             face.GetComponent<Image>().raycastTarget = false;
-            _tabletTitle = Label(tablet.transform, font, 125, "태블릿 · 미션 보조 도구");
-            _rows = new[] { Label(tablet.transform, font, 45, "현재 미션 · 무엇을 할까요?"),
-                Label(tablet.transform, font, -25, "지도 · 어디로 갈까요?"),
+            _tabletTitle = Label(tablet.transform, font, 125, "태블릿 · 진행률과 앱");
+            _rows = new[] { Label(tablet.transform, font, 45, "지도 · 내 주변 보기"),
+                Label(tablet.transform, font, -25, "학습 단계 · 네 체험으로 이동"),
                 Label(tablet.transform, font, -95, "양피지 · 배운 원리 다시 보기") };
             _status = Label(tablet.transform, font, -640, "");
             _status.rectTransform.sizeDelta = new Vector2(1100, 100);

@@ -1,4 +1,5 @@
 using System.Collections;
+using Learning;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -21,7 +22,7 @@ namespace FactoryTutorial
             "왼쪽 조이스틱으로 이동해요.\n오른쪽 조이스틱으로 돌아보세요.",
             "오른손 옆면 버튼(그립)을\n눌러 잡고, 놓아 내려놓으세요.",
             "오른손 A 버튼으로\n정면을 다시 맞추세요.",
-            "태블릿에서 미션과 지도를 보고,\n수집한 양피지를 다시 읽어요.",
+            "태블릿에서 진행률·지도를 보고,\n학습 단계 이동과 양피지 재열람을 해요.",
             "왼손 트리거를 누른 채\n조이스틱으로 항목을 고르세요.",
             "왼손 X 버튼을 눌러\n선택한 항목을 여세요.",
             "왼손 Y 버튼을 눌러\n이전 화면으로 돌아가세요.",
@@ -42,8 +43,13 @@ namespace FactoryTutorial
         private bool _finishing;
         private bool _showingMission;
         private int _advancedFrame = -1;
+        private bool _progressionAvailable;
 
         public bool IsComplete { get; private set; }
+        public event System.Action<LearningStageId> StageCompleted;
+        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
+        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.Tutorial && IsComplete;
+        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.Tutorial && isActiveAndEnabled && IsComplete;
 
         private void Awake()
         {
@@ -59,9 +65,10 @@ namespace FactoryTutorial
                 SubscribePanel();
                 HoldGuideRay();
             }
+            PublishProgressionAvailability();
         }
 
-        public void Initialize(XROrigin rig, Transform entrance)
+        public void Initialize(XROrigin rig, Pose entrance)
         {
             if (_initialized)
             {
@@ -70,14 +77,17 @@ namespace FactoryTutorial
             _playerInput = rig.GetComponent<XRPlayerInputController>();
 
             _panel.transform.SetPositionAndRotation(
-                entrance.position + entrance.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
+                entrance.position + entrance.rotation * Vector3.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
             _panel.Initialize(_font, rig.Camera);
             _panel.ConfigureVisualGuide();
             _visuals = _panel.gameObject.AddComponent<FactoryTutorialVisualController>();
             _visuals.Initialize(rig.GetComponent<PersistentXRPlayerRig>(), _font);
             _initialized = true;
-            SubscribePanel();
-            HoldGuideRay();
+            if (isActiveAndEnabled)
+            {
+                SubscribePanel();
+                HoldGuideRay();
+            }
             Refresh();
         }
 
@@ -155,6 +165,16 @@ namespace FactoryTutorial
             ReleaseGuideRay();
             _panel.gameObject.SetActive(false);
             IsComplete = true;
+            StageCompleted?.Invoke(LearningStageId.Tutorial);
+            PublishProgressionAvailability();
+        }
+
+        private void PublishProgressionAvailability()
+        {
+            bool available = CanProceed(LearningStageId.Tutorial);
+            if (_progressionAvailable == available) { return; }
+            _progressionAvailable = available;
+            ProgressionAvailabilityChanged?.Invoke(LearningStageId.Tutorial, available);
         }
 
         private void HoldGuideRay()
@@ -205,6 +225,7 @@ namespace FactoryTutorial
                 StopAllCoroutines();
                 _finishing = false;
             }
+            PublishProgressionAvailability();
         }
 
         private void OnDestroy()

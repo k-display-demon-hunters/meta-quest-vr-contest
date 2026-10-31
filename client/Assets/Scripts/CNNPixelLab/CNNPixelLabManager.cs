@@ -1,10 +1,13 @@
 using System;
 using System.Collections;
+using Learning;
+using FactoryEnvironment;
+using Parchment;
 using UnityEngine;
 
 namespace UI
 {
-    public sealed class CNNPixelLabManager : MonoBehaviour
+    public sealed class CNNPixelLabManager : MonoBehaviour, ILearningExperience
     {
         private PixelLabSceneLoadController _sceneLoader;
         private CNNScreenLabManager _screen;
@@ -17,31 +20,39 @@ namespace UI
         private bool _factoryHosted;
         private bool _closingFactoryDisplay;
         private Pose _factoryConvolutionPose;
+        private Func<bool> _isPassageInside;
+        private Action<bool> _setPassageAvailable;
+        private Func<bool> _hasRequiredDocuments;
+        private Coroutine _hostedTransition;
+        private bool _passageAvailable;
 
-        public bool ConvolutionCompleted => _completed && !_switching && !_ending;
-        public bool WaitingForFactoryConvolution { get; private set; }
-        public event Action ScreenCompleted;
-        public event Action ConvolutionStarted;
+        private bool _progressionAvailable;
+        public LearningStageId StageId => LearningStageId.PixelLab;
+        public float Progress { get; private set; }
+        public event System.Action<float> ProgressChanged;
+        public event System.Action<bool> ExitAvailabilityChanged;
 
-        public void ConfigureFactoryConvolution(Pose pose)
+        private void SetProgress(float value)
         {
-            _factoryHosted = true;
-            _factoryConvolutionPose = pose;
+            value = Mathf.Clamp01(value);
+            if (Progress == value) { return; }
+            Progress = value;
+            ProgressChanged?.Invoke(value);
         }
 
-        public IEnumerator StartFactoryConvolution()
+        public bool CanExit => isActiveAndEnabled && _completed && !_switching && !_ending;
+
+        private void ConfigureEnvironment()
         {
-            if (!_factoryHosted || !WaitingForFactoryConvolution || _switching || _ending) { yield break; }
-            WaitingForFactoryConvolution = false;
-            _switching = true;
-            yield return SwitchStage(true, false);
-            if (_ending) { yield break; }
-            if (_sceneLoader.LastError != null)
-            {
-                WaitingForFactoryConvolution = true;
-                yield break;
-            }
-            ConvolutionStarted?.Invoke();
+            // The persistent factory is optional when this experience runs on its own.
+            FactoryEnvironmentManager factory = FindFirstObjectByType<FactoryEnvironmentManager>();
+            if (factory == null) { return; }
+            ParchmentManager parchment = FindFirstObjectByType<ParchmentManager>();
+            _factoryHosted = true;
+            _factoryConvolutionPose = factory.PixelLabContentPose;
+            _isPassageInside = () => factory.IsPixelPassageInside;
+            _setPassageAvailable = factory.SetPixelPassageAvailable;
+            _hasRequiredDocuments = () => parchment.HasCollectedAll(LearningStageCatalog.Get(StageId).ParchmentIds);
         }
 
         private void Awake()
@@ -52,22 +63,32 @@ namespace UI
         private void OnEnable()
         {
             SubscribeStage();
+            PublishProgressionState();
         }
 
         private IEnumerator Start()
         {
-            _switching = true;
-            yield return SwitchStage(false, false);
+            if (_ending) { yield break; }
+            ConfigureEnvironment();
+            do
+            {
+                SetSwitching(true);
+                yield return SwitchStage(false, false);
+                if (_ending || _sceneLoader.LastError == null) { yield break; }
+                yield return new WaitForSeconds(3f);
+            } while (!_ending);
         }
 
         public IEnumerator EndSession()
         {
             _ending = true;
-            WaitingForFactoryConvolution = false;
+            PublishProgressionState();
+            if (_factoryHosted) { SetPassageAvailable(false); }
             while (_switching || _closingFactoryDisplay)
             {
                 yield return null;
             }
+            CancelHostedTransition();
             UnbindStage();
             yield return _sceneLoader.UnloadStages();
         }
@@ -82,13 +103,13 @@ namespace UI
             if (_sceneLoader.LastError != null)
             {
                 Debug.LogError("[PixelLab] " + _sceneLoader.LastError, this);
-                _switching = false;
+                SetSwitching(false);
                 yield break;
             }
             if (_ending)
             {
                 yield return _sceneLoader.CancelPreparedStage();
-                _switching = false;
+                SetSwitching(false);
                 yield break;
             }
             UnbindStage();
@@ -106,7 +127,7 @@ namespace UI
                 _screen.SetInitialSelection(_selectedPixel);
             }
             yield return _sceneLoader.CommitStage();
-            _switching = false;
+            SetSwitching(false);
         }
 
         private void SubscribeStage()
@@ -146,17 +167,61 @@ namespace UI
 
         private void HandleConvolutionRequested(PixelPatchData patch, Vector2Int selectedPixel)
         {
-            if (_switching || _ending) { return; }
+            if (_switching || _ending || _hostedTransition != null) { return; }
             _patch = patch;
             _selectedPixel = selectedPixel;
+            SetProgress(0.5f);
             if (_factoryHosted)
             {
-                WaitingForFactoryConvolution = true;
-                ScreenCompleted?.Invoke();
+                _hostedTransition = StartCoroutine(RunHostedTransition());
                 return;
             }
-            _switching = true;
+            SetSwitching(true);
             StartCoroutine(SwitchStage(true, false));
+        }
+
+        private IEnumerator RunHostedTransition()
+        {
+            // Finish the screen's request callback before a loaded scene can be replaced.
+            yield return null;
+            while (!_ending)
+            {
+                bool available = _hasRequiredDocuments();
+                SetPassageAvailable(available);
+                if (!available || !_isPassageInside())
+                {
+                    yield return null;
+                    continue;
+                }
+                SetSwitching(true);
+                yield return SwitchStage(true, false);
+                if (_ending || !isActiveAndEnabled) { break; }
+                if (_sceneLoader.LastError != null)
+                {
+                    yield return new WaitForSeconds(3f);
+                    continue;
+                }
+                SetPassageAvailable(false);
+                break;
+            }
+            _hostedTransition = null;
+        }
+
+        private void SetPassageAvailable(bool available)
+        {
+            if (_passageAvailable == available) { return; }
+            _passageAvailable = available;
+            _setPassageAvailable(available);
+        }
+
+        private void CancelHostedTransition()
+        {
+            if (_hostedTransition != null)
+            {
+                StopCoroutine(_hostedTransition);
+                _hostedTransition = null;
+            }
+            if (_factoryHosted) { SetPassageAvailable(false); }
         }
 
         private void HandleReturnRequested()
@@ -169,7 +234,7 @@ namespace UI
                 StartCoroutine(FinishFactoryDisplay());
                 return;
             }
-            _switching = true;
+            SetSwitching(true);
             StartCoroutine(SwitchStage(false, true));
         }
 
@@ -186,18 +251,39 @@ namespace UI
         {
             if (_switching || _ending) { return; }
             _patch = null;
+            SetProgress(0f);
             _completed = false;
-            WaitingForFactoryConvolution = false;
+            CancelHostedTransition();
+            PublishProgressionState();
         }
 
         private void HandleCompleted()
         {
             _completed = true;
+            SetProgress(1f);
+            PublishProgressionState();
+        }
+
+        private void SetSwitching(bool switching)
+        {
+            _switching = switching;
+            PublishProgressionState();
+        }
+
+        private void PublishProgressionState()
+        {
+            bool available = CanExit;
+            if (_progressionAvailable == available) { return; }
+            _progressionAvailable = available;
+            ExitAvailabilityChanged?.Invoke(available);
         }
 
         private void OnDisable()
         {
             UnsubscribeStage();
+            if (!_switching) { CancelHostedTransition(); }
+            else if (_factoryHosted) { SetPassageAvailable(false); }
+            PublishProgressionState();
         }
     }
 }

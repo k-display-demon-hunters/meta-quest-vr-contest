@@ -11,7 +11,7 @@
 | **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판, CNNModelDesignLab 제작 콘솔의 저장된 구성 검사·학습·예측 UI, CNNScreenLab 안내·RGB 숫자 및 공용 PixelCalculationUI의 R·G 학습/B 퀴즈(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
 | **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1 유래)** | `client/Assets`의 `Meshes/Common/MetaQuestTouchPlus`, `Textures/Common/MetaQuestTouchPlus`, `Materials/Common/MetaQuestTouchPlus`; 공용 XRPlayerRig 컨트롤러 표시, 오프닝 입장 시 왼손 조이스틱 강조와 FactoryTutorial 확대 안내 | [Meta 공식 패키지](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 207.0.1에서 표시용 에셋만 분리. [공식 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | 원본 LICENSE.md 표기: Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/). 원래 LICENSE.md·NOTICE.txt를 모델 폴더에 보존. 별도 공개 라이선스로 재허가하지 않음. 확인: 2026-10-27 | FBX·PNG·Animator Controller와 원본 `.meta`는 내용 수정 없이 보존. Codex 보조로 재질 3개의 SDK 셰이더 참조를 기존 URP로 변경하고 텍스처·색상·투명도 속성을 연결. 기존 Codex 보조 코드가 Unity XR 입력과 애니메이션·버튼 표식을 연결 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
-| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개와 공용 ParchmentReader 프리팹 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
+| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개, 공용 ParchmentReader·TabletUI 프리팹 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
 | **Lucide / Feather 기반 아이콘** / 아이콘 | 태블릿 UI | [Lucide 공식 저장소 및 라이선스](https://github.com/lucide-icons/lucide/blob/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE) | © 2026 Lucide Icons and Contributors, ISC. Feather 유래 도형: © 2013–present Cole Bemis, MIT | 선 도형을 간략화하고 아이콘 아틀라스로 변환 |
 | **Universal Animation Library — Standard** / 주민 동작 | FactoryIntro·FactoryEnding 마을 주민의 걷기·시청·대화·충격 반응·축하 | [Quaternius 공식 배포 페이지](https://quaternius.itch.io/universal-animation-library), 무료 Standard 배포본 확인·다운로드: 2026-10-23 | 동봉 License/README의 제작자 표기: **Quaternius**. 공식 페이지에 애니메이터 **Gonzalo Furnier**의 제작 참여 표기. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): 수정·재배포·상업적 이용 허용 | 실제 관절 애니메이션을 Codex 보조로 기존 주민의 비율·관절에 맞게 변환하고 상태 전환을 혼합. 외부 캐릭터 메시·유료 Pro/Source 파일 사용 없음 |
 | **VillageOpening.wav** / 음원 | 18초 마을 오프닝의 배경·효과음 | 프로젝트 작업에서 Codex 보조로 Python 사인파·필터링한 난수·음량 곡선을 직접 합성 | 프로젝트용 직접 제작 음원. 별도 공개 라이선스는 지정하지 않음. 외부 녹음·음악 샘플 사용 없음 | 오프닝의 공격·화면 고장 시점에 맞춰 제작 |
@@ -26,6 +26,14 @@ Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking
 폰트와 아이콘의 원래 저작권·라이선스 고지는 유지합니다. 생성 도구의 표기는 저작권자를 뜻하지 않으며, 생성 이미지의 메타데이터만으로 권리 귀속이나 재배포 허가를 확인한 것은 아닙니다.
 
 ## 제출 전 저작권 재검토 목록 (Meta 에셋 갱신: 2026-10-27)
+
+### 태블릿 앱 아이콘 (2026-10-30)
+
+| 에셋명 | 사용 위치 | 생성 방법·프롬프트 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| TabletMapIcon.png | `client/Assets/Textures/Common/TabletMapIcon.png`; 이전 시안, 현재 태블릿에서 미사용 | OpenAI 내장 image_gen, Codex AI 보조 생성. 둥근 사각형 파란 타일, 접힌 지도·경로·위치 핀, 부드러운 3D 앱 아이콘, 글자 없음, 타일 외부 투명 | 생성 도구는 권리자를 뜻하지 않음. 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 원본 그대로 저장 |
+| TabletStepsIcon.png | `client/Assets/Textures/Common/TabletStepsIcon.png`; 이전 시안, 현재 태블릿에서 미사용 | OpenAI 내장 image_gen, Codex AI 보조 생성. 보라색 둥근 사각형 타일, 상승하는 세 계단·민트 체크 표시, 부드러운 3D 앱 아이콘, 글자 없음, 타일 외부 투명 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 원본 그대로 저장 |
+| TabletScrollIcon.png | `client/Assets/Textures/Common/TabletScrollIcon.png`; 이전 시안, 현재 태블릿에서 미사용 | OpenAI 내장 image_gen, Codex AI 보조 생성. 주황색 둥근 사각형 타일, 펼친 양피지·갈색 선 세 개·붉은 봉인, 부드러운 3D 앱 아이콘, 글자 없음, 타일 외부 투명 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 원본 그대로 저장 |
 
 이 구역은 확인된 근거와 남은 확인 사항을 구분한 제출 준비 기록이며, 모든 에셋의 권리 문제가 해소됐다는 보증은 아니다.
 
@@ -67,3 +75,9 @@ Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculuss
 - 확인일: 2026-10-30. 공식 `pieces.json`의 제목 Cipher·원본 파일명 Cipher2.mp3·ISRC를 대조하고, 곡 상세의 Attribution Code가 CC BY 4.0임을 확인했다. 구버전 미러의 다른 라이선스 표기보다 이번 공식 다운로드 페이지의 표기를 기준으로 기록했다.
 - 배포 시 유지할 고지: `Cipher — Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License. https://creativecommons.org/licenses/by/4.0/` 원곡에 대한 보증·제작자 후원을 암시하지 않는다. 원본 파일은 변형하지 않았으며 앱 내 반복·볼륨·크로스페이드만 적용했다.
 - CC BY 4.0에 따라 출처·저작자·라이선스 링크를 유지하고, 추후 음원 편집 시 변경 사실을 추가한다. 시작 화면에서 제거한 크레딧의 원문은 위 배포 고지에 보존한다. 별도 저작권 폴더·원본 사본은 생성하지 않는다.
+
+### 태블릿 뒷면 로고 (2026-10-31)
+
+| 에셋명 | 사용 위치 | 원출처·제공 파일 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| KD HUNTERS 로고 | `client/Assets/Textures/Common/KDHuntersLogo.png`; XRPlayerRig의 Tablet Rear Logo | 사용자가 지정한 `C:/Users/andre/Downloads/KakaoTalk_261031_001735.png`. 원출처 URL 미확인 | 제작자·저작권자·라이선스 미확인. 파일 제공자를 권리자로 추정하지 않음 | 이미지 내용 수정 없음. Codex 보조로 공용 셰이더·재질의 곱셈 혼합을 적용하여 흰 배경이 본체 색을 유지하도록 표시 |

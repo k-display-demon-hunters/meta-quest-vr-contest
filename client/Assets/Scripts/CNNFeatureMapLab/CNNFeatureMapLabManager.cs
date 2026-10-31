@@ -1,4 +1,5 @@
 using System.Collections;
+using Learning;
 using CNNFeatureMaps.Activation;
 using CNNFeatureMaps.FeatureMaps;
 using CNNFeatureMaps.Lesson;
@@ -7,7 +8,7 @@ using UnityEngine;
 namespace CNNFeatureMaps
 {
     [DefaultExecutionOrder(-100)]
-    public sealed class CNNFeatureMapLabManager : MonoBehaviour
+    public sealed class CNNFeatureMapLabManager : MonoBehaviour, ILearningExperience
     {
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
@@ -22,7 +23,33 @@ namespace CNNFeatureMaps
         private int _channel;
         private bool _lastStepSkipped;
 
-        public bool ReadyForModelDesign => _mapLessonComplete && _activationLessonComplete && !_featureMaps.HasHeldTargets;
+        private float _publishedProgress;
+        private bool _publishedCanExit;
+        public LearningStageId StageId => LearningStageId.FeatureMap;
+        public float Progress => ((_filterLessonComplete ? 1 : 0)
+            + (_mapLessonComplete ? 1 : 0) + (_activationLessonComplete ? 1 : 0)) / 3f;
+        public bool CanExit => isActiveAndEnabled && _mapLessonComplete
+            && _activationLessonComplete && !_featureMaps.HasHeldTargets;
+        public event System.Action<float> ProgressChanged;
+        public event System.Action<bool> ExitAvailabilityChanged;
+
+        public IEnumerator EndSession() { yield break; }
+
+        private void PublishProgressionState()
+        {
+            float progress = Progress;
+            if (_publishedProgress != progress)
+            {
+                _publishedProgress = progress;
+                ProgressChanged?.Invoke(progress);
+            }
+            bool canExit = CanExit;
+            if (_publishedCanExit != canExit)
+            {
+                _publishedCanExit = canExit;
+                ExitAvailabilityChanged?.Invoke(canExit);
+            }
+        }
 
         private void Awake()
         {
@@ -49,6 +76,8 @@ namespace CNNFeatureMaps
             _featureMaps.OnPatchEvaluated += _lessonUI.ShowPatch;
             _featureMaps.OnAffectedPixelSelected += _lessonUI.ShowAffectedPixel;
             _featureMaps.OnInputEdited += _lessonUI.ShowInputEdited;
+            _featureMaps.OnHeldTargetsChanged += PublishProgressionState;
+            PublishProgressionState();
         }
 
         private void FinishFilterLesson()
@@ -59,6 +88,7 @@ namespace CNNFeatureMaps
         private IEnumerator BeginFeatureMapLesson()
         {
             _filterLessonComplete = true;
+            PublishProgressionState();
             // Finish the uGUI click before disabling its entire spatial lesson.
             yield return null;
             _filterComparison.gameObject.SetActive(false);
@@ -75,6 +105,7 @@ namespace CNNFeatureMaps
         private IEnumerator BeginActivationLesson()
         {
             _mapLessonComplete = true;
+            PublishProgressionState();
             _ready = false;
             // Finish the button event before hiding all of parchment 4.
             yield return null;
@@ -95,6 +126,7 @@ namespace CNNFeatureMaps
             yield return null;
             _activationLesson.gameObject.SetActive(false);
             _activationLessonComplete = true;
+            PublishProgressionState();
         }
 
         private bool CanPerformAction()
@@ -239,6 +271,7 @@ namespace CNNFeatureMaps
             }
             _lastStepSkipped = false;
             _mapLessonComplete = false;
+            PublishProgressionState();
             ApplyStep();
         }
 
@@ -264,6 +297,8 @@ namespace CNNFeatureMaps
             _featureMaps.OnPatchEvaluated -= _lessonUI.ShowPatch;
             _featureMaps.OnAffectedPixelSelected -= _lessonUI.ShowAffectedPixel;
             _featureMaps.OnInputEdited -= _lessonUI.ShowInputEdited;
+            _featureMaps.OnHeldTargetsChanged -= PublishProgressionState;
+            PublishProgressionState();
         }
     }
 }

@@ -185,9 +185,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 720000001}
-  - component: {fileID: 720003511}
+  - component: {fileID: 980100010}
   - component: {fileID: 720003512}
-  - component: {fileID: 720003513}
   - component: {fileID: 720003514}
   - component: {fileID: 720003516}
   m_Layer: 0
@@ -210,6 +209,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 980100001}
+  - {fileID: 980100005}
+  - {fileID: 980100007}
   - {fileID: 720000003}
   - {fileID: 720000005}
   - {fileID: 720000007}
@@ -15102,14 +15104,14 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720000000}
+  m_GameObject: {fileID: 980200000}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e641be625f549848b043e02e42be9eb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  _convolutionArea: {fileID: 970000114}
-  _convolutionAnchor: {fileID: 970000110}
+  m_EditorClassIdentifier: Assembly-CSharp::Learning.LearningSessionManager
+  _factory: {fileID: 980100010}
+  _sceneLoader: {fileID: 720003513}
 --- !u!114 &720003512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15128,12 +15130,13 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720000000}
+  m_GameObject: {fileID: 980200000}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7369ff3ff5b44e038f6edbf956c32a67, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactorySceneLoadController
+  _navigationData: {fileID: 720003516}
 --- !u!114 &720003514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15174,40 +15177,34 @@ MonoBehaviour:
   _convolutionEntranceDoor: {fileID: 970000108}
   _entrance: {fileID: 720003508}
   _tutorialStart: {fileID: 720003510}
-  _tutorialSceneName: FactoryTutorial
   _destinations:
   - _id: 5
     _route: {fileID: 720002855}
     _area: {fileID: 720003480}
-    _sceneName: "FactoryTutorial"
     _contentAnchor: {fileID: 720003482}
     _entryDoor: {fileID: 720001566}
     _exitDoor: {fileID: 720001727}
   - _id: 1
     _route: {fileID: 720002925}
     _area: {fileID: 720003486}
-    _sceneName: "CNNPixelLab"
     _contentAnchor: {fileID: 720003488}
     _entryDoor: {fileID: 720001888}
     _exitDoor: {fileID: 720002049}
   - _id: 2
     _route: {fileID: 720003035}
     _area: {fileID: 720003492}
-    _sceneName: "CNNFeatureMapLab"
     _contentAnchor: {fileID: 720003494}
     _entryDoor: {fileID: 720002210}
     _exitDoor: {fileID: 720002371}
   - _id: 3
     _route: {fileID: 720003209}
     _area: {fileID: 720003498}
-    _sceneName: "CNNModelDesignLab"
     _contentAnchor: {fileID: 720003500}
     _entryDoor: {fileID: 720002532}
     _exitDoor: {fileID: 720002693}
   - _id: 4
     _route: {fileID: 720003311}
     _area: {fileID: 720003504}
-    _sceneName: FactoryEnding
     _contentAnchor: {fileID: 720003506}
     _entryDoor: {fileID: 720002854}
     _exitDoor: {fileID: 0}
@@ -44483,3 +44480,154 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.198699, y: 0.0405, z: 0.326368}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &980100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 980100001}
+  m_Layer: 0
+  m_Name: Pixel Arrival
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &980100001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 980100000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.7071067811865476, z: 0, w: 0.7071067811865476}
+  m_LocalPosition: {x: -15, y: 0, z: -3.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 720000001}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!1 &980100004
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 980100005}
+  m_Layer: 0
+  m_Name: Feature Map Arrival
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &980100005
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 980100004}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.0, z: 0, w: 1.0}
+  m_LocalPosition: {x: -2, y: 0, z: 10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 720000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &980100006
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 980100007}
+  m_Layer: 0
+  m_Name: Model Design Arrival
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &980100007
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 980100006}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071067811865476, z: 0, w: 0.7071067811865476}
+  m_LocalPosition: {x: 20, y: 0, z: 12}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 720000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &980100010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40498301392646988f60c52f0edcbc9e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryEnvironmentManager
+  _navigationData: {fileID: 720003516}
+  _player: {fileID: 720003512}
+  _routeGuide: {fileID: 720003515}
+  _map: {fileID: 720003514}
+  _convolutionArea: {fileID: 970000114}
+  _convolutionAnchor: {fileID: 970000110}
+  _stageArrivals:
+  - Stage: 1
+    Arrival: {fileID: 980100001}
+  - Stage: 2
+    Arrival: {fileID: 980100005}
+  - Stage: 3
+    Arrival: {fileID: 980100007}
+--- !u!1 &980200000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 980200001}
+  - component: {fileID: 720003511}
+  - component: {fileID: 720003513}
+  m_Layer: 0
+  m_Name: Learning Session
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &980200001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 980200000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

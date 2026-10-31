@@ -1,125 +1,96 @@
-# CNN 픽셀 관찰과 합성곱 구현
+# CNN 픽셀랩: 관찰 · R/G 학습 · B 퀴즈
 
-[CNNPixelLab.unity](../client/Assets/Scenes/CNNPixelLab.unity)는 PixelLab 체험 전체를 관리하는 씬이다. 이미지·RGB 관찰은 [CNNScreenLab.unity](../client/Assets/Scenes/CNNScreenLab.unity), 합성곱 학습은 [CNNConvolutionLab.unity](../client/Assets/Scenes/CNNConvolutionLab.unity)에 있다. 관리용 씬은 유지하고 두 체험 씬을 같은 방에서 교체한다. 조작은 [통합 조작법](xr-simulator.md), 공장 연결은 [공장 환경](factory-environment.md)을 참고한다.
+## 씬과 공간
 
-## 파일과 책임
+`CNNPixelLab.unity`는 전체 진행과 내부 씬 수명을 관리한다. 공장 ROOM #1의 첫 공간은 `CNNScreenLab.unity`에서 돋보기 관찰과 R·G 계산 학습을 진행한다. 기존 내부 문을 지나 두 번째 공간에 들어가면 `CNNConvolutionLab.unity`로 교체해 B 퀴즈를 진행한다. 단독 실행에서는 같은 위치에서 두 씬을 교체한다.
 
-런타임 스크립트의 루트는 `Scripts/CNNPixelLab/`이다.
+공장은 `CNNPixelLabManager`만 참조한다. 기존 `ConfigureFactoryConvolution`, `ScreenCompleted`, `WaitingForFactoryConvolution`, `StartFactoryConvolution`, `ConvolutionStarted`, `ConvolutionCompleted`, `EndSession` 계약과 양피지·문·진입 영역 조건을 유지한다. `ScreenCompleted`의 발생 시점은 RGB 관찰 직후가 아니라 R·G 학습 후 **다음 공간으로**를 눌렀을 때다.
 
-| 위치 | 역할 |
-|---|---|
-| `CNNPixelLabManager.cs` | 두 체험의 이벤트·진행 순서, 선택한 픽셀과 복귀 좌표, 전체 완료 상태를 소유한다. Factory가 사용하는 단일 진입점이다. |
-| `PixelLabSceneLoadController.cs` | 내부 체험 씬을 비동기로 준비·배치·교체하고 XR 선택 해제와 언로드를 담당한다. |
-| `CNNScreenLab/CNNScreenLabManager.cs` | ScreenLab의 유일한 Manager다. Factory·보드·선택·전개·UI를 연결하고 관찰 진행을 조율하며 ConvolutionRequested·ResetRequested를 상위 Manager에 알린다. |
-| `CNNScreenLab/PixelImageFactory.cs` | 원본 Texture2D를 Inspector로 받는다. Create에서 128×72 축소·5×5 블러·32×18 샘플링·픽셀 텍스처 생성을 완료하고 PixelImageData를 반환한다. |
-| `CNNScreenLab/PixelImageData.cs` | 생성된 사진·픽셀 텍스처와 읽기 전용 픽셀 목록을 보관한다. CNNScreenLabManager가 소유하고 종료 시 Dispose를 호출해 생성 텍스처를 해제한다. 원본 에셋은 해제하지 않는다. CapturePatch는 선택 좌표에서 위쪽 행부터 픽셀 9개를 추출한다. |
-| `CNNScreenLab/PixelBoardController.cs` | `Low resolution image` 오브젝트에 부착한다. 같은 오브젝트의 Renderer를 Inspector로 받아 사진 텍스처 연결·표시·숨김과 인스턴스 재질 해제를 담당한다. |
-| `CNNScreenLab/PixelSelection/PixelSelectionController.cs` | 활성 상태를 유지하는 Pixel Selection 부모에 부착한다. 필터는 그 자식이며, 선택 테두리는 보드 자식으로 유지한다. 보드 좌표계·크기·필터·선택 테두리·SelectedPixelsController를 Inspector로 받는다. XR 잡기 이벤트, 매 프레임 선택 판정, 필터 표시·정렬, 하위 SelectedPixelsController에 선택 좌표·표시 여부를 요청한다. |
-| `CNNScreenLab/PixelSelection/SelectedPixelsController.cs` | FilterDisplay 프리팹의 Selected pixels 오브젝트에 부착해 사전 배치된 픽셀 블록 9개의 색상·표시를 갱신한다. SetVisible은 자신이 붙은 오브젝트를 켜거나 끄며 프레임에는 영향을 주지 않는다. |
-| `CNNScreenLab/RGBObservation/PixelRevealStage.cs` | 사전 배치된 32열·576블록의 색상·투명도·열 위치를 갱신한다. RGB 공간 전개와 숫자 표시를 내부에서 조율하며 단계·완료를 로컬 이벤트로 알린다. |
-| `CNNScreenLab/RGBObservation/RgbPixelStackController.cs` | 사전 배치된 RGB 3층·27블록의 색상·위치·크기를 갱신한다. UI 컴포넌트를 참조하지 않는다. |
-| `CNNScreenLab/RGBObservation/RgbValuesUIController.cs` | RGB stack에 부착해 하위 숫자 Canvas의 카메라를 초기화하고 사전 배치된 숫자 27개·제목 3개의 UI를 소유한다. 숫자·글자색·층별 투명도를 갱신한다. |
-| `CNNScreenLab/PixelLabUIController.cs` | Spatial controls에 부착해 패널 Canvas의 카메라를 초기화하고 자세히 보기·다음으로·처음으로와 안내를 갱신한다. RGB 숫자 Canvas 초기화는 RgbValuesUIController.Initialize에 위임한다. |
-| `CNNConvolutionLab/CNNConvolutionLabManager.cs` | 입력과 계산 데이터를 준비하고 필터 정렬 → R 설명 → 퀴즈 → 결과 관찰의 실행 순서와 상위 완료·복귀 이벤트를 관리한다. |
-| `CNNConvolutionLab/ConvolutionCalculation.cs` | 선택 픽셀 9개를 RGB 정수로 보관하고 고정 가중치·항별 곱·채널 합을 제공한다. |
-| `CNNConvolutionLab/LessonUIController.cs` | 공통 안내·수식·피드백·답 버튼·건너뛰기·결과 UI를 표시하고 사용자 요청을 알린다. |
-| `CNNConvolutionLab/RgbVolumeController.cs` | 한 벌의 RGB·가중치·곱 결과 표시를 여러 체험에서 재사용한다. 내부 GeometryBuilder가 기존 배치대로 블록·라벨·재질을 생성한다. |
-| `CNNConvolutionLab/RgbLayerInteractionController.cs` | RGB 층 잡기·꺼내기·자동 완료·레이 대응 표시를 담당한다. 표시 강조 요청은 로컬 이벤트로 알린다. |
-| `CNNConvolutionLab/FilterAlignmentController.cs` | 전체 3층 필터의 잡기·정렬 판정·자동 정렬과 첫 체험 안내를 담당한다. |
-| `CNNConvolutionLab/ResultObservationController.cs` | 완료 후 RGB 관찰·결합 연출과 진행 대기를 관리하고 복귀 요청을 알린다. |
-| `CNNConvolutionLab/CalculationLesson/RedCalculationController.cs` | R층 꺼내기·가중치 정렬·세 줄 설명·전체 합 확인을 순서대로 진행한다. |
-| `CNNConvolutionLab/CalculationLesson/CalculationAnimationController.cs` | R 설명의 곱셈 숫자 사본 이동과 누적 연출을 담당한다. |
-| `CNNConvolutionLab/KernelInteractionController.cs` | R 설명과 G/B 퀴즈에서 공통으로 사용하는 단일 가중치판의 잡기·정렬·해제를 담당한다. |
-| `CNNConvolutionLab/Quiz/ConvolutionQuizController.cs` | G 첫 줄·전체 합, B 전체 합, RGB 최종 합산 문제와 정답·오답·건너뛰기를 처리한다. |
-| `CNNConvolutionLab/Quiz/AnswerInteractionController.cs` | 정답 숫자 블록의 잡기·슬롯 배치·복원을 담당하고 선택 항목을 전달한다. |
+## 첫 공간의 동작
 
-PixelLab 내부에서 공유하는 데이터 계약과 입력 보조는 `Scripts/CNNPixelLab/PixelPatchData.cs`, `Scripts/CNNPixelLab/PixelUIInputController.cs`에 있다. 두 파일은 관찰·합성곱 하위 체험에서만 사용하므로 PixelLab 기능 루트에 둔다. PixelPatchData는 위쪽 행부터 왼쪽→오른쪽 순서의 Color32 9개를 복사하고 인덱서로 값만 공개한다. RGB는 0~255 정수이며 alpha는 계산에 사용하지 않는다. 입력 보조는 기존 EventSystem을 사용하고 필요한 경우 입력 모듈을 준비한다. 네임스페이스는 기존 `UI`를 유지하며, 기존 파일 이동 시 .meta와 GUID를 보존했다.
+1. 대형 이미지 앞 바닥의 푸른 원 안에 손잡이가 달린 돋보기가 놓여 있다. 기존 XRGrabInteractable을 사용하며 Grip을 유지한다. 잡으면 돋보기가 이미지 방향으로 서고, 푸른 바닥 경계는 숨겨진다.
+2. 돋보기를 이미지에 가까이 대면 렌즈 안의 3×3 블록에 선택 영역의 픽셀이 보인다. Grip을 놓으면 거리·방향 조건을 만족하는 영역에 정렬된다.
+3. 픽셀 설명을 두 페이지로 읽고 다음을 누르면 **픽셀 확대하기**가 나타난다. 선택 없이 또는 잡고 있는 동안에는 확대할 수 없다.
+4. 확대 시 `PixelPatchData`를 한 번 추출한다. 이미지와 돋보기가 1.6초 동안 왼쪽으로 이동하며 55% 크기로 줄어든다. 원본 사진은 유지하고, 선택 영역의 RGB 3층·27개 블록과 숫자가 옆으로 펼쳐진다. 기존 전체 이미지 576블록 전개는 이 흐름에서 사용하지 않는다.
+5. RGB 의미, 0~255의 세기, 같은 위치의 세 채널을 세 페이지로 설명한다. **계산 배우기**를 누르면 RGB 관찰 표시를 숨기고 같은 공간의 `PixelPracticeManager`가 학습을 시작한다.
+6. 실제 RGB와 구별되는 **연습용 값 0~3**을 명시한다. RGB 입력이 정렬되고, 입력과 별개인 R·G·B 가중치 3층이 옆에서 차례로 나타난다. 가중치는 0과 1만 사용한다.
+7. R층을 Grip으로 꺼낸 뒤, 화살표 아래 가중치판을 잡아 빛나는 목표 테두리에 놓는다. 가까이 놓으면 정렬되어 계산이 시작된다. 잡는 동안 화살표는 숨겨진다. 물리 조작에는 **자동 배치** 보조 버튼이 있다.
+8. 같은 칸의 두 숫자가 만나 곱해지는 애니메이션을 진행한다. 오른쪽 계산판에는 `입력 × 가중치 = 곱`이 한 줄씩 쌓인다. 세 항마다 다음 줄을 확인하고, 마지막에 세 대각선 값의 합을 확인한다.
+9. G도 R과 동일한 설명·조작·곱셈·합 확인을 반복한다. 완료 안내의 **다음 공간으로**를 눌러야 상위 Manager에 이동을 요청한다.
 
-## 의존 구조와 상태 소유
+## 두 번째 공간의 동작
+
+- 동일한 선택 영역을 동일한 규칙으로 축소한 연습용 값과 같은 가중치를 사용한다.
+- B층 꺼내기와 가중치 배치를 진행한 뒤, B의 9개 곱을 더하는 문제 하나를 푼다.
+- 답은 숫자 블록을 Grip으로 잡아 답 칸에 놓거나 큰 숫자 버튼으로 선택한다. 오답은 힌트를 표시하고 다시 선택하게 한다. 정답 건너뛰기는 없다. 자동 배치는 물리 조작만 보조한다.
+- 정답 뒤 계산식과 결과를 확인하고 **결과 확인**을 누르면 `Completed`가 발생한다. 결과 화면에는 R·G·B 합과 세 합의 총합, 편향 0을 표시한다.
+- 공장에서 완료 화면을 닫으면 완료 상태를 유지한 채 내부 표시 씬을 언로드한다. 단독 실행에서는 이전 관찰 씬으로 돌아가 선택 좌표를 복원한다.
+
+## 데이터와 계산
+
+`PixelImageFactory`는 기존 `OpeningBroadcast.png`를 128×72로 축소하고 5×5 블러 후 32×18로 샘플링한다. 관찰용 숫자와 색은 원래 Color32의 0~255 값을 그대로 사용한다.
+
+`PixelImageData.CapturePatch`는 선택 영역의 위쪽 행부터 왼쪽→오른쪽 순서로 9개 픽셀을 복사한다. `PixelPatchData`는 읽기 전용 인덱서를 제공한다. 선택 스냅샷과 복귀 좌표는 상위 `CNNPixelLabManager`가 보관하며, 두 번째 씬에 전체 이미지나 Transform을 전달하지 않는다.
+
+계산 전용 `ConvolutionCalculation`에서 각 RGB 성분을 `RoundToInt(value × 3 / 255)`로 변환한다. 관찰 데이터는 수정하지 않는다. 모든 채널은 아래와 같은 가중치를 사용한다.
 
 ```text
-FactoryLearningFlowManager → CNNPixelLabManager
-                              ├─ PixelLabSceneLoadController
-                              ├─ CNNScreenLabManager → 이미지·선택·관찰·UI
-                              └─ CNNConvolutionLabManager → 필터 정렬 · R 설명 · 퀴즈 · 결과 관찰
-                                                         └─ 공통 계산 · UI · RGB 표시·조작
+1 0 0
+0 1 0
+0 0 1
 ```
 
-Factory는 ConvolutionCompleted만 조회하고 다음 방으로 진행한다. 관찰·합성곱 Manager나 픽셀·좌표 데이터는 참조하지 않는다. 하위 체험은 서로와 Factory를 호출하지 않고 로컬 C# 이벤트로 상위 Manager에 요청과 완료를 알린다. 구독은 활성 기간에 연결·해제하고, 체험 교체 시 이전 구독을 끊고 새 구독을 연결한다.
+각 채널의 합은 0~9, RGB 최종 합은 0~27이다. R·G 학습과 B 퀴즈는 이 동일한 계산 객체 규칙을 사용한다. 학습용 가중치는 훈련된 모델의 가중치가 아니다.
 
-선택 데이터·복귀 좌표·전체 완료 상태의 소유자는 CNNPixelLabManager다. 계산 씬에는 PixelPatchData만 전달하며 전체 이미지·좌표·이전 씬의 Transform을 넘기지 않는다. ConvolutionCompleted는 합성곱 완료 뒤 참이며, 내부 전환·종료 중에는 거짓이다. 새 체험 교체 성공이나 관찰 초기화 때 완료 상태를 지운다. 로드 실패 시 기존 씬과 기존 완료 상태를 유지한다.
+## 책임과 연결
 
-CNNScreenLabManager는 자세히 보기 시작 시 선택 좌표에서 PixelPatchData를 한 번 추출하고 해당 좌표와 함께 보관한다. PixelRevealStage.RevealPixels에 이 스냅샷을 전달하며, 관찰 단계는 픽셀을 다시 추출하지 않고 RGB 블록과 숫자 표시에 사용한다. 다음으로 진행할 때도 같은 PixelPatchData와 보관한 좌표를 CNNPixelLabManager에 전달한다. 처음으로 또는 선택 변경 시 Screen Manager가 보관한 스냅샷 참조를 해제한다. RGB 값 27개는 Color32 9개에 포함되므로 별도 배열로 중복 저장하지 않는다.
+| 파일 | 현재 책임 |
+| --- | --- |
+| `Scripts/CNNPixelLab/CNNPixelLabManager.cs` | 선택 데이터·복귀 좌표·공장 대기·완료 상태와 두 씬의 순서 |
+| `PixelLabSceneLoadController.cs` | Additive 준비·배치·교체·언로드, XR 선택 해제, 로드 실패 시 기존 체험 유지 |
+| `CNNScreenLab/CNNScreenLabManager.cs` | 픽셀/RGB 안내 순서, 선택 스냅샷, 관찰→R/G 모듈 연결, 완료 후 이동 요청 |
+| `CNNScreenLab/PixelPracticeManager.cs` | 첫 공간의 가중치 소개와 R/G 학습 순서, 공용 계산 UI·공간 표시 소유, 완료 이벤트 |
+| `CNNScreenLab/PixelLabUIController.cs` | 사전 배치된 큰 안내문·다음·확대·초기화 버튼 표시 및 요청 이벤트 |
+| `CNNScreenLab/PixelBoardController.cs` | 이미지 텍스처·재질 수명과 보드의 왼쪽 축소 이동·복원 |
+| `CNNScreenLab/PixelSelection/PixelSelectionController.cs` | Grip, 선택 판정, 바닥 경계, 확대 시 돋보기를 보드에 고정, 초기화 |
+| `CNNScreenLab/PixelSelection/SelectedPixelsController.cs` | 돋보기 안의 픽셀 9개 색상 갱신 |
+| `CNNScreenLab/RGBObservation/PixelRevealStage.cs` | RGB 공간 전개와 숫자 진행도를 연결하고 완료 알림 |
+| `CNNScreenLab/RGBObservation/RgbPixelStackController.cs` | 보드의 선택 위치에서 독립된 관찰 공간으로 3층을 이동·확대 |
+| `CNNScreenLab/RGBObservation/RgbValuesUIController.cs` | 원본 RGB 숫자·층별 투명도 |
+| `CNNConvolutionLab/CNNConvolutionLabManager.cs` | 두 번째 공간 B 퀴즈의 초기화·순서·완료·복귀 |
+| `CNNConvolutionLab/ConvolutionCalculation.cs` | 연습용 값, 0/1 가중치, 항별 곱과 채널 합 |
+| `CNNConvolutionLab/LessonUIController.cs` | 공용 저장 UI의 내용·버튼 상태, 다음/답/물리 보조 요청 |
+| `CNNConvolutionLab/RgbVolumeController.cs` | 기존 런타임 입체 표시, 입력 정렬·가중치 등장·정렬 화살표·목표 테두리·계산 표시 |
+| `CNNConvolutionLab/RgbLayerInteractionController.cs` | 해당 RGB층의 Grip 꺼내기 및 자동 배치 |
+| `CNNConvolutionLab/KernelInteractionController.cs` | 개별 가중치판의 Grip 잡기·복귀·근접 정렬·계산 중 잠금 |
+| `CNNConvolutionLab/CalculationLesson/RedCalculationController.cs` | R/G에 같은 설명 순서를 적용하는 일반 C# Controller |
+| `CNNConvolutionLab/CalculationLesson/CalculationAnimationController.cs` | 숫자 사본 이동·곱·누적합 애니메이션 |
+| `CNNConvolutionLab/Quiz/ConvolutionQuizController.cs` | B 한 문제의 선택지·정오답·확인 순서 |
+| `CNNConvolutionLab/Quiz/AnswerInteractionController.cs` | 숫자 블록의 Grip 답 슬롯 배치 |
 
-## 초기화와 관찰 흐름
+기존 `FilterAlignmentController`의 전체 필터 잡기 단계와 `ResultObservationController`의 별도 RGB 재관찰은 새 진행에서 호출하지 않는다. 기존 파일·GUID·폴더는 유지한다. 첫 공간은 `PixelPracticeManager`만 통해 계산 모듈을 조율하고 내부 UI·숫자 블록을 직접 조작하지 않는다. 모듈 내부의 기존 공용 계산·표시 코드는 현재 경로에서 재사용한다.
 
-공장은 비활성 관리용 루트를 로드·배치한 후 활성화한다. CNNPixelLabManager.Start가 관찰 씬을 로드한다. CNNScreenLab 스크립트는 실행 단계에 따라 PixelSelection(3×3 선택) → RGBObservation(픽셀·RGB 관찰)으로 묶는다. CNNScreenLabManager·PixelLabUIController·PixelImageData·PixelObservationPhase와 여러 단계에서 사진 표시를 제어하는 PixelBoardController는 CNNScreenLab 루트에 둔다. 이미지 생성 진입점인 PixelImageFactory도 루트에 둔다. RGB 숫자 표시는 RGB 관찰 전용이므로 RgbValuesUIController를 RGBObservation에 둔다. CNNScreenLabManager의 Inspector에는 PixelImageFactory·PixelBoardController·PixelSelectionController·PixelRevealStage·PixelLabUIController 다섯 진입점을 연결한다. 활성화된 Manager의 Start에서 이미지 데이터를 생성하고 보드·선택·UI를 초기화한다. SetInitialSelection으로 받은 복귀 좌표가 있으면 초기화 마지막에 선택을 복원한다. ScreenLab 단독 실행에서도 같은 Start가 이미지를 준비한다. Renderer·Transform·XRGrabInteractable·Material의 구체적인 조작은 Controller에 두며, Manager는 순서와 이벤트를 연결한다. 이미지 결과는 Manager가 소유하고 파괴 시 해제하며, 보드 사진용 인스턴스 재질은 PixelBoardController가 해제한다. 픽셀 블록·프레임의 공유 메시·재질은 에셋이며 런타임에 생성·해제하지 않는다. PixelSelectionController는 OnEnable/OnDisable에서 XR 이벤트를 연결·해제하고 LateUpdate에서 관찰 선택을 갱신한다. RGB 전개 시 선택 갱신을 중단하고 초기화 시 재개한다. PixelLabUIController도 MonoBehaviour로서 버튼·안내 Text를 Inspector로 받고 Canvas 카메라와 입력 모듈을 준비한다. 버튼은 UI Controller의 RequestDetails·RequestNext·RequestReset에 연결되며, 로컬 이벤트를 받은 Screen Manager가 이미지 동작과 UI 상태를 조율한다. 구독·입력 활성화와 해제는 Screen Manager의 OnEnable/OnDisable에서 대칭으로 수행한다.
+## 저장 에셋과 가독성
 
-원본은 `Textures/CNNPixelLab/OpeningBroadcast.png`다. 사진 표시·필터·RGB·계산에 사용하는 색상은 같은 32×18 샘플에서 나온다. 사진은 Bilinear, 렌즈 텍스처는 Point 필터링을 사용한다.
+- `Prefabs/CNNScreenLab/FilterDisplay.prefab`: 기존 픽셀 9개와 GUID를 유지하며 기본 메시 조합의 원형 테두리·손잡이를 추가했다. 이전 사각 테두리는 비활성화했다.
+- `Materials/CNNScreenLab/MagnifierBoundary.mat`: 바닥 원의 청색 발광 재질. 외부 이미지·모델을 추가하지 않았다.
+- `Prefabs/CNNScreenLab/RgbPixelStack.prefab`: 숫자 66, 채널 제목 38의 굵은 글씨. 원래 RGB 값을 유지한다.
+- `Prefabs/Common/PixelCalculationUI.prefab`: 두 공간이 참조하는 공용 사전 배치 UI. 제목 52, 본문 44, 버튼 44, 계산식 48, 피드백 38의 굵은 글씨와 짙은 배경을 사용한다. 계산판은 9개 항을 순차 표시한다. 고정 UI를 런타임에 다시 생성하지 않는다.
+- 관찰 씬 안내·버튼은 48의 굵은 글씨다. 설명은 픽셀 2페이지, RGB 3페이지로 나누고 페이지 전환 중 선택·전개 상태를 확인한다.
+- Noto Sans CJK KR Regular 에셋을 Unity Bold 스타일로 재사용한다. 폰트 파일을 변형하거나 새 외부 폰트를 추가하지 않았다. 사용 기록은 `ASSET_CREDITS.md`에 반영했다.
 
-1. 필터를 Grip으로 잡아 이미지 위에 놓으면 PixelSelectionController가 거리·방향을 판정하고 3×3 선택을 확정한다.
-2. 자세히 보기는 CNNScreenLabManager.ShowDetails에서 관찰 전개를 시작한다. 필터를 숨기고 PixelRevealStage.ShowImage와 RevealPixels를 연속 호출한다. 이미지 선택을 한 번 더 기다리는 별도 XR 클릭 대상은 만들지 않는다.
-3. 사진이 컬러 입체 픽셀로 바뀌고 선택 영역의 R/G/B가 깊이 방향으로 펼쳐진다. 사진 Renderer는 숨긴다. 깊이는 실제 디스플레이 구조나 색 세기를 뜻하지 않는다.
-4. 완료 이벤트로 다음으로 버튼을 활성화한다. 다음으로는 PixelPatchData와 선택 좌표를 ConvolutionRequested로 알린다.
-5. 상위 Manager가 데이터를 보관하고 합성곱 씬 교체를 요청한다. 활성화 전에 CNNConvolutionLabManager.SetInput에 픽셀 복사본을 전달한다. 이후 Start가 해당 데이터로 계산 체험을 시작한다.
+## 초기화·정리와 에디터 도구
 
-필터의 복귀 위치·회전은 보드 기준 로컬 좌표다. 이미지 크기는 4.8×2.7m, 필터 시작 위치는 콘텐츠 로컬 (-2.4, 1.15, -0.6)이다. 처음으로는 선택·전개를 초기화하고 상위 Manager에 완료 초기화를 알린다.
+첫 공간은 이미지 준비 후 돋보기를 바닥 위치로 초기화한다. 최초 계산 시작에 기존 GeometryBuilder로 계산용 공간 표시를 준비한다. 초기화 시 코루틴·XR 선택·RGB 표시·연습 UI를 정리하고 이미지와 돋보기 배치를 복원한다. 생성 텍스처·인스턴스 재질은 기존 소유자가 해제한다.
 
-## 같은 방에서의 씬 교체와 종료
+공통 UI 입력을 위해 필요할 때 생성하는 EventSystem은 안내 패널이 아니라 씬 루트 아래에 둔다. 안내 패널을 숨기고 계산 UI로 넘어가도 입력이 유지된다.
 
-FactorySceneLoadController는 관리용 콘텐츠에 기존 ContentAnchor.position - Vector3.forward * 1.5f 오프셋을 한 번 적용한다. PixelLabSceneLoadController는 두 체험의 콘텐츠 루트를 관리용 루트의 월드 위치·회전에 배치하고 Rigidbody를 동기화한다. 두 체험 루트는 원점·회전 identity·스케일 1로 작성되어 있다. 계산 Canvas의 상대 위치·회전·배율은 기존 배치를 유지한다.
+`SpatialPixelLabBuilder`·`ScreenLabVisualsBuilder`는 관찰 씬과 첫 공간 학습 모듈의 참조를 연결한다. `ConvolutionLabBuilder`는 공용 UI 프리팹과 B 공간 표시를 연결한다. 저장된 두 씬에 필요한 참조가 반영되어 있으므로 이번 변경 적용을 위해 메뉴를 실행할 필요는 없다.
 
-씬 파일의 Screen/Convolution 루트는 에디터에서 보이도록 활성 상태로 저장한다. 루트 이름은 각각 CNN Screen Lab, CNN Convolution Lab이다. 두 Manager 컴포넌트도 활성 상태로 저장한다. PixelLabSceneLoadController는 로딩 대상의 sceneLoaded 콜백에서 Start 전에 루트를 숨긴 다음 위치·회전과 Rigidbody를 맞춘다. CNNPixelLabManager는 준비된 씬 Manager에 이벤트를 연결하고 SetInput 또는 SetInitialSelection으로 시작 데이터를 전달한다. 로더의 CommitStage는 이전 씬을 정리하고 새 콘텐츠를 활성화하며, 각 Manager의 Start가 초기화를 수행한다. 로딩 이벤트 구독은 해당 씬 로드 완료·로딩 시작 실패·로더 파괴 시 해제한다. 준비 성공 시 이전 체험에서 잡은 물체의 XR 선택을 해제하고 콘텐츠를 숨겨 언로드한 뒤 새 체험을 활성화한다. 준비 중에는 잠깐 두 체험 씬이 함께 존재하며 교체 완료 후에는 하나만 남는다. 공장 활성 씬과 공용 XR 리그·태블릿을 유지하고 플레이어 위치·시점을 이동시키지 않는다. 로드 실패는 로그로 알리며 기존 체험에서 요청을 다시 할 수 있다.
+## 확인 범위
 
-다음 방 진입 시 FactoryLearningFlowManager는 CNNPixelLabManager.EndSession을 기다린다. Manager는 새 요청을 차단하고 진행 중인 로딩·교체가 끝나기를 기다린 뒤 구독과 내부 체험 씬을 정리한다. 이후 FactorySceneLoadController가 관리용 씬을 언로드한다. 관리용 씬이 외부에서 제거되면 내부 로더의 OnDestroy가 남은 씬을 정리하며, 로딩 중이었다면 완료 콜백에서 정리한다.
+2026-10-31 Unity 6000.3.24f1에서 컴파일과 FactoryEnvironment Play를 확인했다. 에디터에서 XR 선택·해제 콜백과 UI 버튼 이벤트를 발생시켜 돋보기 선택, 픽셀/RGB 안내, R·G의 9개 항 계산, 양피지 수집 전후 문 조건, 두 번째 공간 로딩, B 오답 재시도·정답 완료를 확인했다. B는 버튼 선택과 숫자 블록의 답 슬롯 해제 경로를 각각 확인했다. 확인한 패치의 결과는 R=3, G=3, B=6이었다.
 
-## 합성곱과 완료
+Game View에서 발견한 제목 잘림과 칸막이 뒤의 이미지/RGB 배치를 수정했다. 관찰 RGB의 배율은 1.7에서 2.2, 계산 블록은 1에서 1.5로 키웠다. 깊이 간격을 줄이고 계산 중 해당 채널만 표시하며, 결과 블록과 합 슬롯을 계산판·수식에서 분리했다. 제목 영역 높이는 90이며 확인한 안내·수식·계산판 텍스트는 영역 높이를 넘지 않았다.
 
-CNNConvolutionLabManager는 Start에서 공통 UI와 한 벌의 공간 표시, 필터 정렬·결과 관찰 Controller를 초기화한다. SetInput으로 전달된 PixelPatchData에서 ConvolutionCalculation을 만들며 입력 없는 단독 실행은 RGB가 모두 0인 픽셀 9개를 사용한다. 기존 _lessonRoot·_font 직렬화 필드와 씬 Manager GUID를 유지하므로 씬의 연결은 그대로 사용한다. 공용 UI와 입체 블록·XR 조작 컴포넌트는 기존처럼 런타임에 생성한다. 고정 표시의 씬·프리팹 사전 배치 전환은 이번 변경에 포함하지 않는다.
-
-씬 Manager의 코루틴은 FilterAlignmentController.Run → RedCalculationController.Run → ConvolutionQuizController.Run 순서로 진행한다. R 설명과 퀴즈는 일반 C# Controller이며 씬 Manager의 코루틴 수명에 따른다. 설명의 다음 대기는 공통 UI가 처리한다. UI 버튼과 입체 정답 블록은 같은 Choose 경로로 정답을 판정한다. 건너뛰기는 필터·층 조작의 대기 작업을 먼저 자동 완료하고, 물리 작업이 없으면 현재 퀴즈 정답을 표시한다. 문구·문제 순서·가중치·잡기 임계값·애니메이션 시간을 유지한다.
-
-결과 정리 보기까지 마치면 CNNConvolutionLabManager.Completed → CNNPixelLabManager로 완료를 전달한다. ResultObservationController는 같은 공간 표시를 결과 관찰 배치로 전환한다. 계산 다시 보기는 같은 데이터로 처음부터 반복하며, 다른 영역 선택과 결과 화면의 다음으로는 기존처럼 상위 Manager에 복귀를 요청한다. 완료 화면에서 RGB 합치기 버튼을 숨기는 기존 동작도 유지한다. 재시작·비활성화 때 코루틴과 정답 대기를 중단하고 XR 선택을 해제한다. UI 요청 이벤트와 강조 이벤트는 활성 기간에 맞춰 연결·해제한다.
-
-공통 계산·UI·RGB 표시·층 조작과 단일 파일 체험은 CNNConvolutionLab 루트에 둔다. R 설명 전용 코드는 CalculationLesson, 퀴즈 코드는 Quiz에 둔다. 기존 Lesson/Spatial 계층은 제거했다. 공통 RGB 표시 내부의 Geometry는 블록 생성과 내부 잡기 구현에서만 사용한다. 필터 체험과 R 애니메이션에는 배치·정렬 조회·표시 갱신 메서드와 좌표값만 제공하며 내부 UI·블록 배열은 공개하지 않는다. 폴더나 internal만으로 컴파일 경계가 보장된다는 의미는 아니다.
-
-이번 리팩토링은 소스·직렬화 참조·GUID를 정적으로 검토했다. 사용자 지시에 따라 Unity 실행·테스트·빌드·컴파일은 수행하지 않았다.
-
-## 사전 배치된 표시와 UI 경계
-
-`Prefabs/CNNScreenLab/FilterDisplay.prefab`은 프레임 4조각과 픽셀 9개, `ImagePixelGrid.prefab`은 픽셀 576개와 32열 Transform, `RgbPixelStack.prefab`은 RGB 블록 27개와 숫자 27개·제목 3개를 보관한다. CNNScreenLab 씬에 이 프리팹의 실제 인스턴스를 배치했다. 필터는 기존 XR 잡기 오브젝트 아래에, 이미지 격자·RGB 표시는 기존 보드 아래에 연결한다. 기존 필터의 얇은 프레임·평면 렌즈 Renderer는 비활성화해 새 입체 표시와 중복되지 않게 했다.
-
-각 프리팹은 `Meshes/CNNScreenLab/PixelBlock.asset` 메시를 참조한다. 픽셀은 `Materials/CNNScreenLab/PixelBlock.mat`, 프레임은 `FilterFrame.mat`을 사용한다. 픽셀 색상·투명도는 MaterialPropertyBlock으로 변경한다. 메시·재질 에셋에 런타임 변경을 저장하지 않는다. 보드와 렌즈에 쓰던 격자 순서는 유지하며 전체 이미지에는 숫자 Text를 새로 추가하지 않았다.
-
-`CNNScreenLab/PixelObservationPhase.cs`는 관찰 단계와 공통 UI가 공유하는 데이터 계약이다. 공통 UI는 관찰 단계 enum을 사용하고 PixelRevealStage 타입에 의존하지 않는다. 폴더는 실행 단계로 구분하며, 각 단계 안에서도 공간 표시와 UI 표시의 책임은 구분한다. 관찰 Controller에는 Text·Canvas·CanvasGroup 생성 및 제어 코드가 없다. 일반 Transform과 열별 진행값으로 이미지 블록을 전개한다. PixelRevealStage는 RgbPixelStackController와 RgbValuesUIController를 Inspector로 참조한다. ShowImage에서 숫자 UI를 초기화하고, RGB 전개 시작 시 값을 설정하며, RGB 블록의 ProgressChanged 이벤트를 받아 숫자 투명도에 반영한다. ResetStage에서 블록과 숫자를 함께 숨긴다. 진행도 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. CNNScreenLabManager는 PhaseChanged·PixelsRevealed로 공통 안내와 버튼만 갱신하며 RGB 데이터·진행도를 전달하지 않는다. RGB 숫자 Canvas는 해당 층의 자식으로 미리 배치되어 RgbPixelStackController가 층을 움직일 때 함께 이동한다. 숫자 표시를 위한 별도 애니메이션 타이머는 없다.
-
-고정 안내 Text와 버튼의 레이아웃·스타일·피드백 컴포넌트도 씬에 저장한다. 런타임에 유지되는 생성 작업은 원본 이미지 가공 텍스처와 색상 갱신용 MaterialPropertyBlock 등 데이터 자원이다. 공용 입력 모듈의 선택적 EventSystem 보완 동작은 기존 입력 보조가 담당한다.
-
-## 에디터 도구와 확인 범위
-
-PixelLabBuilder는 관리용 씬, SpatialPixelLabBuilder는 관찰 씬, ConvolutionLabBuilder는 합성곱 씬을 구성한다. PixelRevealStageBuilder는 관찰 씬의 버튼을 연결하고 ScreenLabVisualsBuilder.Install을 호출한다. ScreenLabVisualsBuilder는 공유 메시·재질·프리팹이 없을 때 에디터에서 생성·저장하고 기존 프리팹과 인스턴스는 재사용한다. 전개 컴포넌트·RGB UI·안내 Text의 참조도 이 도구에서 연결한다. PixelBlockMeshBuilder는 기존 메시 생성 알고리즘을 에디터 전용으로 옮긴 도구다. 씬 파일은 모두 `Assets/Scenes/`에 둔다.
-
-이번 변경은 소스·Unity YAML 참조·GUID·배치 값의 정적 확인만 수행했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다. 아래 기록은 분리 전 구현에 대한 과거 확인이며 현재 실행 검증을 대신하지 않는다.
-
-## 필터·픽셀 입체 표시 (2026-10-26)
-
-`SelectedPixelsController`는 기존 필터 잡기 입력과 원본 샘플 좌표를 유지하면서 얇은 프레임·평면 렌즈 표시를 모서리가 다듬어진 두꺼운 프레임과 3×3 픽셀 블록으로 교체한다. `PixelVolumeMesh`의 공유 메시와 재질을 사용하고 선택 색상은 MaterialPropertyBlock으로 갱신한다. 밝기나 가중치에 따라 두께를 바꾸지 않는다. 투명도는 0.94이며 발광·추가 장식 조명은 사용하지 않는다.
-
-`PixelRevealStage`도 평면 Image 대신 동일한 메시의 픽셀 블록을 표시한다. 열별 전환 시 블록과 앞면 숫자가 이미지 앞쪽으로 함께 나온다. 색 선택·숫자·합성곱 데이터는 기존 값 그대로이며, 숫자는 앞면에 남고 옆면으로 깊이를 확인할 수 있다. 생성 메시·재질은 소유 Controller/Stage의 종료 시 해제한다. 이번 변경은 소스 검토까지 수행했으며 컴파일·Play·APK 확인 전이다.
-
-## 2026-10-26 Unity 실행 확인
-
-Unity 6000.3.24f1 Play에서 CNNPixelLab을 실행하고 실제 Camera.Render 결과로 정면 필터와 측면 픽셀 화면을 확인했다. 초기 MaterialPropertyBlock 필드 생성으로 발생한 Unity 생성자 예외를 BuildPixels 초기화로 옮겨 해결했다. 숫자 Canvas의 정렬 순서를 높이고 전환 완료 후 원본 사진 Renderer를 숨겨 반투명 블록 뒤 사진의 색 혼합과 숫자 가림을 수정했다. ResetStage에서는 사진을 다시 표시한다.
-
-최종 컴파일 완료·실패 없음, RevealPixels의 Revealing→Revealed 전환, G/B 버튼 onClick 호출 후 각각 576개 숫자의 원본 성분값 일치, NextStage 호출 후 합성곱 화면 활성화를 확인했다. 이는 에디터 실행·직접 콜백 검증이며 Quest 컨트롤러 레이 클릭이나 공장 전체 동선의 실기기 검증은 아니다. 자동화 연결의 Play/domain reload 중 응답 시간 초과 로그와 수정 전 예외 이력은 최종 콘텐츠 오류와 구분했다. 사용자의 후속 요청에 따라 APK 재빌드·기기 설치는 수행하지 않았다. 새 테스트 파일은 생성하지 않았다.
-
-
-## 2026-10-29 입체 관찰 동선 변경
-
-새 RGB 층 표시는 `Scripts/CNNPixelLab/CNNScreenLab/RGBObservation/RgbPixelStackController.cs`가 담당한다. 공용 XR 입력·공장 이동·다음 방 완료 조건은 유지한다. 기존 별도 RGB 관찰 화면은 이번 진입 흐름에서 호출하지 않으며 합성곱 설명·퀴즈는 기존 계산 화면을 사용한다. Unity 6000.3.24f1 컴파일 성공을 확인했다. Play에서 선택 상태를 설정하여 Revealing→Revealed 완료, RGB 세 층의 서로 다른 깊이, 다음으로 합성곱 화면 활성화, 처음으로 초기화를 확인했다. MaterialPropertyBlock 생성자 초기화 오류를 Initialize로 옮겨 수정했다. 실제 카메라 렌더링으로 입체 블록과 숫자 표시도 확인했으나, 근접 정면에서는 뒤 층 숫자가 겹쳐 보이는 한계가 있다. 검증은 에디터 콜백 기반이며 Quest 직접 잡기·공장 전체 동선 검증이나 APK 빌드는 수행하지 않았다.
-
-## 2026-10-29 역할 분리 브랜치 병합
-
-입체 관찰 동선을 PixelImageManager의 전환·선택 관리에 반영하고, PixelRevealStage와 RgbPixelStackController는 읽기 전용 픽셀 목록을 전달받도록 연결했다. PixelLessonManager의 계산·완료 이벤트와 공용 태블릿의 역할 분리는 유지한다. 위 Unity 실행 기록은 원본 브랜치에서 수행한 결과이며, 이번 병합 결과에는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다.
-
-합성곱 씬의 루트 활성화는 기존에 저장된 오브젝트의 에디터 표시를 위한 설정이다. 계산 UI 자체는 CNNConvolutionLabManager.Start에서 초기화해 런타임에 생성하므로 에디터의 정적인 화면에 전체 계산 UI가 표시되지는 않는다.
+이는 에디터의 이벤트 구동 확인이다. 실제 Quest 착용 시의 가독성, 물리 컨트롤러 Grip 입력과 레이 조준은 별도 기기 확인이 필요하다. 테스트 파일·프로젝트 복사본·플레이어 빌드는 생성하지 않았다.

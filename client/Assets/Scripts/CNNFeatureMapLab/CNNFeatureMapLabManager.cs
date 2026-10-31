@@ -1,5 +1,4 @@
 using System.Collections;
-using Education;
 using CNNFeatureMaps.Activation;
 using CNNFeatureMaps.FeatureMaps;
 using CNNFeatureMaps.Lesson;
@@ -13,9 +12,7 @@ namespace CNNFeatureMaps
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
         [SerializeField] private FilterComparisonManager _filterComparison;
-        [SerializeField] private ParchmentPickupController _nextParchment;
         [SerializeField] private Transform[] _featureMapVisuals;
-        [SerializeField] private ParchmentPickupController _activationParchment;
         [SerializeField] private ActivationLessonManager _activationLesson;
         private bool _activationLessonComplete;
         private bool _filterLessonComplete;
@@ -31,8 +28,6 @@ namespace CNNFeatureMaps
         {
             // Wire modules before child grab components begin receiving XR events.
             _featureMaps.Initialize();
-            _nextParchment.gameObject.SetActive(false);
-            _activationParchment.gameObject.SetActive(false);
             _activationLesson.gameObject.SetActive(false);
             foreach (Transform visual in _featureMapVisuals) { visual.gameObject.SetActive(false); }
         }
@@ -40,8 +35,6 @@ namespace CNNFeatureMaps
         private void OnEnable()
         {
             _filterComparison.OnCompleted += FinishFilterLesson;
-            _nextParchment.OnCollected += HandleFeatureMapParchmentCollected;
-            _activationParchment.OnCollected += HandleActivationParchmentCollected;
             _activationLesson.OnCompleted += HandleActivationCompleted;
             _lessonUI.OnPreviousRequested += HandlePreviousRequested;
             _lessonUI.OnNextRequested += HandleNextRequested;
@@ -60,27 +53,16 @@ namespace CNNFeatureMaps
 
         private void FinishFilterLesson()
         {
-            if (!_filterLessonComplete) { StartCoroutine(RevealNextParchment()); }
+            if (!_filterLessonComplete) { StartCoroutine(BeginFeatureMapLesson()); }
         }
 
-        private IEnumerator RevealNextParchment()
+        private IEnumerator BeginFeatureMapLesson()
         {
             _filterLessonComplete = true;
             // Finish the uGUI click before disabling its entire spatial lesson.
             yield return null;
             _filterComparison.gameObject.SetActive(false);
-            _nextParchment.gameObject.SetActive(true);
-        }
 
-        private void HandleFeatureMapParchmentCollected()
-        {
-            StartCoroutine(BeginFeatureMapLesson());
-        }
-
-        private IEnumerator BeginFeatureMapLesson()
-        {
-            // Let the reader close and XRI finish collection before showing the next experience.
-            yield return null;
             _ready = _featureMaps.TryStart();
             if (_ready)
             {
@@ -90,7 +72,7 @@ namespace CNNFeatureMaps
             }
         }
 
-        private IEnumerator RevealActivationParchment()
+        private IEnumerator BeginActivationLesson()
         {
             _mapLessonComplete = true;
             _ready = false;
@@ -99,17 +81,6 @@ namespace CNNFeatureMaps
             _featureMaps.CloseCalculation();
             _lessonUI.HideInfo();
             foreach (Transform visual in _featureMapVisuals) { visual.gameObject.SetActive(false); }
-            _activationParchment.gameObject.SetActive(true);
-        }
-
-        private void HandleActivationParchmentCollected()
-        {
-            StartCoroutine(BeginActivationLesson());
-        }
-
-        private IEnumerator BeginActivationLesson()
-        {
-            yield return null;
             _activationLesson.BeginLesson(_featureMaps.CopyFirstLayerMap(0), _featureMaps.CopyFirstLayerMap(1));
         }
 
@@ -233,7 +204,7 @@ namespace CNNFeatureMaps
         {
             if (_step == LessonStep.ExploreFeatureMaps)
             {
-                if (!_mapLessonComplete) { StartCoroutine(RevealActivationParchment()); }
+                if (!_mapLessonComplete) { StartCoroutine(BeginActivationLesson()); }
                 return;
             }
             switch (_step)
@@ -279,8 +250,6 @@ namespace CNNFeatureMaps
         private void OnDisable()
         {
             _filterComparison.OnCompleted -= FinishFilterLesson;
-            _nextParchment.OnCollected -= HandleFeatureMapParchmentCollected;
-            _activationParchment.OnCollected -= HandleActivationParchmentCollected;
             _activationLesson.OnCompleted -= HandleActivationCompleted;
             _lessonUI.OnPreviousRequested -= HandlePreviousRequested;
             _lessonUI.OnNextRequested -= HandleNextRequested;

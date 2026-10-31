@@ -427,7 +427,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbf908ffe8bb4c97bc6e62297ed0e00d, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnding.FactoryRestorationController
+  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Ending.FactoryRestorationController
   _village: {fileID: 6000000003}
   _effectMaterial: {fileID: 2100000, guid: a8703945f1df52f597ec60fb8d59ac5c, type: 2}
   _skyMaterial: {fileID: 2100000, guid: 4cba31eaf99f4a45ba5d658c8172a417, type: 2}
@@ -443,7 +443,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 980aca6cd04844c4bee7022d9c60bbe5, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnding.FactoryEndingManager
+  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Ending.FactoryEndingManager
   _restoration: {fileID: 941282521}
   _panel: {fileID: 1076559637}
   _entryPoint: {fileID: 1847585226}
@@ -577,7 +577,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9b93257a311486099d4a30e1976f93e, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnding.FactoryEndingPanelController
+  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.Ending.FactoryEndingPanelController
   _canvas: {fileID: 1076559639}
   _title: {fileID: 1529607575}
   _message: {fileID: 919377579}
@@ -1117,7 +1117,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6bef24b867cd4c23b995cc846cfcc29e, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::FactoryIntro.FactoryVillageController
+  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.FactoryVillageController
 --- !u!1 &6500012600
 GameObject:
   m_ObjectHideFlags: 0

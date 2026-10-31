@@ -220,6 +220,7 @@ Transform:
   - {fileID: 720000013}
   - {fileID: 720000015}
   - {fileID: 720000017}
+  - {fileID: 880000000000000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &720000002
@@ -376,8 +377,6 @@ Transform:
   - {fileID: 720003562}
   - {fileID: 970000001}
   - {fileID: 980000003}
-  - {fileID: 990100019}
-  - {fileID: 990100065}
   - {fileID: 991700003}
   - {fileID: 992800003}
   m_Father: {fileID: 720000001}
@@ -432,8 +431,6 @@ Transform:
   - {fileID: 720003582}
   - {fileID: 720003586}
   - {fileID: 980000005}
-  - {fileID: 990100095}
-  - {fileID: 990100123}
   - {fileID: 991700005}
   - {fileID: 992800005}
   m_Father: {fileID: 720000001}
@@ -2269,7 +2266,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 990100157}
   - {fileID: 720000838}
   - {fileID: 720000843}
   - {fileID: 720000848}
@@ -32599,7 +32595,7 @@ Transform:
   - {fileID: 990100028}
   - {fileID: 990100015}
   - {fileID: 990100009}
-  m_Father: {fileID: 720000007}
+  m_Father: {fileID: 880000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &990100020
 MonoBehaviour:
@@ -33677,7 +33673,7 @@ Transform:
   - {fileID: 990100074}
   - {fileID: 990100050}
   - {fileID: 990100043}
-  m_Father: {fileID: 720000007}
+  m_Father: {fileID: 880000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!114 &990100066
 MonoBehaviour:
@@ -34390,7 +34386,7 @@ Transform:
   - {fileID: 990100092}
   - {fileID: 990100111}
   - {fileID: 990100077}
-  m_Father: {fileID: 720000009}
+  m_Father: {fileID: 880000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!114 &990100096
 MonoBehaviour:
@@ -35122,7 +35118,7 @@ Transform:
   - {fileID: 990100128}
   - {fileID: 990100115}
   - {fileID: 990100146}
-  m_Father: {fileID: 720000009}
+  m_Father: {fileID: 880000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &990100124
 MonoBehaviour:
@@ -35914,7 +35910,7 @@ Transform:
   - {fileID: 990100162}
   - {fileID: 990100165}
   - {fileID: 990100180}
-  m_Father: {fileID: 720000836}
+  m_Father: {fileID: 880000000000000002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &990100158
 MonoBehaviour:
@@ -44630,4 +44626,40 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &880000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 880000000000000002}
+  m_Layer: 0
+  m_Name: Parchments
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &880000000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 990100019}
+  - {fileID: 990100065}
+  - {fileID: 990100095}
+  - {fileID: 990100123}
+  - {fileID: 990100157}
+  m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

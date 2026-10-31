@@ -22,8 +22,6 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryPlayerController _player;
         [SerializeField] private FactoryRouteGuideController _routeGuide;
         [SerializeField] private FactoryMapController _map;
-        [SerializeField] private FactoryAreaEntryController _convolutionArea;
-        [SerializeField] private Transform _convolutionAnchor;
         [SerializeField] private StageArrival[] _stageArrivals;
         private readonly Dictionary<FactoryAreaEntryController, Action<bool>> _areaHandlers =
             new Dictionary<FactoryAreaEntryController, Action<bool>>();
@@ -33,8 +31,6 @@ namespace FactoryEnvironment
         public event Action<TabletMapData> MapChanged;
         public TabletMapData MapData => _map.MapData;
         public Pose TutorialPose => ToPose(_navigationData.TutorialStart);
-        public Pose PixelLabContentPose => ToPose(_convolutionAnchor);
-        public bool IsPixelPassageInside => _convolutionArea.IsPlayerInside;
 
         private void Awake()
         {
@@ -63,8 +59,6 @@ namespace FactoryEnvironment
         {
             _player.PlaceAtEntrance(rig);
             _player.PrepareRayInput();
-            _navigationData.ConvolutionEntranceDoor.Bind(_player.CameraTransform);
-            _convolutionArea.Bind(_player.CameraTransform);
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
             {
                 room.Area.Bind(_player.CameraTransform);
@@ -102,7 +96,8 @@ namespace FactoryEnvironment
 
         public void SetNextStagePrepared(LearningStageId current, LearningStageId next)
         {
-            _navigationData.Get(current).ExitDoor.Open();
+            FactoryShutterController exit = _navigationData.Get(current).ExitDoor;
+            if (exit != _navigationData.Get(next).EntryDoor) { exit.Open(); }
             ShowDestination(next);
         }
 
@@ -112,12 +107,6 @@ namespace FactoryEnvironment
             _routeGuide.SetDestination(LearningStageId.None);
         }
 
-        public void SetPixelPassageAvailable(bool available)
-        {
-            if (available) { _navigationData.ConvolutionEntranceDoor.Open(); }
-            else { _navigationData.ConvolutionEntranceDoor.Close(); }
-            _routeGuide.SetConvolutionRouteVisible(available);
-        }
 
         public void AllowExit(LearningStageId current)
         {
@@ -139,7 +128,6 @@ namespace FactoryEnvironment
                 room.EntryDoor.Close();
                 if (room.Id != LearningStageId.Exit) { room.ExitDoor.Close(); }
             }
-            _navigationData.ConvolutionEntranceDoor.Close();
             _routeGuide.SetDestination(LearningStageId.None);
         }
 

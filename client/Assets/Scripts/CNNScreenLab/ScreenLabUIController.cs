@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public sealed class PixelLabUIController : MonoBehaviour
+    public sealed class ScreenLabUIController : MonoBehaviour
     {
         [SerializeField] private Button _detailButton;
         [SerializeField] private Button _nextButton;
@@ -51,11 +51,11 @@ namespace UI
         {
             if (page == 0) { Present("RGB  1 / 3\nR은 빨강, G는 초록, B는 파랑이에요.\n세 값을 섞어 한 픽셀의 색을 만들어요.", false, true); }
             else if (page == 1) { Present("RGB  2 / 3\n숫자는 각 색의 세기예요.\n0은 없음, 255는 가장 강함이에요.", false, true); }
-            else { Present("RGB  3 / 3\n앞뒤의 같은 칸은 같은 픽셀이에요.\n이제 작은 숫자로 계산을 배워봐요.", false, true, "계산 배우기"); }
+            else { Present("RGB  3 / 3\n앞뒤의 같은 칸은 같은 픽셀이에요.\n이제 작은 숫자로 계산을 배워봐요.", false, true, "관찰 마치기"); }
         }
         public void ShowExitGuide()
         {
-            Present("R · G 학습을 마쳤어요!\n입구 양피지를 수집하고\n열린 문으로 이동해 B 퀴즈를 풀어보세요.", false, true, "다음 공간으로");
+            Present("픽셀 · RGB 관찰을 마쳤어요!\n입구 양피지를 수집하고\n열린 문으로 이동해 합성곱을 배워보세요.", false, false);
         }
     }
 }

@@ -3,7 +3,7 @@ namespace OpeningEnding.Ending
     /// <summary>Rounded display-space brightness sampled at 16x9 centers from OpeningBroadcast.png (news, t=3).</summary>
     internal static class EndingUpscalingSample
     {
-        // Source: existing Textures/CNNPixelLab/OpeningBroadcast.png. No runtime readback or model inference.
+        // Source: existing Textures/CNNScreenLab/OpeningBroadcast.png. No runtime readback or model inference.
         private static readonly float[] Brightness =
         {
             .48f, .99f, .99f, .48f, .48f, .48f, .48f, .48f, .48f, .48f, .48f, .48f, .48f, .40f, .40f, .40f,

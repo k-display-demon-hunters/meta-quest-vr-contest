@@ -209,6 +209,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1999100001}
   - {fileID: 980100001}
   - {fileID: 980100005}
   - {fileID: 980100007}
@@ -336,7 +337,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000007}
   m_Layer: 0
-  m_Name: "02 ROOM 01 Pixel Lab"
+  m_Name: "02 ROOM 01 Screen and Convolution"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -15157,7 +15158,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b1bf875ba84847bd399f7b29701e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _convolutionEntranceRoute: {fileID: 970000115}
 --- !u!114 &720003516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15170,7 +15170,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 885e045bc6ef404f8360bab4456d034d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _convolutionEntranceDoor: {fileID: 970000108}
   _entrance: {fileID: 720003508}
   _tutorialStart: {fileID: 720003510}
   _destinations:
@@ -15180,11 +15179,17 @@ MonoBehaviour:
     _contentAnchor: {fileID: 720003482}
     _entryDoor: {fileID: 720001566}
     _exitDoor: {fileID: 720001727}
-  - _id: 1
+  - _id: 6
     _route: {fileID: 720002925}
     _area: {fileID: 720003486}
     _contentAnchor: {fileID: 720003488}
     _entryDoor: {fileID: 720001888}
+    _exitDoor: {fileID: 970000108}
+  - _id: 7
+    _route: {fileID: 970000115}
+    _area: {fileID: 970000114}
+    _contentAnchor: {fileID: 970000110}
+    _entryDoor: {fileID: 970000108}
     _exitDoor: {fileID: 720002049}
   - _id: 2
     _route: {fileID: 720003035}
@@ -23625,7 +23630,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Pixel Lab"
+  m_Text: "픽셀·합성곱"
 --- !u!222 &950000049
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -26372,7 +26377,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.707107, z: 0, w: 0.707107}
   m_LocalPosition: {x: -28.55, y: 0, z: -1.5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 720000017}
@@ -32267,7 +32272,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Pixel Lab
+  m_Text: 픽셀·합성곱
 --- !u!222 &990100007
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -44585,11 +44590,11 @@ MonoBehaviour:
   _player: {fileID: 720003512}
   _routeGuide: {fileID: 720003515}
   _map: {fileID: 720003514}
-  _convolutionArea: {fileID: 970000114}
-  _convolutionAnchor: {fileID: 970000110}
   _stageArrivals:
-  - Stage: 1
+  - Stage: 6
     Arrival: {fileID: 980100001}
+  - Stage: 7
+    Arrival: {fileID: 1999100001}
   - Stage: 2
     Arrival: {fileID: 980100005}
   - Stage: 3
@@ -44663,3 +44668,34 @@ Transform:
   - {fileID: 990100157}
   m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1999100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1999100001}
+  m_Layer: 0
+  m_Name: Convolution Arrival
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1999100001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1999100000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.7071067811865476, z: 0, w: 0.7071067811865476}
+  m_LocalPosition: {x: -23.2, y: 0, z: -8.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 720000001}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}

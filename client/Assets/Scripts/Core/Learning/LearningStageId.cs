@@ -3,7 +3,8 @@ namespace Learning
     public enum LearningStageId
     {
         None = 0,
-        PixelLab = 1,
+        ScreenLab = 6,
+        ConvolutionLab = 7,
         FeatureMap = 2,
         ModelDesign = 3,
         Exit = 4,

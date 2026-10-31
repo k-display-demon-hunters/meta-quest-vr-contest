@@ -9,7 +9,8 @@ namespace Learning
             Array.AsReadOnly(new[]
             {
                 new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", false, Array.Empty<int>()),
-                new LearningStageDefinition(LearningStageId.PixelLab, "픽셀 랩", true, new[] { 4 }, 0),
+                new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", true, new[] { 4 }),
+                new LearningStageDefinition(LearningStageId.ConvolutionLab, "합성곱", true, new[] { 0 }),
                 new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", true, new[] { 1 }),
                 new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", true, new[] { 2, 3 })
             });
@@ -50,7 +51,8 @@ namespace Learning
         public static string GetSceneName(LearningStageId stage) => stage switch
         {
             LearningStageId.Tutorial => "FactoryTutorial",
-            LearningStageId.PixelLab => "CNNPixelLab",
+            LearningStageId.ScreenLab => "CNNScreenLab",
+            LearningStageId.ConvolutionLab => "CNNConvolutionLab",
             LearningStageId.FeatureMap => "CNNFeatureMapLab",
             LearningStageId.ModelDesign => "CNNModelDesignLab",
             LearningStageId.Exit => "FactoryEnding",

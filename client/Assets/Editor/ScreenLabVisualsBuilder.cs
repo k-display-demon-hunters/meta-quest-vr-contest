@@ -42,7 +42,7 @@ namespace UI.Editor
             Bind(stage, "_rgbStack", rgb);
             Bind(selection, "_volume", volume);
             Bind(lab, "_revealStage", stage);
-            PixelLabUIController ui = lab.GetComponentInChildren<PixelLabUIController>(true);
+            ScreenLabUIController ui = lab.GetComponentInChildren<ScreenLabUIController>(true);
             Bind(stage, "_rgbValues", rgb.GetComponent<RgbValuesUIController>());
             Transform controls = lab.transform.Find("Spatial controls");
             controls.localPosition = new Vector3(0, 1.05f, 0.45f);
@@ -76,7 +76,6 @@ namespace UI.Editor
                 caption.rectTransform.offsetMax = new Vector2(-10, -5);
                 if (reset) { caption.text = "처음으로"; }
             }
-            InstallPractice(lab);
             InstallBoundary(lab, selection);
             Transform background = controls.Find("Instruction panel background");
             if (background == null)
@@ -89,27 +88,6 @@ namespace UI.Editor
                 panel.GetComponent<Image>().raycastTarget = false;
             }
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
-        }
-
-        private static void InstallPractice(CNNScreenLabManager lab)
-        {
-            PixelPracticeManager practice = lab.GetComponentInChildren<PixelPracticeManager>(true);
-            if (practice == null)
-            {
-                GameObject root = new GameObject("R G guided practice");
-                root.transform.SetParent(lab.transform, false);
-                root.transform.localPosition = new Vector3(0.4f, 1.7f, 1.25f);
-                practice = root.AddComponent<PixelPracticeManager>();
-                GameObject ui = (GameObject)PrefabUtility.InstantiatePrefab(
-                    AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/PixelCalculationUI.prefab"), root.transform);
-                Transform blocks = Child(root.transform, "Practice blocks");
-                Bind(practice, "_ui", ui.GetComponent<LessonUIController>());
-                Bind(practice, "_spatial", blocks.gameObject.AddComponent<RgbVolumeController>());
-                Bind(practice, "_font", Font);
-                ui.SetActive(false);
-                blocks.gameObject.SetActive(false);
-            }
-            Bind(lab, "_practice", practice);
         }
 
         private static void InstallBoundary(CNNScreenLabManager lab, PixelSelectionController selection)

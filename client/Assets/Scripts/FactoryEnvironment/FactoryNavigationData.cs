@@ -26,8 +26,6 @@ namespace FactoryEnvironment
             internal FactoryShutterController ExitDoor => _exitDoor;
         }
 
-        [SerializeField] private FactoryShutterController _convolutionEntranceDoor;
-        public FactoryShutterController ConvolutionEntranceDoor => _convolutionEntranceDoor;
         [SerializeField] private Transform _entrance;
         [SerializeField] private Transform _tutorialStart;
         [SerializeField] private DestinationData[] _destinations;

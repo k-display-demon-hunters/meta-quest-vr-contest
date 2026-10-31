@@ -1,9 +1,8 @@
-using System;
 using System.Collections;
-using UnityEngine;
 
 namespace UI
 {
+    // The same short guided exercise is used first for R, then for G.
     internal sealed class RedCalculationController
     {
         private readonly RgbVolumeController _spatial;
@@ -17,58 +16,46 @@ namespace UI
             _calculation = calculation;
             _animation = new CalculationAnimationController(spatial, calculation);
         }
-        public IEnumerator Run()
+        public IEnumerator Run(int channel = 0)
         {
-            yield return _spatial.PullColour(0);
-            yield return _spatial.Focus(0);
-            _spatial.HighlightRow(-1);
-            _ui.Title = "R 학습 · 정해진 가중치로 계산하기";
-            _ui.Explanation = "앞의 R 픽셀과 왼쪽 가중치를 관찰하세요. 가중치를 Grip으로 잡아 R 픽셀 앞에 놓으세요.";
-            _ui.Guide = "앞으로 나온 R(빨강)부터 살펴봐요.\n\n뒤의 G·B 층도 같은 필터의 일부예요. 가중치는 고정이에요.\n\n각 픽셀에 같은 위치의 가중치를 곱하고, 9개의 곱을 모두 더해요.\n\n이처럼 입력을 정해진 가중치로 곱해 합치는 계산을 선형결합이라고 해요.";
-            _ui.ChannelSums = _calculation.Summary(0);
-            _ui.Equation = "R 합 = x₁w₁ + x₂w₂ + … + x₉w₉";
-            _ui.Feedback = "가중치를 R 앞에 놓고 계속을 누르세요. 버튼으로 자동 정렬할 수도 있어요.";
-            yield return _ui.WaitForNext("자동 맞추고 다음으로");
-            _spatial.AlignKernel();
-            while (!_spatial.IsAligned)
-            {
-                _ui.Feedback = "잡고 있는 가중치를 R 픽셀 앞에 놓거나 Grip을 놓은 후 계속을 누르세요.";
-                yield return _ui.WaitForNext("가중치 맞추기 / 계속");
-                _spatial.AlignKernel();
-            }
-            _ui.Feedback = "앞뒤로 놓인 같은 위치의 두 값을 곱해요. 숫자 사본이 이동하며 계산을 보여줘요.";
-            yield return _ui.WaitForNext("R 계산 시작");
-            int[] rowSums = new int[3];
+            string name = channel == 0 ? "R" : "G";
+            _ui.Title = name + " 층을 꺼내 보세요";
+            _ui.Explanation = "Grip을 누른 채 앞으로 옮기고 놓으세요.";
+            _ui.Equation = "";
+            _ui.ChannelSums = "";
+            _ui.Guide = "연습용 값 0~3\n\n같은 위치끼리 곱해요.";
+            _ui.Feedback = "";
+            yield return _spatial.PullColour(channel);
+            yield return _spatial.Focus(channel);
+            _ui.Title = name + " 가중치를 옮겨 보세요";
+            _ui.Explanation = "화살표 아래 가중치를 Grip으로 잡아\n빛나는 테두리에 겹쳐 놓으세요.";
+            yield return _spatial.WaitForKernel();
+            _ui.Title = name + " · 하나씩 곱해요";
+            _ui.Explanation = "곱한 결과를 오른쪽 계산판에 적어요.";
+            _ui.Guide = "";
             int accumulated = 0;
-            for (int row = 0; row < 3; row++)
+            string notebook = "";
+            for (int i = 0; i < 9; i++)
             {
-                string[] terms = new string[3];
-                for (int column = 0; column < 3; column++)
+                accumulated += _calculation.Product(channel, i);
+                yield return _animation.MultiplyAndAccumulate(channel, i, accumulated);
+                string term = $"{_calculation.Input(channel, i)} × {_calculation.Weight(channel, i)} = {_calculation.Product(channel, i)}";
+                notebook += (i == 0 ? "" : "\n") + term;
+                _ui.Guide = notebook;
+                _ui.Equation = term;
+                _ui.ChannelSums = name + " 지금까지의 합: " + accumulated;
+                if (i % 3 == 2)
                 {
-                    int i = row * 3 + column;
-                    int product = _calculation.Product(0, i);
-                    rowSums[row] += product;
-                    yield return _animation.MultiplyAndAccumulate(0, i, accumulated + rowSums[row]);
-                    terms[column] = $"{_calculation.Input(0, i)}×({_calculation.Weight(0, i)})";
+                    _ui.Feedback = "0을 곱한 칸은 합에 더해도 그대로예요.";
+                    yield return _ui.WaitForNext(i == 8 ? "합 확인" : "다음 줄");
                 }
-                _spatial.HighlightRow(row);
-                _ui.Title = $"R 학습 · {row + 1}번째 줄의 곱을 더하기";
-                _ui.Explanation = "같은 위치끼리 곱한 세 결과를 더해요. 줄별 합은 9개 항을 나누어 계산하기 위한 중간값이에요.";
-                _ui.Equation = string.Join(" + ", terms) + $" = {rowSums[row]}";
-                int previous = accumulated;
-                accumulated += rowSums[row];
-                _ui.ChannelSums = $"R 누적 합: {previous} + ({rowSums[row]}) = {accumulated}";
-                _ui.Feedback = "음수인 곱도 부호를 유지해 더해요. 픽셀 값만 더하지 않아요.";
-                yield return _ui.WaitForNext(row < 2 ? "다음 줄 보기" : "R 전체 합 보기");
             }
             _spatial.HighlightRow(-1);
-            _ui.Title = "R 학습 · 9개 곱을 합쳐 R 계산 완료";
-            _ui.Equation = $"({rowSums[0]}) + ({rowSums[1]}) + ({rowSums[2]}) = {_calculation.Sum(0)}";
-            _ui.ChannelSums = _calculation.Summary(1);
-            _ui.Explanation = "세 줄의 합을 더한 값은 9개 곱을 한꺼번에 더한 값과 같아요.";
-            _ui.Feedback = "이제 같은 방법으로 G와 B의 계산값을 직접 구해 보세요.";
-            yield return _ui.WaitForNext("G 퀴즈로");
-
+            _ui.Title = name + " 계산 완료";
+            _ui.Explanation = "가중치가 1인 세 칸만 더하면 돼요.";
+            _ui.Equation = $"{_calculation.Input(channel, 0)} + {_calculation.Input(channel, 4)} + {_calculation.Input(channel, 8)} = {accumulated}";
+            _ui.Feedback = channel == 0 ? "G도 같은 방법으로 연습해요." : "이제 B를 풀 준비가 됐어요.";
+            yield return _ui.WaitForNext(channel == 0 ? "G 시작" : "학습 정리");
         }
     }
 }

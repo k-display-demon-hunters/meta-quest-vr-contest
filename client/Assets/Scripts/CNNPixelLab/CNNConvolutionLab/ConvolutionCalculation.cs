@@ -13,11 +13,13 @@ namespace UI
             for (int i = 0; i < 9; i++)
             {
                 Color32 pixel = patch[i];
-                _inputs[c, i] = c == 0 ? pixel.r : c == 1 ? pixel.g : pixel.b;
+                int value = c == 0 ? pixel.r : c == 1 ? pixel.g : pixel.b;
+                // Observation retains 0..255; arithmetic explicitly uses a 0..3 practice scale.
+                _inputs[c, i] = Mathf.RoundToInt(value * 3f / 255f);
             }
         }
         public int Input(int channel, int index) => _inputs[channel, index];
-        public int Weight(int channel, int index) => index % 3 - 1;
+        public int Weight(int channel, int index) => index == 0 || index == 4 || index == 8 ? 1 : 0;
         public int Product(int channel, int index) => Input(channel, index) * Weight(channel, index);
         public int Sum(int channel)
         {

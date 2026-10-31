@@ -1,4 +1,5 @@
 using UnityEngine;
+using Learning;
 
 namespace FactoryEnvironment
 {
@@ -6,9 +7,7 @@ namespace FactoryEnvironment
     {
         [SerializeField] private GameObject _convolutionEntranceRoute;
         private FactoryNavigationData _navigationData;
-        private FactoryDestinationId _destination = FactoryDestinationId.None;
-
-        public FactoryNavigationData NavigationData => _navigationData;
+        private LearningStageId _destination = LearningStageId.None;
 
         private void Awake()
         {
@@ -24,7 +23,7 @@ namespace FactoryEnvironment
             }
         }
 
-        public void SetDestination(FactoryDestinationId destination)
+        public void SetDestination(LearningStageId destination)
         {
             _convolutionEntranceRoute.SetActive(false);
             if (destination == _destination)
@@ -40,10 +39,10 @@ namespace FactoryEnvironment
 
         public void SetConvolutionRouteVisible(bool visible)
         {
-            if (visible) { SetDestination(FactoryDestinationId.None); }
+            if (visible) { SetDestination(LearningStageId.None); }
             _convolutionEntranceRoute.SetActive(visible);
         }
 
-        private void OnDisable() => SetDestination(FactoryDestinationId.None);
+        private void OnDisable() => SetDestination(LearningStageId.None);
     }
 }

@@ -4,7 +4,7 @@
 
 `CNNPixelLab.unity`는 전체 진행과 내부 씬 수명을 관리한다. 공장 ROOM #1의 첫 공간은 `CNNScreenLab.unity`에서 돋보기 관찰과 R·G 계산 학습을 진행한다. 기존 내부 문을 지나 두 번째 공간에 들어가면 `CNNConvolutionLab.unity`로 교체해 B 퀴즈를 진행한다. 단독 실행에서는 같은 위치에서 두 씬을 교체한다.
 
-공장은 `CNNPixelLabManager`만 참조한다. 기존 `ConfigureFactoryConvolution`, `ScreenCompleted`, `WaitingForFactoryConvolution`, `StartFactoryConvolution`, `ConvolutionStarted`, `ConvolutionCompleted`, `EndSession` 계약과 양피지·문·진입 영역 조건을 유지한다. `ScreenCompleted`의 발생 시점은 RGB 관찰 직후가 아니라 R·G 학습 후 **다음 공간으로**를 눌렀을 때다.
+Core LearningSessionManager는 ILearningExperience로 PixelLab을 하나의 체험으로 다룬다. CNNPixelLabManager가 FactoryEnvironmentManager의 공개 공간 기능과 ParchmentManager 수집 조회를 직접 연결한다. R·G 학습 후 다음 공간으로를 누르면 CNNScreenLabManager.ConvolutionRequested가 발생하며 내부 문·진입 대기·B 체험 로딩과 재시도는 PixelLab이 처리한다. 이전 ConfigureFactoryConvolution·ScreenCompleted·StartFactoryConvolution·ConvolutionStarted 계약은 사용하지 않는다.
 
 ## 첫 공간의 동작
 
@@ -94,3 +94,11 @@
 Game View에서 발견한 제목 잘림과 칸막이 뒤의 이미지/RGB 배치를 수정했다. 관찰 RGB의 배율은 1.7에서 2.2, 계산 블록은 1에서 1.5로 키웠다. 깊이 간격을 줄이고 계산 중 해당 채널만 표시하며, 결과 블록과 합 슬롯을 계산판·수식에서 분리했다. 제목 영역 높이는 90이며 확인한 안내·수식·계산판 텍스트는 영역 높이를 넘지 않았다.
 
 이는 에디터의 이벤트 구동 확인이다. 실제 Quest 착용 시의 가독성, 물리 컨트롤러 Grip 입력과 레이 조준은 별도 기기 확인이 필요하다. 테스트 파일·프로젝트 복사본·플레이어 빌드는 생성하지 않았다.
+
+## 학습 세션 계약과 씬 수명
+
+Progress는 첫 공간의 R·G 학습 후 이동 요청 시 0.5, 두 번째 공간 완료 시 1이며 초기화 시 0이다. ProgressChanged와 ExitAvailabilityChanged를 Core 세션이 구독한다. CanExit는 완료 후 내부 전환·종료 작업이 없고 활성 상태일 때 참이다. 세션은 최대 도달값을 저장하고 재방문·초기화 시에도 누적 진행을 유지한다. 태블릿은 PixelLab 카드 하나로 첫 공간에 진입한다.
+
+FactorySceneLoadController는 FactoryNavigationData의 ContentAnchor를 직접 읽어 PixelLab 루트를 배치한다. PixelLabSceneLoadController는 내부 씬을 준비·교체한다. 초기 내부 로딩과 전환 실패는 PixelLab에서 3초 뒤 재시도하며 Learning은 내부 준비를 기다리지 않는다. 공통 EndSession 요청 시 PixelLab이 진행 중 전환·표시 정리를 기다리고 내부 씬을 언로드한 뒤, 상위 로더가 관리용 씬을 언로드한다. 내부 문·영역·기준점은 현재 Factory 씬에 유지한다.
+
+위 실행 확인 기록은 병합 전 구현의 기록이다. 이번 통합에서는 Unity 실행·컴파일·테스트·빌드를 수행하지 않았다.

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.XR.CoreUtils;
 using XR;
@@ -9,19 +10,16 @@ namespace Parchment
     // Shared session: pickups and tablet UI use this entry point independently.
     public sealed class ParchmentManager : MonoBehaviour
     {
-        public bool IsGroupCollected(ParchmentLocation location)
+        public bool HasCollectedAll(IReadOnlyList<int> documentIds)
         {
-            if (location == ParchmentLocation.None) return false;
-            foreach (ParchmentLesson lesson in ParchmentCatalog.All)
+            foreach (int id in documentIds)
             {
-                if (lesson.Location != location) continue;
-                if (!HasCollected(lesson.Id)) return false;
+                if (!HasCollected(id)) { return false; }
             }
-            // Entrances with no assigned parchment retain their existing lesson conditions.
             return true;
         }
         public ParchmentInventoryItem GetInventoryItem(int id) =>
-            new ParchmentInventoryItem(ParchmentCatalog.Get(id).Title, HasCollected(id), ParchmentCatalog.Get(id).Location);
+            new ParchmentInventoryItem(id, ParchmentCatalog.Get(id).Title, HasCollected(id));
         private const float CollectionDistance = 3f;
         private readonly PickupRegistration[] _pickups = new PickupRegistration[ParchmentCatalog.All.Count];
         private readonly bool[] _collected = new bool[ParchmentCatalog.All.Count];
@@ -58,6 +56,17 @@ namespace Parchment
             Collected?.Invoke(index);
             return true;
         }
+
+        public void CollectDocuments(IReadOnlyList<int> documentIds)
+        {
+            foreach (int id in documentIds)
+            {
+                if (!Collect(id)) { continue; }
+                // A pickup can be absent while its document remains available in the session.
+                _pickups[id]?.Collected();
+            }
+        }
+
         public void RegisterPickup(int index, Transform source,
             ParchmentReaderController prefab, Action collected)
         {

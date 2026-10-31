@@ -1,7 +1,7 @@
-using Parchment;
 using System;
+using Learning;
+using Parchment;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 
@@ -10,71 +10,137 @@ namespace Tablet
     [DefaultExecutionOrder(-400)]
     public sealed class TabletManager : MonoBehaviour
     {
-        [SerializeField, HideInInspector] private Text _message;
-        [SerializeField] private Font _font;
-        [SerializeField] private Font _parchmentFont;
-        [SerializeField] private Font _parchmentTitleFont;
-        [SerializeField] private Sprite _parchmentSprite;
-        [SerializeField] private Transform[] _stageStartPoints;
-        [SerializeField] private StageMoveEvent _stageMoveRequested = new StageMoveEvent();
-        [SerializeField] private UnityEvent _saveRequested = new UnityEvent();
-        [SerializeField] private UnityEvent _exitRequested = new UnityEvent();
-
-        private Font _resolvedFont;
-        private TabletVisualResources _resources;
+        [SerializeField] private TabletUIBuilder _interfacePrefab;
+        [SerializeField] private Canvas _canvas;
+        [SerializeField] private MeshFilter _body;
         private TabletUIBuilder _ui;
+        private TabletVisualResources _resources;
         private TabletInputController _input;
-        private TabletParchmentController _parchment;
-        private ParchmentManager _reader;
-        private TabletSettingsController _settings;
         private TabletLearningController _learning;
+        private TabletParchmentController _parchment;
+        private TabletSettingsController _settings;
         private TabletDetailController _detail;
+        private ParchmentManager _reader;
         private TabletMapData _mapData;
-        private int _detailReturnFocusIndex;
-        private bool _initialized;
         private int _inputResumeFrame = -1;
         private bool _interactionBeforeReader;
         private int _focusBeforeReader;
+        public event Action<LearningStageId> StageMoveRequested;
 
         private TabletInputController.FocusGroup ActiveGroup => _detail.IsOpen
-            ? TabletInputController.FocusGroup.Detail : _ui.Shell.StageMenu.activeSelf
-            ? TabletInputController.FocusGroup.Stage : _settings.IsOpen
+            ? TabletInputController.FocusGroup.Detail : _settings.IsOpen
             ? TabletInputController.FocusGroup.Settings : TabletInputController.FocusGroup.Main;
 
         private void Awake()
         {
-            ResolveFont();
             _resources = new TabletVisualResources();
-            _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(),
-                () => ActiveGroup, () => _ui.CanvasRect);
-            _ui = new TabletUIBuilder(transform, _resources, _resolvedFont, _parchmentSprite, _input);
-            _reader = FindFirstObjectByType<ParchmentManager>();
-            _parchment = new TabletParchmentController(_ui, _resources, _reader.HasCollected, _reader.GetInventoryItem);
-            _settings = new TabletSettingsController(this, _ui.Settings, GetComponentInParent<Core.AudioManager>().SetMasterVolume);
-            _learning = new TabletLearningController(_ui.Learning, _resources);
-            _detail = new TabletDetailController(_ui.Shell);
-            _settings.LoadSettings(out int stageIndex, out int itemIndex);
-            _learning.RestoreSelection(stageIndex);
-            _parchment.RestoreSelection(itemIndex);
             _resources.CreateRuntimeSprites();
-            _ui.Build(_settings.Brightness, _settings.Volume, _reader.HasCollected);
-            RefreshAll();
-            _initialized = true;
+            _resources.BuildRoundedBody(_body);
+            RectTransform canvasRect = (RectTransform)_canvas.transform;
+            canvasRect.sizeDelta = new Vector2(TabletUIBuilder.CanvasWidth, TabletUIBuilder.CanvasHeight);
+            canvasRect.localScale = Vector3.one * (TabletUIBuilder.TabletWorldWidth / TabletUIBuilder.CanvasWidth);
+            _canvas.worldCamera = Camera.main;
+            _ui = Instantiate(_interfacePrefab, canvasRect, false);
+            _reader = FindFirstObjectByType<ParchmentManager>();
+            _input = new TabletInputController(GetComponentInParent<ContinuousMoveProvider>(), () => ActiveGroup, () => canvasRect);
+            _settings = new TabletSettingsController(_ui);
+            _detail = new TabletDetailController(_ui);
+            _learning = new TabletLearningController(_ui);
+            _parchment = new TabletParchmentController(_ui, _reader.HasCollected);
+            _ui.Initialize(_resources, _input, _canvas.worldCamera.transform, _reader.HasCollected);
+            _parchment.RestoreSelection(_settings.Load());
+            _parchment.RefreshInventory();
+            SetLearningState(LearningProgressSnapshot.Empty);
         }
-
         private void OnEnable()
         {
-            SubscribeEvents();
+            _ui.AppRequested += ShowApp;
+            _ui.StageRequested += RequestStage;
+            _ui.PaperRequested += _parchment.SelectItem;
+            _parchment.OpenRequested += OpenParchment;
+            _reader.Opened += SuspendForParchment;
+            _reader.Closed += RestoreAfterParchment;
+            _reader.Collected += RefreshCollection;
+            _input.InteractionRequested += SetInteraction;
+            _input.SettingsRequested += ToggleSettings;
+            _input.BackRequested += GoBack;
+            _ui.SettingsButton.onClick.AddListener(ToggleSettings);
+            _ui.SettingsClose.onClick.AddListener(ToggleSettings);
+            _ui.Brightness.onValueChanged.AddListener(_settings.SetBrightness);
+            _ui.Volume.onValueChanged.AddListener(_settings.SetVolume);
+            _ui.Vibration.onClick.AddListener(_settings.ToggleVibration);
+            _ui.Save.onClick.AddListener(SaveSettings);
+            _ui.Quit.onClick.AddListener(ShowQuit);
+            _ui.QuitCancel.onClick.AddListener(CloseQuit);
+            _ui.QuitConfirm.onClick.AddListener(ConfirmQuit);
             _input.Enable();
+            _learning.RefreshView();
             _parchment.RefreshInventory();
             if (_reader.IsOpen) { SuspendForParchment(); }
         }
-
-        private void Update()
+        private void OnDisable()
         {
-            if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); }
+            _ui.AppRequested -= ShowApp;
+            _ui.StageRequested -= RequestStage;
+            _ui.PaperRequested -= _parchment.SelectItem;
+            _parchment.OpenRequested -= OpenParchment;
+            _reader.Opened -= SuspendForParchment;
+            _reader.Closed -= RestoreAfterParchment;
+            _reader.Collected -= RefreshCollection;
+            _input.InteractionRequested -= SetInteraction;
+            _input.SettingsRequested -= ToggleSettings;
+            _input.BackRequested -= GoBack;
+            _ui.SettingsButton.onClick.RemoveListener(ToggleSettings);
+            _ui.SettingsClose.onClick.RemoveListener(ToggleSettings);
+            _ui.Brightness.onValueChanged.RemoveListener(_settings.SetBrightness);
+            _ui.Volume.onValueChanged.RemoveListener(_settings.SetVolume);
+            _ui.Vibration.onClick.RemoveListener(_settings.ToggleVibration);
+            _ui.Save.onClick.RemoveListener(SaveSettings);
+            _ui.Quit.onClick.RemoveListener(ShowQuit);
+            _ui.QuitCancel.onClick.RemoveListener(CloseQuit);
+            _ui.QuitConfirm.onClick.RemoveListener(ConfirmQuit);
+            _input.Disable();
         }
-
+        private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); } }
+        public void SetLearningState(LearningProgressSnapshot snapshot) => _learning.Refresh(snapshot);
+        public void ShowTravelStarted() => _learning.ShowTravelStarted();
+        public void ShowTravelFailed() => _learning.ShowTravelFailed();
+        public void ShowTravelCompleted() => _learning.ShowTravelCompleted();
+        public void SetMapData(TabletMapData data) { _mapData = data; _ui.Minimap.SetMapData(data); }
+        public void ClearMapData(TabletMapData data) { if (_mapData == data) { SetMapData(null); } }
+        private void RequestStage(LearningStageId stage)
+        {
+            StageMoveRequested?.Invoke(stage);
+            _input.ResetFocus(_ui.SelectedApp);
+        }
+        private void ShowApp(int index) { _ui.ShowApp(index); _input.ResetFocus(index); }
+        private void SetInteraction(bool active) => _input.SetInteraction(active, _ui.SelectedApp);
+        private void ToggleSettings()
+        {
+            _detail.Close();
+            _settings.SetVisible(!_settings.IsOpen);
+            _input.SetInteraction(true, _settings.IsOpen ? 0 : _ui.SelectedApp);
+        }
+        private void GoBack()
+        {
+            if (_detail.IsOpen) { CloseQuit(); }
+            else if (_input.IsAdjustingSlider) { _input.StopAdjustingSlider(); }
+            else if (_settings.IsOpen) { ToggleSettings(); }
+            else { SetInteraction(false); }
+        }
+        private void SaveSettings() => _settings.Save(_parchment.SelectedIndex);
+        private void ShowQuit() { _detail.Show(); _input.ResetFocus(0); }
+        private void CloseQuit() { _detail.Close(); _input.ResetFocus(0); }
+        private void ConfirmQuit()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+        private void OpenParchment(int index, Pose origin) => _reader.OpenCollected(index, _canvas.worldCamera, origin);
+        private void RefreshCollection(int index) => _parchment.RefreshInventory();
         private void SuspendForParchment()
         {
             _interactionBeforeReader = _input.IsInteracting;
@@ -87,295 +153,6 @@ namespace Tablet
             _input.SetInteraction(_interactionBeforeReader, _focusBeforeReader);
             _input.Enable();
         }
-        private void RefreshCollectedParchment(int index)
-        {
-            _parchment.RefreshInventory();
-            UpdateFeedback(TabletParchmentController.ItemName(index) + " 완료",
-                ParchmentCatalog.Get(index).Title + "\n\n양피지가 태블릿에 보관되었습니다.");
-        }
-        private void RequestParchmentOpen(int index, Pose origin) => _reader.OpenCollected(index, GetComponentInParent<Unity.XR.CoreUtils.XROrigin>().Camera, origin);
-
-        public void SetFactoryMission(int phase, int collected, int completed, string mission)
-        {
-            _learning.SetFactoryMission(phase, collected, completed, mission);
-        }
-
-        public void SetMapData(TabletMapData data)
-        {
-            _mapData = data;
-            _ui.SetMapData(data);
-        }
-
-        public void ClearMapData(TabletMapData data)
-        {
-            // An unloading scene must not clear a newer scene's map.
-            if (_mapData == data)
-            {
-                SetMapData(null);
-            }
-        }
-
-        internal void SaveSettings()
-        {
-            _settings.SaveSettings(_learning.SelectedIndex, _parchment.SelectedIndex);
-        }
-
-        private int SettingsFocusIndex()
-        {
-            return _input.IndexOfMainControl(_ui.Shell.SettingsButton, _parchment.SelectedIndex);
-        }
-
-        private void ResolveFont()
-        {
-            _resolvedFont = _font;
-            if (_resolvedFont == null && _message != null)
-            {
-                _resolvedFont = _message.font;
-            }
-            if (_resolvedFont == null)
-            {
-                _resolvedFont = Font.CreateDynamicFontFromOSFont(new[] { "Noto Sans CJK KR", "Malgun Gothic", "Arial" }, 16);
-            }
-            if (_resolvedFont == null)
-            {
-                _resolvedFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            }
-        }
-
-        private void RefreshAll()
-        {
-            _parchment.RefreshInventory();
-            _learning.RefreshTasks();
-            _learning.RefreshStage();
-            _learning.RefreshProgress();
-            _settings.RefreshSettingsValues();
-            UpdateFeedback("교육 문서 수집",
-                "방으로 가는 길에서 양피지를 찾아\n오른손 Trigger 또는 Grip으로 열어보세요.\n\n세 페이지를 읽고 완료를 누르면\n오른쪽 아이템함에 보관됩니다.");
-        }
-
-        internal void ShowFactoryMap()
-        {
-            ShowDetail("공장 안내도", "", false);
-            _detail.ShowMap();
-        }
-
-        internal void ShowHint()
-        {
-            ShowDetail("필터 관찰 힌트",
-                "밝은 픽셀과 붉은 픽셀의 RGB 값을 비교해보세요.\n\n" +
-                "흰색은 R·G·B 값이 모두 높고, 붉은색은 R 값이 상대적으로 높습니다.\n\n" +
-                "필터는 관찰하는 픽셀뿐 아니라 주변 픽셀의 값도 함께 사용합니다.", false);
-        }
-
-        internal void ShowLearningInfo()
-        {
-            ShowDetail("태블릿은 미션 보조 도구", "할 일을 모를 때: 현재 미션\n길을 찾을 때: 지도\n원리를 복습할 때: 수집한 양피지\n진행률: 양피지 5개 + 방 체험 3개\n\n" +
-                "현재 단계: " + _learning.SelectedName + "\n선택한 양피지: " + TabletParchmentController.ItemName(_parchment.SelectedIndex) +
-                "\n\n케디헌", false);
-        }
-
-        internal void ShowDetail(string title, string body, bool showImage)
-        {
-            _detailReturnFocusIndex = _input.FocusIndex;
-            _detail.Show(title, body, showImage);
-            _input.ResetFocus(0);
-        }
-
-        internal void CloseDetail()
-        {
-            _detail.Close();
-            _input.ResetFocus(_detailReturnFocusIndex);
-        }
-
-        internal void RequestApplicationQuit()
-        {
-            ShowDetail("앱 종료", "체험을 종료하고 Quest 홈으로 돌아갈까요?\n\n현재 체험 진행과 학습 결과는 유지되지 않습니다.", false);
-            _detail.ShowQuitConfirmation();
-            _input.ResetFocus(0);
-        }
-
-        internal void ConfirmApplicationQuit()
-        {
-            if (!_detail.IsQuitConfirmationOpen)
-            {
-                return;
-            }
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
-        }
-
-        internal void ToggleSettings()
-        {
-            if (!_input.IsInteracting)
-            {
-                SetInteraction(true);
-            }
-            bool open = !_settings.IsOpen;
-            _detail.Close();
-            _ui.Shell.StageMenu.SetActive(false);
-            _settings.SetSettingsVisible(open);
-            _input.ResetFocus(open ? 0 : SettingsFocusIndex());
-        }
-
-        internal void ShowStageMenu(bool open)
-        {
-            _ui.Shell.StageMenu.SetActive(open);
-            _input.ResetFocus(open ? _learning.SelectedIndex : 0);
-        }
-
-        internal void RequestExit()
-        {
-            SetInteraction(false);
-            _exitRequested.Invoke();
-            UpdateFeedback("태블릿 조작 종료", "현재 교육 화면으로 돌아왔습니다.");
-        }
-
-        private void UpdateFeedback(string title, string body)
-        {
-            if (_ui.Shell.FeedbackTitle != null)
-            {
-                _ui.Shell.FeedbackTitle.text = title;
-            }
-            if (_ui.Shell.FeedbackBody != null)
-            {
-                _ui.Shell.FeedbackBody.text = body;
-            }
-        }
-
-        private void SetInteraction(bool active)
-        {
-            if (!active)
-            {
-                _settings.SetSettingsVisible(false);
-                _ui.Shell.StageMenu.SetActive(false);
-                _detail.Close();
-            }
-            _input.SetInteraction(active, _parchment.SelectedIndex);
-        }
-
-        private void GoBack()
-        {
-            if (_detail.IsOpen)
-            {
-                CloseDetail();
-            }
-            else if (_input.IsAdjustingSlider)
-            {
-                _input.StopAdjustingSlider();
-            }
-            else if (_input.IsInteracting && _ui.Shell.StageMenu.activeSelf)
-            {
-                ShowStageMenu(false);
-            }
-            else if (_settings.IsOpen)
-            {
-                ToggleSettings();
-            }
-            else
-            {
-                SetInteraction(false);
-            }
-        }
-
-        private void SubscribeEvents()
-        {
-            _ui.ParchmentSelected += _parchment.SelectItem;
-            _parchment.OpenRequested += RequestParchmentOpen;
-            _reader.Opened += SuspendForParchment;
-            _reader.Closed += RestoreAfterParchment;
-            _reader.Collected += RefreshCollectedParchment;
-            _ui.CurrentTaskRequested += _learning.ConfirmCurrentTask;
-            _ui.StageRequested += _learning.MoveToStage;
-            _ui.BrightnessChanged += _settings.SetBrightness;
-            _ui.VolumeChanged += _settings.SetVolume;
-            _ui.VibrationRequested += _settings.ToggleVibration;
-            _input.InteractionRequested += SetInteraction;
-            _input.SettingsRequested += ToggleSettings;
-            _input.BackRequested += GoBack;
-            _input.FocusChanged += _learning.RefreshFocus;
-            _ui.SettingsRequested += ToggleSettings;
-            _ui.LearningInfoRequested += ShowLearningInfo;
-            _ui.FactoryMapRequested += ShowFactoryMap;
-            _ui.HintRequested += ShowHint;
-            _ui.ImageDetailRequested += ShowImageDetail;
-            _ui.SaveRequested += SaveSettings;
-            _ui.ExitRequested += RequestExit;
-            _ui.DetailCloseRequested += CloseDetail;
-            _ui.QuitConfirmationRequested += RequestApplicationQuit;
-            _ui.QuitRequested += ConfirmApplicationQuit;
-            _ui.StageMenuRequested += ShowStageMenu;
-            _settings.Saved += HandleSettingsSaved;
-            _settings.FeedbackRequested += UpdateFeedback;
-            _learning.FeedbackRequested += UpdateFeedback;
-        }
-
-        private void UnsubscribeEvents()
-        {
-            _ui.ParchmentSelected -= _parchment.SelectItem;
-            _parchment.OpenRequested -= RequestParchmentOpen;
-            _reader.Opened -= SuspendForParchment;
-            _reader.Closed -= RestoreAfterParchment;
-            _reader.Collected -= RefreshCollectedParchment;
-            _ui.CurrentTaskRequested -= _learning.ConfirmCurrentTask;
-            _ui.StageRequested -= _learning.MoveToStage;
-            _ui.BrightnessChanged -= _settings.SetBrightness;
-            _ui.VolumeChanged -= _settings.SetVolume;
-            _ui.VibrationRequested -= _settings.ToggleVibration;
-            _input.InteractionRequested -= SetInteraction;
-            _input.SettingsRequested -= ToggleSettings;
-            _input.BackRequested -= GoBack;
-            _input.FocusChanged -= _learning.RefreshFocus;
-            _ui.SettingsRequested -= ToggleSettings;
-            _ui.LearningInfoRequested -= ShowLearningInfo;
-            _ui.FactoryMapRequested -= ShowFactoryMap;
-            _ui.HintRequested -= ShowHint;
-            _ui.ImageDetailRequested -= ShowImageDetail;
-            _ui.SaveRequested -= SaveSettings;
-            _ui.ExitRequested -= RequestExit;
-            _ui.DetailCloseRequested -= CloseDetail;
-            _ui.QuitConfirmationRequested -= RequestApplicationQuit;
-            _ui.QuitRequested -= ConfirmApplicationQuit;
-            _ui.StageMenuRequested -= ShowStageMenu;
-            _settings.Saved -= HandleSettingsSaved;
-            _settings.FeedbackRequested -= UpdateFeedback;
-            _learning.FeedbackRequested -= UpdateFeedback;
-        }
-
-
-        private void HandleSettingsSaved()
-        {
-            _saveRequested.Invoke();
-        }
-
-        private void ShowImageDetail()
-        {
-            ShowDetail("원본 이미지", "오염 픽셀과 주변 픽셀의 밝기·색을 비교하세요.", true);
-        }
-
-        private void OnDisable()
-        {
-            _input?.Disable();
-            if (_initialized)
-            {
-                SetInteraction(false);
-            }
-            _settings?.StopAnimation();
-            UnsubscribeEvents();
-        }
-
-        private void OnDestroy()
-        {
-            _settings?.StopAnimation();
-            _input?.Dispose();
-            _resources?.Dispose();
-        }
-
-        [Serializable]
-        private sealed class StageMoveEvent : UnityEvent<int>
-        {
-        }
+        private void OnDestroy() { _input?.Dispose(); _resources?.Dispose(); }
     }
 }

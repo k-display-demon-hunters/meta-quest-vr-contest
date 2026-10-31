@@ -1,94 +1,102 @@
+using System;
 using System.Collections;
 using FactoryTutorial;
-using Unity.XR.CoreUtils;
+using Learning;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace FactoryEnvironment
 {
-    // Loads and places content; the factory Manager decides when doors may unlock.
+    // Owns loaded content and asynchronous operations; the session chooses their order.
     public sealed class FactorySceneLoadController : MonoBehaviour
     {
-        private FactoryNavigationData _navigationData;
-        private FactoryPlayerController _player;
-        private Scene _tutorialScene;
-        private Scene _lesson;
-        private Scene _preparedLesson;
-        private FactoryNavigationData.DestinationData _lessonData;
-        private FactoryNavigationData.DestinationData _preparedData;
-        private string _loadingLessonName;
+        private sealed class Lesson
+        {
+            public Scene Scene;
+            public GameObject Root;
+            public FactoryTutorialManager Tutorial;
+            public ILearningExperience Experience;
+        }
+
+        [SerializeField] private FactoryNavigationData _navigationData;
+        private Lesson _current;
+        private Lesson _prepared;
+        private string _loadingSceneName;
         private bool _destroying;
-
-        public Scene PreparedScene => _preparedLesson;
+        public bool HasPreparedLesson => _prepared != null;
+        public Scene CurrentScene => _current == null ? default : _current.Scene;
         public string LastError { get; private set; }
-        public bool TutorialCompleted { get; private set; }
         public bool IsLeaving { get; private set; }
+        public FactoryTutorialManager PreparedTutorial => _prepared.Tutorial;
+        public ILearningExperience PreparedExperience => _prepared.Experience;
 
-        private void Awake()
+        public IEnumerator Prepare(LearningStageId stage)
         {
-            _navigationData = GetComponent<FactoryNavigationData>();
-            _player = GetComponent<FactoryPlayerController>();
-        }
-
-        public void ActivateFactoryScene() => SceneManager.SetActiveScene(gameObject.scene);
-
-        public IEnumerator RunTutorial(XROrigin rig)
-        {
-            TutorialCompleted = false;
-            AsyncOperation loading = BeginLoad(_navigationData.TutorialSceneName);
-            if (loading == null) { yield break; }
-            loading.completed += HandleTutorialLoaded;
-            yield return loading;
-            _tutorialScene = SceneManager.GetSceneByName(_navigationData.TutorialSceneName);
-            FactoryTutorialManager tutorial = null;
-            foreach (GameObject root in _tutorialScene.GetRootGameObjects())
-            {
-                tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
-                if (tutorial != null) { break; }
-            }
-            tutorial.Initialize(rig, _navigationData.TutorialStart);
-            while (tutorial != null && !tutorial.IsComplete) { yield return null; }
-            TutorialCompleted = tutorial != null && tutorial.IsComplete;
-            if (!TutorialCompleted) { LastError = "완료 전에 튜토리얼이 제거되었습니다."; }
-            if (_tutorialScene.IsValid() && _tutorialScene.isLoaded)
-            {
-                yield return SceneManager.UnloadSceneAsync(_tutorialScene);
-            }
-            _tutorialScene = default;
-        }
-
-        public IEnumerator PrepareLesson(FactoryDestinationId destination)
-        {
-            _preparedData = _navigationData.Get(destination);
-            _loadingLessonName = _preparedData.SceneName;
+            _loadingSceneName = LearningStageCatalog.GetSceneName(stage);
             SceneManager.sceneLoaded += HoldLoadedLesson;
-            AsyncOperation loading = BeginLoad(_loadingLessonName);
+            AsyncOperation loading = BeginLoad(_loadingSceneName);
             if (loading == null)
             {
                 SceneManager.sceneLoaded -= HoldLoadedLesson;
-                _preparedData = null;
                 yield break;
             }
             loading.completed += HandleLessonLoaded;
             yield return loading;
-            _preparedLesson = SceneManager.GetSceneByName(_loadingLessonName);
+            Scene scene = SceneManager.GetSceneByName(_loadingSceneName);
+            _prepared = FindLesson(scene, stage);
+            PlaceContent(_prepared.Root, stage);
         }
 
         private void HoldLoadedLesson(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != _loadingLessonName) { return; }
+            if (scene.name != _loadingSceneName) { return; }
             SceneManager.sceneLoaded -= HoldLoadedLesson;
-            // Place the scene before Start caches world positions or creates nested lesson scenes.
+            // Configure and connect before Start caches positions or starts nested lessons.
             foreach (GameObject root in scene.GetRootGameObjects()) { root.SetActive(false); }
         }
 
-        public void PlacePreparedContent()
+        private static Lesson FindLesson(Scene scene, LearningStageId stage)
         {
-            GameObject content = _preparedData.Content;
-            Transform anchor = _preparedData.ContentAnchor;
-            content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
-            content.transform.localScale = anchor.lossyScale;
-            foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
+            Lesson lesson = new Lesson { Scene = scene };
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                if (stage == LearningStageId.Tutorial)
+                {
+                    lesson.Tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
+                    if (lesson.Tutorial == null) { continue; }
+                }
+                else
+                {
+                    foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true))
+                    {
+                        if (component is ILearningExperience experience && experience.StageId == stage)
+                        {
+                            lesson.Experience = experience;
+                            break;
+                        }
+                    }
+                    if (lesson.Experience == null) { continue; }
+                }
+                lesson.Root = root;
+                return lesson;
+            }
+            throw new InvalidOperationException("Missing lesson entry point in " + scene.name);
+        }
+
+        private void PlaceContent(GameObject content, LearningStageId stage)
+        {
+            if (stage == LearningStageId.Tutorial)
+            {
+                content.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                content.transform.localScale = Vector3.one;
+            }
+            else
+            {
+                Transform anchor = _navigationData.Get(stage).ContentAnchor;
+                content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+                content.transform.localScale = anchor.lossyScale;
+                foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
+            }
             foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
             {
                 body.position = body.transform.position;
@@ -96,51 +104,32 @@ namespace FactoryEnvironment
             }
         }
 
-        public IEnumerator CommitPreparedLesson()
+        public void ActivatePrepared()
         {
-            yield return UnloadCurrentLesson();
-            _lesson = _preparedLesson;
-            _lessonData = _preparedData;
-            _preparedLesson = default;
-            _preparedData = null;
-            ActivateFactoryScene();
-            _lessonData.Content.SetActive(true);
+            _current = _prepared;
+            _prepared = null;
+            _current.Root.SetActive(true);
         }
 
-        public IEnumerator UnloadCurrentLesson()
+        public IEnumerator UnloadCurrent()
         {
-            if (_lesson.IsValid() && _lesson.isLoaded)
-            {
-                _player.ReleaseSceneObjects(_lesson);
-                yield return SceneManager.UnloadSceneAsync(_lesson);
-                _lessonData.ClearContent();
-            }
-            _lesson = default;
-            _lessonData = null;
+            if (_current != null && _current.Scene.IsValid() && _current.Scene.isLoaded)
+                yield return SceneManager.UnloadSceneAsync(_current.Scene);
+            _current = null;
         }
 
-        public IEnumerator CancelPreparedLesson()
+        public IEnumerator CancelPrepared()
         {
-            if (_preparedLesson.IsValid() && _preparedLesson.isLoaded)
-            {
-                yield return SceneManager.UnloadSceneAsync(_preparedLesson);
-            }
-            _preparedData.ClearContent();
-            _preparedLesson = default;
-            _preparedData = null;
+            if (_prepared != null && _prepared.Scene.IsValid() && _prepared.Scene.isLoaded)
+                yield return SceneManager.UnloadSceneAsync(_prepared.Scene);
+            _prepared = null;
         }
 
         public IEnumerator LoadEnding()
         {
-            _player.ReleaseSceneObjects(_lesson);
             IsLeaving = true;
-            AsyncOperation loading = BeginLoad(
-                _navigationData.Get(FactoryDestinationId.Exit).SceneName, LoadSceneMode.Single);
-            if (loading == null)
-            {
-                IsLeaving = false;
-                yield break;
-            }
+            AsyncOperation loading = BeginLoad(LearningStageCatalog.GetSceneName(LearningStageId.Exit), LoadSceneMode.Single);
+            if (loading == null) { IsLeaving = false; yield break; }
             yield return loading;
         }
 
@@ -157,7 +146,7 @@ namespace FactoryEnvironment
                 AsyncOperation loading = SceneManager.LoadSceneAsync(sceneName, mode);
                 if (loading != null) { return loading; }
             }
-            catch (System.Exception exception) { Debug.LogException(exception, this); }
+            catch (Exception exception) { Debug.LogException(exception, this); }
             LastError = sceneName + " 씬을 열지 못했습니다.";
             return null;
         }
@@ -165,13 +154,7 @@ namespace FactoryEnvironment
         private void HandleLessonLoaded(AsyncOperation loading)
         {
             loading.completed -= HandleLessonLoaded;
-            if (_destroying) { UnloadIfLoaded(_loadingLessonName); }
-        }
-
-        private void HandleTutorialLoaded(AsyncOperation loading)
-        {
-            loading.completed -= HandleTutorialLoaded;
-            if (_destroying) { UnloadIfLoaded(_navigationData.TutorialSceneName); }
+            if (_destroying) { UnloadIfLoaded(_loadingSceneName); }
         }
 
         private static void UnloadIfLoaded(string sceneName)
@@ -184,13 +167,11 @@ namespace FactoryEnvironment
         {
             _destroying = true;
             SceneManager.sceneLoaded -= HoldLoadedLesson;
-            _lessonData?.ClearContent();
-            _preparedData?.ClearContent();
-            // A Single ending load owns scene cleanup; do not race it with extra unload requests.
             if (IsLeaving || !Application.isPlaying) { return; }
-            if (_tutorialScene.IsValid() && _tutorialScene.isLoaded) { SceneManager.UnloadSceneAsync(_tutorialScene); }
-            if (_preparedLesson.IsValid() && _preparedLesson.isLoaded) { SceneManager.UnloadSceneAsync(_preparedLesson); }
-            if (_lesson.IsValid() && _lesson.isLoaded) { SceneManager.UnloadSceneAsync(_lesson); }
+            if (_current != null && _current.Scene.IsValid() && _current.Scene.isLoaded)
+                SceneManager.UnloadSceneAsync(_current.Scene);
+            if (_prepared != null && _prepared.Scene.IsValid() && _prepared.Scene.isLoaded)
+                SceneManager.UnloadSceneAsync(_prepared.Scene);
         }
     }
 }

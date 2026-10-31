@@ -112,7 +112,7 @@ namespace Parchment
 
         public void ConfigureLesson(ParchmentLesson lesson)
         {
-            // Capture after the pickup applies its catalog pose, and retain it when an unfinished scroll returns.
+            // Use the scene placement as the resting position when an unfinished scroll returns.
             _restPosition = transform.localPosition;
             _labelCanvas = GetComponentInChildren<Canvas>(true);
             if (_labelCanvas == null)

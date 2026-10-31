@@ -218,15 +218,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.000
+      value: 0.0
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.000
+      value: 0.0
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.000
+      value: 0.0
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalRotation.x
@@ -316,15 +316,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.035
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.016
+      value: 0.025
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.140
+      value: 0.18
       objectReference: {fileID: 0}
     - target: {fileID: 100741, guid: a76342188ea24621a717daa9da81d53e, type: 3}
       propertyPath: m_LocalRotation.x
@@ -485,7 +485,7 @@ TextMesh:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 800000067}
   serializedVersion: 3
-  m_Text: "합성곱 1 + ReLU"
+  m_Text: "은닉층 1 · 2개"
   m_OffsetZ: 0
   m_CharacterSize: 0.1
   m_LineSpacing: 1

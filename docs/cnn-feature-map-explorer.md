@@ -1,171 +1,139 @@
 # CNN 특징 맵 구현
 
-[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)는 고정 필터로 특징 맵을 계산하고, 입력 픽셀의 수용 영역과 입력 변경에 따른 결과를 보여준다. 런타임 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`에 있으며, 전체 조율은 `CNNFeatureMaps`, 하위 기능은 폴더에 맞춘 네임스페이스를 사용한다. 컨트롤러 입력과 체험 버튼 사용법은 [조작법](xr-simulator.md)을 참고한다.
+[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)는 양피지 3의 RGB 필터 비교, 양피지 4의 컬러 피쳐맵 탐색, 양피지 5의 ReLU 전후 비교를 같은 공간에서 순서대로 제공한다. 런타임 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`에 있으며, 전체 조율은 `CNNFeatureMaps`, 하위 기능은 폴더에 맞춘 네임스페이스를 사용한다. 컨트롤러 입력과 체험 버튼 사용법은 [조작법](xr-simulator.md)을 참고한다.
 
-## 폴더 구성
+## 양피지 3: RGB 필터 동시 비교
 
-```text
-CNNFeatureMapLab/
-├─ CNNFeatureMapLabManager.cs
-├─ LessonStep.cs
-├─ Lesson/
-│  ├─ LessonUIManager.cs
-│  ├─ LessonContent.cs
-│  ├─ LessonGuide.cs
-│  ├─ LessonButton.cs
-│  ├─ LessonButtonGroupController.cs
-│  └─ FilterCardController.cs
-└─ FeatureMaps/
-   ├─ FeatureMapsManager.cs
-   ├─ InputMapController.cs
-   ├─ ConvolutionSimulation.cs
-   ├─ MapDisplayController.cs
-   ├─ MapCell.cs
-   ├─ MapPanel.cs
-   ├─ MapLayer.cs
-   └─ Interaction/
-      ├─ InteractionManager.cs
-      ├─ FilterController.cs
-      ├─ InteractionController.cs
-      ├─ GrabTarget.cs
-      └─ GrabInteractable.cs
-```
+`CNNFeatureMapWorkspace.prefab`은 필터 비교를 먼저 표시한다. `FilterComparisonManager`가 두 필터 실행과 완료 버튼을 조율하고, 완료 후 FeatureMaps·Lesson 모듈을 시작한다.
 
-| 위치 | 역할 | 네임스페이스 |
-|---|---|---|
-| 루트 Manager·LessonStep | 전체 단계 정의·진행 상태와 기능 호출 순서 조율 | `CNNFeatureMaps` |
-| `Lesson/` | 안내문, 버튼 입력과 표시 | `CNNFeatureMaps.Lesson` |
-| `FeatureMaps/` | 특징 맵 계산, 노드·맵·층 구성과 시각화 | `CNNFeatureMaps.FeatureMaps` |
-| `FeatureMaps/Interaction/` | 특징 맵의 하위 기능: 필터 이동·스캔, XR 잡기와 크기 조절 | `CNNFeatureMaps.FeatureMaps.Interaction` |
+- 입력은 직접 생성한 `Textures/CNNFeatureMapLab/FilterComparisonInput.png`의 6×6 RGB 패턴이다. 좌측 빨강·노랑, 우측 파랑·청록으로 구성해 색 반응과 중앙의 세로 경계를 비교한다. Point 필터, Read/Write, 무압축, mipmap 없음, NPOT 크기 유지로 저장한다.
+- A·B 실험 장치와 각 출력은 동시에 존재한다. 각 장치는 같은 입력의 R·G·B 채널을 실제 깊이가 있는 세 격자로 표시한다. 격자 셀 간격과 셀 너비는 0.13m로 같아 픽셀 사이 빈틈이 없다. 채널 값은 0–255로 표시하며 계산은 0–1로 정규화한다.
+- `RgbFilterCalculation`은 고정 교육용 필터를 사용한다. A는 3×3×3, B는 세로 3×가로 2×채널 3이다. A는 R의 각 가중치가 1/9, G·B가 각각 −1/18이다. B는 각 행의 [−1, +1]에 채널별 휘도 계수 0.2126/0.7152/0.0722와 1/3을 곱한다. 학습된 가중치가 아니다.
+- 패딩 없는 stride 1 합성곱으로 A는 4행×4열, B는 4행×5열 결과 한 장을 만든다. B는 입력 중앙의 단일 경계가 결과의 가운데 열(3번째 열)에만 반응한다. 세 채널의 부분합을 더해 결과를 계산한다. 입력 옆에 대기하던 필터 본체(가중치 셀·숫자·외곽선)가 입력으로 이동해 스캔하며, 완료 후 원위치로 돌아온다. 현재 입력 패치의 픽셀은 불투명도 0.85, 나머지는 0.12로 표시한다. 숫자는 선택 영역만 선명하게 표시하고 필터가 겹칠 때 가중치 숫자는 흐리게 한다. 결과 A는 왼쪽 입력의 바깥 왼쪽, 결과 B는 오른쪽 입력의 바깥 오른쪽에 놓는다. A는 양수 반응만 빨간 강도로 표시하고 B는 부호와 무관한 경계 강도를 흑백으로 표시한다. 두 결과의 숫자는 원래의 부호 있는 합성곱 값을 유지하며 계산 데이터에 ReLU를 적용하지 않는다. 계산 중에는 현재 결과만 강조하고 완료 후에는 숫자를 숨겨 결과 패턴만 선명하게 표시한다.
+- 두 실행 버튼은 독립적이다. 동시 실행도 가능하며 완료한 결과는 남는다. 두 필터를 각각 끝까지 실행하고 결과 설명 팝업을 모두 확인한 상태에서만 완료 버튼이 활성화된다. 재실행하면 해당 필터의 결과와 완료 상태를 초기화한다.
+- 비교 완료 후 다음 프레임에 필터 비교 공간을 숨기고 컬러 피처맵 탐색을 시작한다. 체험 내부에 양피지 수집물을 두지 않는다.
+- 양피지 배분·수집·방 입장 조건은 공용 양피지 시스템을 따른다. 현재 배분과 공장 연결은 [공용 양피지](parchment.md)를 참고한다. 피처맵 탐색 완료 후 ReLU 체험으로 전환하며 재수집을 요구하지 않는다.
 
-## 파일과 클래스 역할
+상시 문구는 필터·입력 이미지·R/G/B·결과 A/B와 실행·완료 버튼으로 줄였다. 계산 과정의 긴 설명과 하단 진행 문구는 숨긴다. 각 필터 실행 종료 시 결과 설명 팝업이 뜨고 확인 버튼으로 닫는다. 동시에 끝나면 두 설명을 순서대로 보여주며, 확인은 결과를 지우지 않는다.
 
-체험 흐름은 `CNNFeatureMapLabManager`에서 읽는다. 씬 Manager는 `FeatureMapsManager`, `LessonUIManager` 두 진입점만 참조하고, 단계·채널 전환과 모듈 간 이벤트 연결을 담당한다. `LessonUIManager`가 요청별 이벤트를 제공하고 씬 Manager의 `HandleNextRequested()` 등 전용 처리 함수가 이를 구독한다. `CanPerformAction()`이 준비 여부와 잡기 상태를 확인하며, 단계 전환은 `MoveToPreviousStep()`·`MoveToNextStep()` → `ApplyStep()` 순서다. 단계별 픽셀 처리는 FeatureMapsManager의 `SelectPixel()`, 계산은 ConvolutionSimulation, 화면 표시는 MapDisplayController, 안내 문구와 버튼 표시는 Lesson 내부 담당에서 확인한다.
+고정 격자·가중치·버튼·팝업은 프리팹에 직렬화되어 있다. 런타임은 계산과 표시 상태를 갱신한다. 기존 피처맵 프리팹 경로와 GUID는 유지한다.
 
-최상위 모듈은 FeatureMaps와 Lesson이다. Interaction은 FeatureMaps의 하위 기능이며, FeatureMapsManager가 InteractionManager를 통해 잡기·필터와 계산·표시를 연결한다. 씬 Manager와 Lesson은 Interaction을 직접 참조하지 않는다. 잡힌 하위 물체 조회 함수도 FeatureMapsManager가 `Func<Transform, bool>`로 표시 담당에 전달한다. 내부 구현의 씬 Manager 역참조는 없으며, FeatureMaps와 Lesson 사이에는 진입점의 이벤트로 상태·계산 결과를 전달한다. 이 경계는 코드 의존 관계로 유지하며 별도 asmdef로 강제하지는 않는다.
+2026-10-30 사용자 요청에 따라 Unity 6000.3.24f1 Editor에서 컴파일과 Play 실행을 확인했다. 검증 범위는 아래 실행 확인 항목에 기록한다.
 
-| 파일·클래스 | 역할과 처리 방식 |
-|---|---|
-| [CNNFeatureMapLabManager.cs](../client/Assets/Scripts/CNNFeatureMapLab/CNNFeatureMapLabManager.cs) | 씬의 단계·채널·마지막 단계 건너뛰기 상태를 관리하고 두 모듈 진입점을 초기화·연결한다. 각 모듈의 이벤트를 다른 진입점의 메서드에 연결하며, 단계 전환과 복원 순서를 조율한다. FeatureMapsManager가 제공하는 입력 수정 횟수와 잡기 상태를 조합해 공장에 다음 체험 진입 가능 여부를 제공한다. |
-| [LessonStep.cs](../client/Assets/Scripts/CNNFeatureMapLab/LessonStep.cs) | 네 체험 단계를 `BuildFeatureMap`, `CompareFilters`, `TraceReceptiveField`, `EditInput`으로 정의한다. 씬 Manager가 현재 단계를 관리하며, FeatureMapsManager·MapDisplayController는 단계별 동작·표시에, LessonUIManager는 Content 선택에 사용한다. |
-| [LessonUIManager.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/LessonUIManager.cs) | Lesson UI의 단일 진입점이다. GetContent()가 단계에 맞는 LessonContent를 선택하고 Guide·버튼 묶음·필터 카드에 전달한다. 버튼 묶음의 요청은 Previous·Next·Scan·Filter·Spread·Restore·Enlarge·Shrink별 인자 없는 이벤트로 나누어 제공한다. LessonAction은 Lesson 내부에서만 사용하며 씬 Manager로 전달하지 않는다. 체험 단계와 계산 상태는 소유하지 않는다. |
-| [LessonContent.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/LessonContent.cs) | 단계별 제목·설명·기본 안내문, ShowFilterCard, 버튼 상태 사전 Buttons를 담는 데이터 클래스다. 내부 ButtonState는 Available·Label·ScanningLabel을 보관한다. 필터·상황별 문구와 문자열 서식도 제공하며 단계 선택이나 표시 로직은 포함하지 않는다. |
-| [LessonGuide.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/LessonGuide.cs) | 제목·설명·결과 TextMesh 3개만 소유한다. ShowContent()에서 전달받은 LessonContent를 표시하고, 상황별 메서드에서 계산값·좌표·횟수를 문자열 서식에 대입한다. Content의 단계 선택은 담당하지 않는다. |
-| [LessonButton.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/LessonButton.cs) | Button + Image 루트에서 프리팹에 저장된 LessonAction과 자식 Label의 uGUI Text를 참조한다. Button.onClick을 받아 OnActionRequested 이벤트로 명령을 알린다. 씬 Manager를 참조하지 않는다. 사용 가능 여부는 Button.interactable로 전달하고 호버·눌림·비활성 색상은 Button의 Color Tint 전환이 담당한다. |
-| [LessonButtonGroupController.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/LessonButtonGroupController.cs) | 프리팹에 배치된 버튼 8개의 요청 이벤트를 모아 상위로 전달한다. 전달받은 LessonContent.Buttons에서 각 버튼의 LessonAction에 해당하는 상태를 읽어 사용 가능 여부와 문구를 적용한다. 스캔 중에는 ScanningLabel을 사용하고 펼치기 버튼에는 다음 층 번호를 대입한다. Label이 null이면 프리팹의 기존 문구를 유지한다. |
-| [FilterCardController.cs](../client/Assets/Scripts/CNNFeatureMapLab/Lesson/FilterCardController.cs) | 필터 이름과 가중치 TextMesh를 소유한다. 채널에 맞는 LessonContent 문구를 표시하고 LessonUIManager가 전달한 표시 여부를 적용한다. 패딩 설명은 프리팹의 고정 문구다. |
-| [FeatureMapsManager.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/FeatureMapsManager.cs) | FeatureMaps의 단일 진입점이다. InputMapController·MapDisplayController·하위 InteractionManager를 참조하고 시뮬레이션·방문 기록·입력 수정 횟수를 소유한다. 계산·표시와 조작의 연결, 필터 좌표 적용·연결선 대상 지정·복원 순서를 내부에서 조율한다. 단계 적용·스캔 변경·안내에 필요한 계산 결과를 외부 이벤트로 알린다. |
-| [InputMapController.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/InputMapController.cs) | 입력 맵 프리팹에서 InputPixels.png를 참조한다. ReadInput()이 읽기 가능 여부와 8×8 크기를 검증하고 위에서 아래 순서의 흑백 픽셀 배열을 직접 반환한다. 읽기에 실패하면 오류를 기록하고 null을 반환한다. 시작과 원본 복원에 같은 변환을 사용한다. |
-| [ConvolutionSimulation.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/ConvolutionSimulation.cs) | 전달받은 8×8 픽셀 배열을 복사해 보관하고, 고정 커널로 세 층의 합성곱·ReLU 값과 A/B 반응을 계산한다. 텍스처를 직접 읽지 않는다. 픽셀을 수정하면 전체 결과를 다시 계산하며, 픽셀을 선택하면 그 위치와 연결되는 수용 영역 마스크를 만든다. FeatureMaps 내부에서 값을 읽어 표시하고, 안내에 필요한 결과는 FeatureMapsManager의 이벤트로 전달한다. |
-| [MapDisplayController.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/MapDisplayController.cs) | Workspace의 컴포넌트로 층·출력 참조와 하위 셀·맵을 관리한다. `UpdateStepVisibility()`에서 단계별 표시를, `ApplyStepLayout()`·`SpreadNextLayer()`에서 층 펼침과 순서를 제어한다. 단계·채널·필터 위치·방문 배열로 셀의 표시 상태를 정하고 계산값에 따라 색상과 A/B 출력 막대를 갱신한다. |
-| [MapCell.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/MapCell.cs) | 입력 픽셀 또는 특징 맵의 한 칸이다. 층·채널·행·열로 계산값을 조회하고 방문 여부·선택 강조를 합쳐 `MaterialPropertyBlock`으로 색상과 발광을 갱신한다. 격자에서 꺼낸 상태를 기록하며 씬 Manager를 참조하지 않는다. |
-| [MapPanel.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/MapPanel.cs) | 한 채널의 맵에 속한 MapCell를 수집하고 상위 MapLayer의 층 번호와 자신의 채널 번호를 각 MapCell에 전달한다. 맵 전체를 꺼냈는지 기록해 MapLayer가 해당 맵을 자동 정렬할지 판단하게 한다. 맵의 위치가 바뀌어도 MapCell의 계산 인덱스는 유지한다. |
-| [MapLayer.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/MapLayer.cs) | 같은 합성곱 층의 MapPanel들을 모아 펼침·접힘 목표 위치로 이동시킨다. 이미 꺼낸 맵은 자동 배치에서 제외한다. 초기화 때 전달받은 `Func<Transform, bool>`로 하위 물체의 잡기 상태를 조회하여 해당 맵의 이동을 기다린다. Interaction 구현 클래스를 직접 참조하지 않는다. |
-| [InteractionManager.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/Interaction/InteractionManager.cs) | FeatureMaps 아래 Interaction 하위 기능의 진입점이다. FeatureMapsManager가 이 컴포넌트를 소유한다. InteractionController와 FilterController를 관리하고 잡기 상태·크기 변경·자세 복원·필터 명령을 제공한다. LateUpdate에서 필터 이동·스캔·연결선을 갱신하고 대상 Transform, 필터 좌표, 스캔 변경, 복원 완료를 이벤트로 알린다. |
-| [FilterController.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/Interaction/FilterController.cs) | 입력 프리팹 루트의 컴포넌트로 필터 도구와 연결선 재질을 직접 참조한다. 자신의 Transform을 입력 좌표계로 사용해 필터 위치를 행·열로 바꾸고 격자에 맞춘다. InteractionManager에 스캔 위치 변경 여부를 반환하며, 전달받은 연결 대상 Transform을 추적한다. 연결선은 자신의 하위 오브젝트로 생성한다. |
-| [InteractionController.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/Interaction/InteractionController.cs) | 초기화 때 Workspace의 잡기 대상을 수집하고 자신을 전달한다. 현재 잡은 대상과 확대·축소 대상을 관리하며, 부모·자식 동시 잡기와 잡는 중 크기 변경을 거절한다. `ResetPoses()`로 초기 자세를 복원하고 잡기·활성화 이벤트를 InteractionManager에 전달한다. |
-| [GrabTarget.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/Interaction/GrabTarget.cs) | 노드·맵·층·필터에 Rigidbody와 잡기 컴포넌트를 구성하고 초기 자세를 저장한다. 잡기 허용·선택 시작·해제·활성화는 InteractionController로 전달한다. 자세 복원과 크기 배율을 처리하며 필터는 크기 변경 대상에서 제외한다. 셀·맵·층의 구현 클래스를 참조하지 않는다. |
-| [GrabInteractable.cs](../client/Assets/Scripts/CNNFeatureMapLab/FeatureMaps/Interaction/GrabInteractable.cs) | XRI가 잡기 대상을 초기화하기 전에 `GrabTarget`에 지정된 Collider 목록을 사용하도록 한다. 맵·층의 잡기 컴포넌트가 하위 노드의 Collider까지 자동 수집하는 것을 막아, 같은 공간에서도 노드·맵·층을 각각 선택할 수 있게 한다. |
+## 양피지 4: 컬러 피쳐맵 탐색
 
-## 초기화와 실행 흐름
+필터 비교 완료 후 `CNNFeatureMapLabManager.BeginFeatureMapLesson()`이 `ExploreFeatureMaps`를 시작한다. 컬러 입력과 세 은닉층의 2·3·5장 피처맵, 예시 출력 A/B를 동시에 표시한다. 초기 안내는 확인 버튼으로 닫는 팝업이다.
 
-1. `CNNFeatureMapLabManager.Awake()`가 FeatureMapsManager를 초기화한다. FeatureMapsManager가 하위 InteractionManager를 초기화하고 잡힌 하위 물체 조회 함수를 MapDisplayController에 전달한다. Interaction 내부는 잡기 대상과 필터를 연결하고, 표시 담당은 셀·맵·층의 계산 인덱스를 연결한다. 입력 맵의 층 인덱스는 `-1`이다. 씬 Manager의 실행 순서 `-100`으로 자식 잡기 컴포넌트보다 먼저 참조를 연결한다.
-2. 씬 Manager의 `OnEnable()`은 FeatureMaps와 Lesson 사이의 이벤트를 연결하고, FeatureMapsManager의 `OnEnable()`은 Interaction 이벤트를 내부 처리 메서드에 연결한다. 각각 `OnDisable()`에서 해제한다. 버튼 요청은 `LessonButton → LessonButtonGroupController → LessonUIManager의 요청별 이벤트 → CNNFeatureMapLabManager의 요청별 처리 함수` 순서다. 예를 들어 다음 버튼은 `OnNextRequested → HandleNextRequested()`로 연결된다. 씬 Manager는 LessonAction과 버튼 구현을 참조하지 않는다. 잡기·활성화는 `GrabTarget → InteractionController → InteractionManager → FeatureMapsManager` 내부에서 처리한다.
-3. 씬 Manager의 `Start()`가 `FeatureMapsManager.TryStart()`로 입력 배열과 시뮬레이션을 준비하고 첫 단계를 적용한다. 입력 준비에 실패하면 체험을 시작하지 않는다. InputMapController가 검증하는 입력은 Read/Write가 활성화된 8×8 텍스처다.
-4. 첫 두 단계에서 InteractionManager의 `LateUpdate()`가 필터 이동·스캔을 처리한다. FeatureMapsManager는 좌표 변경을 받아 방문 기록·선택 영역·출력 셀·계산 결과를 갱신하고 연결선 대상을 InteractionManager에 지정한다. 외부로는 계산 결과와 스캔 변경을 알리며, 씬 Manager가 이를 LessonUIManager에 연결한다.
-5. 입력 픽셀 활성화는 FeatureMapsManager의 단계 분기로 이어진다. 필터 단계에서는 하위 InteractionManager에 위치를 지정하고, 수용 영역 단계에서는 영향 범위를 표시하며, 입력 변경 단계에서는 전체 층을 다시 계산한다.
+### 컬러 입력과 맵 계산
 
-InteractionController와 ConvolutionSimulation은 일반 C# 객체다. 두 모듈 진입점과 하위 InteractionManager·MapDisplayController·FilterController·InputMapController는 프리팹에 연결된 컴포넌트다. 씬 Manager는 FeatureMapsManager와 LessonUIManager만 참조한다.
+- `FeatureMapColorInput.png`는 양피지 3의 직접 제작 RGB 입력을 최근접 방식으로 8×8로 만든 에셋이다. `InputMapController.ReadInput()`은 위에서 아래 순서의 `Color[,]`를 반환한다. 흑백 변환을 하지 않는다.
+- `ConvolutionSimulation`은 첫 층에서 R·G·B 세 채널의 합성곱을 더해 한 장의 출력 맵을 만든다. 첫 층은 빨강 반응과 세로 경계의 두 교육용 필터를 사용한다. 다음 두 층은 앞 층의 2개 또는 3개 맵에 대한 합성곱을 더해 각각 3장, 5장의 출력을 만든다.
+- 가중치는 고정된 교육용 예시다. 패딩 1, stride 1로 각 맵은 8×8을 유지한다. 한 출력 맵은 하나의 필터가 앞 층의 모든 채널을 합친 결과이며, RGB별 출력 세 장을 피쳐맵 한 장으로 세지 않는다.
+- 양피지 4에서는 채널 합산을 그대로 표시하며 ReLU를 적용하지 않는다. 활성화 함수는 별도 양피지의 주제다.
+- 입력 타일은 원래 RGB 색을 표시한다. 출력 맵은 숫자 배열이며 맵별 색상과 반응 절댓값에 비례하는 밝기로 시각화한다. 표시 밝기만 맵 내부 최대 절댓값으로 정규화하며 실제 계산값을 바꾸지 않는다.
+- 예시 출력 A/B는 마지막 층의 반응을 묶어 나타낸다. 학습된 고양이·강아지 분류 확률이 아니다.
 
-## 모듈 사이의 호출과 이벤트
+### 공간 구성과 조작
 
-씬 Manager가 연결하는 공개 계약은 다음과 같다. 계산 객체·셀·버튼 참조는 모듈 사이에 전달하지 않는다.
+둥근 뉴런 메시를 얇은 정사각형 타일과 BoxCollider로 교체했다. 0.066m 간격의 셀에 같은 너비를 사용해 틈 없는 격자를 만든다. 맵마다 기존 테두리 손잡이와 Rigidbody·GrabTarget을 유지한다. 기존 prefab 파일 경로와 GUID는 변경하지 않았다.
 
-| 발신 → 수신 | 계약과 처리 |
-|---|---|
-| Lesson → 씬 Manager | `OnPreviousRequested`, `OnNextRequested`, `OnScanRequested`, `OnFilterRequested`, `OnSpreadRequested`, `OnRestoreRequested`, `OnEnlargeRequested`, `OnShrinkRequested`를 각각 전용 처리 함수에 연결한다. `CanPerformAction()` 통과 후 단계 변경 또는 FeatureMaps 명령을 수행한다. |
-| 씬 Manager → FeatureMaps | `ShowStep(step, channel)`, `ToggleScanning()`, `SpreadNextLayer()`, `TryRestore()`, `ScaleSelectedTarget(multiplier)`로 동작을 요청한다. |
-| FeatureMaps → Lesson | `OnStepApplied(step, channel, spreadLayer, scanning)`을 `ShowLesson()`에 연결해 해당 단계의 안내와 버튼을 갱신한다. |
-| FeatureMaps → Lesson | `OnPatchEvaluated(row, column, sum, value, count)`는 선택 위치의 ReLU 적용 전 합, 적용 후 값, 해당 채널의 방문 위치 수를 `ShowPatch()`에 전달한다. |
-| FeatureMaps → Lesson | `OnAffectedPixelSelected(row, column, affectedCount)`와 `OnInputEdited(editCount)`는 각각 수용 영역 위치 수와 누적 입력 수정 횟수를 표시한다. |
-| FeatureMaps → 씬 Manager → Lesson | `OnScanningChanged`를 받으면 씬 Manager가 현재 단계·다음 펼침 층·스캔 상태를 읽어 `UpdateButtons()`를 호출한다. |
-| 공장 → 씬 Manager | `ReadyForModelDesign`을 읽어 다음 방 진입을 허용한다. 특징 맵의 내부 Controller나 계산 결과를 직접 읽지 않는다. |
+| 조작 | 결과 |
+| --- | --- |
+| 맵 테두리를 Grip/G로 잡고 이동 | 선택한 맵을 층에서 꺼내 옆에 놓을 수 있다. 꺼낸 맵은 자동 층 정렬에서 제외된다. |
+| 맵 또는 층을 선택한 뒤 확대·축소 | 선택 대상의 크기를 조절한다. 잡은 동안에는 크기 조절을 보류한다. |
+| 펼치기 | 1·2·3층을 차례로 펼쳐 각 맵을 나란히 본다. 층 손잡이 Trigger도 펼침을 전환한다. |
+| 입력 픽셀 Trigger/T | 0이 아닌 가중치로 연결되는 뒤쪽 세 층의 칸을 노란색으로 강조한다. 입력 색 자체는 유지한다. |
+| 숨은 층의 맵·칸 Trigger/T 또는 맵 꺼내기 | 선택 맵의 계산 창을 열고, 선택 출력 칸으로 이어지는 앞쪽 연결 범위를 강조한다. 맵 테두리를 선택한 경우 (4,4) 칸을 대표로 사용한다. |
+| 원위치 | 입력·맵·층·셀의 자세와 크기 및 강조를 초기 상태로 복원한다. 계산 창도 닫는다. |
+| 완료 | 피처맵의 모든 맵·UI·계산 창을 숨기고 ReLU 체험을 시작한다. |
 
-Interaction의 `OnTargetHeld`, `OnTargetActivated`, `OnFilterPositionChanged`, `OnPosesReset`은 FeatureMaps 내부에서 처리한다. 셀·맵 분리 상태, 필터 좌표 적용과 복원은 이 경계 안에 남고, Lesson에는 표시할 결과만 전달한다.
+강조는 가중치가 0이 아닌 계산 연결을 표시한다. 서로 다른 경로의 합이 상쇄되면 현재 숫자 변화량은 0일 수 있으므로, 밝은 칸 전체를 실제 변화량 측정 결과로 해석하지 않는다.
 
-## Lesson UI의 데이터와 표시
+### 채널 합산 창
 
-`LessonUIManager.ShowLesson()`은 `GetContent(step)`으로 단계별 LessonContent를 한 번 선택한다. 선택한 Content는 `LessonGuide.ShowContent()`와 `LessonButtonGroupController.UpdateButtons()`에 전달하고, `ShowFilterCard`는 FilterCardController의 표시 여부로 전달한다. 버튼만 갱신할 때도 LessonUIManager가 Content를 선택하므로 Guide와 버튼 묶음에서 단계를 다시 판단하지 않는다.
+`FeatureMapsManager`가 내부 `MapComputationController`를 통해 계산 창을 연다. 첫 층에서는 R·G·B의 부분 계산 맵, 이후 층에서는 앞 층 맵별 부분 계산을 차례로 표시한 뒤 최종 한 장을 보여 준다. 선택 칸은 노란색으로 표시하고 부분합과 최종 합계를 숫자로 제시한다. 확인 버튼으로 닫으며 다시 다른 맵·칸을 선택하면 해당 계산을 표시한다.
 
-LessonContent의 `Buttons`는 LessonAction을 키로 사용하는 상태 사전이다. 버튼 묶음은 각 ButtonState의 사용 가능 여부와 문구를 적용하며, 스캔 중 문구와 펼칠 층 번호만 현재 상태에 맞춰 갱신한다. 필터 단계의 기본 Readout은 null이므로 Guide는 기본 Content 표시 시 결과 문구를 덮어쓰지 않고, 뒤이어 전달되는 `ShowPatch()`로 계산 안내를 갱신한다.
+격자·제목·기호·버튼·배경은 workspace 프리팹에 직렬화한다. 런타임은 계산값·색상·활성 상태만 갱신한다. 상시 UI는 피쳐맵 제목과 펼치기·원위치·확대·축소·완료로 줄이고 긴 안내는 확인 팝업으로 표시한다.
 
-## 단계와 상태
+### 코드 책임
 
-씬 Manager의 `_step`은 `LessonStep`이다. `ApplyStep()`은 FeatureMapsManager에 단계와 채널을 전달한다. FeatureMapsManager의 `ShowStep()`이 스캔 중지·맵 표시·필터 표시 여부를 적용한 뒤 `OnStepApplied` 이벤트를 발생시킨다. 이 이벤트에 연결된 LessonUIManager가 기본 안내·버튼·카드를 갱신한다. 이후 두 필터 단계에서는 현재 위치의 패치를 적용해 계산 안내를 갱신한다. 기본 안내가 계산 안내를 덮어쓰지 않도록 이 순서를 유지한다.
+- `CNNFeatureMapLabManager`: 필터 비교 → 피처맵 탐색 → ReLU 체험 전환, 최종 완료와 모듈 사이 이벤트 연결.
+- `FeatureMapsManager`: RGB 데이터, 맵·픽셀 선택, 계산 창과 표시·Interaction 조율.
+- `ConvolutionSimulation`: 3채널 입력, 채널별 부분합, 2·3·5장 출력 계산, 0이 아닌 가중치 기반 연결 탐색.
+- `MapComputationController`: 직렬화된 부분 계산 격자의 표시 순서와 확인 버튼.
+- `MapDisplayController`·`MapCell`·`MapPanel`·`MapLayer`: 타일 색, 맵 상태와 층 펼침.
+- `InteractionManager`·`InteractionController`·`GrabTarget`: 기존 잡기·선택·크기·복원 동작.
+- `LessonUIManager`·`LessonContent`: 간결한 버튼과 안내 팝업. 씬 Manager만 최상위 모듈을 조율한다.
 
-| 단계 | 픽셀 입력 처리 | 계산·표시 동작 |
-|---|---|---|
-| `BuildFeatureMap` — 특징 맵 만들기 | 필터 위치 요청 → `SelectFilterPosition()` → `ApplyPatch()` | 입력과 선택한 첫 층 채널을 표시한다. `_visited[channel, row, column]`으로 방문한 출력 위치를 구분한다. |
-| `CompareFilters` — 필터 비교 | 필터 위치 요청 → `SelectFilterPosition()` → `ApplyPatch()` | 첫 층의 두 맵을 펼치고 선택 채널의 필터와 출력 위치를 표시한다. |
-| `TraceReceptiveField` — 수용 영역 추적 | FeatureMapsManager의 `SelectPixel()` 수용 영역 분기 | 세 층을 표시한다. 선택한 입력 픽셀을 포함하는 수용 영역을 층별로 강조한다. |
-| `EditInput` — 입력 변경 | FeatureMapsManager의 `SelectPixel()` 입력 변경 분기 | 입력 픽셀을 0 또는 1로 바꾸고 전체 특징 맵과 A/B 반응을 다시 표시한다. |
+### 양피지 3·4 실행 확인 (2026-10-30, 양피지 5 추가 전)
+이하 실행 기록은 병합 전 수집 연동 버전의 이력이며 현재 완료 버튼 전환 방식의 검증 결과가 아니다. 이번 병합에서는 Unity 실행·컴파일·테스트·빌드를 수행하지 않았다.
 
-씬 Manager는 `_step`, `_channel`, `_lastStepSkipped`를 관리한다. FeatureMapsManager는 전달받은 단계·채널과 시뮬레이션·방문 배열·`EditCount`를 관리하며, 필터의 행·열과 스캔 상태는 Interaction 내부에서 관리한다. 다음에 펼칠 층은 FeatureMapsManager의 `NextSpreadLayer`로 읽어 버튼에 전달한다. `Restore` 명령은 FeatureMapsManager.TryRestore()에 원본 입력·방문 기록·수정 횟수 초기화와 배치 복원을 요청한다. FeatureMapsManager 내부에서 층 애니메이션 정리 → InteractionManager의 자세 복원 → 복원 완료 이벤트에 따른 셀·맵 분리 상태 초기화 순서를 처리하며, 성공하면 씬 Manager가 현재 단계를 다시 적용한다.
 
-마지막 단계의 다음 버튼은 `단계 마치기`로 표시된다. 입력을 수정하지 않고 이 버튼을 누르면 `_lastStepSkipped`가 참이 된다. 공장 진행에서 읽는 `ReadyForModelDesign`은 초기화 완료, 마지막 단계, 입력 수정 1회 이상 또는 건너뛰기, 잡은 대상 없음이 모두 충족될 때 참이다. FactoryLearningFlowManager가 CNNFeatureMapLabManager에서 이 값을 직접 읽는다. 공장 씬 전환은 [공장 환경 구현](factory-environment.md)에서 다룬다.
+사용자 허가를 받은 임시 검증 코드를 실행 중인 Unity에 연결하여 새 Play 세션에서 확인했다. 후반 검증은 마우스·키보드·창 포커스를 조작하지 않고 수행했다. 테스트 후 Play를 종료하고 임시 코드를 제거했다.
 
-앞의 세 단계는 방문 위치 수나 스캔 완료를 다음 단계의 필수 조건으로 삼지 않는다. 마지막 단계에서 입력을 한 번 수정했다면 `단계 마치기` 버튼을 누르기 전에도 위 완료 조건을 충족할 수 있다. 이전 단계로 돌아가면 마지막 단계 조건이 사라져 공장 진행이 다시 보류되고, `처음 상태`는 수정 횟수와 `_lastStepSkipped`를 지운다. 이 상태는 현재 씬 인스턴스에만 보관하며 다음 모델 제작 씬에 입력·가중치·특징 맵을 전달하지 않는다.
+- 양피지 3의 두 필터 스캔 완료, 순서대로 표시되는 결과 설명, 확인 버튼, 양피지 3 전체 숨김과 양피지 4 등장.
+- 양피지 4 열람·수집 후 체험 시작, 안내 확인, 컬러 입력 64칸과 2·3·5장 피쳐맵의 동시 표시.
+- 숨은 층 640칸 각각의 값과 앞 채널 부분합 일치, RGB 빨강 필터의 독립 수치 비교.
+- 입력 선택 시 세 층 연결 강조, RGB 및 앞 층 2·3개 채널 계산 창, 결과값과 확인 버튼.
+- 선택 맵 확대·축소, 각 층 펼치기, 원위치, XRI 선택·이동·놓기 및 위치 복원, 양피지 4 완료 상태.
 
-## 계산 데이터
+초기에 비활성 상태인 층을 `MapPanel.Initialize()`가 찾지 못해 숨은 층도 입력으로 분류하던 문제를 발견했다. 부모 탐색에 비활성 오브젝트를 포함하도록 수정한 뒤 위 실행 검증을 통과했다. 최종 새 Play 검증 구간에서는 앱 오류·예외가 기록되지 않았다.
 
-`InputMapController.ReadInput()`이 Unity 텍스처의 아래에서 위로 향하는 행을 뒤집어, 위에서 아래로 읽는 `input[row, column]` 배열을 만든다. `ConvolutionSimulation`의 생성자와 `RestoreInput()`은 8×8 배열을 받아 내부 `_input`에 복사한다. 시뮬레이션의 픽셀 수정은 전달된 원본 배열에 영향을 주지 않는다.
+화면은 실제 Unity 카메라 렌더로 확인했다. 버튼 콜백과 XRI 상호작용 경로를 자동 호출한 검증이며, Quest 기기 착용 상태의 컨트롤러 조작·가독성 및 APK 빌드는 이번 범위에 포함하지 않았다.
 
-- 입력 크기는 8×8이고 합성곱 층의 출력 채널은 `2 → 3 → 5`다. 각 층은 3×3 커널, stride 1, zero padding, ReLU를 적용해 공간 크기를 유지한다.
-- `ReadKernelWeight()`는 채널 번호를 기준으로 좌우 변화, 위아래 변화, 평균 필터를 반복 선택한다. 첫 층의 두 필터는 각각 `dx / 3`, `dy / 3`이다.
-- `ComputeConvolutions()`는 이전 층의 모든 입력 채널을 합산하고 입력 채널 수로 정규화한다. 경계 밖의 항은 건너뛰어 0 패딩으로 처리한다.
-- `SelectPixel()`은 가중치와 활성값에 관계없이 연결되는 공간 위치를 다음 층으로 전파한다. 강조는 구조적 수용 영역을 뜻하며, 실제 값의 변화량이나 중요도를 계산한 결과가 아니다.
-- `CountAffectedPositions(0)`은 선택 후 첫 층의 영향 마스크에서 공간 위치 수를 센다. 수용 영역 안내는 이 값을 사용하며 채널 수를 곱하지 않는다.
-- `ToggleInput()`은 선택값이 0.5 이상이면 0, 미만이면 1로 바꾼다. 복원 시 FeatureMapsManager가 InputMapController에서 원본 배열을 다시 받아 `RestoreInput()`에 전달한다. 입력 읽기에 실패하면 기존 계산값과 체험 기록을 유지한다.
-- `ReadOutput()`은 마지막 층의 채널 평균을 두 점수로 합산한 뒤 로지스틱 함수로 A/B 반응을 만든다. 학습된 분류 모델의 클래스 확률은 아니다.
 
-첫 단계의 미방문 노드는 표시만 어둡게 처리한다. 계산 결과는 데이터 생성 시 전체 위치에 대해 보유한다. 방문 기록은 두 필터 단계에서 필터를 직접 이동하거나 입력 픽셀을 선택하거나 자동 이동할 때 모두 누적되며, 첫 단계의 누적 표시와 선택 채널의 `체험 위치 수 / 64` 안내에 사용한다. 두 필터 단계 적용 시 현재 필터 위치도 기록한다. 복원으로 기록을 지운 뒤 현재 단계를 다시 적용하면 두 필터 단계에서는 현재 위치 한 칸이 다시 기록된다. 노드·맵·층의 Transform을 옮겨도 계산 인덱스와 연결 관계는 바뀌지 않는다.
+## 양피지 5: ReLU 전후 비교
 
-`처음 상태` 버튼은 입력값·방문 기록·수정 횟수와 물체의 위치·회전·크기를 복원하고 현재 단계·채널을 다시 표시한다. 첫 단계로 이동하는 버튼은 아니다. 현재 `TryRestore()`는 원본 텍스처를 다시 읽어 배열로 변환하며, 텍스처 자체는 픽셀 수정으로 변경되지 않는다.
+피처맵 탐색의 완료 버튼을 누르면 기존 체험을 숨기고 `ActivationLessonManager.BeginLesson()`으로 ReLU 체험을 시작한다. 공장 양피지 수집 상태는 변경하지 않는다.
 
-## 잡기와 배치 처리
+### 데이터와 시각화
 
-`GrabTarget`은 `Rigidbody`와 `GrabInteractable`을 구성하고 InteractionController의 잡기 허용 여부를 XRI Select Filter로 연결한다. 선택 시작 시 잡기 상태를 기록하고 InteractionManager가 대상 Transform을 이벤트로 알린다. 이 이벤트에 연결된 FeatureMapsManager가 해당 셀·맵을 분리 상태로 표시한다. 해제 시에는 Interaction 내부에서 크기 변경 대상을 갱신한다. 필터는 회전 추적과 크기 변경 대상에서 제외한다.
+- `FeatureMapsManager.CopyFirstLayerMap()`으로 양피지 4에서 사용한 첫 층의 빨강 검출·세로 경계 맵을 복사해 전달한다. 원래 데이터는 변경하지 않는다. 각 맵은 8×8이며, 전체 네트워크를 다시 계산하는 체험이 아니라 선택한 한 맵에 ReLU를 적용하는 체험이다.
+- 출력의 각 값은 `Mathf.Max(0f, input)`이다. 음수는 0, 0은 0, 양수는 원래 값 그대로 남는다. 위치·크기·채널 수는 바뀌지 않는다.
+- 왼쪽에는 적용 전, 오른쪽에는 적용 후 맵을 동시에 배치한다. 파랑은 음수, 주황은 양수, 회색은 0이다. 원본 사진의 RGB 색을 의미하지 않는다. 적용 전 맵의 최대 절댓값 하나로 전후 밝기와 돌출 깊이를 함께 정규화해, 유지되는 양수가 같은 모습으로 보인다.
+- 0인 출력도 얇은 회색 타일로 남겨 칸이 삭제되는 것으로 오해하지 않도록 한다. 계산 전의 오른쪽 맵은 더 어둡게 표시하고 제목에 대기를 표시한다.
+- 한 행의 값 복사본 8개가 가운데의 실제 깊이를 가진 ReLU 프레임을 지나 오른쪽에 놓인다. 각 복사본은 프레임을 통과할 때 출력값의 색과 깊이로 바뀐다. 원래 왼쪽 맵은 계속 남는다. 프레임·타일·범례·버튼·팝업은 workspace에 직렬화되어 있다.
 
-`InteractionController.CanGrab()`은 이미 잡은 대상의 부모나 자식을 동시에 잡지 못하게 한다. Manager는 잡은 대상이 있는 동안 안내 버튼 명령을 처리하지 않는다. `MapLayer.Update()`는 분리되지 않은 맵만 목표 배치로 보간하고, 전달받은 조회 함수로 하위 물체가 잡혀 있는지 확인해 해당 맵의 이동을 기다린다.
+### 조작과 완료
 
-## 프리팹과 참조
+| 조작 | 결과 |
+| --- | --- |
+| 안내 확인 | 전후 비교 장치를 표시한다. |
+| ReLU 적용 | 현재 맵에 ReLU를 적용하는 애니메이션을 실행한다. 처리 중에는 맵 변경·재실행·완료를 잠근다. |
+| 결과 설명 확인 | 음수→0, 양수 유지 규칙을 설명한 뒤 전후 맵으로 돌아간다. 설명 중에는 뒤쪽 맵·문구를 숨겨 겹침을 막는다. |
+| 적용 전 또는 후의 칸 선택 | 같은 위치의 두 칸에 테두리를 표시하고 행·열 및 전후 숫자를 함께 보여 준다. 실행 전에는 오른쪽 숫자를 적용 대기로 표시한다. |
+| 맵 바꾸기 | 빨강 검출·세로 경계 맵을 번갈아 선택한다. 새 맵의 결과와 완료 가능 상태를 초기화한다. |
+| 다시 실행 | 같은 원본으로 애니메이션을 다시 실행한다. ReLU 결과를 원본에 덮어쓰지 않는다. |
+| 완료 → 확인 | 현재 맵을 적용하고 결과 설명을 확인한 뒤 사용할 수 있다. 마지막 설명 확인 후 양피지 5를 숨기고 `CanExit`을 참으로 만든다. |
 
-[CNNFeatureMapWorkspace.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/CNNFeatureMapWorkspace.prefab)이 입력·층·출력·안내 UI를 조립한다. 아래 프리팹은 모두 `client/Assets/Prefabs/CNNFeatureMapLab/`에 있다.
+### 코드 책임과 확인 범위
 
-| 프리팹 | 역할 |
-|---|---|
-| `CNNFeatureMapWorkspace` | 씬 Manager가 같은 루트의 FeatureMapsManager·LessonUIManager를 참조한다. FeatureMapsManager는 입력·표시 담당과 하위 InteractionManager를, InteractionManager는 필터 담당을, LessonUIManager는 Guide·버튼 묶음·필터 카드를 참조한다. MapDisplayController는 층·출력 참조를, LessonGuide는 주요 안내문 3개를 소유한다. |
-| `CNNFeatureMapInput` | 입력 노드 64개, 입력 손잡이, 필터 도구를 구성한다. 루트의 InputMapController가 이미지를, FilterController가 하위 필터 잡기 대상과 연결선 재질을 참조한다. |
-| `CNNFeatureMapInputPixel` | 입력 픽셀의 MapCell와 잡기 콜라이더를 구성한다. |
-| `CNNFeatureMapNeuron` | 특징 맵의 개별 MapCell와 잡기 콜라이더를 구성한다. |
-| `CNNFeatureMapPanel` | 뉴런 64개와 맵 잡기 대상을 구성한다. |
-| `CNNFeatureMapLayer2Channels` | 첫 층의 맵 2개와 층 잡기 대상을 구성한다. |
-| `CNNFeatureMapLayer3Channels` | 두 번째 층의 맵 3개와 층 잡기 대상을 구성한다. |
-| `CNNFeatureMapLayer5Channels` | 세 번째 층의 맵 5개와 층 잡기 대상을 구성한다. |
-| `CNNFeatureMapOutput` | A/B 반응을 표시하는 출력 Renderer와 캡션이다. |
-| `CNNFeatureMapLessonControls` | 주요 안내문, 고정 도움말, 확대·축소를 포함한 버튼 8개와 LessonButtonGroupController를 미리 배치한다. 월드 공간 Canvas 아래 CNNFeatureMapLessonButton 인스턴스 8개를 사용하며, 각 인스턴스는 명령·글자·위치를 재정의한다. Canvas에는 TrackedDeviceGraphicRaycaster와 GraphicRaycaster를 저장해 공용 XR UI 입력과 마우스 입력을 받는다. |
-| `CNNFeatureMapLessonButton` | RectTransform 루트에 LessonButton·Button·Image·CanvasRenderer를 두고 자식 Label에 uGUI Text를 배치한다. 배경과 글자는 한 버튼 계층으로 이동하며, 메시·Collider·XRSimpleInteractable을 사용하지 않는다. |
-| `CNNFeatureMapFilter` | 필터 도구와 잡기 대상을 구성한다. |
-| `CNNFeatureMapFilterCard` | FilterCardController가 필터 이름·가중치를 표시하고 패딩 안내는 고정 캡션으로 배치한다. |
+- `CNNFeatureMapLabManager`는 FeatureMaps 모듈에서 복사한 값만 Activation 모듈에 전달하며 체험 전환과 완료 상태를 소유한다. 공장 진행과 양피지 수집은 각각 기존 공장·공용 양피지 모듈이 담당한다.
+- `ActivationLessonManager`는 ReLU 계산, 맵 변경, 버튼·팝업 및 완료 요청을 조율한다.
+- `ActivationMapController`는 전후 맵·이동 애니메이션·선택 위치 및 숫자를 표시한다.
+- `ActivationCellController`는 직렬화된 XRI 선택 입력과 단일 타일의 색·깊이를 담당한다.
+- `ActivationLessonContent`는 안내·결과·완료 팝업 문구를 보관한다.
 
-MapCell의 `_row`·`_column`, MapPanel의 `_channel`, MapLayer의 `_layerIndex`가 계산 배열과의 대응을 결정한다. 각 LessonButton의 `_action`에 `Previous`, `Next`, `Scan`, `Filter`, `Spread`, `Restore`, `Enlarge`, `Shrink` 중 해당 명령을 지정하고 `_label`에 자식 uGUI Text를 연결한다. LessonButtonGroupController의 `_buttons`는 이 8개 버튼을 참조한다. MapDisplayController의 `_outputs`·`_outputRoots`는 A/B 순서, `_layerRoots`는 첫 층부터 순서대로 지정한다. 각 층 루트에는 MapLayer가 있어야 한다.
+### 실행 확인 (2026-10-31)
 
-공용 XR 입력과 태블릿은 `client/Assets/Prefabs/XR/XRPlayerRig.prefab`을 사용한다. 입력 텍스처와 재질은 각각 `client/Assets/Textures/CNNFeatureMapLab/`, `client/Assets/Materials/CNNFeatureMapLab/`에 있다.
+사용자 허가에 따라 Unity 6000.3.24f1 Editor에서 컴파일하고 새 Play 세션에서 양피지 3→4→5를 실행했다. 화면·마우스·키보드·창 포커스를 조작하지 않고 임시 검증 어셈블리를 연결했다. 최종 54개 점검을 통과했으며 해당 실행 구간에 앱 오류·예외가 기록되지 않았다.
 
-입력 이미지는 `CNNFeatureMapInput` 루트의 InputMapController `_inputImage`에 지정한다. Workspace의 FeatureMapsManager `_inputMap`은 해당 입력 프리팹 인스턴스의 InputMapController를, `_display`는 Workspace의 MapDisplayController를 참조한다. InteractionManager `_filter`는 입력 프리팹 인스턴스의 FilterController를 참조한다. FeatureMapsManager의 `_interaction`을 하위 InteractionManager에 연결하고, 씬 Manager의 `_featureMaps`·`_lessonUI`는 두 모듈 진입점에 연결한다.
+- 양피지 3의 두 필터 실행 및 양피지 4 읽기·수집.
+- 양피지 4 완료 시 모든 맵·UI·팝업 숨김, 양피지 5만 등장, 수집 전 활성화 체험 미시작.
+- 양피지 5 읽기·수집·안내 확인, 8×8 전후 맵 동시 표시와 계산 전 완료 잠금.
+- 빨강 검출·세로 경계 두 맵의 128칸이 각각 `max(0, input)`과 정확히 일치하고, 양수의 전후 색·깊이가 동일함.
+- 음수·0 결과의 얇은 타일 유지, XRI 셀 선택을 통한 음수→0 숫자 표시와 양쪽 선택 테두리.
+- 실행 중 버튼 잠금, 결과 설명 확인, 맵 변경의 결과 초기화, 재실행, 양피지 4 원본값 보존.
+- 최종 설명을 확인하기 전 다음 방 진행 불가, 확인 후 양피지 5 숨김 및 `CanExit` 참.
 
-Lesson UI의 위치·회전·크기·폰트 재질은 프리팹에 저장한다. 입력·층·출력 이름표, 도움말, 패딩 설명은 런타임 코드에서 참조하거나 크기를 다시 조절하지 않는다. 주요 안내문·버튼·필터 카드도 실행 중에는 문자열과 표시 상태만 갱신하며, 버튼 생성이나 텍스트 복제·자동 크기 조절을 수행하지 않는다. 주요 안내문과 필터 카드·고정 캡션의 TextMesh는 유지하고, 버튼의 글자만 uGUI Text로 구성한다.
+실제 Unity 카메라 렌더를 확인하며 가운데 장치와 숫자가 겹치던 배치를 수정했다. 기울인 ReLU 장치의 실제 평면을 통과할 때 이동 타일이 변하도록 맞춘 뒤 전체 검증을 다시 통과했다. 테스트 후 Play를 종료하고 임시 검증 파일을 삭제했다. Quest 기기 착용 상태의 컨트롤러·가독성과 APK 빌드는 이번 검증에 포함하지 않았다.
 
-## 확인 범위
+위의 2026-10-30 실행 기록은 양피지 5 추가 전 버전에 대한 기록이다.
 
-현재 스크립트의 호출·이벤트·완료 조건과 Workspace·버튼 프리팹의 직렬화된 참조를 대조해 문서를 갱신했다. 이 문서 갱신에서는 Unity 실행, 컴파일, 테스트, APK 빌드를 수행하지 않았다. 실제 XR 입력, 씬 전환, Quest에서의 표시·성능은 이번 정적 확인 결과에 포함하지 않는다.
+## Core 학습 세션 연결
+
+세 체험 공통 ILearningExperience 계약을 구현한다. StageId는 FeatureMap이며 Progress는 필터 비교 완료 시 1/3, 피처맵 탐색 완료 시 2/3, ReLU 최종 설명 확인 시 1이다. ProgressChanged는 현재 진행률 변화를 알린다. CanExit는 활성 상태, 맵 체험 완료, 활성화 함수 체험 완료, 잡은 대상 없음을 요구하며 ExitAvailabilityChanged로 변경을 알린다. 잡기 변경은 InteractionController → InteractionManager → FeatureMapsManager의 OnHeldTargetsChanged를 통해 전달한다. 초기 연결 시 세션은 Progress와 CanExit를 조회한다. EndSession은 추가 비동기 작업 없이 반환한다.
+
+LearningSessionManager는 체험별 최대 도달 진행률을 LearningProgress에 기록하고 스냅샷을 Tablet에 전달한다. 체험의 현재 상태가 감소해도 누적 기록을 지우지 않는다. 내부 체험 순서와 UI는 main의 필터 비교 → 피처맵 탐색 → ReLU 진행을 유지한다.
+
+위 실행 확인 기록은 병합 전 구현의 기록이다. 이번 공통 인터페이스 통합은 소스·참조만 확인했으며 Unity 실행·컴파일·테스트·빌드를 수행하지 않았다.

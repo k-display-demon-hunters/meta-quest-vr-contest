@@ -8,6 +8,8 @@ Shader "FactoryIntro/VillageDisplay"
         _Damage("Lost image quality", Range(0, 1)) = 0
         _Interference("Signal interference", Range(0, 1)) = 0
         _Phase("Broadcast offset", Range(0, 1)) = 0
+        _UpscalingPreview("Upscaling comparison", Range(0, 1)) = 0
+        _RevealProgress("High resolution reveal", Range(0, 1)) = 0
         [Enum(News,0,Football,1,Film,2)] _Channel("Original programme", Float) = 0
     }
 
@@ -35,6 +37,8 @@ Shader "FactoryIntro/VillageDisplay"
                 float _Interference;
                 float _Phase;
                 float _Channel;
+                float _UpscalingPreview;
+                float _RevealProgress;
             CBUFFER_END
 
             struct Attributes
@@ -393,9 +397,15 @@ Shader "FactoryIntro/VillageDisplay"
                 uv.x += (rowNoise - 0.5) * tear * 0.22;
 
                 // Re-evaluate the same programme frame on a collapsing grid. No extra cameras or textures.
-                float2 grid = lerp(float2(640.0, 360.0), float2(18.0, 10.0), sqrt(damage));
+                // The preview keeps colour, brightness and playback identical on both sides.
+                // A soft boundary travels left to right; endpoints are entirely low/high quality.
+                float boundary = lerp(-0.02, 1.02, saturate(_RevealProgress));
+                float revealed = 1.0 - smoothstep(boundary - 0.015, boundary + 0.015, input.uv.x);
+                float qualityLoss = lerp(damage, 1.0 - revealed, _UpscalingPreview);
+                float2 lowResolution = lerp(float2(18.0, 10.0), float2(16.0, 9.0), _UpscalingPreview);
+                float2 grid = lerp(float2(640.0, 360.0), lowResolution, sqrt(qualityLoss));
                 float2 blockUV = (floor(uv * grid) + 0.5) / grid;
-                uv = saturate(lerp(uv, blockUV, damage));
+                uv = saturate(lerp(uv, blockUV, qualityLoss));
                 half3 picture;
                 if (_Channel < 0.5)
                 {
@@ -418,6 +428,8 @@ Shader "FactoryIntro/VillageDisplay"
                 picture *= lerp(1.0, 0.78, damage);
                 half3 status = lerp(half3(0.16, 0.95, 0.72), half3(0.95, 0.23, 0.12), damage);
                 picture = lerp(picture, status, 1.0 - step(0.012, input.uv.y));
+                float comparisonLine = (1.0 - smoothstep(0.0015, 0.004, abs(input.uv.x - boundary))) * _UpscalingPreview;
+                picture = lerp(picture, half3(0.45, 1.0, 0.84), comparisonLine * 0.65);
                 return half4(max(picture, 0.0), 1.0);
             }
             ENDHLSL

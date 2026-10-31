@@ -46,6 +46,15 @@ namespace OpeningEnding
         private Vector3 _beaconScale;
         private float _ambientStartTime;
         private bool _initialized;
+        private bool _residentThanksActive;
+        private bool _residentDeparting;
+        private Vector3 _thanksFromPosition;
+        private Quaternion _thanksFromRotation;
+        private float _thanksMotionTime;
+        private float _thanksStartedAt;
+        private float _departureMotionTime;
+        private readonly Vector3 _thanksWorldPosition = new Vector3(-1.1f, 0f, 3.2f);
+        private readonly Vector3 _asideWorldPosition = new Vector3(-2.6f, 0f, 4.2f);
 
         public Vector3 CorePosition => _core.position;
 
@@ -255,6 +264,106 @@ namespace OpeningEnding
         public void EvaluateRestoration(float elapsed)
         {
             Initialize();
+            AnimateRestoredFactory(elapsed);
+            for (int i = 0; i < _citizens.Length; i++) AnimateRestoredResident(i, elapsed);
+        }
+
+        public void BeginEndingRepair()
+        {
+            Initialize();
+            _residentThanksActive = false;
+            _residentDeparting = false;
+            _ambientStartTime = 0f;
+            EvaluateEndingWaiting(0f);
+        }
+
+        public void EvaluateEndingWaiting(float factoryTime)
+        {
+            AnimateRestoredFactory(factoryTime);
+            // The factory can run again while its low-resolution input still needs upscaling.
+            // Keep everyone watching; celebration starts only after the screen comparison.
+            for (int i = 0; i < _citizens.Length; i++)
+            {
+                GetDamagedResidentPose(i, out Vector3 position, out Quaternion facing);
+                VillageResidentMotionController resident = _residentControllers[i];
+                resident.Sample(VillageResidentMotionLibrary.Motion.Talking, factoryTime + i * .47f);
+                resident.Blend(VillageResidentMotionLibrary.Motion.Idle, factoryTime + i * .53f,
+                    SmoothRange(8f, 12f, factoryTime));
+                resident.Apply(position, facing, _screenTargets[i].position, .8f);
+            }
+        }
+
+        public void EvaluateEndingCelebration(float factoryTime, float celebrationTime)
+        {
+            AnimateRestoredFactory(factoryTime);
+            for (int i = 0; i < _citizens.Length; i++)
+            {
+                if (_residentThanksActive && i == 0) continue;
+                AnimateRestoredResident(i, 13f + celebrationTime);
+            }
+        }
+
+        public void BeginResidentThanks(float celebrationTime, float ambientTime)
+        {
+            // Snapshot the currently displayed path position, rather than restarting a route.
+            _residentThanksActive = true;
+            _residentDeparting = false;
+            _thanksFromPosition = _citizens[0].localPosition;
+            _thanksFromRotation = _citizens[0].localRotation;
+            _thanksMotionTime = WalkSampleTime(0, Mathf.Max(0f, celebrationTime - 6f));
+            _thanksStartedAt = ambientTime;
+        }
+
+        public void EvaluateResidentThanks(float elapsed, bool departing, Vector3 playerPosition, float ambientTime)
+        {
+            if (departing && !_residentDeparting)
+            {
+                _residentDeparting = true;
+                _thanksFromPosition = _citizens[0].localPosition;
+                _thanksFromRotation = _citizens[0].localRotation;
+                _departureMotionTime = _thanksMotionTime + ambientTime - _thanksStartedAt;
+            }
+            float duration = departing ? 2.5f : 3f;
+            Vector3 target = transform.InverseTransformPoint(departing ? _asideWorldPosition : _thanksWorldPosition);
+            float progress = SmoothRange(0f, duration, elapsed);
+            Vector3 position = Vector3.Lerp(_thanksFromPosition, target, progress);
+            Vector3 travel = target - _thanksFromPosition;
+            travel.y = 0f;
+            Quaternion walkingFacing = Quaternion.LookRotation(travel, Vector3.up);
+            Quaternion facing = Quaternion.Slerp(_thanksFromRotation, walkingFacing, SmoothRange(0f, .45f, elapsed));
+            Vector3 playerDirection = transform.InverseTransformPoint(playerPosition) - position;
+            playerDirection.y = 0f;
+            Quaternion playerFacing = Quaternion.LookRotation(playerDirection, Vector3.up);
+            float arriving = SmoothRange(duration - .65f, duration, elapsed);
+            facing = Quaternion.Slerp(facing, playerFacing, arriving);
+            float distance = travel.magnitude * progress;
+            VillageResidentMotionController resident = _residentControllers[0];
+            // The walk advances by travelled distance, slowing smoothly at the destination.
+            float walkingTime = (departing ? _departureMotionTime : _thanksMotionTime) + distance * (1.3333333f / .9f);
+            resident.Sample(VillageResidentMotionLibrary.Motion.Walk, walkingTime);
+            if (departing)
+            {
+                resident.Blend(VillageResidentMotionLibrary.Motion.Talking, _departureMotionTime + elapsed,
+                    1f - SmoothRange(0f, .4f, elapsed));
+            }
+            // Dialogue pages may restart their local timer; keep this gesture clock continuous.
+            resident.Blend(departing ? VillageResidentMotionLibrary.Motion.Idle : VillageResidentMotionLibrary.Motion.Talking,
+                _thanksMotionTime + ambientTime - _thanksStartedAt, arriving);
+            resident.Apply(position, facing, playerPosition, arriving * .65f);
+        }
+
+        public void EvaluateResidentAside(float ambientTime, Vector3 playerPosition)
+        {
+            Vector3 position = transform.InverseTransformPoint(_asideWorldPosition);
+            Vector3 direction = transform.InverseTransformPoint(playerPosition) - position;
+            direction.y = 0f;
+            VillageResidentMotionController resident = _residentControllers[0];
+            resident.Sample(VillageResidentMotionLibrary.Motion.Idle, _thanksMotionTime + ambientTime - _thanksStartedAt);
+            resident.Apply(position, Quaternion.LookRotation(direction, Vector3.up), playerPosition, .65f);
+        }
+
+        private void AnimateRestoredFactory(float elapsed)
+        {
             float coreRecovery = SmoothRange(3f, 8f, elapsed);
             AnimateClouds(elapsed);
             AnimateDamage(16f);
@@ -292,7 +401,6 @@ namespace OpeningEnding
                 _smoke[i].gameObject.SetActive(smokeFade > .001f);
                 _smoke[i].localScale *= smokeFade;
             }
-            for (int i = 0; i < _citizens.Length; i++) AnimateRestoredResident(i, elapsed);
         }
 
         private void AnimateRestoredResident(int index, float elapsed)
@@ -301,15 +409,7 @@ namespace OpeningEnding
             float celebration = SmoothRange(13f + index * .14f, 14.4f + index * .14f, elapsed) *
                 (1f - SmoothRange(18f, 20f, elapsed));
             float peaceful = SmoothRange(19f, 21f, elapsed);
-            float noticedAt = WraithArrivalTime + index * .12f;
-            GetResidentPath(index, noticedAt + WalkStopDuration * .5f, out Vector3 damagedPosition, out Quaternion ignored);
-            Vector3 away = WraithArrivalPosition - damagedPosition;
-            away.y = 0f;
-            damagedPosition -= away.normalized * .42f;
-            if (Strolls(index)) damagedPosition.x = Mathf.Clamp(damagedPosition.x, -2.85f, 2.85f);
-            Vector3 screenDirection = transform.InverseTransformPoint(_screenTargets[index].position) - damagedPosition;
-            screenDirection.y = 0f;
-            Quaternion screenFacing = Quaternion.LookRotation(screenDirection, Vector3.up);
+            GetDamagedResidentPose(index, out Vector3 damagedPosition, out Quaternion screenFacing);
             GetResidentPath(index, Mathf.Max(0f, elapsed - 19f), out Vector3 peacefulPosition, out Quaternion peacefulFacing);
             Vector3 position = Vector3.Lerp(damagedPosition, peacefulPosition, peaceful);
             Quaternion facing = Quaternion.Slerp(screenFacing, peacefulFacing, peaceful);
@@ -320,6 +420,19 @@ namespace OpeningEnding
             resident.Blend(Strolls(index) ? VillageResidentMotionLibrary.Motion.Walk : VillageResidentMotionLibrary.Motion.Idle,
                 Strolls(index) ? WalkSampleTime(index, Mathf.Max(0f, elapsed - 19f)) : elapsed + index * .31f, peaceful);
             resident.Apply(position, facing, _screenTargets[index].position, (1f - peaceful) * (1f - celebration) * .8f);
+        }
+
+        private void GetDamagedResidentPose(int index, out Vector3 position, out Quaternion facing)
+        {
+            float noticedAt = WraithArrivalTime + index * .12f;
+            GetResidentPath(index, noticedAt + WalkStopDuration * .5f, out position, out Quaternion ignored);
+            Vector3 away = WraithArrivalPosition - position;
+            away.y = 0f;
+            position -= away.normalized * .42f;
+            if (Strolls(index)) position.x = Mathf.Clamp(position.x, -2.85f, 2.85f);
+            Vector3 screenDirection = transform.InverseTransformPoint(_screenTargets[index].position) - position;
+            screenDirection.y = 0f;
+            facing = Quaternion.LookRotation(screenDirection, Vector3.up);
         }
 
         private static float SmoothRange(float from, float to, float value)

@@ -7,7 +7,8 @@ namespace OpeningEnding.Ending
     [DisallowMultipleComponent]
     public sealed class FactoryRestorationController : MonoBehaviour
     {
-        public const float Duration = 23f;
+        public const float FactoryRepairDuration = 12f;
+        public const float CelebrationDuration = 10f;
         private const int SparkCount = 32;
         private const int RingSegments = 64;
         private static readonly int DuskId = Shader.PropertyToID("_Dusk");
@@ -18,6 +19,17 @@ namespace OpeningEnding.Ending
         [SerializeField] private Light _sun;
 
         private FactoryVillageDisplayController[] _displays;
+        private FactoryVillageDisplayController _focusedDisplay;
+        private Transform _focusedFrame;
+        private Vector3 _originalFramePosition;
+        private Quaternion _originalFrameRotation;
+        private Vector3 _originalFrameScale;
+        private readonly Vector3 _previewFramePosition = new Vector3(0f, 3.2f, 6f);
+        private readonly Vector3 _previewFrameScale = Vector3.one * 1.4f;
+        private bool _hasUpscalingPreview;
+        private float _ambientTime;
+        private float _celebrationStartTime;
+        private int _ambientFrame;
         private Material _skyInstance;
         private Material _glowInstance;
         private Mesh _sparkMesh;
@@ -32,17 +44,19 @@ namespace OpeningEnding.Ending
         private AmbientMode _previousAmbientMode;
         private bool _hasEnvironmentSnapshot;
 
-        public bool IsReady => _village != null && _effectMaterial != null && _skyMaterial != null;
-
         private void Awake()
         {
-            if (!IsReady) return;
             _skyInstance = new Material(_skyMaterial) { name = "Ending village sky" };
             _glowInstance = new Material(_effectMaterial) { name = "Restoration glow" };
             _glowInstance.EnableKeyword("_EMISSION");
             _glowInstance.SetColor("_BaseColor", new Color(0.55f, 1f, 0.86f));
             _glowInstance.SetColor("_EmissionColor", new Color(0.7f, 2f, 1.45f));
             _displays = _village.GetComponentsInChildren<FactoryVillageDisplayController>(true);
+            _focusedDisplay = _displays[0];
+            _focusedFrame = _focusedDisplay.transform.parent;
+            _originalFramePosition = _focusedFrame.localPosition;
+            _originalFrameRotation = _focusedFrame.localRotation;
+            _originalFrameScale = _focusedFrame.localScale;
             _effectsRoot = new GameObject("Village restoration light");
             _effectsRoot.transform.SetParent(transform, false);
             _coreRing = CreateRing("Core gathering ring");
@@ -61,9 +75,128 @@ namespace OpeningEnding.Ending
             _camera.clearFlags = CameraClearFlags.Skybox;
         }
 
-        public void BeginRestoration()
+        public void BeginFactoryRepair()
         {
-            if (!IsReady) return;
+            PrepareEnvironment();
+            _effectsRoot.SetActive(true);
+            _village.BeginEndingRepair();
+            _ambientTime = 0f;
+            _ambientFrame = Time.frameCount;
+            EvaluateFactoryRepair(0f);
+        }
+
+        public void EvaluateFactoryRepair(float elapsed)
+        {
+            float time = Mathf.Clamp(elapsed, 0f, FactoryRepairDuration);
+            _ambientTime = time;
+            _ambientFrame = Time.frameCount;
+            _village.EvaluateEndingWaiting(time);
+            foreach (FactoryVillageDisplayController display in _displays) display.EvaluateUpscaling(0f);
+            SetDaylight(Smooth(2f, FactoryRepairDuration, time));
+            AnimateLight(time);
+        }
+
+        public void PrepareUpscaling()
+        {
+            _effectsRoot.SetActive(false);
+            _hasUpscalingPreview = true;
+            // The repaired factory remains running while the existing display moves forward.
+            EvaluateFocus(0f);
+        }
+
+        public void EvaluateFocus(float progress)
+        {
+            AdvanceAmbient();
+            _village.EvaluateEndingWaiting(_ambientTime);
+            float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+            _focusedFrame.localPosition = Vector3.Lerp(_originalFramePosition, _previewFramePosition, eased);
+            _focusedFrame.localRotation = Quaternion.Slerp(_originalFrameRotation, Quaternion.identity, eased);
+            _focusedFrame.localScale = Vector3.Lerp(_originalFrameScale, _previewFrameScale, eased);
+        }
+
+        public void EvaluateProcessing(float elapsed)
+        {
+            // Phase-local clocks can restart for explanation/reveal; the village clock cannot.
+            AdvanceAmbient();
+            _village.EvaluateEndingWaiting(_ambientTime);
+        }
+
+        public void EvaluateUpscaling(float revealProgress)
+        {
+            AdvanceAmbient();
+            _village.EvaluateEndingWaiting(_ambientTime);
+            _focusedDisplay.EvaluateUpscaling(revealProgress);
+        }
+
+        public void BeginCelebration()
+        {
+            _celebrationStartTime = _ambientTime;
+            _effectsRoot.SetActive(true);
+            EvaluateCelebration(0f);
+        }
+
+        public void EvaluateCelebration(float elapsed)
+        {
+            AdvanceAmbient();
+            _village.EvaluateEndingCelebration(_ambientTime, elapsed);
+            float returnProgress = Smooth(0f, 3f, elapsed);
+            _focusedFrame.localPosition = Vector3.Lerp(_previewFramePosition, _originalFramePosition, returnProgress);
+            _focusedFrame.localRotation = Quaternion.Slerp(Quaternion.identity, _originalFrameRotation, returnProgress);
+            _focusedFrame.localScale = Vector3.Lerp(_previewFrameScale, _originalFrameScale, returnProgress);
+            UpdateCelebrationDisplays(elapsed);
+            AnimateLight(13f + elapsed);
+        }
+
+        public void BeginResidentThanks()
+        {
+            _effectsRoot.SetActive(false);
+            _village.BeginResidentThanks(_ambientTime - _celebrationStartTime, _ambientTime);
+        }
+
+        public void EvaluateResidentThanks(float elapsed, bool departing)
+        {
+            AdvanceAmbient();
+            float celebrationTime = _ambientTime - _celebrationStartTime;
+            _village.EvaluateEndingCelebration(_ambientTime, celebrationTime);
+            UpdateCelebrationDisplays(celebrationTime);
+            _village.EvaluateResidentThanks(elapsed, departing, _camera.transform.position, _ambientTime);
+        }
+
+        public void EvaluatePanorama(float elapsed)
+        {
+            AdvanceAmbient();
+            float celebrationTime = _ambientTime - _celebrationStartTime;
+            _village.EvaluateEndingCelebration(_ambientTime, celebrationTime);
+            UpdateCelebrationDisplays(celebrationTime);
+            _village.EvaluateResidentAside(_ambientTime, _camera.transform.position);
+        }
+
+        private void UpdateCelebrationDisplays(float elapsed)
+        {
+            for (int i = 0; i < _displays.Length; i++)
+            {
+                FactoryVillageDisplayController display = _displays[i];
+                if (display == _focusedDisplay)
+                {
+                    display.EvaluateUpscaled(elapsed);
+                    continue;
+                }
+                float finishedAt = 3.5f + i * 1.25f;
+                if (elapsed < finishedAt) display.EvaluateUpscaling(Smooth(finishedAt - 2.5f, finishedAt, elapsed));
+                else display.EvaluateUpscaled(elapsed - finishedAt);
+            }
+        }
+
+        private void AdvanceAmbient()
+        {
+            // Some phases update both environment and reveal in one frame.
+            if (_ambientFrame == Time.frameCount) return;
+            _ambientFrame = Time.frameCount;
+            _ambientTime += Time.deltaTime;
+        }
+
+        private void PrepareEnvironment()
+        {
             if (!_hasEnvironmentSnapshot)
             {
                 _previousSky = RenderSettings.skybox;
@@ -73,19 +206,10 @@ namespace OpeningEnding.Ending
             }
             RenderSettings.skybox = _skyInstance;
             RenderSettings.ambientMode = AmbientMode.Flat;
-            _effectsRoot.SetActive(true);
-            _village.BeginRestoration();
-            foreach (FactoryVillageDisplayController display in _displays) display.BeginRestoration();
-            Evaluate(0f);
         }
 
-        public void Evaluate(float elapsed)
+        private void SetDaylight(float daylight)
         {
-            if (!IsReady) return;
-            float time = Mathf.Max(0f, elapsed);
-            _village.EvaluateRestoration(time);
-            foreach (FactoryVillageDisplayController display in _displays) display.EvaluateRestoration(time);
-            float daylight = Smooth(4f, 15f, time);
             _skyInstance.SetFloat(DuskId, 1f - daylight);
             RenderSettings.ambientLight = Color.Lerp(new Color(0.19f, 0.21f, 0.29f), new Color(0.76f, 0.82f, 0.84f), daylight);
             if (_sun != null)
@@ -93,7 +217,6 @@ namespace OpeningEnding.Ending
                 _sun.intensity = Mathf.Lerp(0.32f, 1.25f, daylight);
                 _sun.color = Color.Lerp(new Color(0.51f, 0.57f, 0.72f), new Color(1f, 0.95f, 0.87f), daylight);
             }
-            AnimateLight(time);
         }
 
         private void AnimateLight(float time)
@@ -199,6 +322,12 @@ namespace OpeningEnding.Ending
 
         private void OnDisable()
         {
+            if (_hasUpscalingPreview && _focusedFrame != null)
+            {
+                _focusedFrame.localPosition = _originalFramePosition;
+                _focusedFrame.localRotation = _originalFrameRotation;
+                _focusedFrame.localScale = _originalFrameScale;
+            }
             if (_camera != null)
             {
                 _camera.clearFlags = _previousClearFlags;

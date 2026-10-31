@@ -11,11 +11,12 @@
 | Scripts/OpeningEnding/ | 공통 마을·디스플레이·입력 제어 / OpeningEnding |
 | Scripts/OpeningEnding/VillageResident/ | 주민 동작 Controller·MotionLibrary / OpeningEnding |
 | Scripts/OpeningEnding/Intro/ | 오프닝 Manager·Presentation·Cinematic·Entry·악령 Controller / OpeningEnding.Intro |
-| Scripts/OpeningEnding/Ending/ | 엔딩 Manager·Panel·Restoration / OpeningEnding.Ending |
+| Scripts/OpeningEnding/Ending/ | 엔딩 Manager·Panel·Restoration과 CNN 과정 애니메이션·타일 메시·연산 표본 / OpeningEnding.Ending |
+| Prefabs/OpeningEnding/Ending/ | 엔딩 CNN 과정 UI 프리팹 |
 | Prefabs/OpeningEnding/ | 공유 VillageOpening, PixelWraith, 오프닝 전용 FactoryEntrance |
-| Materials/OpeningEnding/ | 마을·화면·악령 및 입장 경로 재질. 기존 엔딩 재질은 Ending/ 하위 |
+| Materials/OpeningEnding/ | 마을·화면·악령 및 입장 경로 재질. 엔딩 재질은 Ending/ 하위 |
 | Meshes/OpeningEnding/ | 마을 메시와 QuaterniusVillageMotion.asset |
-| Shaders/OpeningEnding/, Audio/OpeningEnding/ | 방송·하늘 셰이더와 오프닝 음원 |
+| Shaders/OpeningEnding/, Audio/OpeningEnding/ | 방송·하늘 셰이더와 오프닝 음원. 엔딩 타일 셰이더는 Shaders/OpeningEnding/Ending/ 하위 |
 | Editor/ | 씬 구성 도구. 새 에셋 경로·입력·표시·입장·음원 참조 연결 |
 
 FactoryIntroManager는 진행 단계와 Controller 호출 순서를 관리한다. PresentationController는 안내창과 버튼을, CinematicController는 기존 18초 연출과 효과음·진동을, EntryController는 문·경로·왼손 표시·입장 판정을 담당한다. 공통 FactoryIntroInputController는 기존 이름을 유지하며 오프닝·엔딩의 입력 잠금과 복원을 담당한다. A 입력과 UI 버튼은 로컬 OnContinueRequested 이벤트로 Manager에 요청하며 활성 기간에 대칭 구독·해제한다.
@@ -78,7 +79,51 @@ FactoryTutorial은 준비 안내 → 버튼 선택 → 이동·방향 전환 →
 
 ## 엔딩
 
-FactoryEndingManager는 기존 23초 복구 연출 → 축하 메시지 → 처음으로/앱 종료 흐름을 유지한다. 공유 VillageOpening.prefab을 복제하지 않고 참조한다. 0~3초 손상 상태, 3~8초 코어·시설 복구, 8~13초 화면 복구, 13~19초 주민 축하, 19~23초 평화로운 일상 순서다. FactoryRestorationController의 복구 조명은 오프닝과 같은 중립적인 낮 팔레트로 복귀한다.
+공장 후문에서 FactoryEnding으로 전환하면 **공장 복구 → CNN 업스케일링 → 마을 전체 화질 개선 → 주민 감사 인사 → 마을 감상** 순서로 진행한다. 복구된 시설과 영상 화질을 구분한다. 공장이 다시 움직이고 밝아져도 모든 디스플레이는 저해상도 영상을 유지하며, 사용자가 [AI 업스케일링 시작]을 선택한 뒤에만 화질 개선을 진행한다.
+
+| 단계 | 길이 | 연출 |
+| --- | --- | --- |
+| 공장 복구 | 12초 | 코어·조명·시설 복구, 낮 조명으로 복귀. 영상은 저화질이며 주민은 화면을 관찰 |
+| 디스플레이 집중 | 2.5초 | 기존 뉴스 디스플레이를 정면으로 부드럽게 이동. 카메라는 이동하지 않음 |
+| 시작 대기 | 사용자 선택까지 | “CNN 공장, 다시 가동!”와 큰 [AI 업스케일링 시작] 버튼 |
+| 이미지 펼치기 | 4초 | 동일 뉴스 장면의 16×9 픽셀 타일이 화면에서 앞으로 떨어져 나와 왼쪽 입력 평면에 정렬 |
+| 합성곱 | 12초 | 두께 있는 타일 위 3×3 필터, 첫 위치의 곱·합 계산식 한 번, 9개 정보가 결과 셀로 모이는 이동. 이후 필터가 이동하며 14×7 특징 맵을 생성 |
+| 특징 맵 | 8초 | 서로 다른 필터의 특징 맵 3개가 깊이·회전을 가진 층으로 펼쳐짐 |
+| 고해상도 예측 | 8초 | 특징을 전달하는 흐름을 따라 더 촘촘한 32×18 영상 타일이 생성되고 중앙에 모임 |
+| 화면에 적용 | 5초 | 결과 타일이 왼쪽 열부터 원래 디스플레이로 돌아가며 같은 위치의 고화질 비교선과 동기화. 도착한 타일을 숨겨 완성 화면이 다시 저화질로 바뀌는 순간을 방지 |
+| 결과 감상 | 2초 | 설명창 없이 선명해진 화면 유지 |
+| 마을 적용·축하 | 10초 | 대상 화면은 고화질 상태로 3초에 걸쳐 원래 자리로 돌아감. 다른 두 화면은 순서대로 선명해지고 주민들이 축하. 공장 복구를 반복하지 않음 |
+| 주민 접근 | 3초 | 기존 주민 한 명이 실제 마지막 위치에서 사용자 앞 왼쪽으로 걸어와 대화 |
+| 감사 인사 | 사용자 선택까지 | 2페이지: “당신 덕분에 마을의 디스플레이가 / 다시 선명해졌어요!” → “CNN 공장을 수리해 주셔서 / 정말 감사합니다!”; [다음] → [마을 바라보기] |
+| 주민 퇴장·마을 감상 | 2.5초 + 6초 | 주민이 옆으로 비켜난 뒤 UI 없이 고화질 디스플레이와 마을을 감상 |
+| 완료 | 사용자 선택까지 | 아래쪽에 “선명함을 되찾은 마을”, [처음으로]·[종료] 표시 |
+
+### 시각 구성과 입력
+
+이동·잡기는 기존 공통 입력 제어로 잠그고 머리 추적은 유지한다. 시작·대화·완료 단계에서만 오른손 레이와 Trigger로 버튼을 선택한다. 처리 중에는 큰 설명 패널과 버튼을 숨기고 `합성곱`, `특징 맵`, `고해상도 예측` 단계 제목과 첫 계산식만 표시한다. 마을 감상에서도 카메라의 위치·방향을 강제로 변경하지 않는다.
+
+시작·완료 버튼은 70 크기, 대화 버튼은 60 크기 글자와 둥근 배경을 사용한다. 초대 제목은 60, 주민 대사는 44다. 기존 Noto 폰트의 행 높이를 고려한 텍스트 영역을 배치한다. 주민은 (-1.1, 0, 3.2)로 접근하고 대화창은 오른쪽 (0.7, 1.25, 2.9)에 표시한다. 감사 인사 뒤 주민은 (-2.6, 0, 4.2)로 이동한다. 대사 페이지를 넘겨도 주민 동작 시간을 초기화하지 않는다.
+
+### 연산·영상의 범위
+
+픽셀 타일의 앞면은 기존 `VillageDisplay` 셰이더의 뉴스 채널·재생 3초·위상 0을 재사용한다. 엔딩 비교의 저해상도 격자는 16×9이며, 오프닝 손상 연출의 18×10 격자는 유지한다. 기존 `OpeningBroadcast.png`의 셀 중심에서 얻은 16×9 밝기 표본과 예시 필터로 곱·합 및 3개 특징 맵을 계산한다. 원본 PNG를 수정·복제하거나 런타임 GPU 읽기를 수행하지 않는다.
+
+고해상도 타일 생성·반환과 셰이더 비교는 원리를 설명하는 연출이다. 모델 제작 체험의 학습된 가중치나 서버 추론 결과를 연결하지 않으며 원본 정보의 완전한 복원을 보장하지 않는다. 과정에는 작은 `원리 시각화` 표시를 둔다. 새로운 이미지·영상·음원 파일은 생성하지 않는다.
+
+### 엔딩 책임과 연결
+
+- `FactoryEndingManager`: 공장 복구부터 대화·감상까지 단계와 시간, 사용자 요청 구독·해제, 입력 잠금, 재시작·종료 순서.
+- `FactoryEndingPanelController`: 초대·주민 대화·완료 UI의 문구·배치와 버튼 요청 이벤트, 내부 과정 애니메이션 호출. 과정 중에는 설명 패널을 숨김.
+- `EndingUpscalingAnimationController` (`Scripts/OpeningEnding/Ending/`): 픽셀 펼치기, 필터 이동, 정보 전달, 특징 맵의 펼침, 결과 영상 조립·반환 애니메이션.
+- `EndingPixelTileMesh`: 재사용하는 결합 메시의 면·모서리·두께·UV·색상 갱신. 타일마다 GameObject를 만들지 않으며 할당한 메시를 종료 시 정리.
+- `EndingUpscalingSample`: 기존 방송 이미지에서 추출한 밝기 표본과 예시 합성곱 계산.
+- `EndingUpscalingProcess.prefab`: 단계 제목·계산식·원리 표시와 두 재질 참조를 미리 저장. 예전 작은 UI 격자는 제거.
+- `FactoryRestorationController`: 공장 복구와 업스케일링 대기 환경, 대상 디스플레이 집중·복귀, 고화질 전환과 축하, 마을의 주민 대화 요청. 연속 환경 시간을 보존해 단계마다 시설·구름을 초기화하지 않음.
+- `FactoryVillageController`: 기존 주민의 접근·대화·퇴장과 마을 내부 동작. 대화하는 주민은 일반 보행 루프에서 제외하고, 화면 감상 중에도 옆 위치를 유지.
+- `FactoryVillageDisplayController` / `VillageDisplay.shader`: 같은 프레임을 사용한 저해상도·고해상도 비교와 이후 방송 재생. 새 비교 속성의 기본값 0은 오프닝 동작을 유지.
+- `FactoryEndingSceneBuilder` / `EndingUpscalingVisualsBuilder`: 초대·대화·완료 버튼, 설명창, 과정 프리팹 참조 연결. 현재 `FactoryEnding.unity`에 저장되어 있어 구성 도구를 다시 실행할 필요가 없음.
+
+2026-10-31 후속 수정: 코드·씬·프리팹·재질 참조, 단계와 대화 동작의 시간 연속성, 폰트의 행 높이·주요 문구 폭과 정적 배치를 검토했다. Unity 실행·Play·테스트·빌드·컴파일·프로젝트 복사본 생성은 별도로 수행하지 않았다. 이전 사용자 요청으로 실행한 에디터의 결과를 이번 수정의 검증 결과로 간주하지 않는다. 실제 Quest의 시야·입력·프레임 시간과 연출 품질은 실행 확인 전이다.
 
 ## 이번 변경의 확인 범위
 

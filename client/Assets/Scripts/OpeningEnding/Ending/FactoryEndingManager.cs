@@ -12,7 +12,12 @@ namespace OpeningEnding.Ending
         [SerializeField] private Transform _entryPoint;
         [SerializeField] private string _restartSceneName = "FactoryIntro";
 
-        private enum EndingStage { Restoration, Complete, Leaving }
+        private enum EndingStage
+        {
+            FactoryRepair, Focus, AwaitingUpscaling, Extraction, Convolution, FeatureMaps,
+            Prediction, ReturnToScreen, Result, Celebration, ResidentArrival,
+            FirstThanks, SecondThanks, ResidentDeparture, Panorama, Complete, Leaving
+        }
         private EndingStage _stage;
         private XROrigin _rig;
         private FactoryIntroInputController _input;
@@ -22,19 +27,15 @@ namespace OpeningEnding.Ending
 
         private void OnEnable()
         {
+            _panel.OnUpscalingRequested += HandleUpscalingRequested;
+            _panel.OnDialogueContinueRequested += HandleDialogueContinueRequested;
             _panel.OnRestartRequested += HandleRestartRequested;
             _panel.OnExitRequested += HandleExitRequested;
         }
 
         private void Start()
         {
-            _panel.ShowRestoration();
             _rig = FindFirstObjectByType<XROrigin>();
-            if (_rig == null || _rig.Camera == null || _entryPoint == null || _restoration == null || !_restoration.IsReady)
-            {
-                Debug.LogError("[FactoryEnding] The village, sky, XR rig and arrival point must be assigned.", this);
-                return;
-            }
 
             // Keep head tracking; only the origin is placed at the familiar opening viewpoint.
             float height = Vector3.Dot(_rig.Camera.transform.position - _rig.Origin.transform.position,
@@ -47,22 +48,161 @@ namespace OpeningEnding.Ending
             _input.SetUIVisible(false);
             _panel.BindCamera(_rig.Camera);
             _restoration.BindCamera(_rig.Camera);
-            _restoration.BeginRestoration();
-            _stage = EndingStage.Restoration;
+            _restoration.BeginFactoryRepair();
+            _panel.ShowRestoration();
+            _stage = EndingStage.FactoryRepair;
             _elapsed = 0f;
             _isReady = true;
         }
 
         private void Update()
         {
-            if (!_isReady || _stage == EndingStage.Leaving) return;
-            _elapsed += Time.deltaTime;
-            _restoration.Evaluate(_elapsed);
-            if (_stage == EndingStage.Restoration && _elapsed >= FactoryRestorationController.Duration)
+            if (!_isReady || _stage == EndingStage.Leaving)
             {
-                _stage = EndingStage.Complete;
-                _panel.ShowCompletion();
-                _input.SetUIVisible(true);
+                return;
+            }
+
+            _elapsed += Time.deltaTime;
+            switch (_stage)
+            {
+                case EndingStage.FactoryRepair:
+                    _restoration.EvaluateFactoryRepair(_elapsed);
+                    if (_elapsed >= FactoryRestorationController.FactoryRepairDuration)
+                    {
+                        _restoration.PrepareUpscaling();
+                        EnterStage(EndingStage.Focus);
+                    }
+                    break;
+                case EndingStage.Focus:
+                    _restoration.EvaluateFocus(Mathf.Clamp01(_elapsed / 2.5f));
+                    if (_elapsed >= 2.5f)
+                    {
+                        _panel.ShowUpscalingInvitation();
+                        _input.SetUIVisible(true);
+                        EnterStage(EndingStage.AwaitingUpscaling);
+                    }
+                    break;
+                case EndingStage.AwaitingUpscaling:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    break;
+                case EndingStage.Extraction:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    _panel.ShowExtraction(Mathf.Clamp01(_elapsed / 4f));
+                    AdvanceAfter(4f, EndingStage.Convolution);
+                    break;
+                case EndingStage.Convolution:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    _panel.ShowConvolution(Mathf.Clamp01(_elapsed / 12f));
+                    AdvanceAfter(12f, EndingStage.FeatureMaps);
+                    break;
+                case EndingStage.FeatureMaps:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    _panel.ShowFeatureMaps(Mathf.Clamp01(_elapsed / 8f));
+                    AdvanceAfter(8f, EndingStage.Prediction);
+                    break;
+                case EndingStage.Prediction:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    _panel.ShowPrediction(Mathf.Clamp01(_elapsed / 8f));
+                    AdvanceAfter(8f, EndingStage.ReturnToScreen);
+                    break;
+                case EndingStage.ReturnToScreen:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    _panel.ShowReturn(Mathf.Clamp01(_elapsed / 5f));
+                    _restoration.EvaluateUpscaling(Mathf.SmoothStep(0f, 1f, _elapsed / 5f));
+                    if (_elapsed >= 5f)
+                    {
+                        _panel.ShowReveal();
+                        EnterStage(EndingStage.Result);
+                    }
+                    break;
+                case EndingStage.Result:
+                    _restoration.EvaluateProcessing(_elapsed);
+                    if (_elapsed >= 2f)
+                    {
+                        _restoration.BeginCelebration();
+                        EnterStage(EndingStage.Celebration);
+                    }
+                    break;
+                case EndingStage.Celebration:
+                    _restoration.EvaluateCelebration(_elapsed);
+                    if (_elapsed >= FactoryRestorationController.CelebrationDuration)
+                    {
+                        _restoration.BeginResidentThanks();
+                        EnterStage(EndingStage.ResidentArrival);
+                    }
+                    break;
+                case EndingStage.ResidentArrival:
+                    _restoration.EvaluateResidentThanks(_elapsed, false);
+                    if (_elapsed >= 3f)
+                    {
+                        _panel.ShowResidentThanks(false);
+                        _input.SetUIVisible(true);
+                        EnterStage(EndingStage.FirstThanks);
+                    }
+                    break;
+                case EndingStage.FirstThanks:
+                case EndingStage.SecondThanks:
+                    // The approach has already finished; keep the speaker in place while reading.
+                    _restoration.EvaluateResidentThanks(3f + _elapsed, false);
+                    break;
+                case EndingStage.ResidentDeparture:
+                    _restoration.EvaluateResidentThanks(_elapsed, true);
+                    AdvanceAfter(2.5f, EndingStage.Panorama);
+                    break;
+                case EndingStage.Panorama:
+                    _restoration.EvaluatePanorama(_elapsed);
+                    if (_elapsed >= 6f)
+                    {
+                        _panel.ShowCompletion();
+                        _input.SetUIVisible(true);
+                        EnterStage(EndingStage.Complete);
+                    }
+                    break;
+                case EndingStage.Complete:
+                    _restoration.EvaluatePanorama(6f + _elapsed);
+                    break;
+            }
+        }
+
+        private void HandleUpscalingRequested()
+        {
+            if (!_isReady || _stage != EndingStage.AwaitingUpscaling)
+            {
+                return;
+            }
+
+            EnterStage(EndingStage.Extraction);
+            _panel.ShowExtraction(0f);
+            _input.SetUIVisible(false);
+        }
+
+        private void HandleDialogueContinueRequested()
+        {
+            if (_stage == EndingStage.FirstThanks)
+            {
+                _panel.ShowResidentThanks(true);
+                // Page changes must not restart the resident's talking animation.
+                _stage = EndingStage.SecondThanks;
+            }
+            else if (_stage == EndingStage.SecondThanks)
+            {
+                _panel.ShowRestoration();
+                _input.SetUIVisible(false);
+                EnterStage(EndingStage.ResidentDeparture);
+            }
+        }
+
+        private void EnterStage(EndingStage next)
+        {
+            _stage = next;
+            _elapsed = 0f;
+        }
+
+        private void AdvanceAfter(float duration, EndingStage next)
+        {
+            if (_elapsed >= duration)
+            {
+                EnterStage(next);
             }
         }
 
@@ -113,6 +253,8 @@ namespace OpeningEnding.Ending
 
         private void OnDisable()
         {
+            _panel.OnUpscalingRequested -= HandleUpscalingRequested;
+            _panel.OnDialogueContinueRequested -= HandleDialogueContinueRequested;
             _panel.OnRestartRequested -= HandleRestartRequested;
             _panel.OnExitRequested -= HandleExitRequested;
             StopAllCoroutines();

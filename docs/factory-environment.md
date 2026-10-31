@@ -25,7 +25,7 @@
 
 ROOM #1의 외곽 16×16m는 유지하고 X=-20에 남북 방향 콘크리트 벽을 두어 동쪽의 체험 1-1(CNNScreenLab)과 서쪽의 체험 1-2(CNNConvolutionLab) 공간을 명목상 8×16m씩 나눈다. 통로 중심은 (-20, 0, -8.8)이며 폭 3.2m·최고 높이 3.2m의 아치다. 벽은 천장까지 이어지고 아치형 금속 셔터가 통로를 닫는다. 같은 FactoryShutterController로 기존 문과 동일하게 1.6초 동안 3.3m 상하 이동한다. 벽·아치 상부와 셔터에 충돌 영역을 저장한다.
 
-동쪽 입구에서 1-1을 시작한다. 기존 RGB 관찰을 마치고 다음으로를 누르면 CNNPixelLabManager.ScreenCompleted를 받아 내부 문과 왼쪽 공간까지의 안내선을 연다. 카메라가 서쪽 진입 영역(X=-21.4보다 안쪽)에 들어오면 StartFactoryConvolution을 요청한다. 합성곱 씬이 준비·활성화되어 ConvolutionStarted가 전달되면 내부 문을 닫고 안내선을 숨긴다. 로드 실패 시 스크린과 열린 통로를 유지하고 3초 뒤 재시도한다. 최종 ConvolutionCompleted 판정 후 북쪽 출구로 ROOM #2에 진행하는 조건은 유지한다.
+동쪽 입구에서 1-1을 시작한다. 기존 RGB 관찰을 마치고 다음으로를 누르면 CNNPixelLabManager.ScreenCompleted를 받고 합성곱 입구 양피지 수집 조건도 충족하면 내부 문과 왼쪽 공간까지의 안내선을 연다. 카메라가 서쪽 진입 영역(X=-21.4보다 안쪽)에 들어오면 StartFactoryConvolution을 요청한다. 합성곱 씬이 준비·활성화되어 ConvolutionStarted가 전달되면 내부 문을 닫고 안내선을 숨긴다. 로드 실패 시 스크린과 열린 통로를 유지하고 3초 뒤 재시도한다. 최종 ConvolutionCompleted 판정 후 북쪽 출구로 ROOM #2에 진행하는 조건은 유지한다.
 
 ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 왼쪽에서 시작하며, 두 체험 사이에는 남쪽 아치를 지나는 별도 경로를 둔다.
 
@@ -67,7 +67,7 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 2. 카메라가 방 경계에서 1.2m 안쪽의 진입 영역에 들어오면 입구를 닫고 경로를 숨긴다.
 3. 체험 중에는 입구·출구가 모두 닫힌다. 셔터가 닫히는 동안 플레이어가 문턱으로 되돌아오면 패널 이동을 보류한다.
 4. 현재 체험이 완료되면 다음 콘텐츠를 비활성 상태로 준비한다. 준비 후에도 현재 체험의 완료 조건을 다시 확인한다.
-5. 준비가 끝나면 현재 방 출구와 다음 방 입구를 열고, 다음 방까지의 안내선을 표시한다.
+5. 준비가 끝나면 현재 방 출구를 열고 다음 방까지의 안내선을 표시한다. 다음 학습 방의 입구는 해당 위치의 양피지 전체 수집 조건도 만족해야 열린다. 후문 입구는 학습 완료 후 준비가 끝나면 열린다.
 6. 다음 방에 들어오면 입구를 닫고 준비한 콘텐츠를 활성화한다. 이전 체험의 잡은 물체를 해제하고 이전 씬을 정리한다.
 7. 후문에 진입하면 입구와 안내선을 정리하고 잡은 학습 물체를 해제한 뒤 기존 FactoryEnding을 Single로 연다. Single 전환이 공장과 학습 씬을 정리하며 로더는 중복 언로드를 하지 않는다. 전환 요청 실패 시 기존 공간·체험을 유지하고 후문 입구와 경로를 다시 표시해 재시도한다.
 
@@ -81,7 +81,7 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 | 공간 | 판정 |
 | --- | --- |
-| 튜토리얼 | FactoryTutorialManager.IsComplete. 기존 안내 마치기·건너뛰기 유지 |
+| 튜토리얼 | FactoryTutorialManager.IsComplete. 11개 조작 안내 뒤 미션 시작·최종 확인으로 완료하며 건너뛰기 버튼은 없음 |
 | ROOM #1 | CNNPixelLabManager.ConvolutionCompleted |
 | ROOM #2 | CNNFeatureMapLabManager.ReadyForModelDesign |
 | ROOM #3 | CNNModelDesignLabManager.ReadyForFactoryExit |
@@ -92,7 +92,8 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 | 파일 | 현재 책임 |
 | --- | --- |
-| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 방 순서, 기존 학습 완료 판정 조회, 콘텐츠 준비·확정과 셔터·경로 표시의 실행 순서 |
+| [FactoryEnvironmentManager](../client/Assets/Scripts/FactoryEnvironment/FactoryEnvironmentManager.cs) | 학습 흐름과 유지된 XR 리그의 태블릿 사이 이벤트 연결·해제, 최초 상태 전달 |
+| [FactoryLearningFlowManager](../client/Assets/Scripts/FactoryEnvironment/FactoryLearningFlowManager.cs) | 방 순서와 단계 이동, 완료 기록·이동 가능 상태, 양피지 입장 조건과 콘텐츠·셔터·경로 실행 순서. 학습 상태와 이동 결과를 이벤트로 알림 |
 | [FactoryNavigationData](../client/Assets/Scripts/FactoryEnvironment/FactoryNavigationData.cs) | 정문·튜토리얼 기준점, 목적지 ID, 진입 영역, 경로, 학습 씬 이름, 콘텐츠 기준점, 입구·출구 참조 |
 | [FactorySceneLoadController](../client/Assets/Scripts/FactoryEnvironment/FactorySceneLoadController.cs) | 튜토리얼과 학습 씬의 Additive 로드, 준비 중 비활성화, 배치·Rigidbody 동기화, 확정·언로드, 기존 FactoryEnding의 Single 전환 |
 | [FactoryShutterController](../client/Assets/Scripts/FactoryEnvironment/FactoryShutterController.cs) | 셔터 패널과 Collider의 상하 이동, 닫힐 때 문턱의 플레이어 확인 |
@@ -115,7 +116,7 @@ ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-10,-6.5]이며 내부 경로 
 
 미니맵은 기존 TabletMapData와 TabletMinimapController를 사용한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역을 읽는다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
 
-FactoryEnvironment의 ROOM #1에 양피지 01·02, ROOM #2에 03·04, ROOM #3에 05를 씬 오브젝트로 배치했다. 공장 Manager는 양피지 수집 여부와 TabletManager를 참조하지 않으며, 튜토리얼·체험 완료와 구역 진입으로 셔터와 학습 흐름을 진행한다. 양피지 수집·열람은 공용 ParchmentManager가 소유하고, Pickup과 태블릿 아이템함은 Prefabs/Common/ParchmentReader.prefab 하나를 사용한다. 각 Pickup은 문서 ID·Core의 ParchmentRoom·공용 열람 프리팹을 Manager에 등록하고 입력을 전달한다. 외형 처리는 별도 ParchmentPickupVisualController에 연결하며, 태블릿은 수집한 문서만 목록에 표시한다. 지도는 기존 FactoryMapController가 방 아래의 Pickup을 찾아 위치를 게시하며 수집한 문서는 태블릿에서 재열람한다. 공용 세션·프리팹·입력 연결은 [공용 양피지 열람](parchment.md)에 정리한다. 튜토리얼은 네 학습 단계의 25% 단위 진행률과 주변 지도·단계 이동·양피지 앱을 안내한다.
+양피지는 클릭 즉시 수집하고 열람창을 연다. 문별 배분과 위치 안내는 ParchmentLesson.Location을 사용한다. ROOM #1~#3 입구 및 ROOM #1 내부문은 기존 진행 조건에 해당 위치의 전체 수집 조건을 추가한다. 출구는 기존 조건을 유지한다. 문서별 배분과 실제 위치는 공용 양피지 문서에 정리되어 있다. 자세한 연결은 [공용 양피지](parchment.md)를 따른다.
 
 ## 씬·에셋 관리
 
@@ -137,12 +138,14 @@ ROOM #1 벽·아치 셔터·두 체험 기준점과 Screen/Convolution 전환 �
 
 캐비닛·선반·박스·연구 데스크 교체는 씬의 장식 참조와 가구 표시 경계, 체험·문·경로의 위치를 정적으로 대조했다. 기존 체험·문·경로·건축 오브젝트와 스크립트는 수정하지 않았다. 이 교체에 대한 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
 
+공장 코드의 합성곱 진입문은 `FactoryNavigationData.ConvolutionEntranceDoor`로 참조한다. FlowManager의 `_convolutionArea`·`_convolutionAnchor`는 합성곱 구역과 콘텐츠 기준점이며, RouteGuide의 `SetConvolutionRouteVisible`은 해당 진입 경로를 표시한다. 화면에 표시하는 ROOM 번호와 씬 오브젝트 이름은 유지한다.
+
 ## 태블릿 자유 이동 (2026-10-31)
 
-FactoryLearningFlowManager는 TabletManager.StageMoveRequested를 OnEnable/OnDisable에서 연결·해제한다. 도착점은 씬 루트 아래 Pixel Arrival(-15,0,-3.2 / Y -90°), Convolution Arrival(-22,0,-1.5 / Y -90°), Feature Map Arrival(-2,0,10 / Y 0°), Model Design Arrival(20,0,12 / Y 90°)에 배치되어 있으며 `_stageArrivals`에 순서대로 연결되어 있다.
+FactoryEnvironmentManager는 씬에 연결된 FactoryLearningFlowManager와 유지된 XR 리그의 TabletManager를 연결한다. OnEnable/OnDisable에서 StageMoveRequested → RequestStageMove, LearningStateChanged → SetLearningState, TravelStarted/TravelFailed/TravelCompleted → 태블릿의 대응 표시 메서드를 대칭으로 연결·해제한다. 구독 직후 현재 학습 상태를 전달하고 해제 시 태블릿 이동을 비활성화한다. FactoryLearningFlowManager는 태블릿을 참조하지 않으며 현재 단계·완료 기록·이동 가능 여부가 바뀌는 시점에 이벤트를 발행한다. 안내 문구와 중복 표시 갱신 캐시는 TabletLearningController가 담당한다. 도착점은 씬 루트 아래 Pixel Arrival(-15,0,-3.2 / Y -90°), Convolution Arrival(-22,0,-1.5 / Y -90°), Feature Map Arrival(-2,0,10 / Y 0°), Model Design Arrival(20,0,12 / Y 90°)에 배치되어 있으며 `_stageArrivals`에 순서대로 연결되어 있다.
 
 요청 시 예약된 다음 체험을 취소하고 기존 PixelLab 중첩 씬의 종료를 기다린 후 현재 체험을 정리한다. 대상 체험을 준비·배치하고 셔터·안내선을 정리한 뒤 활성화한다. FactoryPlayerController.MoveTo는 실제 카메라 높이를 보존하며 도착점 위치·방향으로 XROrigin을 이동한다. 픽셀·합성곱은 CNNPixelLabManager를 통해서만 연결하고 공장에서 내부 Screen/Convolution Controller를 직접 제어하지 않는다.
 
-합성곱 직접 진입은 ConfigureFactoryConvolution의 startWithConvolution 옵션을 사용한다. 기존 Screen 진입점에서 동일한 원본 이미지의 중앙 3×3 값을 만들어 합성곱에 전달하며 픽셀 완료 신호는 발생시키지 않는다. 로딩 중 중복 이동을 막고 실패 시 태블릿에 재선택 안내를 표시한다. 재방문은 새 체험이며 중간 배치·필터·모델 편집 상태는 복원하지 않는다. 완료 단계 비트와 양피지는 세션 동안 유지한다. 네 단계의 자유 이동은 기존 방 순서와 별도로 사용할 수 있다.
+합성곱 직접 진입은 ConfigureFactoryConvolution의 startWithConvolution 옵션을 사용한다. 기존 Screen 진입점에서 동일한 원본 이미지의 중앙 3×3 값을 만들어 합성곱에 전달하며 픽셀 완료 신호는 발생시키지 않는다. 로딩 중 중복 이동을 막고 실패 시 태블릿에 재선택 안내를 표시한다. 재방문은 새 체험이며 중간 배치·필터·모델 편집 상태는 복원하지 않는다. 완료 단계 비트와 양피지는 세션 동안 유지한다. 네 단계의 자유 이동은 기존 방 순서와 별도로 사용할 수 있으며 양피지 수집·튜토리얼 완료를 요구하지 않는다. 걸어서 입장할 때는 기존 진행 조건과 양피지 수집 조건을 유지한다.
 
 소스와 씬 참조를 정적으로 점검했으며 이 변경에 대한 Unity 실행·Play·컴파일·테스트·빌드는 수행하지 않았다. 실제 착지점의 시야·충돌과 비동기 체험 재진입은 실행 확인 전이다.

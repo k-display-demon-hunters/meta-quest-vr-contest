@@ -101,12 +101,13 @@ namespace Tablet
         }
         private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); } }
         public void SetLearningState(int currentStage, int completedMask, bool canTravel) => _learning.Refresh(currentStage, completedMask, canTravel);
-        public void ShowTravelStatus(string message) => _ui.Status.text = message;
+        public void ShowTravelStarted() => _learning.ShowTravelStarted();
+        public void ShowTravelFailed() => _learning.ShowTravelFailed();
+        public void ShowTravelCompleted() => _learning.ShowTravelCompleted();
         public void SetMapData(TabletMapData data) { _mapData = data; _ui.Minimap.SetMapData(data); }
         public void ClearMapData(TabletMapData data) { if (_mapData == data) { SetMapData(null); } }
         private void RequestStage(int stage)
         {
-            _ui.Status.text = TabletLearningContent.StageNames[stage] + " 단계로 이동 중…";
             StageMoveRequested?.Invoke(stage);
             _input.ResetFocus(_ui.SelectedApp);
         }
@@ -136,7 +137,7 @@ namespace Tablet
             Application.Quit();
 #endif
         }
-        private void OpenParchment(int index, Pose origin) => _reader.OpenCollected(index, origin);
+        private void OpenParchment(int index, Pose origin) => _reader.OpenCollected(index, _canvas.worldCamera, origin);
         private void RefreshCollection(int index) => _parchment.RefreshInventory();
         private void SuspendForParchment()
         {

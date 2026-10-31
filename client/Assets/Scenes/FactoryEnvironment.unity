@@ -185,6 +185,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 720000001}
+  - component: {fileID: 980100010}
   - component: {fileID: 720003511}
   - component: {fileID: 720003512}
   - component: {fileID: 720003513}
@@ -484,7 +485,6 @@ Transform:
   - {fileID: 720003606}
   - {fileID: 720003610}
   - {fileID: 980000007}
-  - {fileID: 990100157}
   m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &720000012
@@ -2264,6 +2264,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 990100157}
   - {fileID: 720000838}
   - {fileID: 720000843}
   - {fileID: 720000848}
@@ -15104,9 +15105,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e641be625f549848b043e02e42be9eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _room1Passage: {fileID: 970000108}
-  _room1SecondArea: {fileID: 970000114}
-  _room1SecondAnchor: {fileID: 970000110}
+  _convolutionArea: {fileID: 970000114}
+  _convolutionAnchor: {fileID: 970000110}
   _stageArrivals:
   - {fileID: 980100001}
   - {fileID: 980100003}
@@ -15160,7 +15160,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b1bf875ba84847bd399f7b29701e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _room1PassageRoute: {fileID: 970000115}
+  _convolutionEntranceRoute: {fileID: 970000115}
 --- !u!114 &720003516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15173,6 +15173,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 885e045bc6ef404f8360bab4456d034d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _convolutionEntranceDoor: {fileID: 970000108}
   _entrance: {fileID: 720003508}
   _tutorialStart: {fileID: 720003510}
   _tutorialSceneName: FactoryTutorial
@@ -32616,9 +32617,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeae027996a54795ba86055d2bc1f338, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupController
   _lessonIndex: 0
-  _placementRoom: 1
   _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _visuals: {fileID: 990200000}
 --- !u!114 &990100021
@@ -33695,9 +33695,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeae027996a54795ba86055d2bc1f338, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupController
   _lessonIndex: 1
-  _placementRoom: 1
   _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _visuals: {fileID: 990200001}
 --- !u!114 &990100067
@@ -34409,9 +34408,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeae027996a54795ba86055d2bc1f338, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupController
   _lessonIndex: 2
-  _placementRoom: 2
   _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _visuals: {fileID: 990200002}
 --- !u!114 &990100097
@@ -35142,9 +35140,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeae027996a54795ba86055d2bc1f338, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupController
   _lessonIndex: 3
-  _placementRoom: 2
   _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _visuals: {fileID: 990200003}
 --- !u!114 &990100125
@@ -35913,8 +35910,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 990100156}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1.0, z: 0, w: 0.0}
-  m_LocalPosition: {x: 17, y: 1.45, z: 8}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.5, y: 1.45, z: 1.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -35922,8 +35919,8 @@ Transform:
   - {fileID: 990100162}
   - {fileID: 990100165}
   - {fileID: 990100180}
-  m_Father: {fileID: 720000011}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_Father: {fileID: 720000836}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &990100158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35935,9 +35932,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeae027996a54795ba86055d2bc1f338, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupController
   _lessonIndex: 4
-  _placementRoom: 3
   _readerPrefab: {fileID: 100841, guid: 8194ce5a2e0e4ed090ebe90d725b00ff, type: 3}
   _visuals: {fileID: 990200004}
 --- !u!114 &990100159
@@ -36737,7 +36733,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d555106dc942f39b1eba7c547fd6be, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupVisualController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupVisualController
   _paperRenderer: {fileID: 990100013}
   _glowRenderer: {fileID: 990100029}
   _glowLight: {fileID: 990100016}
@@ -36753,7 +36749,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d555106dc942f39b1eba7c547fd6be, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupVisualController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupVisualController
   _paperRenderer: {fileID: 990100059}
   _glowRenderer: {fileID: 990100075}
   _glowLight: {fileID: 990100051}
@@ -36769,7 +36765,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d555106dc942f39b1eba7c547fd6be, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupVisualController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupVisualController
   _paperRenderer: {fileID: 990100105}
   _glowRenderer: {fileID: 990100093}
   _glowLight: {fileID: 990100112}
@@ -36785,7 +36781,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d555106dc942f39b1eba7c547fd6be, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupVisualController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupVisualController
   _paperRenderer: {fileID: 990100140}
   _glowRenderer: {fileID: 990100129}
   _glowLight: {fileID: 990100116}
@@ -36801,7 +36797,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d555106dc942f39b1eba7c547fd6be, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Education.ParchmentPickupVisualController
+  m_EditorClassIdentifier: Assembly-CSharp::Parchment.ParchmentPickupVisualController
   _paperRenderer: {fileID: 990100178}
   _glowRenderer: {fileID: 990100163}
   _glowLight: {fileID: 990100166}
@@ -36930,3 +36926,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &980100010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40498301392646988f60c52f0edcbc9e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryEnvironmentManager
+  _learningFlow: {fileID: 720003511}

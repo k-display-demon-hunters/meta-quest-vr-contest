@@ -4,7 +4,7 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryRouteGuideController : MonoBehaviour
     {
-        [SerializeField] private GameObject _room1PassageRoute;
+        [SerializeField] private GameObject _convolutionEntranceRoute;
         private FactoryNavigationData _navigationData;
         private FactoryDestinationId _destination = FactoryDestinationId.None;
 
@@ -17,7 +17,7 @@ namespace FactoryEnvironment
 
         private void Start()
         {
-            _room1PassageRoute.SetActive(false);
+            _convolutionEntranceRoute.SetActive(false);
             foreach (FactoryNavigationData.DestinationData data in _navigationData.Destinations)
             {
                 data.Route.SetActive(data.Id == _destination);
@@ -26,7 +26,7 @@ namespace FactoryEnvironment
 
         public void SetDestination(FactoryDestinationId destination)
         {
-            _room1PassageRoute.SetActive(false);
+            _convolutionEntranceRoute.SetActive(false);
             if (destination == _destination)
             {
                 return;
@@ -38,10 +38,10 @@ namespace FactoryEnvironment
             }
         }
 
-        public void SetRoom1PassageVisible(bool visible)
+        public void SetConvolutionRouteVisible(bool visible)
         {
             if (visible) { SetDestination(FactoryDestinationId.None); }
-            _room1PassageRoute.SetActive(visible);
+            _convolutionEntranceRoute.SetActive(visible);
         }
 
         private void OnDisable() => SetDestination(FactoryDestinationId.None);

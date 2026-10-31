@@ -7,6 +7,9 @@ namespace FactoryTutorial
 {
     public sealed class FactoryTutorialVisualController : MonoBehaviour
     {
+        private Transform _leftRoot;
+        private Transform _rightRoot;
+        private GameObject _tablet;
         private TouchPlusHandController _left;
         private TouchPlusHandController _right;
         private Text _status;
@@ -22,11 +25,13 @@ namespace FactoryTutorial
         public void Initialize(PersistentXRPlayerRig rig, Font font)
         {
             Transform leftRoot = new GameObject("Left controller enlarged").transform;
+            _leftRoot = leftRoot;
             leftRoot.SetParent(transform, false);
             leftRoot.localPosition = new Vector3(-0.95f, -0.1f, -0.7f);
             leftRoot.localRotation = Quaternion.Euler(-25, 0, 0);
             leftRoot.localScale = Vector3.one * 2.8f;
             Transform rightRoot = new GameObject("Right controller enlarged").transform;
+            _rightRoot = rightRoot;
             rightRoot.SetParent(transform, false);
             rightRoot.localPosition = new Vector3(-0.45f, -0.1f, -0.7f);
             rightRoot.localRotation = Quaternion.Euler(-25, 0, 0);
@@ -37,6 +42,7 @@ namespace FactoryTutorial
                 _right = rig.CreateControllerVisual(rightRoot, false);
             }
             GameObject tablet = new GameObject("Tablet tutorial graphic", typeof(RectTransform), typeof(Canvas));
+            _tablet = tablet;
             tablet.transform.SetParent(transform, false);
             tablet.transform.localPosition = new Vector3(-0.75f, 0.32f, -0.05f);
             tablet.transform.localScale = Vector3.one * 0.001f;
@@ -53,24 +59,34 @@ namespace FactoryTutorial
             _rows = new[] { Label(tablet.transform, font, 45, "지도 · 내 주변 보기"),
                 Label(tablet.transform, font, -25, "학습 단계 · 네 체험으로 이동"),
                 Label(tablet.transform, font, -95, "양피지 · 배운 원리 다시 보기") };
-            _status = Label(tablet.transform, font, -820, "");
+            _status = Label(tablet.transform, font, -640, "");
             _status.rectTransform.sizeDelta = new Vector2(1100, 100);
         }
 
         public void ShowPage(int page)
         {
             _page = page;
-            int cue = page == 4 || page == 9 ? 5 : page == 5 || page == 8 ? 4
-                : page == 6 ? 3 : page == 7 || page == 10 ? 0 : page == 11 ? 1 : page == 12 ? 2 : -1;
-            bool left = page == 4 || page >= 8;
-            _left?.SetCue(left ? cue : -1);
+            int cue = page == 2 || page == 6 ? 5 : page == 1 ? 4
+                : page == 3 ? 3 : page == 0 || page == 4 || page == 7 ? 0
+                : page == 8 ? 1 : page == 9 ? 2 : -1;
+            bool left = page >= 6 && page <= 9;
+            _left?.SetCue(page == 2 || left ? cue : -1);
             _right?.SetCue(left ? -1 : cue);
-            if (_left != null) { _left.transform.parent.localRotation = Quaternion.Euler(-25, 0, 0); }
-            if (_right != null) { _right.transform.parent.localRotation = Quaternion.Euler(-25, page == 6 ? 65 : 0, 0); }
-            _status.text = cue < 0 ? "왼손                 오른손" : "노란 표시의 버튼을 눌러보세요";
-            _tabletTitle.text = "태블릿 · 조작 연습 그림";
-            _selection = page == 2 ? 1 : page == 3 ? 2 : 0;
+            _leftRoot.localRotation = Quaternion.Euler(-25, 0, 0);
+            _rightRoot.localRotation = Quaternion.Euler(-25, page == 3 ? 65 : 0, 0);
+            _status.text = page == 0 ? "A 버튼으로 조작 배우기" : cue < 0 ? "왼손                 오른손"
+                : cue == 5 ? "노란 표시의 조이스틱을 움직여 보세요" : "노란 표시의 버튼을 눌러보세요";
+            _tabletTitle.text = "태블릿 · 조작 연습";
+            _selection = 0;
             RefreshRows();
+        }
+
+        public void SetVisible(bool visible)
+        {
+            _leftRoot.gameObject.SetActive(visible);
+            _rightRoot.gameObject.SetActive(visible);
+            _tablet.SetActive(visible);
+            enabled = visible;
         }
 
         private void Update()
@@ -83,18 +99,18 @@ namespace FactoryTutorial
             device.TryGetFeatureValue(CommonUsages.secondaryButton, out bool y);
             device.TryGetFeatureValue(CommonUsages.menuButton, out bool menu);
             if (stick.magnitude < 0.2f) { _stickCentered = true; }
-            if (_page >= 8 && trigger > 0.5f && stick.magnitude > 0.5f && _stickCentered)
+            if (_page >= 6 && _page <= 9 && trigger > 0.5f && stick.magnitude > 0.5f && _stickCentered)
             {
                 _selection = (_selection + (stick.y > 0 ? 2 : 1)) % _rows.Length;
                 _stickCentered = false;
                 RefreshRows();
                 _status.text = "항목이 이동했어요. X로 선택할 수 있어요.";
             }
-            if (_page >= 8 && x && !_lastX) { _tabletTitle.text = "선택: " + _rows[_selection].text; _status.text = "X · 선택했어요"; }
-            if (_page >= 8 && y && !_lastY) { _tabletTitle.text = "태블릿 · 조작 연습 그림"; _status.text = "Y · 뒤로 돌아왔어요"; }
-            if (_page >= 8 && menu && !_lastMenu) { _tabletTitle.text = "설정 · 밝기 / 음량"; _status.text = "Menu · 실제 태블릿에서도 설정이 열려요"; }
+            if (_page >= 6 && _page <= 9 && x && !_lastX) { _tabletTitle.text = "선택: " + _rows[_selection].text; _status.text = "X · 선택했어요"; }
+            if (_page >= 6 && _page <= 9 && y && !_lastY) { _tabletTitle.text = "태블릿 · 조작 연습 그림"; _status.text = "Y · 뒤로 돌아왔어요"; }
+            if (_page >= 6 && _page <= 9 && menu && !_lastMenu) { _tabletTitle.text = "설정 · 밝기 / 음량"; _status.text = "Menu · 실제 태블릿에서도 설정이 열려요"; }
             _lastX = x; _lastY = y; _lastMenu = menu;
-            if (_page >= 4 && _page <= 8 && ((_left != null && _left.CuePerformed) || (_right != null && _right.CuePerformed)))
+            if (_page >= 1 && _page <= 4 && ((_left != null && _left.CuePerformed) || (_right != null && _right.CuePerformed)))
             {
                 _status.text = "입력이 확인됐어요! 다음으로 진행하세요.";
             }

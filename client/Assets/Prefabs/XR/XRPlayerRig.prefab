@@ -3060,6 +3060,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
+  - component: {fileID: 882300001}
   - component: {fileID: 1226390629060027290}
   - component: {fileID: 6150285176387121496}
   - component: {fileID: 8990760559897019497}
@@ -3328,3 +3329,15 @@ MonoBehaviour:
       m_Calls: []
   m_Texture: {fileID: 2800000, guid: 87f23f19828756448461fcca469e2865, type: 3}
   m_UVRect: {x: 0, y: 0, width: 1, height: 1}
+--- !u!114 &882300001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432992956094993694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ced6d5a5ba4745b39a21d3d7eda69dbb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Core.AudioManager

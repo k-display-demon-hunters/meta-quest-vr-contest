@@ -51,12 +51,13 @@
 | TabletManager | 태블릿 모듈 진입점. 앱·설정·종료 확인창, 입력 중단·복원, 공장과 공용 양피지 연결을 조율한다. |
 | TabletUIBuilder | 저장된 프리팹의 UI 참조·버튼 콜백·표면 스타일·앱 선택 표시를 연결한다. |
 | TabletInputController | 기존 Trigger+스틱 탐색, X 선택, Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
-| TabletLearningController | 전달받은 현재 단계·완료 비트·이동 가능 여부로 네 카드와 진행률을 갱신한다. 완료 상태를 소유하거나 씬을 로드하지 않는다. |
+| TabletLearningController | 전달받은 현재 단계·완료 비트·이동 가능 여부로 네 카드와 진행률을 갱신한다. 마지막 표시 상태를 캐시해 중복 갱신을 생략하고 이동 시작·실패·완료 안내 문구를 표시한다. 완료 상태를 소유하거나 씬을 로드하지 않는다. |
 | TabletParchmentController | 공용 수집 상태를 조회해 보유 문서만 빈틈 없이 목록에 표시하고 선택 시 재열람을 요청한다. |
 | TabletSettingsController | 밝기·음량·진동·선택 문서 인덱스를 기존 PlayerPrefs 키로 읽고 저장한다. |
 | TabletDetailController | 앱 종료 확인창의 표시·닫기. |
 | TabletMinimapController | 플레이어를 중심에 두고 주변 세로 22m의 바닥·벽·미수집 양피지·바라보는 방향을 0.1초 간격으로 갱신한다. 전체 지도 화면은 사용하지 않는다. |
 | TabletVisualResources | 둥근 표면·금속 그라데이션과 4:3 본체 메시의 생성·정리. |
+| [TabletMapData](../client/Assets/Scripts/Core/Tablet/TabletMapData.cs) | 공장 판독 결과인 바닥·벽·지도 범위를 읽기 전용 목록과 경계로 묶는다. 양피지는 원본 Behaviour와 문서 인덱스를 보관해 현재 위치·활성 상태를 조회하게 한다. 공장 코드가 이 데이터를 게시하면 태블릿은 씬의 이름 규칙을 알지 않아도 지도를 그릴 수 있다. |
 
 ### 학습과 이동 연결
 
@@ -77,6 +78,8 @@
 제공된 원본은 `Textures/Common/KDHuntersLogo.png`에 내용 변경 없이 저장하고 리그의 Tablet Rear Logo에서 참조한다. `Shaders/Common/TabletLogo.shader`와 `Materials/Common/TabletLogo.mat`가 원본의 흰색을 곱셈 혼합의 중립색으로 처리해 청회색 본체 위에 잉크처럼 표시한다. 양쪽 눈의 인스턴싱 변환을 포함한다. 로고·폰트 및 이전 이미지 아이콘 기록은 ASSET_CREDITS.md에 있다. 현재 앱·양피지 목록 아이콘은 TabletAppIconGraphic이 그리는 평면 도형이며 이미지 텍스처·그라데이션·광택·그림자를 사용하지 않는다. 지도는 위치 핀, 학습 단계는 네 칸, 양피지는 선으로 된 문서 모양이다.
 
 2026-10-31: 소스·직렬화 참조·에셋 경로를 정적으로 점검했다. 사용자 허가로 Unity를 열고 코루틴 안의 ReadOnlySpan 반복문 컴파일 오류를 일반 메서드로 분리해 수정했다. 일반 에디터 모드와 FactoryEnvironment Play에서 진행률·앱 아이콘·주변 미니맵 표시를 확인했다. 당시 설정 버튼의 글자 잘림을 발견했으며 미수정 상태다. 이후 평면 아이콘으로 교체했고 이 교체 후 화면은 재확인하지 않았다. 앱 전환·텔레포트·재진입·뒷면 로고·Quest 실기기 및 빌드는 확인하지 않았다.
+
+`FactoryMapController`가 `TabletMapData`를 만들어 `SetMapData()`로 전달한다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지운다. 주변 지도는 XZ 평면을 +Z 위쪽으로 투영하고 카메라 위치·방향과 수집 상태를 주기적으로 갱신한다.
 
 ## 에디터 시뮬레이터
 
@@ -141,6 +144,14 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 
 ## 공용 양피지 연결
 
-공장과 태블릿에서 사용하는 프리팹·입력·수명은 [공용 양피지](parchment.md)에 정리되어 있다. Pickup과 태블릿은 ParchmentManager를 직접 사용하며 공장 진행은 양피지 수집과 독립적이다. 공용 세션은 Core/Parchment에서 첫 씬 로드 전에 생성하며 태블릿은 수집 조회를 중계하지 않는다. 현재 FactoryEnvironment의 ROOM #1에 2개, ROOM #2에 2개, ROOM #3에 1개의 Pickup이 배치되어 있다. 기존 지도 게시 경로로 미수집 위치를 표시하고, 수집 후 양피지 앱의 목록에서 재열람한다. 공장 진행 Manager는 네 학습 단계의 완료 상태만 태블릿에 게시하며 수집 수는 공용 양피지 모듈이 관리한다.
+공장 Pickup과 태블릿은 공용 ParchmentManager를 사용한다. 양피지는 클릭 즉시 수집되며, 태블릿은 Collected 이벤트와 재활성화 시 보유 목록을 갱신한다. 문서 배분은 ParchmentLesson.Location을 따르고 지도는 실제 Pickup 위치를 표시한다. 세션·입력·수집 조건은 [공용 양피지](parchment.md)에 정리되어 있다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.
+
+## Quest 빌드의 중복 기능 설정 정리 (2026-10-30)
+
+프로젝트의 활성 OpenXR 설정은 OpenXRPackageSettings.asset이다. 기존 OpenXR Package Settings.asset의 중복 MetaQuestFeature 하위 에셋 때문에 OpenXR 1.16.1 빌드 훅의 단일 기능 검색이 실패했다. 비활성 설정 파일의 중복 하위 에셋만 제거하고 활성 설정의 MetaQuestFeature를 공유 참조하도록 연결했다. 폴더·파일 위치와 활성 프로젝트 설정은 유지한다.
+
+XRPlayerRig에는 공용 AudioManager 컴포넌트와 Tablet Rear Logo를 함께 유지한다. 태블릿의 이동 안내는 TabletManager의 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted를 통해 TabletLearningController가 표시한다.
+
+공장에서는 FactoryEnvironmentManager가 태블릿과 학습 흐름의 이벤트를 연결·해제하고 최초 상태를 전달한다. FactoryLearningFlowManager는 태블릿 참조 없이 LearningStateChanged와 TravelStarted/TravelFailed/TravelCompleted를 발행한다. 태블릿 내부 표시 상태 캐시를 제외한 진행 상태는 학습 흐름이 소유하며, 매 프레임 상태를 전달하지 않는다.

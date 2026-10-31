@@ -6,7 +6,7 @@ namespace FactoryScenes.Editor
 {
     public static class EndingUpscalingVisualsBuilder
     {
-        public const string PrefabPath = "Assets/Prefabs/FactoryEnding/EndingUpscalingProcess.prefab";
+        public const string PrefabPath = "Assets/Prefabs/OpeningEnding/Ending/EndingUpscalingProcess.prefab";
 
         public static EndingUpscalingAnimationController Build(Transform parent)
         {

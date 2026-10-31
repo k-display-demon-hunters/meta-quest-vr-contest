@@ -11,12 +11,12 @@
 | Scripts/OpeningEnding/ | 공통 마을·디스플레이·입력 제어 / OpeningEnding |
 | Scripts/OpeningEnding/VillageResident/ | 주민 동작 Controller·MotionLibrary / OpeningEnding |
 | Scripts/OpeningEnding/Intro/ | 오프닝 Manager·Presentation·Cinematic·Entry·악령 Controller / OpeningEnding.Intro |
-| Scripts/OpeningEnding/Ending/ | 기존 엔딩 Manager·Panel·Restoration / OpeningEnding.Ending |
-| Scripts/FactoryEnding/, Prefabs/FactoryEnding/ | 엔딩 전용 CNN 과정 애니메이션 Controller와 저장된 UI 프리팹 / OpeningEnding.Ending |
+| Scripts/OpeningEnding/Ending/ | 엔딩 Manager·Panel·Restoration과 CNN 과정 애니메이션·타일 메시·연산 표본 / OpeningEnding.Ending |
+| Prefabs/OpeningEnding/Ending/ | 엔딩 CNN 과정 UI 프리팹 |
 | Prefabs/OpeningEnding/ | 공유 VillageOpening, PixelWraith, 오프닝 전용 FactoryEntrance |
-| Materials/OpeningEnding/ | 마을·화면·악령 및 입장 경로 재질. 기존 엔딩 재질은 Ending/ 하위 |
+| Materials/OpeningEnding/ | 마을·화면·악령 및 입장 경로 재질. 엔딩 재질은 Ending/ 하위 |
 | Meshes/OpeningEnding/ | 마을 메시와 QuaterniusVillageMotion.asset |
-| Shaders/OpeningEnding/, Audio/OpeningEnding/ | 방송·하늘 셰이더와 오프닝 음원 |
+| Shaders/OpeningEnding/, Audio/OpeningEnding/ | 방송·하늘 셰이더와 오프닝 음원. 엔딩 타일 셰이더는 Shaders/OpeningEnding/Ending/ 하위 |
 | Editor/ | 씬 구성 도구. 새 에셋 경로·입력·표시·입장·음원 참조 연결 |
 
 FactoryIntroManager는 진행 단계와 Controller 호출 순서를 관리한다. PresentationController는 안내창과 버튼을, CinematicController는 기존 18초 연출과 효과음·진동을, EntryController는 문·경로·왼손 표시·입장 판정을 담당한다. 공통 FactoryIntroInputController는 기존 이름을 유지하며 오프닝·엔딩의 입력 잠금과 복원을 담당한다. A 입력과 UI 버튼은 로컬 OnContinueRequested 이벤트로 Manager에 요청하며 활성 기간에 대칭 구독·해제한다.
@@ -114,7 +114,7 @@ FactoryTutorial은 준비 안내 → 버튼 선택 → 이동·방향 전환 →
 
 - `FactoryEndingManager`: 공장 복구부터 대화·감상까지 단계와 시간, 사용자 요청 구독·해제, 입력 잠금, 재시작·종료 순서.
 - `FactoryEndingPanelController`: 초대·주민 대화·완료 UI의 문구·배치와 버튼 요청 이벤트, 내부 과정 애니메이션 호출. 과정 중에는 설명 패널을 숨김.
-- `EndingUpscalingAnimationController` (`Scripts/FactoryEnding/`): 픽셀 펼치기, 필터 이동, 정보 전달, 특징 맵의 펼침, 결과 영상 조립·반환 애니메이션.
+- `EndingUpscalingAnimationController` (`Scripts/OpeningEnding/Ending/`): 픽셀 펼치기, 필터 이동, 정보 전달, 특징 맵의 펼침, 결과 영상 조립·반환 애니메이션.
 - `EndingPixelTileMesh`: 재사용하는 결합 메시의 면·모서리·두께·UV·색상 갱신. 타일마다 GameObject를 만들지 않으며 할당한 메시를 종료 시 정리.
 - `EndingUpscalingSample`: 기존 방송 이미지에서 추출한 밝기 표본과 예시 합성곱 계산.
 - `EndingUpscalingProcess.prefab`: 단계 제목·계산식·원리 표시와 두 재질 참조를 미리 저장. 예전 작은 UI 격자는 제거.

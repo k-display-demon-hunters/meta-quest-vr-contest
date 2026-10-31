@@ -13,6 +13,7 @@ namespace Parchment
         [SerializeField] private ParchmentPickupVisualController _visuals;
         private XRSimpleInteractable _interactable;
         private ParchmentManager _parchment;
+        private bool _hasLesson;
 
         public int LessonIndex => _lessonIndex;
 
@@ -20,10 +21,26 @@ namespace Parchment
         {
             _interactable = GetComponent<XRSimpleInteractable>();
             _parchment = FindFirstObjectByType<ParchmentManager>();
+            // Older scenes contain five pickups. Only the three catalog entries remain in this lesson.
+            _hasLesson = _lessonIndex >= 0 && _lessonIndex < ParchmentCatalog.All.Count;
+            if (!_hasLesson)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            Pose pose = ParchmentCatalog.Get(_lessonIndex).PickupPose;
+            transform.SetPositionAndRotation(pose.position, pose.rotation);
+        }
+
+        private void Start()
+        {
+            _visuals.ConfigureLesson(ParchmentCatalog.Get(_lessonIndex));
         }
 
         private void OnEnable()
         {
+            if (!_hasLesson) { return; }
             _interactable.activated.AddListener(HandleActivated);
             _interactable.selectEntered.AddListener(HandleSelected);
             _parchment.RegisterPickup(_lessonIndex, transform, _readerPrefab,
@@ -32,6 +49,7 @@ namespace Parchment
 
         private void OnDisable()
         {
+            if (!_hasLesson) { return; }
             _interactable.activated.RemoveListener(HandleActivated);
             _interactable.selectEntered.RemoveListener(HandleSelected);
             // The persistent session may already be destroyed during shutdown.

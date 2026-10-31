@@ -19,10 +19,60 @@ namespace Parchment
         [SerializeField] private Button _close;
         [SerializeField] private ParchmentIllustrationController _illustration;
         [SerializeField] private TrackedDeviceGraphicRaycaster _raycaster;
+        private const float RollerFraction = 0.17f;
+        private const float UnfoldDuration = 0.8f;
+        private Image _scroll;
+        private RawImage _sheet;
+        private RawImage _leftRoller;
+        private RawImage _rightRoller;
+        private CanvasGroup _content;
+        private Vector2 _scrollSize;
         private IReadOnlyList<ParchmentPage> _pages;
         private int _page;
         public event Action Completed;
         public event Action CloseRequested;
+
+        private void Awake()
+        {
+            // The existing prefab stores its background first, followed by the lesson UI.
+            // Build only the moving image segments here so the prefab asset remains unchanged.
+            _scroll = transform.GetChild(0).GetComponent<Image>();
+            _scrollSize = _scroll.rectTransform.sizeDelta;
+            Transform[] content = new Transform[transform.childCount - 1];
+            for (int i = 0; i < content.Length; i++) { content[i] = transform.GetChild(i + 1); }
+            _content = new GameObject("Lesson Content", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<CanvasGroup>();
+            _content.transform.SetParent(transform, false);
+            RectTransform contentRect = (RectTransform)_content.transform;
+            contentRect.anchorMin = contentRect.anchorMax = new Vector2(0.5f, 0.5f);
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = ((RectTransform)transform).sizeDelta;
+            foreach (Transform child in content) { child.SetParent(_content.transform, false); }
+
+            _sheet = CreateSegment("Unfolding Hologram", RollerFraction, 1f - RollerFraction * 2f);
+            _leftRoller = CreateSegment("Left Scroll Roller", 0f, RollerFraction);
+            _rightRoller = CreateSegment("Right Scroll Roller", 1f - RollerFraction, RollerFraction);
+            _content.transform.SetAsLastSibling();
+            _complete.GetComponentInChildren<Text>().text = "학습 완료";
+        }
+
+        private RawImage CreateSegment(string name, float start, float width)
+        {
+            RawImage image = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage)).GetComponent<RawImage>();
+            image.transform.SetParent(transform, false);
+            image.rectTransform.anchorMin = image.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            image.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            image.rectTransform.anchoredPosition = Vector2.zero;
+            image.raycastTarget = false;
+            Sprite source = _scroll.sprite;
+            Rect rect = source.rect;
+            image.texture = source.texture;
+            image.uvRect = new Rect((rect.x + rect.width * start) / source.texture.width,
+                rect.y / source.texture.height, rect.width * width / source.texture.width,
+                rect.height / source.texture.height);
+            image.rectTransform.sizeDelta = new Vector2(_scrollSize.x * width, _scrollSize.y);
+            return image;
+        }
 
         private void OnEnable()
         {
@@ -53,18 +103,45 @@ namespace Parchment
         private IEnumerator Expand(Camera camera, Pose origin)
         {
             _raycaster.enabled = false;
+            _content.alpha = 0f;
+            _content.interactable = false;
+            _content.blocksRaycasts = false;
+            _scroll.enabled = false;
             Vector3 target = camera.transform.position + camera.transform.forward * 1.55f - camera.transform.up * 0.08f;
             Quaternion rotation = Quaternion.LookRotation(camera.transform.forward, camera.transform.up);
+            transform.SetPositionAndRotation(origin.position, origin.rotation);
+            transform.localScale = Vector3.one * (1.25f / _scrollSize.x);
+            SetUnfoldProgress(0f);
             float elapsed = 0f;
-            while (elapsed < 0.3f)
+            while (elapsed < UnfoldDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, elapsed / 0.3f);
-                transform.SetPositionAndRotation(Vector3.Lerp(origin.position, target, t), Quaternion.Slerp(origin.rotation, rotation, t));
-                transform.localScale = Vector3.one * Mathf.Lerp(0.0006f, 0.001f, t);
+                float move = Mathf.SmoothStep(0f, 1f, elapsed / 0.3f);
+                float unfold = Mathf.SmoothStep(0f, 1f, (elapsed - 0.15f) / (UnfoldDuration - 0.15f));
+                transform.SetPositionAndRotation(Vector3.Lerp(origin.position, target, move), Quaternion.Slerp(origin.rotation, rotation, move));
+                transform.localScale = Vector3.one * Mathf.Lerp(1.25f / _scrollSize.x, 0.001f, move);
+                SetUnfoldProgress(unfold);
                 yield return null;
             }
+            transform.SetPositionAndRotation(target, rotation);
+            transform.localScale = Vector3.one * 0.001f;
+            SetUnfoldProgress(1f);
+            _scroll.enabled = true;
+            _sheet.gameObject.SetActive(false);
+            _leftRoller.gameObject.SetActive(false);
+            _rightRoller.gameObject.SetActive(false);
+            _content.interactable = true;
+            _content.blocksRaycasts = true;
             _raycaster.enabled = true;
+        }
+        private void SetUnfoldProgress(float progress)
+        {
+            float sheetWidth = _scrollSize.x * (1f - RollerFraction * 2f) * progress;
+            float rollerOffset = (sheetWidth + _scrollSize.x * RollerFraction) * 0.5f;
+            _sheet.rectTransform.sizeDelta = new Vector2(sheetWidth, _scrollSize.y);
+            _leftRoller.rectTransform.anchoredPosition = new Vector2(-rollerOffset, 0f);
+            _rightRoller.rectTransform.anchoredPosition = new Vector2(rollerOffset, 0f);
+            _content.alpha = Mathf.SmoothStep(0f, 1f, (progress - 0.75f) / 0.25f);
         }
         private void Previous() { _page = Mathf.Max(0, _page - 1); RefreshPage(); }
         private void Next() { _page = Mathf.Min(_pages.Count - 1, _page + 1); RefreshPage(); }

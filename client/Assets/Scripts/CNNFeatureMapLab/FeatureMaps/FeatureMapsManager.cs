@@ -7,6 +7,7 @@ namespace CNNFeatureMaps.FeatureMaps
     public sealed class FeatureMapsManager : MonoBehaviour
     {
         [SerializeField] private InputMapController _inputMap;
+        [SerializeField] private MapComputationController _computation;
         [SerializeField] private MapDisplayController _display;
         [SerializeField] private InteractionManager _interaction;
         private ConvolutionSimulation _data;
@@ -54,7 +55,7 @@ namespace CNNFeatureMaps.FeatureMaps
 
         public bool TryStart()
         {
-            float[,] input = _inputMap.ReadInput();
+            Color[,] input = _inputMap.ReadInput();
             if (input == null)
             {
                 return false;
@@ -112,10 +113,44 @@ namespace CNNFeatureMaps.FeatureMaps
             {
                 SelectPixel(cell.Row, cell.Column);
             }
+            if (_step == LessonStep.ExploreFeatureMaps && _data != null)
+            {
+                if (target.TryGetComponent(out MapCell selected) && selected.Layer >= 0)
+                {
+                    ShowMapCalculation(selected.Layer, selected.Channel, selected.Row, selected.Column);
+                }
+                else if (target.TryGetComponent(out MapPanel panel) && panel.Layer >= 0)
+                {
+                    ShowMapCalculation(panel.Layer, panel.Channel, 3, 3);
+                }
+            }
             if (target.TryGetComponent(out MapLayer layer))
             {
                 layer.ToggleSpread();
             }
+        }
+
+        private void ShowMapCalculation(int layer, int channel, int row, int column)
+        {
+            _data.SelectFeatureCell(layer, channel, row, column);
+            _display.RefreshAppearance(_data, true);
+            _computation.Show(_data, layer, channel, row, column);
+        }
+
+        public void CloseCalculation() { _computation.Close(); }
+
+        public float[,] CopyFirstLayerMap(int channel)
+        {
+            int size = ConvolutionSimulation.Size;
+            float[,] values = new float[size, size];
+            for (int row = 0; row < size; row++)
+            {
+                for (int column = 0; column < size; column++)
+                {
+                    values[row, column] = _data.ReadValue(0, channel, row, column);
+                }
+            }
+            return values;
         }
 
         private void ExtractTarget(Transform target)
@@ -127,6 +162,10 @@ namespace CNNFeatureMaps.FeatureMaps
             if (target.TryGetComponent(out MapPanel panel))
             {
                 panel.Extract();
+                if (_step == LessonStep.ExploreFeatureMaps && panel.Layer >= 0)
+                {
+                    ShowMapCalculation(panel.Layer, panel.Channel, 3, 3);
+                }
             }
         }
 
@@ -147,11 +186,12 @@ namespace CNNFeatureMaps.FeatureMaps
 
         public bool TryRestore()
         {
-            float[,] input = _inputMap.ReadInput();
+            Color[,] input = _inputMap.ReadInput();
             if (input == null)
             {
                 return false;
             }
+            _computation.Close();
             _data.RestoreInput(input);
             Array.Clear(_visited, 0, _visited.Length);
             EditCount = 0;
@@ -168,7 +208,9 @@ namespace CNNFeatureMaps.FeatureMaps
                 case LessonStep.CompareFilters:
                     _interaction.SelectFilterPosition(row, column);
                     break;
+                case LessonStep.ExploreFeatureMaps:
                 case LessonStep.TraceReceptiveField:
+                    _computation.Close();
                     _data.SelectPixel(row, column);
                     _display.RefreshAppearance(_data, true);
                     OnAffectedPixelSelected?.Invoke(row, column, _data.CountAffectedPositions(0));

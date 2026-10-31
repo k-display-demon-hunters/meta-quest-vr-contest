@@ -6,7 +6,7 @@ namespace CNNFeatureMaps.FeatureMaps
     {
         [SerializeField] private Texture2D _inputImage;
 
-        public float[,] ReadInput()
+        public Color[,] ReadInput()
         {
             int size = ConvolutionSimulation.Size;
             if (_inputImage == null || !_inputImage.isReadable ||
@@ -17,13 +17,13 @@ namespace CNNFeatureMaps.FeatureMaps
             }
 
             Color[] pixels = _inputImage.GetPixels();
-            float[,] input = new float[size, size];
+            Color[,] input = new Color[size, size];
             for (int row = 0; row < size; row++)
             {
                 for (int column = 0; column < size; column++)
                 {
                     // Tensor rows run top to bottom; Unity texture rows run bottom to top.
-                    input[row, column] = pixels[(size - 1 - row) * size + column].grayscale;
+                    input[row, column] = pixels[(size - 1 - row) * size + column];
                 }
             }
             return input;

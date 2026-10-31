@@ -30,9 +30,14 @@ namespace UI.Editor
             filter.trackRotation = false;
             filter.movementType = XRBaseInteractable.MovementType.Instantaneous;
             BoxCollider collider = filter.GetComponent<BoxCollider>();
-            collider.size = new Vector3(0.54f, 0.54f, 0.18f);
-            collider.center = new Vector3(0, 0, -0.02f);
-            RgbPixelStackController rgb = Instance<RgbPixelStackController>("RgbPixelStack", board);
+            collider.size = new Vector3(0.95f, 1.05f, 0.22f);
+            collider.center = new Vector3(0.14f, -0.15f, 0);
+            RgbPixelStackController rgb = lab.GetComponentInChildren<RgbPixelStackController>(true);
+            if (rgb == null) { rgb = Instance<RgbPixelStackController>("RgbPixelStack", lab.transform); }
+            rgb.transform.localPosition = new Vector3(0.5f, 1.9f, 1.3f);
+            rgb.transform.localScale = Vector3.one * 2.2f;
+            Bind(rgb, "_sourceBoard", board);
+            Bind(lab.GetComponentInChildren<PixelBoardController>(true), "_presentationRoot", board);
             PixelRevealStage stage = Instance<PixelRevealStage>("ImagePixelGrid", board);
             Bind(stage, "_rgbStack", rgb);
             Bind(selection, "_volume", volume);
@@ -40,25 +45,30 @@ namespace UI.Editor
             PixelLabUIController ui = lab.GetComponentInChildren<PixelLabUIController>(true);
             Bind(stage, "_rgbValues", rgb.GetComponent<RgbValuesUIController>());
             Transform controls = lab.transform.Find("Spatial controls");
+            controls.localPosition = new Vector3(0, 1.05f, 0.45f);
             Transform guide = controls.Find("Interaction hint");
             Text instruction = guide != null ? guide.GetComponent<Text>()
-                : Label(controls, "Interaction hint", "", new Vector2(0, -105), new Vector2(1400, 90), 32);
+                : Label(controls, "Interaction hint", "", new Vector2(0, 60), new Vector2(1320, 260), 48);
+            instruction.rectTransform.anchoredPosition = new Vector2(0, 60);
+            instruction.rectTransform.sizeDelta = new Vector2(1320, 260);
+            instruction.fontSize = 48;
+            instruction.fontStyle = FontStyle.Bold;
+            instruction.color = Color.white;
             Bind(ui, "_instruction", instruction);
             Bind(ui, "_nextButton", controls.Find("다음으로").GetComponent<Button>());
             foreach (Button button in controls.GetComponentsInChildren<Button>(true))
             {
                 bool next = button.name == "다음으로";
                 bool reset = button.name == "처음부터" || button.name == "처음으로";
-                if (!reset)
-                {
-                    SceneUIStyle.Apply(button);
-                    if (button.GetComponent<Outline>() == null) { button.gameObject.AddComponent<Outline>(); }
-                }
+                SceneUIStyle.Apply(button);
+                if (button.GetComponent<Outline>() == null) { button.gameObject.AddComponent<Outline>(); }
                 RectTransform rect = (RectTransform)button.transform;
-                rect.sizeDelta = new Vector2(next ? 380 : 320, 100);
-                rect.anchoredPosition = new Vector2(reset ? 210 : -210, 20);
+                rect.sizeDelta = new Vector2(520, 110);
+                rect.anchoredPosition = new Vector2(reset ? 300 : -300, -150);
                 Text caption = button.GetComponentInChildren<Text>();
-                caption.fontSize = next ? 48 : 34;
+                caption.fontSize = 48;
+                caption.fontStyle = FontStyle.Bold;
+                caption.color = Color.white;
                 caption.resizeTextForBestFit = false;
                 caption.rectTransform.anchorMin = Vector2.zero;
                 caption.rectTransform.anchorMax = Vector2.one;
@@ -66,7 +76,60 @@ namespace UI.Editor
                 caption.rectTransform.offsetMax = new Vector2(-10, -5);
                 if (reset) { caption.text = "처음으로"; }
             }
+            InstallPractice(lab);
+            InstallBoundary(lab, selection);
+            Transform background = controls.Find("Instruction panel background");
+            if (background == null)
+            {
+                GameObject panel = new GameObject("Instruction panel background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panel.transform.SetParent(controls, false);
+                panel.transform.SetAsFirstSibling();
+                ((RectTransform)panel.transform).sizeDelta = new Vector2(1400, 460);
+                panel.GetComponent<Image>().color = SceneUIStyle.Surface;
+                panel.GetComponent<Image>().raycastTarget = false;
+            }
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private static void InstallPractice(CNNScreenLabManager lab)
+        {
+            PixelPracticeManager practice = lab.GetComponentInChildren<PixelPracticeManager>(true);
+            if (practice == null)
+            {
+                GameObject root = new GameObject("R G guided practice");
+                root.transform.SetParent(lab.transform, false);
+                root.transform.localPosition = new Vector3(0.4f, 1.7f, 1.25f);
+                practice = root.AddComponent<PixelPracticeManager>();
+                GameObject ui = (GameObject)PrefabUtility.InstantiatePrefab(
+                    AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/PixelCalculationUI.prefab"), root.transform);
+                Transform blocks = Child(root.transform, "Practice blocks");
+                Bind(practice, "_ui", ui.GetComponent<LessonUIController>());
+                Bind(practice, "_spatial", blocks.gameObject.AddComponent<RgbVolumeController>());
+                Bind(practice, "_font", Font);
+                ui.SetActive(false);
+                blocks.gameObject.SetActive(false);
+            }
+            Bind(lab, "_practice", practice);
+        }
+
+        private static void InstallBoundary(CNNScreenLabManager lab, PixelSelectionController selection)
+        {
+            Transform boundary = lab.transform.Find("Blue magnifier boundary");
+            if (boundary == null)
+            {
+                boundary = Child(lab.transform, "Blue magnifier boundary");
+                boundary.localPosition = new Vector3(-1.2f, 0.045f, -0.6f);
+                Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Meshes/CNNScreenLab/PixelBlock.asset");
+                Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/CNNScreenLab/MagnifierBoundary.mat");
+                for (int i = 0; i < 48; i++)
+                {
+                    float angle = i * Mathf.PI * 2 / 48;
+                    MeshRenderer segment = PixelBlockMeshBuilder.Add(boundary, "Cyan boundary " + i, mesh, material,
+                        new Vector3(Mathf.Cos(angle) * 0.94f, 0, Mathf.Sin(angle) * 0.94f), new Vector3(0.13f, 0.018f, 0.028f));
+                    segment.transform.localRotation = Quaternion.Euler(0, -angle * Mathf.Rad2Deg - 90, 0);
+                }
+            }
+            Bind(selection, "_pickupBoundary", boundary.gameObject);
         }
 
         private static T Instance<T>(string name, Transform parent) where T : Component
@@ -129,12 +192,15 @@ namespace UI.Editor
                     labels[c].alpha = 0;
                     labels[c].blocksRaycasts = false;
                     labels[c].interactable = false;
-                    Label(canvasObject.transform, "Channel", names[c], new Vector2(0, 345), new Vector2(220, 45), 30);
+                    Text channelLabel = Label(canvasObject.transform, "Channel", names[c], new Vector2(0, 345), new Vector2(360, 70), 38);
+                    channelLabel.fontStyle = FontStyle.Bold;
+                    channelLabel.color = Color.white;
                     for (int i = 0; i < 9; i++)
                     {
                         Vector3 position = new Vector3((i % 3 - 1) * 0.19f, (1 - i / 3) * 0.19f, 0);
                         blocks[c * 9 + i] = PixelBlockMeshBuilder.Add(layers[c], "Pixel " + i, mesh, pixels, position, new Vector3(0.1786f, 0.1786f, 0.055f));
-                        values[c * 9 + i] = Label(canvasObject.transform, "Value " + i, "", new Vector2(position.x, position.y) * 1000, new Vector2(175, 130), 48);
+                        values[c * 9 + i] = Label(canvasObject.transform, "Value " + i, "", new Vector2(position.x, position.y) * 1000, new Vector2(175, 130), 66);
+                        values[c * 9 + i].fontStyle = FontStyle.Bold;
                     }
                 }
                 RgbPixelStackController controller = root.AddComponent<RgbPixelStackController>();

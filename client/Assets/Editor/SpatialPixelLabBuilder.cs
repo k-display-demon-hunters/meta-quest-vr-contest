@@ -49,8 +49,8 @@ namespace UI.Editor
             PixelSelectionController selectionController = selectionRoot.AddComponent<PixelSelectionController>();
             Transform board = new GameObject("Floating image board").transform;
             board.SetParent(lab.transform, false);
-            board.localPosition = new Vector3(0, 2.45f, 1.8f);
-            board.localScale = Vector3.one * 2f;
+            board.localPosition = new Vector3(0, 3.125f, 1.8f);
+            board.localScale = Vector3.one * 3f;
             MeshRenderer image = Quad(board, "Low resolution image", Vector3.zero, new Vector2(2.4f, 1.35f), _white);
             PixelBoardController boardController = image.gameObject.AddComponent<PixelBoardController>();
             Transform selection = new GameObject("Selected source pixels").transform;
@@ -59,7 +59,9 @@ namespace UI.Editor
             selection.gameObject.SetActive(false);
             GameObject filter = new GameObject("Grab the filter", typeof(Rigidbody), typeof(BoxCollider));
             filter.transform.SetParent(selectionRoot.transform, false);
-            filter.transform.localPosition = new Vector3(-2.4f, 1.15f, -0.6f);
+            filter.transform.localPosition = new Vector3(-1.2f, 0.13f, -0.6f);
+            filter.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            filter.transform.localScale = Vector3.one * 1.3f;
             Rigidbody filterBody = filter.GetComponent<Rigidbody>();
             filterBody.isKinematic = true;
             filterBody.useGravity = false;
@@ -93,6 +95,7 @@ namespace UI.Editor
             Assign(fields, "_selection", selectionController);
             SerializedObject boardFields = new SerializedObject(boardController);
             Assign(boardFields, "_boardRenderer", image);
+            Assign(boardFields, "_presentationRoot", board);
             boardFields.ApplyModifiedPropertiesWithoutUndo();
             SerializedObject selectionFields = new SerializedObject(selectionController);
             Assign(selectionFields, "_board", board);

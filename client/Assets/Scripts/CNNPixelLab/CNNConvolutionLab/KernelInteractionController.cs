@@ -16,6 +16,7 @@ namespace UI
         private bool _closing;
         public static Vector3 KernelHome => new Vector3(-1.05f, 0, -0.22f);
         public bool IsAligned { get; private set; }
+        public bool IsHeld => _kernelGrab.isSelected;
         public KernelInteractionController(Transform root, RgbVolumeController.Geometry view)
         {
             _root = root;
@@ -28,11 +29,13 @@ namespace UI
         {
             IsAligned = false;
             _kernelGrab.enabled = false;
+            foreach (Collider collider in _kernelGrab.colliders) { collider.enabled = false; }
         }
         public void EnableKernel()
         {
             ResetGrab(_kernelGrab, KernelHome);
             _kernelGrab.enabled = true;
+            foreach (Collider collider in _kernelGrab.colliders) { collider.enabled = true; }
         }
         public void AlignKernel()
         {
@@ -47,6 +50,7 @@ namespace UI
             _closing = false;
             AlignKernel();
             _kernelGrab.enabled = false;
+            foreach (Collider collider in _kernelGrab.colliders) { collider.enabled = false; }
         }
         public void DisableKernel()
         {
@@ -54,6 +58,7 @@ namespace UI
             CancelGrab(_kernelGrab);
             _closing = false;
             _kernelGrab.enabled = false;
+            foreach (Collider collider in _kernelGrab.colliders) { collider.enabled = false; }
         }
         private void HandleKernelGrabbed(SelectEnterEventArgs args)
         {
@@ -75,11 +80,14 @@ namespace UI
         }
         private static XRGrabInteractable MakeGrab(Transform target, Vector3 size)
         {
-            target.gameObject.AddComponent<BoxCollider>().size = size;
+            BoxCollider collider = target.gameObject.AddComponent<BoxCollider>();
+            collider.size = size;
             Rigidbody body = target.gameObject.AddComponent<Rigidbody>();
             body.useGravity = false;
             body.isKinematic = true;
             XRGrabInteractable grab = target.gameObject.AddComponent<XRGrabInteractable>();
+            grab.colliders.Clear();
+            grab.colliders.Add(collider);
             grab.throwOnDetach = false;
             grab.retainTransformParent = false;
             grab.trackRotation = false;

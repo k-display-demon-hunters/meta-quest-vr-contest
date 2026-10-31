@@ -5,6 +5,7 @@ namespace CNNFeatureMaps
         BuildFeatureMap,
         CompareFilters,
         TraceReceptiveField,
-        EditInput
+        EditInput,
+        ExploreFeatureMaps
     }
 }

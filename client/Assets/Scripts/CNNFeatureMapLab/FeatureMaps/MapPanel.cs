@@ -16,7 +16,7 @@ namespace CNNFeatureMaps.FeatureMaps
 
         public void Initialize()
         {
-            MapLayer layer = GetComponentInParent<MapLayer>();
+            MapLayer layer = GetComponentInParent<MapLayer>(true);
             _layer = layer != null ? layer.Index : -1;
             _nodes = GetComponentsInChildren<MapCell>(true);
             foreach (MapCell node in _nodes)

@@ -6,70 +6,198 @@ namespace CNNFeatureMaps.FeatureMaps
     {
         public const int Size = 8;
         public static readonly int[] Channels = { 2, 3, 5 };
-        private readonly float[,] _input = new float[Size, Size];
+        private readonly Color[,] _input = new Color[Size, Size];
         private readonly float[][,,] _values = new float[3][,,];
-        private readonly bool[][,] _affected = new bool[4][,];
+        private readonly float[][] _maxima = new float[3][];
+        private readonly bool[][,,] _affected = new bool[4][,,];
 
-        public ConvolutionSimulation(float[,] input)
+        public ConvolutionSimulation(Color[,] input)
         {
-            for (int layer = 0; layer < 4; layer++)
+            _affected[0] = new bool[1, Size, Size];
+            for (int layer = 0; layer < 3; layer++)
             {
-                _affected[layer] = new bool[Size, Size];
+                _affected[layer + 1] = new bool[Channels[layer], Size, Size];
             }
             RestoreInput(input);
         }
 
-        public float ReadValue(int layer, int channel, int row, int column)
+        public Color ReadInputColor(int row, int column) => _input[row, column];
+        public float ReadValue(int layer, int channel, int row, int column) =>
+            layer < 0 ? _input[row, column].grayscale : _values[layer][channel, row, column];
+        public float ReadScale(int layer, int channel) => Mathf.Max(0.001f, _maxima[layer][channel]);
+        public int InputChannels(int layer) => layer == 0 ? 3 : Channels[layer - 1];
+        public bool IsAffected(int layer, int channel, int row, int column) =>
+            _affected[layer + 1][layer < 0 ? 0 : channel, row, column];
+
+        public float ReadWeight(int layer, int channel, int inputChannel, int dy, int dx)
         {
-            return layer < 0 ? _input[row, column] : _values[layer][channel, row, column];
+            if (layer == 0)
+            {
+                if (channel == 0) { return (inputChannel == 0 ? 1f : -0.5f) / 9f; }
+                float luminance = inputChannel == 0 ? 0.2126f : inputChannel == 1 ? 0.7152f : 0.0722f;
+                return (dx < 0 ? 0f : dx == 0 ? -1f : 1f) * luminance / 3f;
+            }
+            float spatial;
+            switch (channel % 5)
+            {
+                case 0: spatial = 1f / 9f; break;
+                case 1: spatial = dx / 3f; break;
+                case 2: spatial = dy / 3f; break;
+                case 3: spatial = dx == 0 && dy == 0 ? 1f : 0f; break;
+                default: spatial = dx == 0 && dy == 0 ? 1f : Mathf.Abs(dx) + Mathf.Abs(dy) == 1 ? -0.25f : 0f; break;
+            }
+            // Fixed illustrative kernels. Every map combines the preceding channels.
+            float mix = (channel + inputChannel) % 3 == 0 ? 1f : 0.5f;
+            return spatial * mix / InputChannels(layer);
         }
 
-        public bool IsAffected(int layer, int row, int column) => _affected[layer + 1][row, column];
+        public float ReadContribution(int layer, int channel, int inputChannel, int row, int column)
+        {
+            float sum = 0f;
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int y = row + dy;
+                    int x = column + dx;
+                    if (!Inside(y, x)) { continue; }
+                    float value = layer == 0 ? _input[y, x][inputChannel] : _values[layer - 1][inputChannel, y, x];
+                    sum += value * ReadWeight(layer, channel, inputChannel, dy, dx);
+                }
+            }
+            return sum;
+        }
+
+        public float ReadFirstLayerSum(int channel, int row, int column) => _values[0][channel, row, column];
+        public float ReadKernelWeight(int channel, int dy, int dx) => ReadWeight(0, channel, 0, dy, dx);
+
+        public void SelectPixel(int row, int column)
+        {
+            ClearSelection();
+            if (!Inside(row, column)) { return; }
+            _affected[0][0, row, column] = true;
+            for (int layer = 0; layer < 3; layer++)
+            {
+                for (int channel = 0; channel < Channels[layer]; channel++)
+                {
+                    for (int y = 0; y < Size; y++)
+                    {
+                        for (int x = 0; x < Size; x++)
+                        {
+                            for (int source = 0; source < InputChannels(layer); source++)
+                            {
+                                for (int dy = -1; dy <= 1; dy++)
+                                {
+                                    for (int dx = -1; dx <= 1; dx++)
+                                    {
+                                        if (Inside(y + dy, x + dx) && ReadWeight(layer, channel, source, dy, dx) != 0f
+                                            && _affected[layer][layer == 0 ? 0 : source, y + dy, x + dx])
+                                        {
+                                            _affected[layer + 1][channel, y, x] = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public void SelectFeatureCell(int layer, int channel, int row, int column)
+        {
+            ClearSelection();
+            _affected[layer + 1][channel, row, column] = true;
+            for (int current = layer; current >= 0; current--)
+            {
+                for (int output = 0; output < Channels[current]; output++)
+                {
+                    for (int y = 0; y < Size; y++)
+                    {
+                        for (int x = 0; x < Size; x++)
+                        {
+                            if (!_affected[current + 1][output, y, x]) { continue; }
+                            for (int source = 0; source < InputChannels(current); source++)
+                            {
+                                for (int dy = -1; dy <= 1; dy++)
+                                {
+                                    for (int dx = -1; dx <= 1; dx++)
+                                    {
+                                        if (Inside(y + dy, x + dx) && ReadWeight(current, output, source, dy, dx) != 0f)
+                                        {
+                                            _affected[current][current == 0 ? 0 : source, y + dy, x + dx] = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         public int CountAffectedPositions(int layer)
         {
             int count = 0;
-            for (int row = 0; row < Size; row++)
-            {
-                for (int column = 0; column < Size; column++)
-                {
-                    if (IsAffected(layer, row, column))
-                    {
-                        count++;
-                    }
-                }
-            }
+            foreach (bool affected in _affected[layer + 1]) { if (affected) { count++; } }
             return count;
         }
 
-        public void SelectPixel(int row, int column)
+        private void ClearSelection()
         {
-            for (int layer = 0; layer < 4; layer++)
+            foreach (bool[,,] layer in _affected) { System.Array.Clear(layer, 0, layer.Length); }
+        }
+
+        public void SelectWindow(int row, int column)
+        {
+            ClearSelection();
+            for (int dy = -1; dy <= 1; dy++)
             {
-                System.Array.Clear(_affected[layer], 0, _affected[layer].Length);
-            }
-            if (row < 0 || column < 0)
-            {
-                return;
-            }
-            _affected[0][row, column] = true;
-            for (int layer = 1; layer < 4; layer++)
-            {
-                for (int outputRow = 0; outputRow < Size; outputRow++)
+                for (int dx = -1; dx <= 1; dx++)
                 {
-                    for (int outputColumn = 0; outputColumn < Size; outputColumn++)
+                    if (Inside(row + dy, column + dx)) { _affected[0][0, row + dy, column + dx] = true; }
+                }
+            }
+        }
+
+        public void ToggleInput(int row, int column)
+        {
+            Color color = _input[row, column];
+            _input[row, column] = new Color(color.g, color.b, color.r);
+            ComputeConvolutions();
+        }
+
+        public void RestoreInput(Color[,] input)
+        {
+            if (input == null || input.GetLength(0) != Size || input.GetLength(1) != Size)
+            {
+                throw new System.ArgumentException($"Input must be a {Size} x {Size} RGB array.", nameof(input));
+            }
+            System.Array.Copy(input, _input, input.Length);
+            ClearSelection();
+            ComputeConvolutions();
+        }
+
+        private void ComputeConvolutions()
+        {
+            for (int layer = 0; layer < 3; layer++)
+            {
+                _values[layer] = new float[Channels[layer], Size, Size];
+                _maxima[layer] = new float[Channels[layer]];
+                for (int channel = 0; channel < Channels[layer]; channel++)
+                {
+                    for (int row = 0; row < Size; row++)
                     {
-                        for (int dy = -1; dy <= 1; dy++)
+                        for (int column = 0; column < Size; column++)
                         {
-                            for (int dx = -1; dx <= 1; dx++)
+                            float sum = 0f;
+                            for (int source = 0; source < InputChannels(layer); source++)
                             {
-                                int inputRow = outputRow + dy;
-                                int inputColumn = outputColumn + dx;
-                                if (Inside(inputRow, inputColumn) && _affected[layer - 1][inputRow, inputColumn])
-                                {
-                                    _affected[layer][outputRow, outputColumn] = true;
-                                }
+                                sum += ReadContribution(layer, channel, source, row, column);
                             }
+                            // Parchment 4 teaches channel summation. Activation belongs to parchment 5.
+                            _values[layer][channel, row, column] = sum;
+                            _maxima[layer][channel] = Mathf.Max(_maxima[layer][channel], Mathf.Abs(sum));
                         }
                     }
                 }
@@ -86,107 +214,13 @@ namespace CNNFeatureMaps.FeatureMaps
                 {
                     for (int column = 0; column < Size; column++)
                     {
-                        float value = _values[2][channel, row, column] / (Size * Size);
-                        first += value * (channel % 2 == 0 ? 1f : -.5f);
-                        second += value * (channel % 2 == 0 ? -.5f : 1f);
+                        float value = Mathf.Abs(_values[2][channel, row, column]) / (Size * Size);
+                        if (channel % 2 == 0) { first += value; } else { second += value; }
                     }
                 }
             }
-            float probability = 1f / (1f + Mathf.Exp(second - first));
-            return output == 0 ? probability : 1f - probability;
-        }
-
-        public float ReadKernelWeight(int channel, int dy, int dx)
-        {
-            return (channel % 3 == 0 ? dx : channel % 3 == 1 ? dy : 1f / 3f) / 3f;
-        }
-
-        public float ReadFirstLayerSum(int channel, int row, int column)
-        {
-            float sum = 0f;
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    if (Inside(row + dy, column + dx))
-                    {
-                        sum += _input[row + dy, column + dx] * ReadKernelWeight(channel, dy, dx);
-                    }
-                }
-            }
-            return sum;
-        }
-
-        public void SelectWindow(int row, int column)
-        {
-            SelectPixel(-1, -1);
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    if (Inside(row + dy, column + dx))
-                    {
-                        _affected[0][row + dy, column + dx] = true;
-                    }
-                }
-            }
-        }
-
-        public void ToggleInput(int row, int column)
-        {
-            _input[row, column] = _input[row, column] >= .5f ? 0f : 1f;
-            ComputeConvolutions();
-        }
-
-        public void RestoreInput(float[,] input)
-        {
-            if (input == null || input.GetLength(0) != Size || input.GetLength(1) != Size)
-            {
-                throw new System.ArgumentException($"Input must be a {Size} x {Size} array.", nameof(input));
-            }
-            System.Array.Copy(input, _input, input.Length);
-            SelectPixel(-1, -1);
-            ComputeConvolutions();
-        }
-
-        private void ComputeConvolutions()
-        {
-            for (int layer = 0; layer < 3; layer++)
-            {
-                int inputChannels = layer == 0 ? 1 : Channels[layer - 1];
-                _values[layer] = new float[Channels[layer], Size, Size];
-                for (int channel = 0; channel < Channels[layer]; channel++)
-                {
-                    for (int row = 0; row < Size; row++)
-                    {
-                        for (int column = 0; column < Size; column++)
-                        {
-                            float sum = 0f;
-                            for (int inputChannel = 0; inputChannel < inputChannels; inputChannel++)
-                            {
-                                for (int dy = -1; dy <= 1; dy++)
-                                {
-                                    for (int dx = -1; dx <= 1; dx++)
-                                    {
-                                        int inputRow = row + dy;
-                                        int inputColumn = column + dx;
-                                        if (!Inside(inputRow, inputColumn))
-                                        {
-                                            continue;
-                                        }
-                                        float value = layer == 0 ? _input[inputRow, inputColumn] :
-                                            _values[layer - 1][inputChannel, inputRow, inputColumn];
-                                        // Fixed educational filters; every output sees every preceding channel.
-                                        float weight = ReadKernelWeight(channel, dy, dx);
-                                        sum += value * weight / inputChannels;
-                                    }
-                                }
-                            }
-                            _values[layer][channel, row, column] = Mathf.Max(0f, sum);
-                        }
-                    }
-                }
-            }
+            float total = first + second;
+            return total > 0f ? (output == 0 ? first : second) / total : 0.5f;
         }
 
         private static bool Inside(int row, int column) => row >= 0 && row < Size && column >= 0 && column < Size;

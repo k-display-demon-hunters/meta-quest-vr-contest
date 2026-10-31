@@ -20,6 +20,19 @@ namespace CNNFeatureMaps.Lesson
             Buttons = buttons;
         }
 
+        public static readonly LessonContent ExploreFeatureMaps = new LessonContent(
+            "피쳐맵", "", new Dictionary<LessonAction, ButtonState>
+            {
+                [LessonAction.Previous] = new ButtonState(false),
+                [LessonAction.Next] = new ButtonState(true, "완료"),
+                [LessonAction.Scan] = new ButtonState(false),
+                [LessonAction.Filter] = new ButtonState(false),
+                [LessonAction.Spread] = new ButtonState(true, "펼치기 {0}"),
+                [LessonAction.Restore] = new ButtonState(true, "원위치"),
+                [LessonAction.Enlarge] = new ButtonState(true, "확대"),
+                [LessonAction.Shrink] = new ButtonState(true, "축소")
+            }, false, "");
+
         public static readonly LessonContent BuildFeatureMap = new LessonContent(
             "1 / 4 — feature map 만들기",
             "민트색 손잡이를 이미지 위에서 움직이거나, 입력 픽셀을 눌러 보세요.\n3×3 영역에서 출력 뉴런 하나가 만들어집니다. 자동 이동으로 전체를 둘러보세요.",
@@ -67,11 +80,11 @@ namespace CNNFeatureMaps.Lesson
                 [LessonAction.Shrink] = new ButtonState(true)
             },
             showFilterCard: false,
-            readout: "노란색은 수용 영역을 표시하며, 가중치가 0인 위치도 포함합니다.\n맵의 밝기는 ReLU 계산값입니다. 뉴런을 움직여도 계산 연결은 유지됩니다.");
+            readout: "노란색은 0이 아닌 가중치로 연결된 위치를 표시합니다.\n맵의 밝기는 ReLU 계산값입니다. 뉴런을 움직여도 계산 연결은 유지됩니다.");
 
         public static readonly LessonContent EditInput = new LessonContent(
             "4 / 4 — 입력을 바꿔 보기",
-            "입력 픽셀을 눌러 흑백을 바꾸고, feature map의 변화를 보세요.\n잡고·돌리고·확대하고, 신경망 사이를 걸어 다니며 살펴보세요.",
+            "입력 픽셀을 눌러 색을 바꾸고, feature map의 변화를 보세요.\n잡고·돌리고·확대하고, 신경망 사이를 걸어 다니며 살펴보세요.",
             new Dictionary<LessonAction, ButtonState>
             {
                 [LessonAction.Previous] = new ButtonState(true),

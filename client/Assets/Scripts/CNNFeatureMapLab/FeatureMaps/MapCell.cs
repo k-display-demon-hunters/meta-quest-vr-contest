@@ -5,6 +5,8 @@ namespace CNNFeatureMaps.FeatureMaps
     [RequireComponent(typeof(Renderer))]
     public sealed class MapCell : MonoBehaviour
     {
+        private static readonly Color[] Palette = { new Color(.18f, .65f, 1f), new Color(.18f, .9f, .48f),
+            new Color(1f, .7f, .16f), new Color(1f, .4f, .5f), new Color(.75f, .4f, 1f) };
         private int _layer = -1;
         private int _channel;
         [SerializeField] private int _row;
@@ -43,17 +45,18 @@ namespace CNNFeatureMaps.FeatureMaps
         public void RefreshAppearance(ConvolutionSimulation data)
         {
             float value = data.ReadValue(_layer, _channel, _row, _column);
-            Color color = _layer < 0 ? new Color(value, value, value) :
-                Color.Lerp(new Color(.1f, .22f, .28f), new Color(.25f, .7f, .83f), Mathf.Clamp01(value));
+            Color color = _layer < 0 ? data.ReadInputColor(_row, _column) :
+                Color.Lerp(new Color(.025f, .04f, .06f), Palette[_channel % Palette.Length],
+                    Mathf.Clamp01(Mathf.Abs(value) / data.ReadScale(_layer, _channel)));
             if (!_computed)
             {
                 color = new Color(.035f, .055f, .065f);
             }
-            bool affected = _spotlight || data.IsAffected(_layer, _row, _column);
+            bool affected = _spotlight || data.IsAffected(_layer, _channel, _row, _column);
             if (affected)
             {
                 Color highlight = new Color(1f, .83f, .22f);
-                // Preserve the input's black/white contrast while showing the sampled patch.
+                // Preserve the RGB input while marking its connected positions.
                 color = _layer < 0 ? Color.Lerp(color, highlight, .32f) : highlight;
             }
             _properties.SetColor(ColorId, color);
@@ -66,7 +69,7 @@ namespace CNNFeatureMaps.FeatureMaps
 
         public void Extract()
         {
-            // A neuron remains a visible solid object before and after extraction.
+            // A pixel tile remains visible before and after extraction.
             IsDetached = true;
         }
 

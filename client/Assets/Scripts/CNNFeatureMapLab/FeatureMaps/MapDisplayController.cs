@@ -43,7 +43,7 @@ namespace CNNFeatureMaps.FeatureMaps
 
         public void UpdateStepVisibility(LessonStep step, int channel)
         {
-            bool showAllLayers = step == LessonStep.TraceReceptiveField || step == LessonStep.EditInput;
+            bool showAllLayers = step == LessonStep.ExploreFeatureMaps || step == LessonStep.TraceReceptiveField || step == LessonStep.EditInput;
             for (int index = 0; index < _layerRoots.Length; index++)
             {
                 _layerRoots[index].gameObject.SetActive(index == 0 || showAllLayers);
@@ -57,7 +57,7 @@ namespace CNNFeatureMaps.FeatureMaps
             }
             foreach (Transform output in _outputRoots)
             {
-                output.gameObject.SetActive(step == LessonStep.EditInput);
+                output.gameObject.SetActive(step == LessonStep.ExploreFeatureMaps || step == LessonStep.EditInput);
             }
         }
 

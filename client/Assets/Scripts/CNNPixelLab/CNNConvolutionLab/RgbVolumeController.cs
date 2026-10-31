@@ -20,6 +20,7 @@ namespace UI
         private static readonly string[] Names = { "R", "G", "B" };
 
         public bool IsAligned => _interaction != null && _interaction.IsAligned;
+        public bool WaitingForKernel { get; private set; }
         public bool HasPendingAction => _volume.HasPendingAction;
         public bool CompletePendingAction() => _volume.CompletePendingAction();
         internal void StopLayerInteraction() { _volume.StopInteraction(); }
@@ -98,8 +99,8 @@ namespace UI
             {
                 for (int i = 0; i < 9; i++)
                 {
-                    _view.Values[c, i].fontStyle = i == index ? FontStyle.Bold : FontStyle.Normal;
-                    _view.VolumeWeightLabels[c, i].fontStyle = i == index ? FontStyle.Bold : FontStyle.Normal;
+                    _view.Values[c, i].fontStyle = FontStyle.Bold;
+                    _view.VolumeWeightLabels[c, i].fontStyle = FontStyle.Bold;
                     _view.VolumeWeightLabels[c, i].color = i == index ? new Color(1, 0.85f, 0.3f) : Color.white;
                     _view.Values[c, i].transform.parent.localScale = Vector3.one * (i == index ? 0.00125f : 0.001f);
                 }
@@ -127,9 +128,9 @@ namespace UI
 
         public void Initialize(Font font)
         {
-            transform.localScale = Vector3.one * 500f;
-            transform.localRotation = Quaternion.Euler(0, -55, 0);
-            transform.localPosition = new Vector3(0, 0, -180);
+            transform.localScale = Vector3.one * 1.5f;
+            transform.localRotation = Quaternion.Euler(0, -8, 0);
+            transform.localPosition = new Vector3(0, 0, -0.55f);
             _builder = new GeometryBuilder(transform, font);
             _view = _builder.Build();
             _interaction = new KernelInteractionController(transform, _view);
@@ -148,14 +149,85 @@ namespace UI
                 for (int i = 0; i < 9; i++)
                 {
                     _view.Values[c, i].text = _calculation.Input(c, i).ToString();
-                    float strength = _calculation.Input(c, i) / 255f;
+                    float strength = 0.18f + _calculation.Input(c, i) / 3f * 0.82f;
                     Color color = c == 0 ? new Color(strength, 0, 0) : c == 1 ? new Color(0, strength, 0) : new Color(0, 0, strength);
                     GeometryBuilder.Tint(_view.Values[c, i].transform.parent.parent.Find("Tile mesh").GetComponent<MeshRenderer>(), color);
                     _view.Values[c, i].color = c == 1 && strength > 0.65f ? Color.black : Color.white;
                 }
                 for (int i = 0; i < 9; i++) { _view.VolumeWeightLabels[c, i].text = _calculation.Weight(c, i).ToString(); }
             }
-            for (int i = 0; i < 9; i++) { GeometryBuilder.Tint(_view.ColourTiles[i], new Color(_calculation.Input(0, i) / 255f, _calculation.Input(1, i) / 255f, _calculation.Input(2, i) / 255f)); }
+            for (int i = 0; i < 9; i++) { GeometryBuilder.Tint(_view.ColourTiles[i], new Color(_calculation.Input(0, i) / 3f, _calculation.Input(1, i) / 3f, _calculation.Input(2, i) / 3f)); }
+        }
+
+        public IEnumerator ArrangePractice()
+        {
+            ReleaseInteractions();
+            PrepareFilterDisplay();
+            HideAnswers();
+            _view.SpatialGuide.gameObject.SetActive(false);
+            _view.Flying.gameObject.SetActive(false);
+            _view.WeightCopy.gameObject.SetActive(false);
+            _view.ColourPatch.gameObject.SetActive(false);
+            for (int c = 0; c < 3; c++)
+            {
+                _view.Layers[c].gameObject.SetActive(true);
+                _view.ParkedKernels[c].gameObject.SetActive(false);
+            }
+            for (float time = 0; time < 1.2f; time += Time.unscaledDeltaTime)
+            {
+                float t = Mathf.SmoothStep(0, 1, time / 1.2f);
+                for (int c = 0; c < 3; c++)
+                {
+                    Vector3 start = new Vector3((c - 1) * 0.65f, 0, c * 0.1f);
+                    _view.Layers[c].localPosition = Vector3.Lerp(start, PracticeLayer(c), t);
+                    _view.Layers[c].localScale = Vector3.one * Mathf.Lerp(1.7f, 1, t);
+                }
+                yield return null;
+            }
+            for (int c = 0; c < 3; c++)
+            {
+                _view.Layers[c].localPosition = PracticeLayer(c);
+                _view.Layers[c].localScale = Vector3.one;
+            }
+        }
+
+        private static Vector3 PracticeLayer(int channel) => new Vector3(-0.55f + channel * 0.24f, channel * 0.1f, 0.15f + channel * 0.14f);
+
+        public IEnumerator RevealWeights()
+        {
+            // A separate stack forms beside the input; no RGB input transforms into a weight.
+            for (int c = 0; c < 3; c++)
+            {
+                Transform layer = _view.ParkedKernels[c];
+                layer.gameObject.SetActive(true);
+                Vector3 target = new Vector3(0.65f + c * 0.14f, c * 0.1f, 0.15f + c * 0.14f);
+                for (float time = 0; time < 0.6f; time += Time.unscaledDeltaTime)
+                {
+                    float t = Mathf.SmoothStep(0, 1, time / 0.6f);
+                    layer.localPosition = Vector3.Lerp(target + Vector3.up * 0.7f, target, t);
+                    layer.localScale = Vector3.one * Mathf.Lerp(0.1f, 1, t);
+                    yield return null;
+                }
+                layer.localPosition = target;
+                layer.localScale = Vector3.one;
+            }
+        }
+
+        public IEnumerator WaitForKernel()
+        {
+            WaitingForKernel = true;
+            _view.DropTarget.gameObject.SetActive(true);
+            while (!IsAligned)
+            {
+                _view.GripArrow.gameObject.SetActive(!_interaction.IsHeld);
+                _view.GripArrow.localPosition = new Vector3(0, 0.5f + Mathf.Sin(Time.unscaledTime * 3f) * 0.04f, -0.04f);
+                _view.DropTarget.localScale = Vector3.one * (1 + 0.035f * Mathf.Sin(Time.unscaledTime * 4f));
+                yield return null;
+            }
+            _interaction.LockAlignedKernel();
+            WaitingForKernel = false;
+            _view.GripArrow.gameObject.SetActive(false);
+            _view.DropTarget.gameObject.SetActive(false);
         }
 
         public IEnumerator Observe(Vector3 source, bool extract = true)
@@ -218,7 +290,7 @@ namespace UI
             _view.Result.gameObject.SetActive(true);
             _view.Slot.gameObject.SetActive(true);
             _view.SumLabel.text = "합: ?";
-            _view.KernelTitle.text = Names[channel] + " 고정 가중치 · Grip";
+            _view.KernelTitle.text = Names[channel] + " 가중치";
             for (int i = 0; i < 9; i++)
             {
                 _view.Weights[i].text = _calculation.Weight(channel, i).ToString();
@@ -234,9 +306,9 @@ namespace UI
                 float t = Mathf.SmoothStep(0, 1, time);
                 for (int c = 0; c < 3; c++)
                 {
-                    _view.Layers[c].gameObject.SetActive(true);
+                    _view.Layers[c].gameObject.SetActive(c == channel);
                     _view.Layers[c].localPosition = Vector3.Lerp(starts[c], LayerPosition(c, channel), t);
-                    _view.ParkedKernels[c].gameObject.SetActive(c != channel);
+                    _view.ParkedKernels[c].gameObject.SetActive(false);
                     _view.ParkedKernels[c].localPosition = _view.Layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.3f);
                 }
                 _view.Kernel.localPosition = Vector3.Lerp(new Vector3(-0.38f, 0, 0.6f), KernelInteractionController.KernelHome, t);
@@ -273,7 +345,7 @@ namespace UI
                 bool selected = i / 3 == row;
                 _view.Weights[i].color = selected ? new Color(1, 0.83f, 0.3f) : Color.white;
                 _view.Products[i].color = selected ? new Color(1, 0.83f, 0.3f) : Color.white;
-                _view.Values[_channel, i].fontStyle = selected ? FontStyle.Bold : FontStyle.Normal;
+                _view.Values[_channel, i].fontStyle = FontStyle.Bold;
             }
         }
 
@@ -337,8 +409,14 @@ namespace UI
 
         public void ReleaseInteractions()
         {
+            WaitingForKernel = false;
+            if (_view != null)
+            {
+                _view.GripArrow.gameObject.SetActive(false);
+                _view.DropTarget.gameObject.SetActive(false);
+            }
             if (_volume != null) { _volume.StopInteraction(); }
-            _interaction?.ReleaseInteractions();
+            _interaction?.DisableKernel();
             _answers?.ReleaseInteractions();
         }
 
@@ -397,17 +475,10 @@ namespace UI
             public Geometry Build()
             {
                 _material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                _material.SetFloat("_Surface", 1);
-                _material.SetFloat("_Blend", 0);
-                _material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                _material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                _material.SetFloat("_ZWrite", 1);
                 _material.SetFloat("_Smoothness", 0.08f);
                 _material.SetFloat("_SpecularHighlights", 0);
                 _material.SetFloat("_EnvironmentReflections", 0);
-                _material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                _material.SetOverrideTag("RenderType", "Transparent");
-                _material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                _material.EnableKeyword("_EMISSION");
                 for (int c = 0; c < 3; c++)
                 {
                     _view.Layers[c] = Root(Names[c] + " input slice");
@@ -438,13 +509,31 @@ namespace UI
                 _view.ColourPatch.gameObject.SetActive(false);
                 _view.Kernel = Root("Fixed weight slice");
                 _view.KernelTitle = Caption(_view.Kernel, "고정 가중치", new Vector3(0, 0.32f, 0), 0.7f);
+                _view.GripArrow = Root("Grip arrow");
+                _view.GripArrow.SetParent(_view.Kernel, false);
+                Tile(_view.GripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Transform wing = Tile(_view.GripArrow, new Vector3(side * 0.045f, -0.07f, 0), new Vector3(0.035f, 0.13f, 0.025f), Color.cyan);
+                    wing.localRotation = Quaternion.Euler(0, 0, -side * 45);
+                }
+                Caption(_view.GripArrow, "Grip", new Vector3(0, 0.16f, 0), 0.4f);
+                _view.GripArrow.gameObject.SetActive(false);
+                _view.DropTarget = Root("Weight placement outline");
+                _view.DropTarget.localPosition = new Vector3(-0.3f, 0.055f, -0.3f);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Tile(_view.DropTarget, new Vector3(side * 0.3f, 0, 0), new Vector3(0.018f, 0.54f, 0.018f), Color.cyan);
+                    Tile(_view.DropTarget, new Vector3(0, side * 0.27f, 0), new Vector3(0.6f, 0.018f, 0.018f), Color.cyan);
+                }
+                _view.DropTarget.gameObject.SetActive(false);
                 for (int i = 0; i < 9; i++)
                 {
                     Transform tile = Tile(_view.Kernel, Cell(i), new Vector3(0.09f, 0.065f, 0.08f), new Color(0.3f, 0.31f, 0.34f));
                     _view.Weights[i] = Caption(tile, "", new Vector3(0, 0, -0.066f), 0.12f);
                 }
                 _view.Result = Root("Products at matching positions");
-                _view.Result.localPosition = new Vector3(0.65f, 0, -0.75f);
+                _view.Result.localPosition = new Vector3(0.45f, 0, 0.1f);
                 Caption(_view.Result, "같은 위치의 곱", new Vector3(0, 0.32f, 0), 0.7f);
                 for (int i = 0; i < 9; i++)
                 {
@@ -452,7 +541,7 @@ namespace UI
                     _view.Products[i] = Caption(productTile, "?", new Vector3(0, 0, -0.066f), 0.17f);
                 }
                 _view.Slot = Root("Answer destination");
-                _view.Slot.localPosition = new Vector3(0.25f, -0.45f, -1.05f);
+                _view.Slot.localPosition = new Vector3(0.8f, -0.45f, 0.1f);
                 Tile(_view.Slot, Vector3.zero, new Vector3(0.36f, 0.14f, 0.035f), new Color(0.26f, 0.29f, 0.34f));
                 _view.SumLabel = Caption(_view.Slot, "합: ?", new Vector3(0, 0, -0.025f), 0.34f);
                 _view.Flying = Root("Animated calculation copy");
@@ -517,7 +606,8 @@ namespace UI
             {
                 if (renderer == null) { return; }
                 MaterialPropertyBlock properties = new MaterialPropertyBlock();
-                color.a = 0.9f;
+                properties.SetColor("_EmissionColor", color == Color.cyan ? Color.cyan * 1.5f : color * 0.35f);
+                color.a = 1f;
                 properties.SetColor("_BaseColor", color);
                 renderer.SetPropertyBlock(properties);
             }
@@ -535,7 +625,8 @@ namespace UI
                 label.transform.SetParent(canvasObject.transform, false);
                 label.rectTransform.sizeDelta = new Vector2(width * 1000, 100);
                 label.font = _font;
-                label.fontSize = 48;
+                label.fontSize = 60;
+                label.fontStyle = FontStyle.Bold;
                 label.alignment = TextAnchor.MiddleCenter;
                 label.color = Color.white;
                 label.raycastTarget = false;
@@ -553,8 +644,8 @@ namespace UI
                         copy.transform.localRotation = Quaternion.Euler(0, -side * 90, 0);
                         copy.rectTransform.sizeDelta = new Vector2(115, 100);
                         copy.resizeTextForBestFit = true;
-                        copy.resizeTextMinSize = 18;
-                        copy.resizeTextMaxSize = 42;
+                        copy.resizeTextMinSize = 40;
+                        copy.resizeTextMaxSize = 52;
                         // Each side needs its own world-space Canvas outside the front label canvas.
                         Canvas sideCanvas = copy.gameObject.AddComponent<Canvas>();
                         sideCanvas.renderMode = RenderMode.WorldSpace;
@@ -588,6 +679,8 @@ namespace UI
             public readonly MeshRenderer[] ColourTiles = new MeshRenderer[9];
             public LineRenderer CalculationPath;
             public Transform Kernel;
+            public Transform GripArrow;
+            public Transform DropTarget;
             public Transform ColourPatch;
             public Transform Result;
             public Transform Slot;

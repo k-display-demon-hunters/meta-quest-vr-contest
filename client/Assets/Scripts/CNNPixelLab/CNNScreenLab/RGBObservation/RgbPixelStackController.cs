@@ -10,6 +10,7 @@ namespace UI
         [SerializeField] private Transform[] _layers;
         [SerializeField] private MeshRenderer[] _blocks;
         [SerializeField] private Vector2 _boardSize = new Vector2(2.4f, 1.35f);
+        [SerializeField] private Transform _sourceBoard;
         private MaterialPropertyBlock _properties;
         private const float Cell = 0.19f;
         public event Action<int, float> ProgressChanged;
@@ -21,7 +22,8 @@ namespace UI
             _properties = new MaterialPropertyBlock();
             Vector3 source = new Vector3(((selected.x + 1.5f) / columns - 0.5f) * _boardSize.x,
                 ((selected.y + 1.5f) / rows - 0.5f) * _boardSize.y, -0.13f);
-            float initialScale = _boardSize.x / columns / Cell;
+            source = _content.transform.InverseTransformPoint(_sourceBoard.TransformPoint(source));
+            float initialScale = _sourceBoard.lossyScale.x / _content.transform.lossyScale.x * _boardSize.x / columns / Cell;
             for (int c = 0; c < 3; c++)
             {
                 _layers[c].localPosition = source;
@@ -43,7 +45,7 @@ namespace UI
                 for (int c = 0; c < 3; c++)
                 {
                     float progress = Mathf.SmoothStep(0, 1, Mathf.Clamp01((elapsed - c * 0.25f) / 2f));
-                    Vector3 target = new Vector3((c - 1) * 0.14f, (c - 1) * 0.07f, -0.42f - c * 0.22f);
+                    Vector3 target = new Vector3((c - 1) * 0.65f, c * 0.08f, c * 0.1f);
                     _layers[c].localPosition = Vector3.Lerp(source, target, progress);
                     _layers[c].localScale = Vector3.one * Mathf.Lerp(initialScale, 1, progress);
                     ProgressChanged?.Invoke(c, Mathf.InverseLerp(0.45f, 1, progress));

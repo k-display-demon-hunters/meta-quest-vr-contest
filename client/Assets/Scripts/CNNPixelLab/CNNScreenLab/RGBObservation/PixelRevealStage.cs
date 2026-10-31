@@ -35,8 +35,7 @@ namespace UI
             _rows = rows;
             _selected = selected;
             _properties = new MaterialPropertyBlock();
-            _pixelRoot.SetActive(true);
-            for (int x = 0; x < _columns.Length; x++) { SetColumn(x, 0); }
+            _pixelRoot.SetActive(false);
             Phase = PixelObservationPhase.AwaitingClick;
         }
         public void RevealPixels(PixelPatchData patch)
@@ -54,19 +53,6 @@ namespace UI
         }
         private IEnumerator Reveal(PixelPatchData patch)
         {
-            float elapsed = 0;
-            while (elapsed < _revealDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float progress = Mathf.Clamp01(elapsed / _revealDuration);
-                for (int x = 0; x < _columns.Length; x++)
-                {
-                    float start = x / (float)(_columns.Length - 1) * 0.8f;
-                    SetColumn(x, Mathf.SmoothStep(0, 1, Mathf.Clamp01((progress - start) / 0.2f)));
-                }
-                yield return null;
-            }
-            for (int x = 0; x < _columns.Length; x++) { SetColumn(x, 1); }
             SetPhase(PixelObservationPhase.Unfolding);
             _rgbValues.ShowValues(patch);
             yield return _rgbStack.Unfold(patch, _columns.Length, _rows, _selected);

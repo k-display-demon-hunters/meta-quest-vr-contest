@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | 정문 앞마당 | 0, -14 | 20×12 | 북쪽 복도1 |
 | 튜토리얼실 | 0, 0 | 18×8 | 남쪽 입구 → 서쪽 출구 |
-| ROOM #1 · Pixel Lab | -22, -4 | 20×20 | 동쪽 입구 → 북쪽 출구 |
+| ROOM #1 · 픽셀·합성곱 | -22, -4 | 20×20 | 동쪽 입구 → 북쪽 출구 |
 | ROOM #2 · Feature Map Lab | -2, 12 | 20×12 | 서쪽 입구 → 동쪽 출구 |
 | ROOM #3 · Model Design Lab | 20, 12 | 18×14 | 서쪽 입구 → 북쪽 출구 |
 | 후문 하역 공간 | -5, 35 | 30×18 | 동쪽 입구 |
@@ -25,7 +25,7 @@
 
 ROOM #1은 X[-32,-12], Z[-14,6]의 20×20m 공간이다. 동쪽 입구 (-12,0,0)를 고정하고 이전 16×16m 외곽에서 서쪽 4m·남북 각각 2m를 확장했다. 체험 위치와 내부 문을 보존하기 위해 중앙 벽은 X=-20을 유지하고 양 끝만 새 외곽까지 연장한다. 동쪽의 체험 1-1(CNNScreenLab) 공간은 명목상 8×20m, 서쪽의 체험 1-2(CNNConvolutionLab) 공간은 12×20m다. 통로 중심은 (-20, 0, -8.8)이며 폭 3.2m·최고 높이 3.2m의 아치다. 벽은 천장까지 이어지고 아치형 금속 셔터가 통로를 닫는다. 같은 FactoryShutterController로 기존 문과 동일하게 1.6초 동안 3.3m 상하 이동한다. 벽·아치 상부와 셔터에 충돌 영역을 저장한다.
 
-동쪽 입구에서 PixelLab의 픽셀 관찰을 시작한다. RGB 관찰과 R·G 학습을 마치고 다음 공간으로를 누르면 CNNPixelLabManager가 선택 데이터를 보관하고 내부 진행을 시작한다. 문서 01 수집을 확인해 Factory의 공개 공간 제어 기능으로 내부 문·안내선을 열고, 카메라가 서쪽 진입 영역(X=-21.4보다 안쪽)에 들어오면 합성곱 씬으로 교체한다. 성공 후 내부 문·안내선을 닫으며 로드 실패는 PixelLab 내부에서 3초 뒤 재시도한다. Core의 현재 단계는 이 과정 내내 PixelLab이다. 합성곱까지 완료하면 PixelLab의 ProgressChanged와 ExitAvailabilityChanged를 알리고 Core 세션이 다음 특징 맵 체험을 준비한다.
+ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. LearningSessionManager가 완료·양피지·영역 변화에 따라 전환을 조율한다. Screen 입장 문서는 ID 4(05), Convolution 입장 문서는 ID 0(01)이다. 내부 공유 문은 관찰 완료·콘텐츠 준비·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
 
 ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 왼쪽에서 시작하며, 두 체험 사이에는 남쪽 아치를 지나는 별도 경로를 둔다. 외부 출구는 (-26,0,6)으로 옮기고 폭 3.2m를 유지한다. 복도2 세로 구간은 X[-27.8,-24.2], Z[6,10.2], 가로 구간은 X[-27.8,-12], Z[10.2,13.8]로 맞추어 기존 ROOM #2 입구 (-12,0,12)에 연결한다. 다음 방 안내선은 (-23,-1.5) → (-23,3) → (-26,3) → (-26,12) → (-2,12)를 지나 고정 컨볼루션 표시를 우회한다.
 
@@ -116,13 +116,12 @@ FactoryFloorDebris_*.asset 23개는 방·재질별 결합 메시이며 무광 �
 | 학습 단계 | 현재 진행 가능 조건 |
 | --- | --- |
 | Tutorial | 11개 조작 안내와 미션 확인을 마치고 입력 정리가 끝남. 건너뛰기 버튼은 없음 |
-| PixelLab | 픽셀 관찰에 이어 합성곱까지 완료했고 내부 전환·종료 중이 아닌 활성 상태 |
+| ScreenLab | 선택 영역의 RGB 전개·설명을 확인하고 관찰 마치기를 누른 활성 상태 |
+| ConvolutionLab | R/G 안내 학습과 B 퀴즈·결과 확인을 마친 활성 상태 |
 | FeatureMap | 초기화 완료·마지막 단계·입력 수정 1회 이상 또는 건너뛰기·잡은 대상 없음 |
 | ModelDesign | 정상 학습 결과 반영·작업 종료·활성 상태 |
 
 세 체험은 ILearningExperience의 Progress(0~1), CanExit, ProgressChanged(float), ExitAvailabilityChanged(bool), EndSession()으로 Core 세션과 통신한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. 전체 진행률은 세 체험의 동일 비중 평균이다. 재방문·초기화로 누적 기록은 감소하지 않는다. 튜토리얼은 기존 완료 이벤트를 사용하며 전체 진행률에서 제외한다.
-
-학습 순서와 이름, 씬 이름, 진행률 포함 여부, 입장 문서와 체험 소속 문서는 Core LearningStageCatalog에 정의한다. LearningStageId 하나로 학습 체험과 공장 목적지를 식별하며 별도 RoomId는 사용하지 않는다. 값은 None 0, PixelLab 1, FeatureMap 2, ModelDesign 3, Exit 4, Tutorial 5다. 스크린과 합성곱은 PixelLab 내부 구현이며 외부에는 하나의 완료 기록만 제공한다. 진행률 대상은 PixelLab·FeatureMap·ModelDesign 세 체험이고 체험별 최대 도달 진행률의 평균으로 표시한다. Tutorial과 Exit는 진행률에 포함하지 않는다.
 
 누적 완료는 공장 씬 수명의 LearningSessionManager가 소유한 LearningProgress에만 저장한다. 태블릿은 읽기 전용 LearningProgressSnapshot을 표시한다. 공장 세션 안의 재방문·체험 초기화·태블릿 비활성화는 기록을 지우지 않으며, 공장 씬이 종료되면 세션과 학습 기록을 폐기한다. 재진입은 새 세션이다. 기존 공용 양피지의 수집 기록 수명은 별개다.
 
@@ -148,8 +147,6 @@ Core 세션은 각 모듈의 진입점을 연결한다. FactoryEnvironmentManage
 
 FactorySceneLoadController는 카탈로그의 씬 이름으로 콘텐츠를 준비하고 sceneLoaded에서 루트를 비활성화한다. Core 세션은 학습 단계 ID로 준비를 요청하고, 튜토리얼 초기화에 필요한 배치 값을 전달하며 체험 초기화와 이벤트 연결을 마친 후 활성화한다. 로더는 씬에 연결된 FactoryNavigationData의 ContentAnchor에서 위치·회전·배율을 직접 읽고 일반 학습 콘텐츠의 자체 조명을 끈다. 튜토리얼 루트는 원점·기본 회전·배율 1로 배치하고 자체 조명을 유지한다. 두 경우 모두 Rigidbody 위치·회전을 동기화한다. 기존 체험은 다음 방에 들어갈 때까지 유지한다.
 
-CNNPixelLabManager가 공장 실행 시 FactoryEnvironmentManager의 공개 공간 기능과 ParchmentManager의 수집 조회를 직접 연결한다. 문·진입 영역·안내 경로는 공장 씬에 유지하며 내부 통로 개방 조건·진입 대기·Screen/Convolution 전환은 PixelLab이 조율한다. Learning은 통로 설정이나 내부 로딩 상태를 전달·조회하지 않는다. 초기 Screen 로딩 실패와 내부 전환 실패는 PixelLab에서 3초 뒤 재시도한다.
-
 튜토리얼도 동일한 완료·진행 가능 이벤트를 사용한다. 로더가 IsComplete를 매 프레임 조회하며 기다리지 않는다. 영역 감지는 공장 내부 Controller가 수행하고 세션은 영역 변화 이벤트와 최초 상태를 사용한다. 진행 조건 변경·양피지 수집·영역 변화·로딩 종료에 따라 전환을 판단하며, 실패한 자연 진행은 3초 후 재시도한다. 재시도는 세션의 코루틴으로 관리하고 단계 이동·세션 종료 시 취소한다.
 
 준비 중 진행 가능 상태가 사라지면 준비한 씬을 취소한다. 씬 교체 전에는 구독을 해제하고 각 체험의 종료와 잡은 물체 해제를 처리한다. 로딩 중 공장 씬이 종료되면 로더의 완료 콜백이 뒤늦게 로드된 씬을 정리한다. 엔딩의 Single 전환에서는 Unity의 씬 정리와 중복 언로드하지 않는다.
@@ -157,8 +154,6 @@ CNNPixelLabManager가 공장 실행 시 FactoryEnvironmentManager의 공개 공�
 ## 지도·양피지
 
 미니맵 형상은 FactoryMapController가 생성한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역, 실제 Pickup 위치를 읽는다. FactoryEnvironmentManager가 MapChanged와 초기 MapData를 공개하고 Core 세션이 태블릿에 연결한다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
-
-양피지는 클릭 즉시 수집하고 열람창을 연다. 본문·페이지는 ParchmentCatalog에, 체험별 전체 문서 목록은 LearningStageCatalog의 ParchmentIds에 둔다. 바깥문 입장 조건은 EntranceParchmentIds만 사용한다. PixelLab은 전체 문서 {4, 0} 중 바깥문에서 4를 요구하고, 내부 문서 0은 PixelLab이 진행 중에 확인한다. 세션은 ParchmentManager.Collected와 HasCollectedAll로 바깥문 진입 조건을 판단하고 공장에 문 제어를 요청한다. 수집 기록은 ParchmentManager가 소유한다. 문서별 배분·지급·실제 위치는 [공용 양피지](parchment.md)를 따른다.
 
 ## 씬·에셋 관리
 
@@ -185,10 +180,6 @@ ROOM #1 벽·아치 셔터·두 체험 기준점과 Screen/Convolution 전환 �
 ## 태블릿 자유 이동
 
 LearningSessionManager가 태블릿의 StageMoveRequested(LearningStageId)를 받아 선택한 단계까지의 ParchmentIds 문서를 카탈로그 순서대로 지급한 뒤 이동을 처리한다. 지급은 이동 요청 기준이며 이동 거절·실패·이전 단계 복귀에도 회수하지 않는다. 문서 지급은 체험 완료를 뜻하지 않는다.
-
-이동 시 예약된 다음 체험과 재시도를 취소하고, PixelLab 내부 진행·중첩 씬의 종료를 기다린 뒤 현재 체험을 정리한다. 대상 체험을 준비·배치·연결·활성화하고 FactoryEnvironmentManager를 통해 문·안내선과 플레이어 위치를 갱신한다. 플레이어 이동은 실제 카메라 높이를 유지한다. 도착점은 Pixel Arrival(-15,0,-3.2 / Y -90°), Feature Map Arrival(-2,0,10 / Y 0°), Model Design Arrival(20,0,12 / Y 90°)이며 LearningStageId와 도착점 쌍으로 연결한다. 합성곱 전용 텔레포트 도착점은 사용하지 않는다.
-
-태블릿 이동 대상은 PixelLab·FeatureMap·ModelDesign 세 체험이다. PixelLab은 항상 픽셀 관찰부터 시작하고 합성곱까지 내부에서 진행한다. 재방문은 새 체험이며 픽셀 선택·필터·모델 편집 중간 상태는 복원하지 않는다. 로딩 중에는 중복 전환을 시작하지 않고 실패 시 태블릿에 재선택 안내를 표시한다. 걸어서 입장하는 흐름은 바깥문 문서 조건과 PixelLab 내부 문서 조건을 구분해 적용한다.
 
 태블릿 카드의 순서·요청 ID는 LearningStageCatalog.ProgressStages에 연결하고 고정 제목 Text는 기존 프리팹을 유지한다. 누적 완료와 진행률 계산은 Core가 맡고 TabletLearningController는 LearningProgressSnapshot과 이동 안내를 표시한다. 세션 연결 해제 시 빈 스냅샷을 전달한다. 공장 씬 재진입 때 학습 기록은 새로 시작하며 기존 ParchmentManager의 수집 기록 수명은 별도로 유지한다.
 

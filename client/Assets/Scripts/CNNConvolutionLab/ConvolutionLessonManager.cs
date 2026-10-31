@@ -4,23 +4,36 @@ using UnityEngine;
 
 namespace UI
 {
-    // First-room arithmetic: owns R/G sequencing and its calculation display.
-    public sealed class PixelPracticeManager : MonoBehaviour
+    // Owns arithmetic lesson sequencing, display and user input within ConvolutionLab.
+    public sealed class ConvolutionLessonManager : MonoBehaviour
     {
         [SerializeField] private LessonUIController _ui;
         [SerializeField] private RgbVolumeController _spatial;
         [SerializeField] private Font _font;
         private bool _initialized;
         private bool _running;
+        private ConvolutionQuizController _quiz;
         public event Action Completed;
+        public event Action<float> ProgressChanged;
+        private void FinishDisplay() { StopPractice(); }
 
-        private void OnEnable() { _ui.SkipRequested += HandleAssist; }
+        private void OnEnable()
+        {
+            _ui.SkipRequested += HandleAssist;
+            _ui.AnswerRequested += HandleAnswer;
+            _ui.AdvanceRequested += FinishDisplay;
+            _ui.CloseRequested += FinishDisplay;
+        }
+        private void HandleAnswer(int option) { _quiz?.Choose(option); }
         private void OnDisable()
         {
             _ui.SkipRequested -= HandleAssist;
+            _ui.AnswerRequested -= HandleAnswer;
+            _ui.AdvanceRequested -= FinishDisplay;
+            _ui.CloseRequested -= FinishDisplay;
             StopPractice();
         }
-        public void BeginPractice(PixelPatchData patch)
+        public void BeginPractice(PixelPatchData patch, bool example = false)
         {
             if (!_initialized)
             {
@@ -34,11 +47,11 @@ namespace UI
             ConvolutionCalculation calculation = new ConvolutionCalculation(patch);
             _spatial.SetData(calculation);
             _running = true;
-            StartCoroutine(Run(calculation));
+            StartCoroutine(Run(calculation, example));
         }
-        private IEnumerator Run(ConvolutionCalculation calculation)
+        private IEnumerator Run(ConvolutionCalculation calculation, bool example)
         {
-            _ui.Title = "작은 숫자로 연습해요";
+            _ui.Title = example ? "기본 예제로 연습해요" : "선택한 픽셀로 연습해요";
             _ui.Explanation = "지금부터는 실제 RGB 값을\n0~3의 작은 연습용 값으로 바꿔요.";
             _ui.Guide = "연습용 값 0~3\n\n원래 색의 값은 0~255예요.";
             yield return _spatial.ArrangePractice();
@@ -53,16 +66,19 @@ namespace UI
             yield return _ui.WaitForNext("R 시작");
             RedCalculationController lesson = new RedCalculationController(_spatial, _ui, calculation);
             yield return lesson.Run(0);
+            ProgressChanged?.Invoke(1f / 3f);
             yield return lesson.Run(1);
+            ProgressChanged?.Invoke(2f / 3f);
             _ui.Title = "R · G 학습 완료!";
-            _ui.Explanation = "다음 공간에서는 B를 직접 계산해요.\n같은 방법으로 할 수 있어요.";
-            _ui.Equation = $"R 합 {calculation.Sum(0)}    G 합 {calculation.Sum(1)}";
-            _ui.Guide = "다음 공간 입구의\n양피지도 수집하세요.";
-            _ui.Feedback = "[다음 공간으로]를 누르세요.";
-            yield return _ui.WaitForNext("다음 공간으로");
+            _ui.Explanation = "이제 같은 방법으로 B를 직접 계산해요.";
+            yield return _ui.WaitForNext("B 퀴즈 시작");
+            _quiz = new ConvolutionQuizController(_spatial, _ui, calculation);
+            yield return _quiz.Run();
+            _quiz.Cancel();
             _running = false;
             _spatial.ReleaseInteractions();
-            _ui.gameObject.SetActive(false);
+            _ui.ShowCompleted(calculation.ChannelSums());
+            ProgressChanged?.Invoke(1f);
             Completed?.Invoke();
         }
         private void Update()
@@ -77,6 +93,7 @@ namespace UI
         {
             StopAllCoroutines();
             _running = false;
+            _quiz?.Cancel();
             if (_initialized) { _spatial.ReleaseInteractions(); }
             _ui.gameObject.SetActive(false);
             _spatial.gameObject.SetActive(false);

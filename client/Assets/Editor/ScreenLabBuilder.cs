@@ -13,17 +13,15 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace UI.Editor
 {
-    public static class SpatialPixelLabBuilder
+    public static class ScreenLabBuilder
     {
         public const string ScenePath = "Assets/Scenes/CNNScreenLab.unity";
-        private const string MaterialFolder = "Assets/Materials/CNNPixelLab";
+        private const string MaterialFolder = "Assets/Materials/CNNScreenLab";
         private static Font _font;
-        private static Material _dark;
-        private static Material _cyan;
         private static Material _amber;
         private static Material _white;
 
-        [MenuItem("Tools/CNN/Create Spatial Pixel Lab")]
+        [MenuItem("Tools/CNN/Create Screen Lab")]
         public static void Create()
         {
             if (EditorApplication.isPlaying) { throw new InvalidOperationException("Stop Play Mode first."); }
@@ -31,8 +29,6 @@ namespace UI.Editor
             _font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
             Directory.CreateDirectory(MaterialFolder);
             AssetDatabase.Refresh();
-            _dark = Material("Structure", new Color32(36, 41, 47, 255), true);
-            _cyan = Material("System light", new Color32(86, 94, 101, 255), true);
             _amber = Material("Filter frame", new Color32(173, 142, 100, 255), true);
             _white = Material("Image surface", Color.white, true);
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
@@ -82,14 +78,14 @@ namespace UI.Editor
             grab.useDynamicAttach = true;
             grab.attachEaseInTime = 0.08f;
             Canvas controls = Canvas(lab.transform, "Spatial controls", new Vector3(0, 0.74f, 1.7f), new Vector2(1200, 155), 0.002f, camera);
-            PixelLabUIController ui = controls.gameObject.AddComponent<PixelLabUIController>();
+            ScreenLabUIController ui = controls.gameObject.AddComponent<ScreenLabUIController>();
             Button details = Button(controls.transform, "더 자세히 보기", -360, 25, 320, 70);
             UnityEventTools.AddPersistentListener(details.onClick, ui.RequestDetails);
             UnityEventTools.AddPersistentListener(Button(controls.transform, "처음부터", 0, 25, 270, 70).onClick, ui.RequestReset);
             SerializedObject fields = new SerializedObject(controller);
             Assign(fields, "_imageFactory", imageFactory);
             SerializedObject factoryFields = new SerializedObject(imageFactory);
-            Assign(factoryFields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNPixelLab/OpeningBroadcast.png"));
+            Assign(factoryFields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNScreenLab/OpeningBroadcast.png"));
             factoryFields.ApplyModifiedPropertiesWithoutUndo();
             Assign(fields, "_board", boardController);
             Assign(fields, "_selection", selectionController);

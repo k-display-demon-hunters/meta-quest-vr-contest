@@ -14,7 +14,7 @@ namespace UI.Editor
         public static void Install()
         {
             Scene scene = SceneManager.GetActiveScene();
-            if (EditorApplication.isPlaying || scene.path != SpatialPixelLabBuilder.ScenePath)
+            if (EditorApplication.isPlaying || scene.path != ScreenLabBuilder.ScenePath)
             {
                 throw new InvalidOperationException("Open CNNScreenLab in Edit Mode first.");
             }
@@ -36,7 +36,7 @@ namespace UI.Editor
             Button next = nextTransform.GetComponent<Button>();
             next.GetComponentInChildren<Text>().text = "다음으로";
             next.onClick = new Button.ButtonClickedEvent();
-            UnityEventTools.AddPersistentListener(next.onClick, controls.GetComponent<PixelLabUIController>().RequestNext);
+            UnityEventTools.AddPersistentListener(next.onClick, controls.GetComponent<ScreenLabUIController>().RequestNext);
             Transform menu = controls.Find("메뉴로");
             if (menu != null) { UnityEngine.Object.DestroyImmediate(menu.gameObject); }
             string[] names = { "더 자세히 보기", "다음으로", "처음부터" };

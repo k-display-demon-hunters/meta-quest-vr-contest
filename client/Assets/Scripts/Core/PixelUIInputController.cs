@@ -14,7 +14,7 @@ namespace UI
         {
             if (EventSystem.current == null)
             {
-                _ownedEventSystem = new GameObject("CNN Pixel Lab UI Input",
+                _ownedEventSystem = new GameObject("XR UI Input",
                     typeof(EventSystem), typeof(XRUIInputModule));
                 _ownedEventSystem.transform.SetParent(parent, false);
             }

@@ -33,13 +33,16 @@ namespace UI.Editor
             content.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
             content.SetActive(true);
             GameObject uiObject = (GameObject)PrefabUtility.InstantiatePrefab(
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/PixelCalculationUI.prefab"), content.transform);
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/PixelCalculationUI.prefab"), content.transform);
             LessonUIController ui = uiObject.GetComponent<LessonUIController>();
             GameObject blocks = new GameObject("B quiz blocks");
             blocks.transform.SetParent(content.transform, false);
             RgbVolumeController spatial = blocks.AddComponent<RgbVolumeController>();
-            SerializedObject fields = new SerializedObject(manager);
-            fields.FindProperty("_lessonRoot").objectReferenceValue = content;
+            ConvolutionLessonManager lesson = root.AddComponent<ConvolutionLessonManager>();
+            SerializedObject managerFields = new SerializedObject(manager);
+            managerFields.FindProperty("_lesson").objectReferenceValue = lesson;
+            managerFields.ApplyModifiedPropertiesWithoutUndo();
+            SerializedObject fields = new SerializedObject(lesson);
             fields.FindProperty("_ui").objectReferenceValue = ui;
             fields.FindProperty("_spatial").objectReferenceValue = spatial;
             fields.FindProperty("_font").objectReferenceValue =

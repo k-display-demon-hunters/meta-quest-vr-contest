@@ -4,6 +4,7 @@ using FactoryEnvironment;
 using FactoryTutorial;
 using Parchment;
 using Tablet;
+using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 
@@ -134,6 +135,11 @@ namespace Learning
                     BeginOperation(EnterTutorial());
                 return;
             }
+            if (_passagePrepared && !_canProceed)
+            {
+                BeginOperation(CancelNextLesson());
+                return;
+            }
             if (_passagePrepared)
             {
                 if (_destination == LearningStageId.None)
@@ -159,6 +165,15 @@ namespace Learning
                 RequestEvaluation();
             }
             else { BeginOperation(PrepareNextLesson(next)); }
+        }
+
+        private IEnumerator CancelNextLesson()
+        {
+            if (_destination != LearningStageId.None) { _factory.SetEntranceAvailable(_destination, false); }
+            _factory.ShowDestination(LearningStageId.None);
+            yield return _sceneLoader.CancelPrepared();
+            _passagePrepared = false;
+            FinishOperation();
         }
 
         private void BeginOperation(IEnumerator operation)
@@ -307,6 +322,8 @@ namespace Learning
         {
             if (stage == LearningStageId.Tutorial)
                 _sceneLoader.PreparedTutorial.Initialize(_rig, _factory.TutorialPose);
+            if (stage == LearningStageId.ConvolutionLab && _experience is CNNScreenLabManager screen)
+                ((CNNConvolutionLabManager)_sceneLoader.PreparedExperience).SetInput(screen.SelectedPatch);
 
         }
 

@@ -72,10 +72,6 @@ namespace UI
             _skip.gameObject.SetActive(false);
         }
         public void SetReturnAvailable(bool available) { _return.gameObject.SetActive(available); }
-        public void SetCompletionDestination(bool factoryHosted)
-        {
-            _nextObservation.GetComponentInChildren<Text>().text = factoryHosted ? "학습 마치기" : "다른 영역 보기";
-        }
         public void ShowCalculation() { _observationUi.SetActive(false); }
         public void ShowCompleted(int[] sums)
         {
@@ -83,7 +79,7 @@ namespace UI
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(false);
             _combine.gameObject.SetActive(false);
-            _summary.text = $"B 퀴즈 완료!\n\nR = {sums[0]}    G = {sums[1]}    B = {sums[2]}\n\n세 색의 합을 더하면 {sums[0] + sums[1] + sums[2]}\n(이번 연습의 편향은 0이에요.)";
+            _summary.text = $"합성곱 학습 완료!\n\nR = {sums[0]}    G = {sums[1]}    B = {sums[2]}\n\n세 색의 합을 더하면 {sums[0] + sums[1] + sums[2]}\n(이번 연습의 편향은 0이에요.)";
             _nextObservation.GetComponentInChildren<Text>().text = "학습 마치기";
         }
         public void SetObservationBusy(bool busy) { _nextObservation.interactable = !busy; }

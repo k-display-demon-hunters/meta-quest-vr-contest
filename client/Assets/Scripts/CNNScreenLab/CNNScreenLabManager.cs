@@ -1,28 +1,41 @@
 using System;
+using Learning;
 using System.Collections;
 using UnityEngine;
 
 namespace UI
 {
-    public sealed class CNNScreenLabManager : MonoBehaviour
+    public sealed class CNNScreenLabManager : MonoBehaviour, ILearningExperience
     {
         [SerializeField] private PixelImageFactory _imageFactory;
         [SerializeField] private PixelBoardController _board;
         [SerializeField] private PixelSelectionController _selection;
         [SerializeField] private PixelRevealStage _revealStage;
-        [SerializeField] private PixelLabUIController _ui;
-        [SerializeField] private PixelPracticeManager _practice;
+        [SerializeField] private ScreenLabUIController _ui;
         private PixelImageData _imageData;
         private PixelPatchData _selectedPatch;
         private Vector2Int _patchOrigin;
-        private Vector2Int? _initialSelection;
         private int _pixelPage = -1;
         private int _rgbPage;
         private bool _expanding;
-        private bool _practicing;
         private bool _learningComplete;
-        public event Action<PixelPatchData, Vector2Int> ConvolutionRequested;
-        public event Action ResetRequested;
+        public LearningStageId StageId => LearningStageId.ScreenLab;
+        public float Progress => _learningComplete ? 1f : 0f;
+        public bool CanExit => isActiveAndEnabled && _learningComplete;
+        public PixelPatchData SelectedPatch => _selectedPatch;
+        public event Action<float> ProgressChanged;
+        public event Action<bool> ExitAvailabilityChanged;
+        public IEnumerator EndSession()
+        {
+            StopAllCoroutines();
+            _ui.DisableInput();
+            yield break;
+        }
+        private void PublishState()
+        {
+            ProgressChanged?.Invoke(Progress);
+            ExitAvailabilityChanged?.Invoke(CanExit);
+        }
 
         private void Start()
         {
@@ -31,18 +44,12 @@ namespace UI
             _selection.Initialize(_imageData);
             _ui.Initialize();
             ResetLab();
-            if (_initialSelection.HasValue)
-            {
-                _selection.RestoreSelection(_initialSelection.Value);
-                HandleSelectionChanged();
-            }
         }
         private void OnEnable()
         {
             _selection.SelectionChanged += HandleSelectionChanged;
             _selection.FilterGrabbed += HandleFilterGrabbed;
             _revealStage.PixelsRevealed += HandlePixelsRevealed;
-            _practice.Completed += HandlePracticeCompleted;
             _ui.DetailsRequested += ShowDetails;
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
@@ -50,7 +57,7 @@ namespace UI
         }
         public void ShowDetails()
         {
-            if (_pixelPage < 2 || _selection.IsFilterHeld || !_selection.HasSelection || _expanding || _practicing
+            if (_pixelPage < 2 || _selection.IsFilterHeld || !_selection.HasSelection || _expanding
                 || _revealStage.Phase != PixelObservationPhase.Inactive) { return; }
             _patchOrigin = _selection.SelectedPixel;
             _selectedPatch = _imageData.CapturePatch(_patchOrigin);
@@ -67,16 +74,15 @@ namespace UI
         }
         public void NextStage()
         {
-            if (_selection.IsFilterHeld || _expanding || _practicing) { return; }
-            if (_learningComplete) { ConvolutionRequested?.Invoke(_selectedPatch, _patchOrigin); return; }
+            if (_selection.IsFilterHeld || _expanding) { return; }
+            if (_learningComplete) { return; }
             if (_revealStage.IsReadyForConvolution)
             {
                 _rgbPage++;
                 if (_rgbPage < 3) { _ui.ShowRgbPage(_rgbPage); return; }
-                _practicing = true;
-                _revealStage.ResetStage();
-                _ui.SetVisible(false);
-                _practice.BeginPractice(_selectedPatch);
+                _learningComplete = true;
+                _ui.ShowExitGuide();
+                PublishState();
                 return;
             }
             if (_pixelPage >= 0 && _pixelPage < 2)
@@ -89,8 +95,7 @@ namespace UI
         {
             if (_selection.IsFilterHeld) { return; }
             StopAllCoroutines();
-            _practice.StopPractice();
-            _expanding = _practicing = _learningComplete = false;
+            _expanding = _learningComplete = false;
             _pixelPage = -1;
             _selectedPatch = null;
             _revealStage.ResetStage();
@@ -98,9 +103,8 @@ namespace UI
             _selection.ResetSelection();
             _ui.SetVisible(true);
             _ui.ResetControls();
-            ResetRequested?.Invoke();
+            PublishState();
         }
-        public void SetInitialSelection(Vector2Int selected) { _initialSelection = selected; }
         private void HandleSelectionChanged()
         {
             if (!_selection.HasSelection) { _ui.ResetControls(); return; }
@@ -114,25 +118,17 @@ namespace UI
             _rgbPage = 0;
             _ui.ShowRgbPage(0);
         }
-        private void HandlePracticeCompleted()
-        {
-            _practicing = false;
-            _learningComplete = true;
-            _ui.SetVisible(true);
-            _ui.ShowExitGuide();
-            ConvolutionRequested?.Invoke(_selectedPatch, _patchOrigin);
-        }
         private void OnDisable()
         {
             StopAllCoroutines();
             _selection.SelectionChanged -= HandleSelectionChanged;
             _selection.FilterGrabbed -= HandleFilterGrabbed;
             _revealStage.PixelsRevealed -= HandlePixelsRevealed;
-            _practice.Completed -= HandlePracticeCompleted;
             _ui.DetailsRequested -= ShowDetails;
             _ui.NextRequested -= NextStage;
             _ui.ResetRequested -= ResetLab;
             _ui.DisableInput();
+            PublishState();
         }
         private void OnDestroy() { _imageData?.Dispose(); }
     }

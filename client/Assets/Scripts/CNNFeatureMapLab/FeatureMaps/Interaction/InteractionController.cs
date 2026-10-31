@@ -10,6 +10,7 @@ namespace CNNFeatureMaps.FeatureMaps.Interaction
         private GrabTarget _scaleTarget;
         public bool HasHeldTargets => _heldTargets.Count > 0;
 
+        public event System.Action OnHeldTargetsChanged;
         public event System.Action<Transform> OnTargetHeld;
         public event System.Action<Transform> OnTargetActivated;
 
@@ -65,6 +66,7 @@ namespace CNNFeatureMaps.FeatureMaps.Interaction
             {
                 _heldTargets.Add(target);
                 OnTargetHeld?.Invoke(target.transform);
+                OnHeldTargetsChanged?.Invoke();
             }
         }
 
@@ -79,6 +81,7 @@ namespace CNNFeatureMaps.FeatureMaps.Interaction
             if (_heldTargets.Remove(target))
             {
                 SelectScaleTarget(target);
+                OnHeldTargetsChanged?.Invoke();
             }
         }
 

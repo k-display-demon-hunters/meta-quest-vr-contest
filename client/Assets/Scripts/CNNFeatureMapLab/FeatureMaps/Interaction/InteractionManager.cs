@@ -13,6 +13,7 @@ namespace CNNFeatureMaps.FeatureMaps.Interaction
         public int Column => _filter.Column;
         public bool IsScanning => _filter.IsScanning;
 
+        public event System.Action OnHeldTargetsChanged;
         public event System.Action<Transform> OnTargetHeld;
         public event System.Action<Transform> OnTargetActivated;
         public event System.Action OnPosesReset;
@@ -27,12 +28,16 @@ namespace CNNFeatureMaps.FeatureMaps.Interaction
 
         private void OnEnable()
         {
+            _interaction.OnHeldTargetsChanged += HandleHeldTargetsChanged;
             _interaction.OnTargetHeld += HandleTargetHeld;
             _interaction.OnTargetActivated += HandleTargetActivated;
         }
 
+        private void HandleHeldTargetsChanged() => OnHeldTargetsChanged?.Invoke();
+
         private void OnDisable()
         {
+            _interaction.OnHeldTargetsChanged -= HandleHeldTargetsChanged;
             _interaction.OnTargetHeld -= HandleTargetHeld;
             _interaction.OnTargetActivated -= HandleTargetActivated;
         }

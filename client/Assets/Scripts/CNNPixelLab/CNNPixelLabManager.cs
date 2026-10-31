@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Learning;
 using UnityEngine;
 
 namespace UI
@@ -21,28 +22,50 @@ namespace UI
         public bool IsSwitching => _switching;
         public string LoadError => _sceneLoader.LastError;
 
-        public bool ConvolutionCompleted => _completed && !_switching && !_ending;
+        private bool _pixelCompleted;
+        private bool _convolutionCompleted;
+        private bool _pixelAvailable;
+        private bool _convolutionAvailable;
+        public event Action<LearningStageId> StageCompleted;
+        public event Action<LearningStageId, bool> ProgressionAvailabilityChanged;
         public bool WaitingForFactoryConvolution { get; private set; }
-        public event Action ScreenCompleted;
         public event Action ConvolutionStarted;
 
-        public void ConfigureFactoryConvolution(Pose pose, bool startWithConvolution = false)
+        public bool HasCompleted(LearningStageId stage) => stage switch
+        {
+            LearningStageId.PixelObservation => _pixelCompleted,
+            LearningStageId.Convolution => _convolutionCompleted,
+            _ => false
+        };
+
+        public bool CanProceed(LearningStageId stage)
+        {
+            if (!isActiveAndEnabled || _switching || _ending) { return false; }
+            return stage switch
+            {
+                LearningStageId.PixelObservation => WaitingForFactoryConvolution,
+                LearningStageId.Convolution => _completed,
+                _ => false
+            };
+        }
+
+        public void ConfigureHostedStages(Pose pose, bool startWithConvolution = false)
         {
             _startWithConvolution = startWithConvolution;
             _factoryHosted = true;
             _factoryConvolutionPose = pose;
         }
 
-        public IEnumerator StartFactoryConvolution()
+        public IEnumerator StartConvolution()
         {
             if (!_factoryHosted || !WaitingForFactoryConvolution || _switching || _ending) { yield break; }
-            WaitingForFactoryConvolution = false;
-            _switching = true;
+            SetWaitingForConvolution(false);
+            SetSwitching(true);
             yield return SwitchStage(true, false);
             if (_ending) { yield break; }
             if (_sceneLoader.LastError != null)
             {
-                WaitingForFactoryConvolution = true;
+                SetWaitingForConvolution(true);
                 yield break;
             }
             ConvolutionStarted?.Invoke();
@@ -56,16 +79,17 @@ namespace UI
         private void OnEnable()
         {
             SubscribeStage();
+            PublishProgressionState();
         }
 
         private IEnumerator Start()
         {
-            _switching = true;
+            SetSwitching(true);
             yield return SwitchStage(false, false);
             if (_startWithConvolution && !_ending && _sceneLoader.LastError == null)
             {
                 _patch = _screen.CreateConvolutionInput();
-                _switching = true;
+                SetSwitching(true);
                 yield return SwitchStage(true, false);
                 if (!_ending && _sceneLoader.LastError == null) { ConvolutionStarted?.Invoke(); }
             }
@@ -74,7 +98,7 @@ namespace UI
         public IEnumerator EndSession()
         {
             _ending = true;
-            WaitingForFactoryConvolution = false;
+            SetWaitingForConvolution(false);
             while (_switching || _closingFactoryDisplay)
             {
                 yield return null;
@@ -93,13 +117,13 @@ namespace UI
             if (_sceneLoader.LastError != null)
             {
                 Debug.LogError("[PixelLab] " + _sceneLoader.LastError, this);
-                _switching = false;
+                SetSwitching(false);
                 yield break;
             }
             if (_ending)
             {
                 yield return _sceneLoader.CancelPreparedStage();
-                _switching = false;
+                SetSwitching(false);
                 yield break;
             }
             UnbindStage();
@@ -117,7 +141,7 @@ namespace UI
                 _screen.SetInitialSelection(_selectedPixel);
             }
             yield return _sceneLoader.CommitStage();
-            _switching = false;
+            SetSwitching(false);
         }
 
         private void SubscribeStage()
@@ -162,11 +186,10 @@ namespace UI
             _selectedPixel = selectedPixel;
             if (_factoryHosted)
             {
-                WaitingForFactoryConvolution = true;
-                ScreenCompleted?.Invoke();
+                SetWaitingForConvolution(true);
                 return;
             }
-            _switching = true;
+            SetSwitching(true);
             StartCoroutine(SwitchStage(true, false));
         }
 
@@ -180,7 +203,7 @@ namespace UI
                 StartCoroutine(FinishFactoryDisplay());
                 return;
             }
-            _switching = true;
+            SetSwitching(true);
             StartCoroutine(SwitchStage(false, true));
         }
 
@@ -198,17 +221,50 @@ namespace UI
             if (_switching || _ending) { return; }
             _patch = null;
             _completed = false;
-            WaitingForFactoryConvolution = false;
+            SetWaitingForConvolution(false);
         }
 
         private void HandleCompleted()
         {
             _completed = true;
+            PublishProgressionState();
+        }
+
+        private void SetSwitching(bool switching)
+        {
+            _switching = switching;
+            PublishProgressionState();
+        }
+
+        private void SetWaitingForConvolution(bool waiting)
+        {
+            WaitingForFactoryConvolution = waiting;
+            PublishProgressionState();
+        }
+
+        private void PublishProgressionState()
+        {
+            PublishProgressionState(LearningStageId.PixelObservation, ref _pixelCompleted, ref _pixelAvailable);
+            PublishProgressionState(LearningStageId.Convolution, ref _convolutionCompleted, ref _convolutionAvailable);
+        }
+
+        private void PublishProgressionState(LearningStageId stage, ref bool completed, ref bool wasAvailable)
+        {
+            if (!completed && CanProceed(stage))
+            {
+                completed = true;
+                StageCompleted?.Invoke(stage);
+            }
+            bool available = CanProceed(stage);
+            if (wasAvailable == available) { return; }
+            wasAvailable = available;
+            ProgressionAvailabilityChanged?.Invoke(stage, available);
         }
 
         private void OnDisable()
         {
             UnsubscribeStage();
+            PublishProgressionState();
         }
     }
 }

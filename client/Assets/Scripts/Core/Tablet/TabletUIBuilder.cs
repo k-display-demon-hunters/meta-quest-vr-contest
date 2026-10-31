@@ -1,4 +1,5 @@
 using System;
+using Learning;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -53,7 +54,7 @@ namespace Tablet
         [SerializeField] internal Button QuitCancel;
         internal int SelectedApp { get; private set; }
         internal event Action<int> AppRequested;
-        internal event Action<int> StageRequested;
+        internal event Action<LearningStageId> StageRequested;
         internal event Action<int> PaperRequested;
         internal void Initialize(TabletVisualResources resources, TabletInputController input, Transform player, Func<int, bool> collected)
         {
@@ -72,10 +73,10 @@ namespace Tablet
                 AppButtons[i].onClick.AddListener(() => AppRequested?.Invoke(index));
                 input.RegisterControl(AppButtons[i], TabletInputController.FocusGroup.Main);
             }
-            for (int i = 0; i < StageButtons.Length; i++)
+            for (int i = 0; i < LearningStageCatalog.ProgressStages.Count; i++)
             {
-                int index = i;
-                StageButtons[i].onClick.AddListener(() => StageRequested?.Invoke(index));
+                LearningStageId stage = LearningStageCatalog.ProgressStages[i].Id;
+                StageButtons[i].onClick.AddListener(() => StageRequested?.Invoke(stage));
                 input.RegisterControl(StageButtons[i], TabletInputController.FocusGroup.Main);
             }
             for (int i = 0; i < PaperButtons.Length; i++)

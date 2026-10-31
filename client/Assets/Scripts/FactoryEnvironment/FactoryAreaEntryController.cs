@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 namespace FactoryEnvironment
 {
@@ -7,6 +8,9 @@ namespace FactoryEnvironment
     {
         private BoxCollider _area;
         private Transform _player;
+        private bool _bound;
+        private bool _inside;
+        public event Action<bool> PresenceChanged;
 
         public bool IsPlayerInside
         {
@@ -27,6 +31,28 @@ namespace FactoryEnvironment
         {
             _area = GetComponent<BoxCollider>();
             _player = player;
+            _bound = true;
+            RefreshPresence();
+        }
+
+        private void Update()
+        {
+            if (_bound) { RefreshPresence(); }
+        }
+
+        private void RefreshPresence()
+        {
+            bool inside = IsPlayerInside;
+            if (_inside == inside) { return; }
+            _inside = inside;
+            PresenceChanged?.Invoke(inside);
+        }
+
+        private void OnDisable()
+        {
+            if (!_inside) { return; }
+            _inside = false;
+            PresenceChanged?.Invoke(false);
         }
     }
 }

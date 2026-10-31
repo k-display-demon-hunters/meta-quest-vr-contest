@@ -2,30 +2,52 @@
 
 ## 배분과 위치
 
-`client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs`의 각 문서 `Location`이 배분과 태블릿 안내의 유일한 원본이다. `ParchmentLocation`은 None, PixelLabEntrance, ConvolutionLabEntrance, FeatureMapLabEntrance, ModelDesignLabEntrance를 구분한다. 현재 배분은 05 활성화 함수·ReLU → PixelLabEntrance, 01 이미지·픽셀 → ConvolutionLabEntrance, 02 합성곱·패딩 → FeatureMapLabEntrance, 03 필터·특징 추출 및 04 특징 맵 → ModelDesignLabEntrance이다. 내용보다 현재 공간의 접근 순서를 기준으로 지정했다. enum 설정은 수집 조건과 위치 안내를 바꾸며 씬 Transform을 자동 이동하지 않는다.
+`client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs`의 각 단계 `EntranceParchmentIds`가 입장 조건·단계 이동 시 지급·위치 안내에 사용하는 문서 배분의 유일한 원본이다. `ParchmentCatalog`는 문서 ID와 제목·본문·페이지·삽화만 소유한다. 별도의 `ParchmentLocation` enum과 문서별 `Location` 속성은 제거했다.
 
-05번은 튜토리얼 출구와 픽셀 입구 사이 통로의 월드 좌표 (-10.5, 1.45, 1.2), Y 회전 0도로 이동했다. 통로 자식으로 연결해 닫힌 픽셀 입구 전에 수집할 수 있다. 나머지 양피지의 실제 배치는 유지한다. 진행은 튜토리얼 완료 → 05 수집 → 픽셀 입장 → 스크린 완료 및 01 수집 → 합성곱 입장 → 합성곱 완료 및 02 수집 → 특징 맵 입장 → 특징 맵 완료 및 03·04 수집 → 모델 설계 입장 순서다.
+| 진입할 학습 단계 | 문서 ID | 화면에 표시하는 문서 번호 |
+| --- | --- | --- |
+| PixelObservation · 픽셀 | 4 | 05 활성화 함수·ReLU |
+| Convolution · 합성곱 | 0 | 01 이미지·픽셀 |
+| FeatureMap · 특징 맵 | 1 | 02 합성곱·패딩 |
+| ModelDesign · 모델 제작 | 2, 3 | 03 필터·특징 추출, 04 특징 맵 |
 
-해당 위치의 문서를 모두 수집해야 문을 열 수 있다. 문서가 배정되지 않은 위치는 개방 조건을 충족하지 않는다. 본문·페이지·삽화는 기존 데이터를 유지한다.
+픽셀과 합성곱은 같은 `RoomId.PixelLab` 안의 서로 다른 학습 단계이므로 입구 문서 그룹도 구분한다. 카탈로그의 배분 변경은 수집 조건과 안내에 반영되며 씬 Transform을 자동 이동하지 않는다. 문서 ID는 학습 단계 enum이나 방 enum의 숫자와 별개다.
+
+05번은 튜토리얼 출구와 픽셀 입구 사이 통로의 월드 좌표 (-10.5, 1.45, 1.2), Y 회전 0도에 있다. 통로 자식으로 연결해 닫힌 픽셀 입구 전에 수집할 수 있다. 나머지 양피지의 실제 배치는 유지한다. 걸어서 이동하는 순서는 튜토리얼 완료 → 05 수집 → 픽셀 입장 → 스크린 완료 및 01 수집 → 합성곱 입장 → 합성곱 완료 및 02 수집 → 특징 맵 입장 → 특징 맵 완료 및 03·04 수집 → 모델 제작 입장이다.
+
+`HasCollectedAll(documentIds)`는 전달된 문서를 모두 보유했는지 확인한다. 빈 요구 목록은 충족된 것으로 처리한다. 튜토리얼과 후문에 양피지 조건을 추가하지 않는다.
 
 ## 수집과 열람
 
-Core/Parchment의 Pickup은 활성/비활성 등록과 XRI 입력만 전달한다. Manager가 3m 거리와 중복 수집·열람을 확인하고 클릭 즉시 수집을 기록해 Collected(documentId)를 알린다. VisualController가 다음 프레임에 원본을 비활성화하며 공용 Reader를 연다. 열람을 닫아도 수집은 유지한다. 마지막 페이지 완료는 열람 종료다.
+Core/Parchment의 Pickup은 활성/비활성 등록과 XRI 입력만 전달한다. Manager가 3m 거리와 중복 수집·열람을 확인하고 클릭 즉시 수집을 기록해 `Collected(documentId)`를 알린다. VisualController가 다음 프레임에 원본을 비활성화하며 공용 Reader를 연다. 열람을 닫아도 수집은 유지한다. 마지막 페이지 완료는 열람 종료다.
 
-수집 상태는 공용 Manager의 세션 메모리에 유지한다. 위치 정보는 Catalog에서 조회하므로 Pickup이 사라져도 유지된다. 태블릿 양피지 앱은 HasCollected로 수집 여부를 조회해 보유한 문서의 제목·주제만 목록에 표시하고, 현재 XR 카메라와 시작 위치를 전달해 재열람을 요청한다. Manager가 이동 차단과 열람창 수명을 관리한다. 최초 현장 열람 완료는 재열람의 선행 조건이 아니다.
+수집 상태는 기존 공용 `ParchmentManager`의 영속 메모리에 유지한다. 공장 씬 종료 시 폐기되는 학습 진행 기록과는 별개다. 디스크에 저장하지 않는다. `ParchmentInventoryItem`은 문서 ID로 학습 카탈로그의 배분을 역조회해 `EntranceStage`와 `LocationText`를 제공하므로 Pickup이 사라져도 위치 안내를 유지한다.
 
-## 공장 연결
+태블릿 양피지 앱은 `HasCollected`로 수집 여부를 조회해 보유한 문서의 제목·주제만 목록에 표시하고, 현재 XR 카메라와 시작 위치를 전달해 재열람을 요청한다. Manager가 이동 차단과 열람창 수명을 관리한다. 최초 현장 열람 완료는 재열람의 선행 조건이 아니다.
 
-FactoryNavigationData는 입구·출구 및 ROOM #1 내부문 참조를 소유한다. FactoryLearningFlowManager는 Collected 이벤트를 구독하고 진행 가능한 시점에 IsGroupCollected(location)와 기존 진행 조건을 함께 조회한다. 수집 상태를 복제하지 않는다.
+## 학습 세션과 공장 연결
 
-각 방 입구는 이전 단계 완료와 콘텐츠 준비, 해당 위치 수집을 모두 요구한다. 현재 방 출구는 기존 준비 성공 시점에 열려 다음 입구 앞에 접근할 수 있다. ROOM #1 내부문은 스크린 완료와 해당 위치 수집을 요구하며 합성곱 시작 시 닫힌다. 튜토리얼 입구·후문에는 수집 조건을 추가하지 않는다. 진입·로딩 중 이벤트는 다음 조건 확인 시점까지 보류한다.
+Core의 `LearningSessionManager`가 `Collected` 이벤트를 받아 공통 학습 카탈로그의 `EntranceParchmentIds`와 `HasCollectedAll`로 진입 조건을 갱신한다. 수집 기록은 복제하지 않는다. `FactoryEnvironmentManager`는 세션이 전달한 진입 가능 상태로 실제 문과 경로를 제어한다. 문·영역·기준점 참조는 공장의 `FactoryNavigationData`에 둔다.
 
-## 편집 도구
+각 방 입구는 이전 단계의 진행 가능 상태와 콘텐츠 준비, 필요한 문서 수집을 요구한다. 현재 방 출구는 다음 콘텐츠 준비가 성공하면 열려 다음 입구 앞에 접근할 수 있다. ROOM #1 내부문은 픽셀 단계의 진행 가능 상태와 합성곱 입구 문서 수집을 요구하며 합성곱 시작 시 닫힌다. 이동·로딩 중에 받은 수집 통지도 이후 진행 조건 판단에 반영한다.
 
-ParchmentSceneSetup의 Refresh Learning Parchment Labels 메뉴는 열린 씬의 기존 Pickup 라벨을 문서 데이터에 맞춘다. 이전 공간 좌표로 씬을 열고 전체 재생성하던 메뉴는 제거했다. 위치 변경은 씬 Transform에서 수행한다. Pickup/Visual 스크립트는 Core/Parchment로 이동했고 기존 GUID를 유지한다.
+## 태블릿 단계 이동 요청에 따른 지급
 
-Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
+`LearningSessionManager`는 `TabletManager.StageMoveRequested(LearningStageId)`를 받으면 공통 카탈로그의 순서대로 선택한 단계까지의 `EntranceParchmentIds`를 `ParchmentManager.CollectDocuments`에 전달한다. enum 숫자나 문서 번호로 진행 순서를 추론하지 않는다. 공장과 양피지 카탈로그에는 배분 목록을 중복 보관하지 않는다.
 
-## 태블릿 재열람
+| 선택한 체험 | 현재 배분 기준 보유하게 되는 문서 |
+| --- | --- |
+| 픽셀 | 05 |
+| 합성곱 | 05, 01 |
+| 특징 맵 | 05, 01, 02 |
+| 모델 제작 | 05, 01, 02, 03, 04 |
 
-Pickup과 태블릿은 `client/Assets/Prefabs/Common/ParchmentReader.prefab`을 공유한다. TabletManager는 공용 세션의 Opened·Closed·Collected 이벤트를 연결·해제한다. 열람 중 태블릿 입력을 중단하고 닫으면 이전 조작 상태와 포커스를 복원하며 다음 프레임부터 입력을 받는다. 수집 상태는 태블릿 비활성화나 씬 이동으로 초기화하지 않는다. 양피지 페이지는 오른손 UI 레이와 Trigger로 조작한다.
+지급은 이동 요청을 받았을 때 수행한다. 이동 거절·로딩 실패·이전 단계로 복귀해도 이미 수집한 문서를 회수하지 않는다. 처음 얻는 문서만 기존 Collect 경로로 기록하고 Collected 이벤트를 발생시켜 태블릿 목록과 입장 조건을 갱신한다. 등록된 Pickup은 기존 수집 표시 콜백으로 숨기며, 아직 등록되지 않은 Pickup은 나중에 등록될 때 보유 상태를 반영한다. 자동 지급은 열람창을 열지 않고 체험 완료 기록도 변경하지 않는다.
+
+## 태블릿 재열람과 편집 도구
+
+Pickup과 태블릿은 `client/Assets/Prefabs/Common/ParchmentReader.prefab`을 공유한다. TabletManager는 공용 ParchmentManager의 Opened·Closed·Collected 이벤트를 연결·해제한다. 열람 중 태블릿 입력을 중단하고 닫으면 이전 조작 상태와 포커스를 복원하며 다음 프레임부터 입력을 받는다. 수집 상태는 태블릿 비활성화나 씬 이동으로 초기화하지 않는다. 양피지 페이지는 오른손 UI 레이와 Trigger로 조작한다.
+
+ParchmentSceneSetup의 Refresh Learning Parchment Labels 메뉴는 열린 씬의 기존 Pickup 라벨을 문서 데이터에 맞춘다. 이전 공간 좌표로 씬을 열고 전체 재생성하던 메뉴는 제거했다. 위치 변경은 씬 Transform에서 수행한다. Pickup/Visual 스크립트는 Core/Parchment에 있고 기존 GUID를 유지한다.
+
+이번 Core 분리와 문서 배분 통합은 소스 기준으로 정리했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

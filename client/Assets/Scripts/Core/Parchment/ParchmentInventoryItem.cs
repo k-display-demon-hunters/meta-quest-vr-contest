@@ -1,19 +1,21 @@
+using Learning;
+
 namespace Parchment
 {
     public readonly struct ParchmentInventoryItem
     {
         public string Title { get; }
         public bool Collected { get; }
-        public ParchmentLocation Location { get; }
-        public string LocationText => Location switch
+        public LearningStageId EntranceStage { get; }
+        public string LocationText => EntranceStage == LearningStageId.None
+            ? "위치 배정 전"
+            : LearningStageCatalog.Get(EntranceStage).Title + " 체험 입구 앞";
+
+        public ParchmentInventoryItem(int documentId, string title, bool collected)
         {
-            ParchmentLocation.PixelLabEntrance => "픽셀 체험 입구 앞",
-            ParchmentLocation.ConvolutionLabEntrance => "합성곱 체험 입구 앞",
-            ParchmentLocation.FeatureMapLabEntrance => "특징 맵 체험 입구 앞",
-            ParchmentLocation.ModelDesignLabEntrance => "모델 설계 체험 입구 앞",
-            _ => "위치 배정 전"
-        };
-        public ParchmentInventoryItem(string title, bool collected, ParchmentLocation location)
-        { Title = title; Collected = collected; Location = location; }
+            Title = title;
+            Collected = collected;
+            EntranceStage = LearningStageCatalog.GetParchmentEntranceStage(documentId);
+        }
     }
 }

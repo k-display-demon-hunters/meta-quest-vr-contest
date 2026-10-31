@@ -31,7 +31,7 @@
 
 백그라운드 진행 알림은 Controller의 큐에 담고 메인 스레드 `Update()`에서 UI로 전달한다. 학습·평가·추론 중 추가 실행을 거절하고 취소는 협력적으로 처리한다. 종료 시 Execution Manager가 Controller의 세대 번호·큐를 초기화하고 엔진을 Dispose한다. 세션은 취소를 요청하며 계산이 끝나기 전 자원을 다른 작업에서 재사용하지 않는다. 이전 세션·작업의 늦은 응답은 현재 화면을 갱신하지 못한다.
 
-새 학습은 새로운 가중치와 optimizer 상태로 시작한다. 모델은 파일로 저장하지 않으며 씬 종료 후에는 다시 학습해야 한다. 공장 출구 조건은 `CNNModelDesignLabManager.ReadyForFactoryExit`의 학습 완료 상태와 작업 중이 아님이다. 현재 구현에는 단계 건너뛰기로 완료를 대체하는 상태가 없다. 취소·실패·추론만으로 학습 완료를 설정하지 않는다.
+새 학습은 새로운 가중치와 optimizer 상태로 시작한다. 모델은 파일로 저장하지 않으며 씬 종료 후에는 다시 학습해야 한다. `CNNModelDesignLabManager.CanProceed(LearningStageId.ModelDesign)`은 정상 학습 결과 반영과 작업 종료, 활성 상태를 요구한다. 처음 충족하면 StageCompleted를, 학습 결과 반영·실행 상태 변경·비활성화로 진행 가능 여부가 바뀌면 ProgressionAvailabilityChanged를 알린다. Core LearningSessionManager가 두 이벤트를 구독하고 최초 연결 때 HasCompleted와 CanProceed로 상태를 동기화한다. 누적 완료는 Core 세션의 LearningProgress에 남고 현재 진행 조건이 거짓이 되어도 지우지 않는다. 태블릿은 읽기 전용 스냅샷을 표시하며, 공장은 세션의 지시에 따라 후문과 안내선을 제어한다. 공장 씬 종료 시 학습 진행 기록은 폐기된다. 현재 구현에는 단계 건너뛰기로 완료를 대체하는 상태가 없다. 취소·실패·추론만으로 학습 완료를 설정하지 않는다.
 
 ## 지원 구조와 연산
 
@@ -171,3 +171,5 @@ Input(28×28×1)
 ## 현재 구현 확인 범위
 
 현재 경로, 10 epoch 설정, 슬롯 기반 모델·검증, Dataset/Execution/ControlPanel의 책임과 공장 완료 조건은 소스와 씬 참조를 기준으로 정리했다. 위 PC 측정과 현재 Quest 실행 성능은 별개다. 현재 씬 전체의 VR 입력·취소·재진입 및 Quest 3S 시간·메모리·프레임은 이 문서 갱신에서 실행 확인하지 않았다.
+
+이번 공통 완료 이벤트와 Core 학습 세션 연결 변경은 소스로 검토했으며 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다. 이전 실행 기록은 이번 변경의 검증 결과가 아니다.

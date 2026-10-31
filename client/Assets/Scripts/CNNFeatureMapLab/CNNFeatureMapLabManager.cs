@@ -1,5 +1,6 @@
 using CNNFeatureMaps.FeatureMaps;
 using CNNFeatureMaps.Lesson;
+using Learning;
 using UnityEngine;
 
 namespace CNNFeatureMaps
@@ -13,8 +14,14 @@ namespace CNNFeatureMaps
         private LessonStep _step = LessonStep.BuildFeatureMap;
         private int _channel;
         private bool _lastStepSkipped;
+        private bool _hasCompleted;
+        private bool _progressionAvailable;
+        public event System.Action<LearningStageId> StageCompleted;
+        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
 
-        public bool ReadyForModelDesign => _ready && _step == LessonStep.EditInput
+        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.FeatureMap && _hasCompleted;
+        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.FeatureMap
+            && isActiveAndEnabled && _ready && _step == LessonStep.EditInput
             && (_featureMaps.EditCount > 0 || _lastStepSkipped) && !_featureMaps.HasHeldTargets;
 
         private void Awake()
@@ -37,7 +44,9 @@ namespace CNNFeatureMaps
             _featureMaps.OnScanningChanged += UpdateButtons;
             _featureMaps.OnPatchEvaluated += _lessonUI.ShowPatch;
             _featureMaps.OnAffectedPixelSelected += _lessonUI.ShowAffectedPixel;
-            _featureMaps.OnInputEdited += _lessonUI.ShowInputEdited;
+            _featureMaps.OnInputEdited += HandleInputEdited;
+            _featureMaps.OnHeldTargetsChanged += PublishProgressionState;
+            PublishProgressionState();
         }
 
         private void Start()
@@ -168,6 +177,7 @@ namespace CNNFeatureMaps
                 case LessonStep.EditInput:
                     _lastStepSkipped = _featureMaps.EditCount == 0;
                     _lessonUI.ShowStepFinished(_lastStepSkipped);
+                    PublishProgressionState();
                     return;
             }
             ApplyStep();
@@ -176,6 +186,7 @@ namespace CNNFeatureMaps
         private void ApplyStep()
         {
             _featureMaps.ShowStep(_step, _channel);
+            PublishProgressionState();
         }
 
         private void RestoreLesson()
@@ -186,6 +197,25 @@ namespace CNNFeatureMaps
             }
             _lastStepSkipped = false;
             ApplyStep();
+        }
+
+        private void HandleInputEdited(int count)
+        {
+            _lessonUI.ShowInputEdited(count);
+            PublishProgressionState();
+        }
+
+        private void PublishProgressionState()
+        {
+            if (!_hasCompleted && CanProceed(LearningStageId.FeatureMap))
+            {
+                _hasCompleted = true;
+                StageCompleted?.Invoke(LearningStageId.FeatureMap);
+            }
+            bool available = CanProceed(LearningStageId.FeatureMap);
+            if (_progressionAvailable == available) { return; }
+            _progressionAvailable = available;
+            ProgressionAvailabilityChanged?.Invoke(LearningStageId.FeatureMap, available);
         }
 
         private void UpdateButtons()
@@ -207,7 +237,9 @@ namespace CNNFeatureMaps
             _featureMaps.OnScanningChanged -= UpdateButtons;
             _featureMaps.OnPatchEvaluated -= _lessonUI.ShowPatch;
             _featureMaps.OnAffectedPixelSelected -= _lessonUI.ShowAffectedPixel;
-            _featureMaps.OnInputEdited -= _lessonUI.ShowInputEdited;
+            _featureMaps.OnInputEdited -= HandleInputEdited;
+            _featureMaps.OnHeldTargetsChanged -= PublishProgressionState;
+            PublishProgressionState();
         }
     }
 }

@@ -48,10 +48,10 @@
 
 | 파일·클래스 | 역할 |
 | --- | --- |
-| TabletManager | 태블릿 모듈 진입점. 앱·설정·종료 확인창, 입력 중단·복원, 공장과 공용 양피지 연결을 조율한다. |
+| TabletManager | 태블릿 모듈 진입점. 앱·설정·종료 확인창, 입력 중단·복원, 학습 스냅샷 표시와 이동 요청, 공용 양피지 열람 연결을 조율한다. |
 | TabletUIBuilder | 저장된 프리팹의 UI 참조·버튼 콜백·표면 스타일·앱 선택 표시를 연결한다. |
 | TabletInputController | 기존 Trigger+스틱 탐색, X 선택, Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
-| TabletLearningController | 전달받은 현재 단계·완료 비트·이동 가능 여부로 네 카드와 진행률을 갱신한다. 마지막 표시 상태를 캐시해 중복 갱신을 생략하고 이동 시작·실패·완료 안내 문구를 표시한다. 완료 상태를 소유하거나 씬을 로드하지 않는다. |
+| TabletLearningController | Core 세션의 읽기 전용 LearningProgressSnapshot으로 현재 단계·완료 표시·진행률·이동 버튼을 갱신한다. 이동 시작·실패·완료 안내 문구와 표시용 스냅샷 캐시만 소유하며, 완료 기록을 변경하거나 씬을 로드하지 않는다. |
 | TabletParchmentController | 공용 수집 상태를 조회해 보유 문서만 빈틈 없이 목록에 표시하고 선택 시 재열람을 요청한다. |
 | TabletSettingsController | 밝기·음량·진동·선택 문서 인덱스를 기존 PlayerPrefs 키로 읽고 저장한다. |
 | TabletDetailController | 앱 종료 확인창의 표시·닫기. |
@@ -61,9 +61,9 @@
 
 ### 학습과 이동 연결
 
-학습 단계는 픽셀(0), 합성곱(1), 특징 맵(2), 모델 제작(3)이다. 완료한 단계 하나당 25%이며 양피지 수는 학습 진행률에 포함하지 않는다. 태블릿은 `StageMoveRequested(int)` 로컬 C# 이벤트로 이동 의도를 전달한다. FactoryLearningFlowManager가 활성 기간에 구독·해제하고 씬 준비·정리, 셔터·안내선, 플레이어 위치를 조율한다. 결과는 `SetLearningState(currentStage, completedMask, canTravel)`와 `ShowTravelStatus(message)`로 전달한다. 공장 밖에서는 이동 카드가 비활성화된다.
+학습 카드의 순서와 요청 ID는 Core LearningStageCatalog.ProgressStages에 연결한다. 픽셀·합성곱·특징 맵·모델 제작의 고정 제목 Text는 기존 TabletUI 프리팹에 배치되어 있다. 공통 LearningStageId를 쓰며 UI 배열 인덱스를 학습 단계로 전달하지 않는다. 현재 완료한 단계 하나당 25%이고, 튜토리얼과 양피지 수는 진행률에서 제외한다. 태블릿은 StageMoveRequested(LearningStageId) 로컬 C# 이벤트로 이동 의도를 알린다. LearningSessionManager가 이벤트를 연결·해제하고 씬 수명·전환 순서를 조율하며, 실제 문·안내선·플레이어 이동은 FactoryEnvironmentManager에 요청한다. 결과 상태는 SetLearningState(LearningProgressSnapshot), 이동 안내는 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted로 표시한다. 세션 연결이 없으면 빈 스냅샷을 표시하고 이동 카드는 비활성화한다.
 
-네 단계 모두 완료 여부와 무관하게 선택할 수 있다. 로딩 중에는 이동 요청을 받지 않으며, 재방문한 체험은 처음부터 시작한다. 공장 Manager의 완료 기록과 공용 양피지 수집 기록은 해당 세션 동안 유지한다. 이동만으로 완료 처리하지 않는다. 기존 픽셀·합성곱·특징 맵·모델 제작 완료 판정을 사용한다. 합성곱 직접 진입은 기존 픽셀 이미지의 중앙 3×3 입력을 준비해 시작하고 픽셀 완료 신호를 발생시키지 않는다.
+네 단계 모두 완료 여부와 무관하게 선택할 수 있다. 로딩 중에는 이동을 시작하지 않으며 재방문한 체험은 처음부터 시작한다. 누적 완료는 공장 씬 수명의 LearningSessionManager가 소유한 LearningProgress에 보관한다. 같은 공장 세션 안의 재방문·초기화·태블릿 비활성화는 기록을 지우지 않으며, 공장 씬 종료 시 폐기되고 재진입 시 새로 시작한다. 태블릿에는 수정할 수 없는 스냅샷만 전달한다. 공용 양피지 기록의 기존 영속 수명은 별개로 유지한다. 이동만으로 완료 처리하지 않는다. 합성곱 직접 진입은 기존 픽셀 이미지의 중앙 3×3 입력을 준비하고 픽셀 완료 신호를 발생시키지 않는다.
 
 ### 포커스·양피지·설정
 
@@ -71,15 +71,15 @@
 
 수집 전 문서는 목록에 표시하지 않는다. 문서가 없으면 빈 목록 안내를 표시하며, 수집된 문서는 기존 `ParchmentReader.prefab`으로 다시 읽는다. 문서 본문·수집 여부는 공용 ParchmentManager와 ParchmentCatalog가 소유한다. `Tablet.Brightness`, `Tablet.Volume`, `Tablet.Vibration`, `Tablet.Inventory` 저장 키를 유지한다. 이전 `Tablet.Stage` 값은 학습 완료 상태로 사용하지 않는다. 학습 진행률과 양피지 수집 기록은 디스크에 저장하지 않는다.
 
-지도는 FactoryMapController가 게시한 TabletMapData를 사용한다. 이전 씬의 해제가 새 지도를 지우지 않도록 ClearMapData는 동일한 데이터만 해제한다.
+지도 형상은 FactoryMapController가 생성하고 FactoryEnvironmentManager가 MapChanged와 최초 MapData 조회로 공개한다. Core LearningSessionManager가 태블릿 SetMapData/ClearMapData에 연결한다. 이전 씬의 해제가 새 지도를 지우지 않도록 ClearMapData는 동일한 데이터만 해제한다.
 
 ### 뒷면 로고와 확인 범위
 
 제공된 원본은 `Textures/Common/KDHuntersLogo.png`에 내용 변경 없이 저장하고 리그의 Tablet Rear Logo에서 참조한다. `Shaders/Common/TabletLogo.shader`와 `Materials/Common/TabletLogo.mat`가 원본의 흰색을 곱셈 혼합의 중립색으로 처리해 청회색 본체 위에 잉크처럼 표시한다. 양쪽 눈의 인스턴싱 변환을 포함한다. 로고·폰트 및 이전 이미지 아이콘 기록은 ASSET_CREDITS.md에 있다. 현재 앱·양피지 목록 아이콘은 TabletAppIconGraphic이 그리는 평면 도형이며 이미지 텍스처·그라데이션·광택·그림자를 사용하지 않는다. 지도는 위치 핀, 학습 단계는 네 칸, 양피지는 선으로 된 문서 모양이다.
 
-2026-10-31: 소스·직렬화 참조·에셋 경로를 정적으로 점검했다. 사용자 허가로 Unity를 열고 코루틴 안의 ReadOnlySpan 반복문 컴파일 오류를 일반 메서드로 분리해 수정했다. 일반 에디터 모드와 FactoryEnvironment Play에서 진행률·앱 아이콘·주변 미니맵 표시를 확인했다. 당시 설정 버튼의 글자 잘림을 발견했으며 미수정 상태다. 이후 평면 아이콘으로 교체했고 이 교체 후 화면은 재확인하지 않았다. 앱 전환·텔레포트·재진입·뒷면 로고·Quest 실기기 및 빌드는 확인하지 않았다.
+2026-10-31, Core 학습 세션 분리 이전 기록: 당시 소스·직렬화 참조·에셋 경로를 정적으로 점검했다. 사용자 허가로 Unity를 열고 코루틴 안의 ReadOnlySpan 반복문 컴파일 오류를 일반 메서드로 분리해 수정했다. 일반 에디터 모드와 FactoryEnvironment Play에서 진행률·앱 아이콘·주변 미니맵 표시를 확인했다. 당시 설정 버튼의 글자 잘림을 발견했으며 미수정 상태다. 이후 평면 아이콘으로 교체했고 이 교체 후 화면은 재확인하지 않았다. 앱 전환·텔레포트·재진입·뒷면 로고·Quest 실기기 및 빌드는 확인하지 않았다.
 
-`FactoryMapController`가 `TabletMapData`를 만들어 `SetMapData()`로 전달한다. `ClearMapData(data)`는 현재 지도와 전달된 데이터가 같을 때만 지운다. 주변 지도는 XZ 평면을 +Z 위쪽으로 투영하고 카메라 위치·방향과 수집 상태를 주기적으로 갱신한다.
+FactoryMapController가 만든 TabletMapData는 공장 진입점과 Core 세션을 통해 태블릿에 전달한다. ClearMapData(data)는 현재 지도와 전달된 데이터가 같을 때만 지운다. 주변 지도는 XZ 평면을 +Z 위쪽으로 투영하고 카메라 위치·방향과 수집 상태를 주기적으로 갱신한다.
 
 ## 에디터 시뮬레이터
 
@@ -138,13 +138,13 @@ Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (
 
 `PersistentXRPlayerRig`의 직렬화된 좌·우 Touch Plus 모델 및 Animator 참조로 손의 grip pose 아래 실제 컨트롤러 모델을 생성한다. `TouchPlusHandController`가 Unity XR의 버튼·Grip·Trigger·스틱 값을 공식 Animator에 전달한다. 오른손 Meta 시스템 버튼은 앱 입력으로 가로채지 않는다. 패키지 모델·애니메이션 원본은 수정하지 않고 표시용 런타임 재질과 튜토리얼 표식만 별도로 생성·정리한다.
 
-`TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시한다. 단계 선택은 이동 안내이며 실제 걸어서 방에 들어간다. 기존 앱 실행 간 설정 저장과 미션 진행 저장은 별개이고 미션 진행은 세션 안에서 유지한다.
+당시 `TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. 당시의 `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시했다. 단계 선택은 이동 안내였으며 실제로 걸어서 방에 들어갔다. 이 동작은 이후 네 체험 기준의 Core 학습 세션과 자유 이동으로 교체되었다.
 
 SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 당시에는 공장 씬에서 별도 마우스 미리보기를 실행하지 않아 공용 XR 리그를 유지했다. 현재는 픽셀 씬 전용 마우스 미리보기와 설치 메뉴를 제거했으며 공용 XR 시뮬레이터를 사용한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.
 
 ## 공용 양피지 연결
 
-공장 Pickup과 태블릿은 공용 ParchmentManager를 사용한다. 양피지는 클릭 즉시 수집되며, 태블릿은 Collected 이벤트와 재활성화 시 보유 목록을 갱신한다. 문서 배분은 ParchmentLesson.Location을 따르고 지도는 실제 Pickup 위치를 표시한다. 세션·입력·수집 조건은 [공용 양피지](parchment.md)에 정리되어 있다.
+공장 Pickup과 태블릿은 공용 ParchmentManager를 사용한다. 양피지는 클릭 즉시 수집되며, 태블릿은 Collected 이벤트와 재활성화 시 보유 목록을 갱신한다. 문서 배분은 Core LearningStageCatalog의 EntranceParchmentIds를 따르고 지도는 실제 Pickup 위치를 표시한다. 세션·입력·수집 조건은 [공용 양피지](parchment.md)에 정리되어 있다.
 
 양피지 데이터는 ParchmentPage(본문·삽화), ParchmentLesson(한 문서·페이지 목록), ParchmentCatalog(전체 데이터·ID 조회)로 분리한다. 실제 데이터 편집 위치는 [ParchmentCatalog](../client/Assets/Scripts/Core/Parchment/ParchmentLesson.cs)다.
 
@@ -154,4 +154,6 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 
 XRPlayerRig에는 공용 AudioManager 컴포넌트와 Tablet Rear Logo를 함께 유지한다. 태블릿의 이동 안내는 TabletManager의 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted를 통해 TabletLearningController가 표시한다.
 
-공장에서는 FactoryEnvironmentManager가 태블릿과 학습 흐름의 이벤트를 연결·해제하고 최초 상태를 전달한다. FactoryLearningFlowManager는 태블릿 참조 없이 LearningStateChanged와 TravelStarted/TravelFailed/TravelCompleted를 발행한다. 태블릿 내부 표시 상태 캐시를 제외한 진행 상태는 학습 흐름이 소유하며, 매 프레임 상태를 전달하지 않는다.
+공장의 모듈 간 이벤트 연결은 Core LearningSessionManager가 담당한다. 각 체험의 StageCompleted는 세션의 누적 완료에, ProgressionAvailabilityChanged는 현재 진행 조건에 반영한다. 현재 단계·완료 여부·이동 가능 여부·진행률을 함께 담은 LearningProgressSnapshot을 상태 변경 시 태블릿에 전달한다. FactoryEnvironmentManager는 세션의 공간 제어 요청을 수행하고 영역 진입·이탈과 지도 변경을 알린다.
+
+TabletManager와 TabletLearningController는 누적 완료 집합을 소유하지 않는다. Core 세션의 스냅샷을 표시하며 같은 단계의 중복 완료·일시적 진행 불가·이전 체험 복귀에 대한 기록 정책은 Core LearningProgress가 처리한다. 공장 씬 종료 시 세션은 폐기되고 태블릿에는 LearningProgressSnapshot.Empty를 전달한다. 이번 Core 분리 변경에 대한 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

@@ -18,12 +18,11 @@ namespace FactoryEnvironment
             _navigationData = GetComponent<FactoryNavigationData>();
         }
 
-        public void PlaceAtEntrance()
+        public void PlaceAtEntrance(XROrigin rig)
         {
             Transform entrance = _navigationData.Entrance;
-            Rig = FindFirstObjectByType<XROrigin>();
+            Rig = rig;
             _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
-            XROrigin rig = Rig;
             float height = rig.Camera.transform.position.y - rig.Origin.transform.position.y;
 #if UNITY_EDITOR
             // Keep the editor simulator at eye level without changing real headset tracking.

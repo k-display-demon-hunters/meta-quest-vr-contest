@@ -22,6 +22,7 @@ namespace CNNFeatureMaps.FeatureMaps
         public bool HasHeldTargets => _interaction.HasHeldTargets;
         public bool IsScanning => _interaction.IsScanning;
 
+        public event System.Action OnHeldTargetsChanged;
         public event Action<LessonStep, int, int, bool> OnStepApplied;
         public event Action OnScanningChanged;
         public event Action<int, int, float, float, int> OnPatchEvaluated;
@@ -43,6 +44,7 @@ namespace CNNFeatureMaps.FeatureMaps
 
         private void OnEnable()
         {
+            _interaction.OnHeldTargetsChanged += HandleHeldTargetsChanged;
             _interaction.OnTargetHeld += ExtractTarget;
             _interaction.OnTargetActivated += ActivateTarget;
             _interaction.OnPosesReset += _display.ResetExtractedStates;
@@ -186,8 +188,11 @@ namespace CNNFeatureMaps.FeatureMaps
             OnScanningChanged?.Invoke();
         }
 
+        private void HandleHeldTargetsChanged() => OnHeldTargetsChanged?.Invoke();
+
         private void OnDisable()
         {
+            _interaction.OnHeldTargetsChanged -= HandleHeldTargetsChanged;
             _interaction.OnTargetHeld -= ExtractTarget;
             _interaction.OnTargetActivated -= ActivateTarget;
             _interaction.OnPosesReset -= _display.ResetExtractedStates;

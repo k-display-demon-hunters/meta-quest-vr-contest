@@ -1,4 +1,5 @@
 using System;
+using Learning;
 using Parchment;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,7 +25,7 @@ namespace Tablet
         private int _inputResumeFrame = -1;
         private bool _interactionBeforeReader;
         private int _focusBeforeReader;
-        public event Action<int> StageMoveRequested;
+        public event Action<LearningStageId> StageMoveRequested;
 
         private TabletInputController.FocusGroup ActiveGroup => _detail.IsOpen
             ? TabletInputController.FocusGroup.Detail : _settings.IsOpen
@@ -49,7 +50,7 @@ namespace Tablet
             _ui.Initialize(_resources, _input, _canvas.worldCamera.transform, _reader.HasCollected);
             _parchment.RestoreSelection(_settings.Load());
             _parchment.RefreshInventory();
-            SetLearningState(-1, 0, false);
+            SetLearningState(LearningProgressSnapshot.Empty);
         }
         private void OnEnable()
         {
@@ -73,6 +74,7 @@ namespace Tablet
             _ui.QuitCancel.onClick.AddListener(CloseQuit);
             _ui.QuitConfirm.onClick.AddListener(ConfirmQuit);
             _input.Enable();
+            _learning.RefreshView();
             _parchment.RefreshInventory();
             if (_reader.IsOpen) { SuspendForParchment(); }
         }
@@ -100,13 +102,13 @@ namespace Tablet
             _input.Disable();
         }
         private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); } }
-        public void SetLearningState(int currentStage, int completedMask, bool canTravel) => _learning.Refresh(currentStage, completedMask, canTravel);
+        public void SetLearningState(LearningProgressSnapshot snapshot) => _learning.Refresh(snapshot);
         public void ShowTravelStarted() => _learning.ShowTravelStarted();
         public void ShowTravelFailed() => _learning.ShowTravelFailed();
         public void ShowTravelCompleted() => _learning.ShowTravelCompleted();
         public void SetMapData(TabletMapData data) { _mapData = data; _ui.Minimap.SetMapData(data); }
         public void ClearMapData(TabletMapData data) { if (_mapData == data) { SetMapData(null); } }
-        private void RequestStage(int stage)
+        private void RequestStage(LearningStageId stage)
         {
             StageMoveRequested?.Invoke(stage);
             _input.ResetFocus(_ui.SelectedApp);

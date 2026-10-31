@@ -8,7 +8,7 @@
 
 | 위치 | 역할 |
 |---|---|
-| `CNNPixelLabManager.cs` | 두 체험의 이벤트·진행 순서, 선택한 픽셀과 복귀 좌표, 전체 완료 상태를 소유한다. Factory가 사용하는 단일 진입점이다. |
+| `CNNPixelLabManager.cs` | 두 체험의 이벤트·진행 순서, 선택한 픽셀과 복귀 좌표, 현재 인스턴스의 완료 사실·진행 가능 상태를 소유한다. Core 학습 세션이 사용하는 단일 진입점이다. |
 | `PixelLabSceneLoadController.cs` | 내부 체험 씬을 비동기로 준비·배치·교체하고 XR 선택 해제와 언로드를 담당한다. |
 | `CNNScreenLab/CNNScreenLabManager.cs` | ScreenLab의 유일한 Manager다. Factory·보드·선택·전개·UI를 연결하고 관찰 진행을 조율하며 ConvolutionRequested·ResetRequested를 상위 Manager에 알린다. |
 | `CNNScreenLab/PixelImageFactory.cs` | 원본 Texture2D를 Inspector로 받는다. Create에서 128×72 축소·5×5 블러·32×18 샘플링·픽셀 텍스처 생성을 완료하고 PixelImageData를 반환한다. |
@@ -38,22 +38,22 @@ PixelLab 내부에서 공유하는 데이터 계약과 입력 보조는 `Scripts
 ## 의존 구조와 상태 소유
 
 ```text
-FactoryLearningFlowManager → CNNPixelLabManager
+LearningSessionManager → CNNPixelLabManager
                               ├─ PixelLabSceneLoadController
                               ├─ CNNScreenLabManager → 이미지·선택·관찰·UI
                               └─ CNNConvolutionLabManager → 필터 정렬 · R 설명 · 퀴즈 · 결과 관찰
                                                          └─ 공통 계산 · UI · RGB 표시·조작
 ```
 
-Factory는 CNNPixelLabManager에 ConfigureFactoryConvolution(Pose)으로 1-2 배치를 지정하고, ScreenCompleted·ConvolutionStarted 이벤트와 WaitingForFactoryConvolution·StartFactoryConvolution으로 내부 문과 두 공간 사이의 진행을 연결한다. 최종 완료는 기존 ConvolutionCompleted를 조회한다. 관찰·합성곱 Manager나 픽셀·좌표 데이터는 참조하지 않는다. 하위 체험은 서로와 Factory를 호출하지 않고 로컬 C# 이벤트로 상위 Manager에 요청과 완료를 알린다. 구독은 활성 기간에 연결·해제하고, 체험 교체 시 이전 구독을 끊고 새 구독을 연결한다.
+Core의 LearningSessionManager가 CNNPixelLabManager 진입점만 참조하며 ConfigureHostedStages(Pose, startWithConvolution)로 배치와 시작 단계를 지정한다. StageCompleted(LearningStageId)는 완료한 사실을, ProgressionAvailabilityChanged(LearningStageId, bool)는 현재 다음 단계로 진행할 수 있는지를 알린다. HasCompleted(stage)와 CanProceed(stage)는 최초 연결 상태 동기화에 사용한다. 상위 세션은 내부 관찰·합성곱 Manager나 픽셀·좌표 데이터를 참조하지 않는다. 하위 체험은 서로와 상위 세션을 호출하지 않고 로컬 C# 이벤트로 CNNPixelLabManager에 요청과 완료를 알린다. 구독은 활성 기간과 체험 교체에 맞춰 연결·해제한다.
 
-선택 데이터·복귀 좌표·전체 완료 상태의 소유자는 CNNPixelLabManager다. 계산 씬에는 PixelPatchData만 전달하며 전체 이미지·좌표·이전 씬의 Transform을 넘기지 않는다. ConvolutionCompleted는 합성곱 완료 뒤 참이며, 내부 전환·종료 중에는 거짓이다. 새 체험 교체 성공이나 관찰 초기화 때 완료 상태를 지운다. 로드 실패 시 기존 씬과 기존 완료 상태를 유지한다.
+선택 데이터·복귀 좌표와 현재 인스턴스의 체험 상태는 CNNPixelLabManager가 소유한다. 계산 씬에는 PixelPatchData만 전달하며 전체 이미지·좌표·이전 씬의 Transform을 넘기지 않는다. CanProceed(Convolution)은 합성곱 완료 뒤 참이며 내부 전환·종료·비활성화 중에는 거짓이다. 관찰 초기화나 새 체험 교체는 현재 진행 조건을 초기화한다. 한 번 발생한 완료 사실은 HasCompleted에 남으며, 체험 재방문을 포함한 공장 세션 전체의 누적 완료는 Core LearningProgress가 따로 소유한다.
 
 CNNScreenLabManager는 자세히 보기 시작 시 선택 좌표에서 PixelPatchData를 한 번 추출하고 해당 좌표와 함께 보관한다. PixelRevealStage.RevealPixels에 이 스냅샷을 전달하며, 관찰 단계는 픽셀을 다시 추출하지 않고 RGB 블록과 숫자 표시에 사용한다. 다음으로 진행할 때도 같은 PixelPatchData와 보관한 좌표를 CNNPixelLabManager에 전달한다. 처음으로 또는 선택 변경 시 Screen Manager가 보관한 스냅샷 참조를 해제한다. RGB 값 27개는 Color32 9개에 포함되므로 별도 배열로 중복 저장하지 않는다.
 
 ## 초기화와 관찰 흐름
 
-공장은 비활성 관리용 루트를 로드·배치한 후 활성화한다. CNNPixelLabManager.Start가 관찰 씬을 로드한다. CNNScreenLab 스크립트는 실행 단계에 따라 PixelSelection(3×3 선택) → RGBObservation(픽셀·RGB 관찰)으로 묶는다. CNNScreenLabManager·PixelLabUIController·PixelImageData·PixelObservationPhase와 여러 단계에서 사진 표시를 제어하는 PixelBoardController는 CNNScreenLab 루트에 둔다. 이미지 생성 진입점인 PixelImageFactory도 루트에 둔다. RGB 숫자 표시는 RGB 관찰 전용이므로 RgbValuesUIController를 RGBObservation에 둔다. CNNScreenLabManager의 Inspector에는 PixelImageFactory·PixelBoardController·PixelSelectionController·PixelRevealStage·PixelLabUIController 다섯 진입점을 연결한다. 활성화된 Manager의 Start에서 이미지 데이터를 생성하고 보드·선택·UI를 초기화한다. SetInitialSelection으로 받은 복귀 좌표가 있으면 초기화 마지막에 선택을 복원한다. ScreenLab 단독 실행에서도 같은 Start가 이미지를 준비한다. Renderer·Transform·XRGrabInteractable·Material의 구체적인 조작은 Controller에 두며, Manager는 순서와 이벤트를 연결한다. 이미지 결과는 Manager가 소유하고 파괴 시 해제하며, 보드 사진용 인스턴스 재질은 PixelBoardController가 해제한다. 픽셀 블록·프레임의 공유 메시·재질은 에셋이며 런타임에 생성·해제하지 않는다. PixelSelectionController는 OnEnable/OnDisable에서 XR 이벤트를 연결·해제하고 LateUpdate에서 관찰 선택을 갱신한다. RGB 전개 시 선택 갱신을 중단하고 초기화 시 재개한다. PixelLabUIController도 MonoBehaviour로서 버튼·안내 Text를 Inspector로 받고 Canvas 카메라와 입력 모듈을 준비한다. 버튼은 UI Controller의 RequestDetails·RequestNext·RequestReset에 연결되며, 로컬 이벤트를 받은 Screen Manager가 이미지 동작과 UI 상태를 조율한다. 구독·입력 활성화와 해제는 Screen Manager의 OnEnable/OnDisable에서 대칭으로 수행한다.
+Core 학습 세션은 공장이 제공한 배치 값으로 비활성 관리용 루트를 준비하고 연결한 후 활성화한다. CNNPixelLabManager.Start가 관찰 씬을 로드한다. CNNScreenLab 스크립트는 실행 단계에 따라 PixelSelection(3×3 선택) → RGBObservation(픽셀·RGB 관찰)으로 묶는다. CNNScreenLabManager·PixelLabUIController·PixelImageData·PixelObservationPhase와 여러 단계에서 사진 표시를 제어하는 PixelBoardController는 CNNScreenLab 루트에 둔다. 이미지 생성 진입점인 PixelImageFactory도 루트에 둔다. RGB 숫자 표시는 RGB 관찰 전용이므로 RgbValuesUIController를 RGBObservation에 둔다. CNNScreenLabManager의 Inspector에는 PixelImageFactory·PixelBoardController·PixelSelectionController·PixelRevealStage·PixelLabUIController 다섯 진입점을 연결한다. 활성화된 Manager의 Start에서 이미지 데이터를 생성하고 보드·선택·UI를 초기화한다. SetInitialSelection으로 받은 복귀 좌표가 있으면 초기화 마지막에 선택을 복원한다. ScreenLab 단독 실행에서도 같은 Start가 이미지를 준비한다. Renderer·Transform·XRGrabInteractable·Material의 구체적인 조작은 Controller에 두며, Manager는 순서와 이벤트를 연결한다. 이미지 결과는 Manager가 소유하고 파괴 시 해제하며, 보드 사진용 인스턴스 재질은 PixelBoardController가 해제한다. 픽셀 블록·프레임의 공유 메시·재질은 에셋이며 런타임에 생성·해제하지 않는다. PixelSelectionController는 OnEnable/OnDisable에서 XR 이벤트를 연결·해제하고 LateUpdate에서 관찰 선택을 갱신한다. RGB 전개 시 선택 갱신을 중단하고 초기화 시 재개한다. PixelLabUIController도 MonoBehaviour로서 버튼·안내 Text를 Inspector로 받고 Canvas 카메라와 입력 모듈을 준비한다. 버튼은 UI Controller의 RequestDetails·RequestNext·RequestReset에 연결되며, 로컬 이벤트를 받은 Screen Manager가 이미지 동작과 UI 상태를 조율한다. 구독·입력 활성화와 해제는 Screen Manager의 OnEnable/OnDisable에서 대칭으로 수행한다.
 
 원본은 `Textures/CNNPixelLab/OpeningBroadcast.png`다. 사진 표시·필터·RGB·계산에 사용하는 색상은 같은 32×18 샘플에서 나온다. 사진은 Bilinear, 렌즈 텍스처는 Point 필터링을 사용한다.
 
@@ -61,19 +61,19 @@ CNNScreenLabManager는 자세히 보기 시작 시 선택 좌표에서 PixelPatc
 2. 자세히 보기는 CNNScreenLabManager.ShowDetails에서 관찰 전개를 시작한다. 필터를 숨기고 PixelRevealStage.ShowImage와 RevealPixels를 연속 호출한다. 이미지 선택을 한 번 더 기다리는 별도 XR 클릭 대상은 만들지 않는다.
 3. 사진이 컬러 입체 픽셀로 바뀌고 선택 영역의 R/G/B가 깊이 방향으로 펼쳐진다. 사진 Renderer는 숨긴다. 깊이는 실제 디스플레이 구조나 색 세기를 뜻하지 않는다.
 4. 완료 이벤트로 다음으로 버튼을 활성화한다. 다음으로는 PixelPatchData와 선택 좌표를 ConvolutionRequested로 알린다.
-5. 상위 Manager가 데이터를 보관한다. 단독 실행은 곧바로 합성곱 씬 교체를 요청한다. 공장에서는 ScreenCompleted를 알리고 스크린을 유지하며 이동을 기다린다. 왼쪽 공간 진입 시 Factory의 StartFactoryConvolution 요청으로 씬을 교체한다. 활성화 전에 CNNConvolutionLabManager.SetInput에 같은 픽셀 복사본을 전달하고 SetFactoryHosted로 공장 실행 여부를 지정한다. 이후 Start가 해당 데이터로 계산 체험을 시작한다.
+5. 상위 Manager가 데이터를 보관한다. 단독 실행은 곧바로 합성곱 씬 교체를 요청한다. 공장 배경에서는 PixelObservation의 완료·진행 가능 이벤트를 알리고 스크린을 유지하며 이동을 기다린다. 왼쪽 공간 진입과 양피지 조건을 확인한 Core 세션의 StartConvolution 요청으로 씬을 교체한다. 활성화 전에 CNNConvolutionLabManager.SetInput에 같은 픽셀 복사본을 전달하고 SetFactoryHosted로 공장 실행 여부를 지정한다. 이후 Start가 해당 데이터로 계산 체험을 시작한다.
 
-필터의 복귀 위치·회전은 보드 기준 로컬 좌표다. 이미지 크기는 7.2×4.05m다. Floating image board는 로컬 (0, 3.125, 1.8), 배율 3이며 하단 높이는 1.1m를 유지한다. 필터 시작 위치는 콘텐츠 로컬 (-2.4, 1.15, -0.6), 배율 1.5로 보드의 1.5배 확대에 맞춘다. 조작 UI 크기와 체험 계산·진행은 유지한다. 처음으로는 선택·전개를 초기화하고 상위 Manager에 완료 초기화를 알린다.
+필터의 복귀 위치·회전은 보드 기준 로컬 좌표다. 이미지 크기는 7.2×4.05m다. Floating image board는 로컬 (0, 3.125, 1.8), 배율 3이며 하단 높이는 1.1m를 유지한다. 필터 시작 위치는 콘텐츠 로컬 (-2.4, 1.15, -0.6), 배율 1.5로 보드의 1.5배 확대에 맞춘다. 조작 UI 크기와 체험 계산·진행은 유지한다. 처음으로는 선택·전개를 초기화하고 상위 Manager에 현재 진행 조건 초기화를 알린다.
 
 ## 씬 교체와 종료
 
-FactorySceneLoadController는 관리용 콘텐츠에 ContentAnchor의 위치·회전·배율을 적용한다. PixelLabSceneLoadController는 스크린을 관리용 루트의 월드 위치·회전에 배치하고, 공장 컨볼루션은 지정된 1-2 Pose에 배치하며 Rigidbody를 동기화한다. 지정이 없는 단독 실행은 두 체험을 관리용 루트의 같은 위치·회전에서 교체한다. 두 체험 루트는 원점·회전 identity·스케일 1로 작성되어 있다. 계산 Canvas의 상대 위치·회전·배율은 기존 배치를 유지한다.
+FactoryEnvironmentManager는 공장 기준점을 LearningPlacement 값으로 제공하고, Core LearningSceneLoadController가 이를 관리용 콘텐츠에 적용한다. PixelLabSceneLoadController는 스크린을 관리용 루트의 월드 위치·회전에 배치하고, 공장 컨볼루션은 지정된 1-2 Pose에 배치하며 Rigidbody를 동기화한다. 지정이 없는 단독 실행은 두 체험을 관리용 루트의 같은 위치·회전에서 교체한다. 두 체험 루트는 원점·회전 identity·스케일 1로 작성되어 있다. 계산 Canvas의 상대 위치·회전·배율은 기존 배치를 유지한다.
 
 씬 파일의 Screen/Convolution 루트는 에디터에서 보이도록 활성 상태로 저장한다. 루트 이름은 각각 CNN Screen Lab, CNN Convolution Lab이다. 두 Manager 컴포넌트도 활성 상태로 저장한다. PixelLabSceneLoadController는 로딩 대상의 sceneLoaded 콜백에서 Start 전에 루트를 숨긴 다음 위치·회전과 Rigidbody를 맞춘다. CNNPixelLabManager는 준비된 씬 Manager에 이벤트를 연결하고 SetInput 또는 SetInitialSelection으로 시작 데이터를 전달한다. 로더의 CommitStage는 이전 씬을 정리하고 새 콘텐츠를 활성화하며, 각 Manager의 Start가 초기화를 수행한다. 로딩 이벤트 구독은 해당 씬 로드 완료·로딩 시작 실패·로더 파괴 시 해제한다. 준비 성공 시 이전 체험에서 잡은 물체의 XR 선택을 해제하고 콘텐츠를 숨겨 언로드한 뒤 새 체험을 활성화한다. 준비 중에는 잠깐 두 체험 씬이 함께 존재하며 교체 완료 후에는 하나만 남는다. 공장 활성 씬과 공용 XR 리그·태블릿을 유지하고 플레이어 위치·시점을 이동시키지 않는다. 로드 실패는 로그로 알리며 기존 체험에서 요청을 다시 할 수 있다.
 
-공장에서 스크린의 다음으로를 누르면 ScreenCompleted를 받아 아치 셔터를 열고 내부 안내선을 표시한다. 카메라가 왼쪽 공간 진입 영역에 들어오면 StartFactoryConvolution 코루틴으로 로드를 시작한다. 준비 실패 시 스크린과 대기 상태를 유지한다. CommitStage가 합성곱을 활성화한 뒤 ConvolutionStarted를 알리고 공장은 내부 셔터·안내선을 닫는다. 공장에서는 닫힌 문을 넘어 이전 스크린으로 복귀하지 않도록 다른 영역 선택 버튼을 숨긴다. 결과 관찰의 다음/닫기는 완료 상태를 유지하며 표시 씬만 정리한다.
+공장에서 스크린의 다음으로를 누르면 PixelObservation의 StageCompleted와 ProgressionAvailabilityChanged를 알린다. LearningSessionManager가 합성곱 입구 문서 수집과 진입 영역 상태를 함께 판단하고, FactoryEnvironmentManager가 아치 셔터와 내부 안내선을 제어한다. 조건이 충족되면 세션이 StartConvolution 코루틴을 요청한다. 준비 실패 시 스크린과 대기 상태를 유지하고 Core 세션이 3초 뒤 재시도한다. CommitStage가 합성곱을 활성화한 뒤 ConvolutionStarted를 알리면 세션은 현재 단계를 갱신하고 공장에 내부 셔터·안내선 정리를 요청한다. 공장 배경에서는 닫힌 문을 넘어 이전 스크린으로 복귀하지 않도록 다른 영역 선택 버튼을 숨긴다. 결과 관찰의 다음/닫기는 완료 사실을 유지하며 표시 씬만 정리한다.
 
-다음 방 진입 시 FactoryLearningFlowManager는 CNNPixelLabManager.EndSession을 기다린다. Manager는 새 요청을 차단하고 진행 중인 로딩·교체·공장 결과 표시 종료가 끝나기를 기다린 뒤 구독과 내부 체험 씬을 정리한다. 이후 FactorySceneLoadController가 관리용 씬을 언로드한다. 관리용 씬이 외부에서 제거되면 내부 로더의 OnDestroy가 남은 씬을 정리하며, 로딩 중이었다면 완료 콜백에서 정리한다.
+다음 방 진입 시 Core LearningSessionManager는 CNNPixelLabManager.EndSession을 기다린다. PixelLab Manager는 새 요청을 차단하고 진행 중인 로딩·교체·결과 표시 종료가 끝나기를 기다린 뒤 구독과 내부 체험 씬을 정리한다. 이후 Core LearningSceneLoadController가 관리용 씬을 언로드한다. 관리용 씬이 외부에서 제거되면 내부 로더의 OnDestroy가 남은 씬을 정리하며, 로딩 중이었다면 완료 콜백에서 정리한다.
 
 ## 합성곱과 완료
 
@@ -125,3 +125,6 @@ Unity 6000.3.24f1 Play에서 CNNPixelLab을 실행하고 실제 Camera.Render �
 입체 관찰 동선을 PixelImageManager의 전환·선택 관리에 반영하고, PixelRevealStage와 RgbPixelStackController는 읽기 전용 픽셀 목록을 전달받도록 연결했다. PixelLessonManager의 계산·완료 이벤트와 공용 태블릿의 역할 분리는 유지한다. 위 Unity 실행 기록은 원본 브랜치에서 수행한 결과이며, 이번 병합 결과에는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다.
 
 합성곱 씬의 루트 활성화는 기존에 저장된 오브젝트의 에디터 표시를 위한 설정이다. 계산 UI 자체는 CNNConvolutionLabManager.Start에서 초기화해 런타임에 생성하므로 에디터의 정적인 화면에 전체 계산 UI가 표시되지는 않는다.
+
+픽셀과 합성곱은 공통 LearningStageId로 StageCompleted와 ProgressionAvailabilityChanged를 발행한다. Core LearningSessionManager가 두 이벤트를 연결하여 누적 완료 기록과 현재 전환 조건을 각각 관리한다. 픽셀 대기 상태는 초기화·전환 시작·실패 복구·종료 때도 알리며, 최초 연결 후 상위 세션이 WaitingForFactoryConvolution을 반복 조회하지 않는다. 태블릿은 세션의 읽기 전용 LearningProgressSnapshot을 표시한다. 공장 씬 종료 시 세션과 누적 학습 기록은 폐기된다.
+이번 Core 학습 세션 분리는 소스로 검토했다. 위에 기록한 과거 Unity 실행 결과는 당시 구현의 결과이며 이번 변경에 대한 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

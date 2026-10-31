@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Learning;
 using ModelDesignScene.ModelBuilder;
 using ModelDesignScene.BlockSettings;
 using ModelDesignScene.Model;
@@ -25,9 +26,15 @@ namespace ModelDesignScene
         private bool _hasValidationResult;
         private bool _initialized;
         private bool _trainingCompleted;
+        private bool _hasCompleted;
+        private bool _progressionAvailable;
+        public event System.Action<LearningStageId> StageCompleted;
+        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
         private bool _modelUIIsDirty;
 
-        public bool ReadyForFactoryExit => _trainingCompleted && !_execution.IsBusy;
+        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.ModelDesign && _hasCompleted;
+        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.ModelDesign
+            && isActiveAndEnabled && _trainingCompleted && !_execution.IsBusy;
 
         private void Awake()
         {
@@ -144,6 +151,7 @@ namespace ModelDesignScene
                 _controlPanel.ShowState(_execution.State, _execution.HasTrainedModel,
                     !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
                 _modelUIIsDirty = true;
+                PublishProgressionState();
             }
         }
 
@@ -156,6 +164,20 @@ namespace ModelDesignScene
         {
             _controlPanel.ShowCompleted(result);
             _trainingCompleted = result != null;
+            PublishProgressionState();
+        }
+
+        private void PublishProgressionState()
+        {
+            if (!_hasCompleted && CanProceed(LearningStageId.ModelDesign))
+            {
+                _hasCompleted = true;
+                StageCompleted?.Invoke(LearningStageId.ModelDesign);
+            }
+            bool available = CanProceed(LearningStageId.ModelDesign);
+            if (_progressionAvailable == available) { return; }
+            _progressionAvailable = available;
+            ProgressionAvailabilityChanged?.Invoke(LearningStageId.ModelDesign, available);
         }
 
         private void HandleModelChanged()
@@ -187,6 +209,7 @@ namespace ModelDesignScene
         private void OnDisable()
         {
             _trainingCompleted = false;
+            PublishProgressionState();
             _hasValidationResult = false;
             _validationIssues = System.Array.Empty<ValidationIssue>();
             _execution.CloseSession();

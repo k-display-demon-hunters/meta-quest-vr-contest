@@ -1,4 +1,5 @@
 using System.Collections;
+using Learning;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -42,8 +43,13 @@ namespace FactoryTutorial
         private bool _finishing;
         private bool _showingMission;
         private int _advancedFrame = -1;
+        private bool _progressionAvailable;
 
         public bool IsComplete { get; private set; }
+        public event System.Action<LearningStageId> StageCompleted;
+        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
+        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.Tutorial && IsComplete;
+        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.Tutorial && isActiveAndEnabled && IsComplete;
 
         private void Awake()
         {
@@ -59,9 +65,10 @@ namespace FactoryTutorial
                 SubscribePanel();
                 HoldGuideRay();
             }
+            PublishProgressionAvailability();
         }
 
-        public void Initialize(XROrigin rig, Transform entrance)
+        public void Initialize(XROrigin rig, Pose entrance)
         {
             if (_initialized)
             {
@@ -70,14 +77,17 @@ namespace FactoryTutorial
             _playerInput = rig.GetComponent<XRPlayerInputController>();
 
             _panel.transform.SetPositionAndRotation(
-                entrance.position + entrance.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
+                entrance.position + entrance.rotation * Vector3.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
             _panel.Initialize(_font, rig.Camera);
             _panel.ConfigureVisualGuide();
             _visuals = _panel.gameObject.AddComponent<FactoryTutorialVisualController>();
             _visuals.Initialize(rig.GetComponent<PersistentXRPlayerRig>(), _font);
             _initialized = true;
-            SubscribePanel();
-            HoldGuideRay();
+            if (isActiveAndEnabled)
+            {
+                SubscribePanel();
+                HoldGuideRay();
+            }
             Refresh();
         }
 
@@ -155,6 +165,16 @@ namespace FactoryTutorial
             ReleaseGuideRay();
             _panel.gameObject.SetActive(false);
             IsComplete = true;
+            StageCompleted?.Invoke(LearningStageId.Tutorial);
+            PublishProgressionAvailability();
+        }
+
+        private void PublishProgressionAvailability()
+        {
+            bool available = CanProceed(LearningStageId.Tutorial);
+            if (_progressionAvailable == available) { return; }
+            _progressionAvailable = available;
+            ProgressionAvailabilityChanged?.Invoke(LearningStageId.Tutorial, available);
         }
 
         private void HoldGuideRay()
@@ -205,6 +225,7 @@ namespace FactoryTutorial
                 StopAllCoroutines();
                 _finishing = false;
             }
+            PublishProgressionAvailability();
         }
 
         private void OnDestroy()

@@ -89,7 +89,7 @@ InteractionController와 ConvolutionSimulation은 일반 C# 객체다. 두 모�
 | FeatureMaps → Lesson | `OnPatchEvaluated(row, column, sum, value, count)`는 선택 위치의 ReLU 적용 전 합, 적용 후 값, 해당 채널의 방문 위치 수를 `ShowPatch()`에 전달한다. |
 | FeatureMaps → Lesson | `OnAffectedPixelSelected(row, column, affectedCount)`와 `OnInputEdited(editCount)`는 각각 수용 영역 위치 수와 누적 입력 수정 횟수를 표시한다. |
 | FeatureMaps → 씬 Manager → Lesson | `OnScanningChanged`를 받으면 씬 Manager가 현재 단계·다음 펼침 층·스캔 상태를 읽어 `UpdateButtons()`를 호출한다. |
-| 공장 → 씬 Manager | `ReadyForModelDesign`을 읽어 다음 방 진입을 허용한다. 특징 맵의 내부 Controller나 계산 결과를 직접 읽지 않는다. |
+| 씬 Manager → Core 학습 세션 | `StageCompleted(LearningStageId.FeatureMap)`와 `ProgressionAvailabilityChanged(stage, available)`로 완료 사실과 현재 진행 가능 상태를 구분해 전달한다. 최초 연결 시 `HasCompleted(stage)`·`CanProceed(stage)`로 동기화하며 내부 Controller나 계산 결과는 공개하지 않는다. |
 
 Interaction의 `OnTargetHeld`, `OnTargetActivated`, `OnFilterPositionChanged`, `OnPosesReset`은 FeatureMaps 내부에서 처리한다. 셀·맵 분리 상태, 필터 좌표 적용과 복원은 이 경계 안에 남고, Lesson에는 표시할 결과만 전달한다.
 
@@ -112,9 +112,9 @@ LessonContent의 `Buttons`는 LessonAction을 키로 사용하는 상태 사전�
 
 씬 Manager는 `_step`, `_channel`, `_lastStepSkipped`를 관리한다. FeatureMapsManager는 전달받은 단계·채널과 시뮬레이션·방문 배열·`EditCount`를 관리하며, 필터의 행·열과 스캔 상태는 Interaction 내부에서 관리한다. 다음에 펼칠 층은 FeatureMapsManager의 `NextSpreadLayer`로 읽어 버튼에 전달한다. `Restore` 명령은 FeatureMapsManager.TryRestore()에 원본 입력·방문 기록·수정 횟수 초기화와 배치 복원을 요청한다. FeatureMapsManager 내부에서 층 애니메이션 정리 → InteractionManager의 자세 복원 → 복원 완료 이벤트에 따른 셀·맵 분리 상태 초기화 순서를 처리하며, 성공하면 씬 Manager가 현재 단계를 다시 적용한다.
 
-마지막 단계의 다음 버튼은 `단계 마치기`로 표시된다. 입력을 수정하지 않고 이 버튼을 누르면 `_lastStepSkipped`가 참이 된다. 공장 진행에서 읽는 `ReadyForModelDesign`은 초기화 완료, 마지막 단계, 입력 수정 1회 이상 또는 건너뛰기, 잡은 대상 없음이 모두 충족될 때 참이다. FactoryLearningFlowManager가 CNNFeatureMapLabManager에서 이 값을 직접 읽는다. 공장 씬 전환은 [공장 환경 구현](factory-environment.md)에서 다룬다.
+마지막 단계의 다음 버튼은 `단계 마치기`로 표시된다. 입력을 수정하지 않고 이 버튼을 누르면 `_lastStepSkipped`가 참이 된다. `CanProceed(LearningStageId.FeatureMap)`은 활성화·초기화 완료, 마지막 단계, 입력 수정 1회 이상 또는 건너뛰기, 잡은 대상 없음이 모두 충족될 때 참이다. 처음 조건을 충족하면 CNNFeatureMapLabManager가 StageCompleted를 알리고, 조건이 바뀔 때마다 ProgressionAvailabilityChanged를 발행한다. 입력 수정·단계 변경·건너뛰기·초기화와 잡기 상태 변화가 갱신 지점이다. 잡기 상태 변화는 InteractionController → InteractionManager → FeatureMapsManager의 OnHeldTargetsChanged를 통해 전달한다. Core LearningSessionManager는 누적 완료와 현재 진행 조건을 따로 관리하고, 태블릿에는 읽기 전용 스냅샷을 전달하며 공장 진입점에는 공간 제어를 요청한다. 공장 씬 전환은 [공장 환경 구현](factory-environment.md)에서 다룬다.
 
-앞의 세 단계는 방문 위치 수나 스캔 완료를 다음 단계의 필수 조건으로 삼지 않는다. 마지막 단계에서 입력을 한 번 수정했다면 `단계 마치기` 버튼을 누르기 전에도 위 완료 조건을 충족할 수 있다. 이전 단계로 돌아가면 마지막 단계 조건이 사라져 공장 진행이 다시 보류되고, `처음 상태`는 수정 횟수와 `_lastStepSkipped`를 지운다. 이 상태는 현재 씬 인스턴스에만 보관하며 다음 모델 제작 씬에 입력·가중치·특징 맵을 전달하지 않는다.
+앞의 세 단계는 방문 위치 수나 스캔 완료를 다음 단계의 필수 조건으로 삼지 않는다. 마지막 단계에서 입력을 한 번 수정했다면 `단계 마치기` 버튼을 누르기 전에도 위 완료 조건을 충족할 수 있다. 이전 단계로 돌아가면 마지막 단계 조건이 사라져 공장 진행이 다시 보류되고, `처음 상태`는 수정 횟수와 `_lastStepSkipped`를 지운다. 이 진행 조건은 현재 씬 인스턴스에만 보관하며 다음 모델 제작 씬에 입력·가중치·특징 맵을 전달하지 않는다. 한 번 충족한 완료 사실은 HasCompleted에 남고, Core 세션의 누적 완료 기록도 초기화·잡기·이전 단계 복귀로 지우지 않는다. 공장 씬 종료 시 Core 세션 기록은 폐기된다.
 
 ## 계산 데이터
 
@@ -169,3 +169,5 @@ Lesson UI의 위치·회전·크기·폰트 재질은 프리팹에 저장한다.
 ## 확인 범위
 
 현재 스크립트의 호출·이벤트·완료 조건과 Workspace·버튼 프리팹의 직렬화된 참조를 대조해 문서를 갱신했다. 이 문서 갱신에서는 Unity 실행, 컴파일, 테스트, APK 빌드를 수행하지 않았다. 실제 XR 입력, 씬 전환, Quest에서의 표시·성능은 이번 정적 확인 결과에 포함하지 않는다.
+
+이번 공통 완료 이벤트와 Core 학습 세션 연결 변경은 소스로 검토했으며 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다. 문서의 이전 실행 기록은 해당 시점 구현에 대한 결과다.

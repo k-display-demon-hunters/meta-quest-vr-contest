@@ -5,6 +5,7 @@ namespace OpeningEnding
     [DisallowMultipleComponent]
     public sealed class FactoryVillageDisplayController : MonoBehaviour
     {
+        private const float UpscalingFrameTime = 3f;
         private enum BroadcastChannel { News, Football, Film }
 
         private static readonly int PlaybackTimeId = Shader.PropertyToID("_PlaybackTime");
@@ -13,6 +14,8 @@ namespace OpeningEnding
         private static readonly int InterferenceId = Shader.PropertyToID("_Interference");
         private static readonly int PhaseId = Shader.PropertyToID("_Phase");
         private static readonly int ChannelId = Shader.PropertyToID("_Channel");
+        private static readonly int UpscalingPreviewId = Shader.PropertyToID("_UpscalingPreview");
+        private static readonly int RevealProgressId = Shader.PropertyToID("_RevealProgress");
 
         [SerializeField] private Renderer _surface;
         [SerializeField, Min(0f)] private float _failureTime = 10.5f;
@@ -64,6 +67,20 @@ namespace OpeningEnding
             EvaluateRestoration(0f);
         }
 
+        public void EvaluateUpscaling(float revealProgress)
+        {
+            // Compare the same frozen programme frame. Only sampling resolution changes;
+            // this teaching presentation does not run neural-network inference.
+            ApplyFrame(UpscalingFrameTime, UpscalingFrameTime, 0f, 0f, true, Mathf.Clamp01(revealProgress));
+        }
+
+        public void EvaluateUpscaled(float elapsed)
+        {
+            // Continue from the exact frame used by the before/after comparison.
+            float time = UpscalingFrameTime + Mathf.Max(0f, elapsed);
+            ApplyFrame(time, time, 0f, 0f);
+        }
+
         public void EvaluateRestoration(float elapsed)
         {
             float time = Mathf.Max(0f, elapsed);
@@ -75,7 +92,8 @@ namespace OpeningEnding
             ApplyFrame(playback, time + _failureTime, 1f - recovery, interference);
         }
 
-        private void ApplyFrame(float playbackTime, float signalTime, float damage, float interference)
+        private void ApplyFrame(float playbackTime, float signalTime, float damage, float interference,
+            bool upscalingPreview = false, float revealProgress = 0f)
         {
             if (!CacheProperties())
             {
@@ -88,6 +106,8 @@ namespace OpeningEnding
             _properties.SetFloat(InterferenceId, interference);
             _properties.SetFloat(PhaseId, _phase);
             _properties.SetFloat(ChannelId, (float)_channel);
+            _properties.SetFloat(UpscalingPreviewId, upscalingPreview ? 1f : 0f);
+            _properties.SetFloat(RevealProgressId, revealProgress);
             _surface.SetPropertyBlock(_properties);
         }
 

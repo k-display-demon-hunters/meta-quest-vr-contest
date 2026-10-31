@@ -2,16 +2,16 @@
 
 ## 배분과 위치
 
-`client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs`의 각 단계 `EntranceParchmentIds`가 입장 조건·단계 이동 시 지급·위치 안내에 사용하는 문서 배분의 유일한 원본이다. `ParchmentCatalog`는 문서 ID와 제목·본문·페이지·삽화만 소유한다. 별도의 `ParchmentLocation` enum과 문서별 `Location` 속성은 제거했다.
+`client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs`가 체험별 문서 배분의 원본이다. 각 단계의 `EntranceParchmentIds`는 바깥문 입장 필수 문서이며, `ParchmentIds`는 입장 문서와 내부 문서를 합친 전체 소속 목록이다. 태블릿 이동 시 지급과 문서 소속 조회에는 전체 목록을 사용한다. `ParchmentCatalog`는 문서 ID와 제목·본문·페이지·삽화만 소유한다.
 
-| 진입할 학습 단계 | 문서 ID | 화면에 표시하는 문서 번호 |
+| 체험과 사용 위치 | 문서 ID | 화면에 표시하는 문서 번호 |
 | --- | --- | --- |
-| PixelObservation · 픽셀 | 4 | 05 활성화 함수·ReLU |
-| Convolution · 합성곱 | 0 | 01 이미지·픽셀 |
+| PixelLab 바깥 입구 | 4 | 05 활성화 함수·ReLU |
+| PixelLab 내부 진행 | 0 | 01 이미지·픽셀 |
 | FeatureMap · 특징 맵 | 1 | 02 합성곱·패딩 |
 | ModelDesign · 모델 제작 | 2, 3 | 03 필터·특징 추출, 04 특징 맵 |
 
-픽셀과 합성곱은 같은 `RoomId.PixelLab` 안의 서로 다른 학습 단계이므로 입구 문서 그룹도 구분한다. 카탈로그의 배분 변경은 수집 조건과 안내에 반영되며 씬 Transform을 자동 이동하지 않는다. 문서 ID는 학습 단계 enum이나 방 enum의 숫자와 별개다.
+PixelLab의 전체 소속 문서는 `{4, 0}`이며 바깥문 입장 조건은 `{4}`다. 문서 0은 방 안에 있으므로 바깥문 조건에 포함하지 않는다. 픽셀 관찰 이후의 문서 0 수집과 내부 영역 진입은 CNNPixelLabManager가 판단한다. 외부 학습 ID는 PixelLab 하나이고 내부 합성곱 단계를 별도 ID로 공개하지 않는다. 문서 ID는 LearningStageId의 숫자와 별개다.
 
 05번은 튜토리얼 출구와 픽셀 입구 사이 통로의 월드 좌표 (-10.5, 1.45, 1.2), Y 회전 0도에 있다. 통로 자식으로 연결해 닫힌 픽셀 입구 전에 수집할 수 있다. 나머지 양피지의 실제 배치는 유지한다. 걸어서 이동하는 순서는 튜토리얼 완료 → 05 수집 → 픽셀 입장 → 스크린 완료 및 01 수집 → 합성곱 입장 → 합성곱 완료 및 02 수집 → 특징 맵 입장 → 특징 맵 완료 및 03·04 수집 → 모델 제작 입장이다.
 
@@ -21,7 +21,7 @@
 
 Core/Parchment의 Pickup은 활성/비활성 등록과 XRI 입력만 전달한다. Manager가 3m 거리와 중복 수집·열람을 확인하고 클릭 즉시 수집을 기록해 `Collected(documentId)`를 알린다. VisualController가 다음 프레임에 원본을 비활성화하며 공용 Reader를 연다. 열람을 닫아도 수집은 유지한다. 마지막 페이지 완료는 열람 종료다.
 
-수집 상태는 기존 공용 `ParchmentManager`의 영속 메모리에 유지한다. 공장 씬 종료 시 폐기되는 학습 진행 기록과는 별개다. 디스크에 저장하지 않는다. `ParchmentInventoryItem`은 문서 ID로 학습 카탈로그의 배분을 역조회해 `EntranceStage`와 `LocationText`를 제공하므로 Pickup이 사라져도 위치 안내를 유지한다.
+수집 상태는 기존 공용 `ParchmentManager`의 영속 메모리에 유지한다. 공장 씬 종료 시 폐기되는 학습 진행 기록과는 별개다. 디스크에 저장하지 않는다. `ParchmentInventoryItem`은 문서 ID로 학습 카탈로그의 배분을 역조회해 `Stage`와 `LocationText`를 제공하므로 Pickup이 사라져도 위치 안내를 유지한다. 입장 문서는 해당 체험 입구 앞, 내부 문서 0은 “픽셀 랩 체험실 내부”로 표시한다.
 
 태블릿 양피지 앱은 `HasCollected`로 수집 여부를 조회해 보유한 문서의 제목·주제만 목록에 표시하고, 현재 XR 카메라와 시작 위치를 전달해 재열람을 요청한다. Manager가 이동 차단과 열람창 수명을 관리한다. 최초 현장 열람 완료는 재열람의 선행 조건이 아니다.
 
@@ -29,16 +29,15 @@ Core/Parchment의 Pickup은 활성/비활성 등록과 XRI 입력만 전달한�
 
 Core의 `LearningSessionManager`가 `Collected` 이벤트를 받아 공통 학습 카탈로그의 `EntranceParchmentIds`와 `HasCollectedAll`로 진입 조건을 갱신한다. 수집 기록은 복제하지 않는다. `FactoryEnvironmentManager`는 세션이 전달한 진입 가능 상태로 실제 문과 경로를 제어한다. 문·영역·기준점 참조는 공장의 `FactoryNavigationData`에 둔다.
 
-각 방 입구는 이전 단계의 진행 가능 상태와 콘텐츠 준비, 필요한 문서 수집을 요구한다. 현재 방 출구는 다음 콘텐츠 준비가 성공하면 열려 다음 입구 앞에 접근할 수 있다. ROOM #1 내부문은 픽셀 단계의 진행 가능 상태와 합성곱 입구 문서 수집을 요구하며 합성곱 시작 시 닫힌다. 이동·로딩 중에 받은 수집 통지도 이후 진행 조건 판단에 반영한다.
+각 방 입구는 이전 체험의 진행 가능 상태와 콘텐츠 준비, 입장 필수 문서 수집을 요구한다. 현재 방 출구는 다음 콘텐츠 준비가 성공하면 열려 다음 입구 앞에 접근할 수 있다. ROOM #1 내부문은 CNNPixelLabManager가 픽셀 관찰 완료와 문서 0 수집을 확인해 열고 내부 씬 교체 후 닫는다. Core는 해당 체험의 ParchmentIds를 ParchmentManager.HasCollectedAll로 확인하는 조회 함수를 PixelLab에 연결한다. PixelLab이 이 함수를 사용할 내부 진행 시점을 정하며 문서 ID 목록을 중복 보관하지 않는다.
 
 ## 태블릿 단계 이동 요청에 따른 지급
 
-`LearningSessionManager`는 `TabletManager.StageMoveRequested(LearningStageId)`를 받으면 공통 카탈로그의 순서대로 선택한 단계까지의 `EntranceParchmentIds`를 `ParchmentManager.CollectDocuments`에 전달한다. enum 숫자나 문서 번호로 진행 순서를 추론하지 않는다. 공장과 양피지 카탈로그에는 배분 목록을 중복 보관하지 않는다.
+`LearningSessionManager`는 `TabletManager.StageMoveRequested(LearningStageId)`를 받으면 공통 카탈로그의 순서대로 선택한 체험까지의 `ParchmentIds`를 `ParchmentManager.CollectDocuments`에 전달한다. enum 숫자나 문서 번호로 진행 순서를 추론하지 않는다. 문서 소속 조회는 같은 전체 목록을 사용하는 `GetParchmentStage(documentId)`로 수행한다.
 
 | 선택한 체험 | 현재 배분 기준 보유하게 되는 문서 |
 | --- | --- |
-| 픽셀 | 05 |
-| 합성곱 | 05, 01 |
+| 픽셀 랩 | 05, 01 |
 | 특징 맵 | 05, 01, 02 |
 | 모델 제작 | 05, 01, 02, 03, 04 |
 
@@ -50,4 +49,4 @@ Pickup과 태블릿은 `client/Assets/Prefabs/Common/ParchmentReader.prefab`을 
 
 ParchmentSceneSetup의 Refresh Learning Parchment Labels 메뉴는 열린 씬의 기존 Pickup 라벨을 문서 데이터에 맞춘다. 이전 공간 좌표로 씬을 열고 전체 재생성하던 메뉴는 제거했다. 위치 변경은 씬 Transform에서 수행한다. Pickup/Visual 스크립트는 Core/Parchment에 있고 기존 GUID를 유지한다.
 
-이번 Core 분리와 문서 배분 통합은 소스 기준으로 정리했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
+이번 PixelLab 단일 체험 통합과 문서 배분 구분은 소스 기준으로 정리했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

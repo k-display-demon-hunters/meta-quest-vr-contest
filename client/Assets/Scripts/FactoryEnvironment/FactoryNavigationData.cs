@@ -10,14 +10,14 @@ namespace FactoryEnvironment
         [Serializable]
         public sealed class DestinationData
         {
-            [SerializeField] private RoomId _id;
+            [SerializeField] private LearningStageId _id;
             [SerializeField] private GameObject _route;
             [SerializeField] private FactoryAreaEntryController _area;
             [SerializeField] private Transform _contentAnchor;
             [SerializeField] private FactoryShutterController _entryDoor;
             [SerializeField] private FactoryShutterController _exitDoor;
 
-            public RoomId Id => _id;
+            public LearningStageId Id => _id;
             public GameObject Route => _route;
             public FactoryAreaEntryController Area => _area;
             public Transform ContentAnchor => _contentAnchor;
@@ -36,7 +36,7 @@ namespace FactoryEnvironment
         public Transform TutorialStart => _tutorialStart;
         public ReadOnlySpan<DestinationData> Destinations => _destinations;
 
-        public DestinationData Get(RoomId id)
+        public DestinationData Get(LearningStageId id)
         {
             foreach (DestinationData destination in _destinations)
             {

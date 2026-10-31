@@ -33,13 +33,14 @@ namespace FactoryEnvironment
         public event Action<TabletMapData> MapChanged;
         public TabletMapData MapData => _map.MapData;
         public Pose TutorialPose => ToPose(_navigationData.TutorialStart);
-        public Pose ConvolutionPose => ToPose(_convolutionAnchor);
+        public Pose PixelLabContentPose => ToPose(_convolutionAnchor);
+        public bool IsPixelPassageInside => _convolutionArea.IsPlayerInside;
 
         private void Awake()
         {
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
             {
-                RoomId roomId = room.Id;
+                LearningStageId roomId = room.Id;
                 _areaHandlers.Add(room.Area, inside => HandleRoomPresence(roomId, inside));
             }
         }
@@ -48,7 +49,6 @@ namespace FactoryEnvironment
         {
             foreach (KeyValuePair<FactoryAreaEntryController, Action<bool>> entry in _areaHandlers)
                 entry.Key.PresenceChanged += entry.Value;
-            _convolutionArea.PresenceChanged += HandleConvolutionPresence;
             _map.MapChanged += PublishMap;
         }
 
@@ -56,7 +56,6 @@ namespace FactoryEnvironment
         {
             foreach (KeyValuePair<FactoryAreaEntryController, Action<bool>> entry in _areaHandlers)
                 entry.Key.PresenceChanged -= entry.Value;
-            _convolutionArea.PresenceChanged -= HandleConvolutionPresence;
             _map.MapChanged -= PublishMap;
         }
 
@@ -70,90 +69,67 @@ namespace FactoryEnvironment
             {
                 room.Area.Bind(_player.CameraTransform);
                 room.EntryDoor.Bind(_player.CameraTransform);
-                if (room.Id != RoomId.Exit) { room.ExitDoor.Bind(_player.CameraTransform); }
+                if (room.Id != LearningStageId.Exit) { room.ExitDoor.Bind(_player.CameraTransform); }
             }
             ActivateEnvironment();
             _map.Initialize();
         }
 
-        private void HandleRoomPresence(RoomId room, bool inside)
+        private void HandleRoomPresence(LearningStageId room, bool inside)
         {
-            if (room == RoomId.Exit) { ExitAreaChanged?.Invoke(inside); return; }
-            foreach (LearningStageDefinition stage in LearningStageCatalog.Stages)
-            {
-                if (stage.Room != room) { continue; }
-                StageAreaChanged?.Invoke(stage.Id, inside);
-                return;
-            }
+            if (room == LearningStageId.Exit) { ExitAreaChanged?.Invoke(inside); return; }
+            StageAreaChanged?.Invoke(room, inside);
         }
 
-        private void HandleConvolutionPresence(bool inside) =>
-            StageAreaChanged?.Invoke(LearningStageId.Convolution, inside);
         private void PublishMap(TabletMapData map) => MapChanged?.Invoke(map);
         private static Pose ToPose(Transform anchor) => new Pose(anchor.position, anchor.rotation);
 
         public bool IsStageAreaInside(LearningStageId stage) =>
-            stage == LearningStageId.Convolution ? _convolutionArea.IsPlayerInside
-                : _navigationData.Get(LearningStageCatalog.Get(stage).Room).Area.IsPlayerInside;
-        public bool IsExitAreaInside => _navigationData.Get(RoomId.Exit).Area.IsPlayerInside;
-
-        public LearningPlacement GetPlacement(LearningStageId stage)
-        {
-            if (stage == LearningStageId.Tutorial)
-                return new LearningPlacement(new Pose(Vector3.zero, Quaternion.identity), Vector3.one, false);
-            Transform anchor = _navigationData.Get(LearningStageCatalog.Get(stage).Room).ContentAnchor;
-            return new LearningPlacement(ToPose(anchor), anchor.lossyScale, true);
-        }
+            _navigationData.Get(stage).Area.IsPlayerInside;
+        public bool IsExitAreaInside => _navigationData.Get(LearningStageId.Exit).Area.IsPlayerInside;
 
         public void ActivateEnvironment() => SceneManager.SetActiveScene(gameObject.scene);
         public void ReleaseSceneObjects(Scene scene) => _player.ReleaseSceneObjects(scene);
 
         public void SetEntranceAvailable(LearningStageId stage, bool available)
         {
-            FactoryShutterController door = stage == LearningStageId.Convolution
-                ? _navigationData.ConvolutionEntranceDoor
-                : _navigationData.Get(LearningStageCatalog.Get(stage).Room).EntryDoor;
+            FactoryShutterController door = _navigationData.Get(stage).EntryDoor;
             if (available) { door.Open(); } else { door.Close(); }
-            if (stage == LearningStageId.Convolution)
-                _routeGuide.SetConvolutionRouteVisible(available);
         }
 
         public void ShowDestination(LearningStageId stage) =>
-            _routeGuide.SetDestination(LearningStageCatalog.Get(stage).Room);
+            _routeGuide.SetDestination(stage);
 
         public void SetNextStagePrepared(LearningStageId current, LearningStageId next)
         {
-            if (next == LearningStageId.Convolution) { return; }
-            _navigationData.Get(LearningStageCatalog.Get(current).Room).ExitDoor.Open();
+            _navigationData.Get(current).ExitDoor.Open();
             ShowDestination(next);
         }
 
         public void BeginEntry(LearningStageId stage)
         {
             SetEntranceAvailable(stage, false);
-            _routeGuide.SetDestination(RoomId.None);
+            _routeGuide.SetDestination(LearningStageId.None);
         }
 
-        public void StageActivated(LearningStageId stage)
+        public void SetPixelPassageAvailable(bool available)
         {
-            if (stage == LearningStageId.Convolution)
-            {
-                _navigationData.ConvolutionEntranceDoor.Close();
-                _routeGuide.SetConvolutionRouteVisible(false);
-            }
+            if (available) { _navigationData.ConvolutionEntranceDoor.Open(); }
+            else { _navigationData.ConvolutionEntranceDoor.Close(); }
+            _routeGuide.SetConvolutionRouteVisible(available);
         }
 
         public void AllowExit(LearningStageId current)
         {
-            _navigationData.Get(LearningStageCatalog.Get(current).Room).ExitDoor.Open();
-            _navigationData.Get(RoomId.Exit).EntryDoor.Open();
-            _routeGuide.SetDestination(RoomId.Exit);
+            _navigationData.Get(current).ExitDoor.Open();
+            _navigationData.Get(LearningStageId.Exit).EntryDoor.Open();
+            _routeGuide.SetDestination(LearningStageId.Exit);
         }
 
         public void BeginExit()
         {
-            _navigationData.Get(RoomId.Exit).EntryDoor.Close();
-            _routeGuide.SetDestination(RoomId.None);
+            _navigationData.Get(LearningStageId.Exit).EntryDoor.Close();
+            _routeGuide.SetDestination(LearningStageId.None);
         }
 
         public void ResetForStageMove()
@@ -161,10 +137,10 @@ namespace FactoryEnvironment
             foreach (FactoryNavigationData.DestinationData room in _navigationData.Destinations)
             {
                 room.EntryDoor.Close();
-                if (room.Id != RoomId.Exit) { room.ExitDoor.Close(); }
+                if (room.Id != LearningStageId.Exit) { room.ExitDoor.Close(); }
             }
             _navigationData.ConvolutionEntranceDoor.Close();
-            _routeGuide.SetDestination(RoomId.None);
+            _routeGuide.SetDestination(LearningStageId.None);
         }
 
         public void MovePlayerToStage(LearningStageId stage)

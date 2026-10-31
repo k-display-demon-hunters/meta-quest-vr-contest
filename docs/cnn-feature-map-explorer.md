@@ -89,7 +89,7 @@ InteractionController와 ConvolutionSimulation은 일반 C# 객체다. 두 모�
 | FeatureMaps → Lesson | `OnPatchEvaluated(row, column, sum, value, count)`는 선택 위치의 ReLU 적용 전 합, 적용 후 값, 해당 채널의 방문 위치 수를 `ShowPatch()`에 전달한다. |
 | FeatureMaps → Lesson | `OnAffectedPixelSelected(row, column, affectedCount)`와 `OnInputEdited(editCount)`는 각각 수용 영역 위치 수와 누적 입력 수정 횟수를 표시한다. |
 | FeatureMaps → 씬 Manager → Lesson | `OnScanningChanged`를 받으면 씬 Manager가 현재 단계·다음 펼침 층·스캔 상태를 읽어 `UpdateButtons()`를 호출한다. |
-| 씬 Manager → Core 학습 세션 | `StageCompleted(LearningStageId.FeatureMap)`와 `ProgressionAvailabilityChanged(stage, available)`로 완료 사실과 현재 진행 가능 상태를 구분해 전달한다. 최초 연결 시 `HasCompleted(stage)`·`CanProceed(stage)`로 동기화하며 내부 Controller나 계산 결과는 공개하지 않는다. |
+| 씬 Manager → Core 학습 세션 | ILearningExperience의 ProgressChanged와 ExitAvailabilityChanged로 진행률과 현재 퇴장 가능 여부를 전달한다. 최초 연결 시 Progress와 CanExit를 조회한다. 진행률은 시작 0, 필터 비교 0.25, 수용 영역 추적 0.5, 입력 수정 단계 0.75, 입력 수정 또는 건너뛰기 완료 1이다. 잡기 상태는 CanExit에만 반영한다. |
 
 Interaction의 `OnTargetHeld`, `OnTargetActivated`, `OnFilterPositionChanged`, `OnPosesReset`은 FeatureMaps 내부에서 처리한다. 셀·맵 분리 상태, 필터 좌표 적용과 복원은 이 경계 안에 남고, Lesson에는 표시할 결과만 전달한다.
 

@@ -25,7 +25,7 @@ namespace Tablet
                 LearningStageId stage = LearningStageCatalog.ProgressStages[i].Id;
                 bool complete = _snapshot.IsCompleted(stage);
                 bool current = stage == _snapshot.CurrentStage;
-                _view.StageStates[i].text = current ? (complete ? "현재 · 완료" : "현재 단계") : complete ? "완료" : "시작 전";
+                _view.StageStates[i].text = current ? (complete ? "현재 · 완료" : "현재 · " + Mathf.RoundToInt(_snapshot.GetProgress(stage) * 100f) + "%") : complete ? "완료" : _snapshot.GetProgress(stage) > 0f ? Mathf.RoundToInt(_snapshot.GetProgress(stage) * 100f) + "%" : "시작 전";
                 _view.StageButtons[i].interactable = _snapshot.CanTravel;
                 _view.StageButtons[i].GetComponent<Image>().color = current ? TabletUIBuilder.AccentSoftColor : TabletUIBuilder.CardColor;
             }

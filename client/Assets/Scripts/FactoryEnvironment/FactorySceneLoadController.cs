@@ -1,27 +1,24 @@
 using System;
 using System.Collections;
-using CNNFeatureMaps;
 using FactoryTutorial;
-using ModelDesignScene;
-using UI;
+using Learning;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Learning
+namespace FactoryEnvironment
 {
     // Owns loaded content and asynchronous operations; the session chooses their order.
-    public sealed class LearningSceneLoadController : MonoBehaviour
+    public sealed class FactorySceneLoadController : MonoBehaviour
     {
         private sealed class Lesson
         {
             public Scene Scene;
             public GameObject Root;
             public FactoryTutorialManager Tutorial;
-            public CNNPixelLabManager Pixels;
-            public CNNFeatureMapLabManager Maps;
-            public CNNModelDesignLabManager Model;
+            public ILearningExperience Experience;
         }
 
+        [SerializeField] private FactoryNavigationData _navigationData;
         private Lesson _current;
         private Lesson _prepared;
         private string _loadingSceneName;
@@ -31,14 +28,11 @@ namespace Learning
         public string LastError { get; private set; }
         public bool IsLeaving { get; private set; }
         public FactoryTutorialManager PreparedTutorial => _prepared.Tutorial;
-        public CNNPixelLabManager PreparedPixels => _prepared.Pixels;
-        public CNNFeatureMapLabManager PreparedMaps => _prepared.Maps;
-        public CNNModelDesignLabManager PreparedModel => _prepared.Model;
+        public ILearningExperience PreparedExperience => _prepared.Experience;
 
-        public IEnumerator Prepare(LearningStageId stage, LearningPlacement placement)
+        public IEnumerator Prepare(LearningStageId stage)
         {
-            RoomId room = LearningStageCatalog.Get(stage).Room;
-            _loadingSceneName = LearningStageCatalog.GetSceneName(room);
+            _loadingSceneName = LearningStageCatalog.GetSceneName(stage);
             SceneManager.sceneLoaded += HoldLoadedLesson;
             AsyncOperation loading = BeginLoad(_loadingSceneName);
             if (loading == null)
@@ -49,8 +43,8 @@ namespace Learning
             loading.completed += HandleLessonLoaded;
             yield return loading;
             Scene scene = SceneManager.GetSceneByName(_loadingSceneName);
-            _prepared = FindLesson(scene, room);
-            PlaceContent(_prepared.Root, placement);
+            _prepared = FindLesson(scene, stage);
+            PlaceContent(_prepared.Root, stage);
         }
 
         private void HoldLoadedLesson(Scene scene, LoadSceneMode mode)
@@ -61,45 +55,46 @@ namespace Learning
             foreach (GameObject root in scene.GetRootGameObjects()) { root.SetActive(false); }
         }
 
-        private static Lesson FindLesson(Scene scene, RoomId room)
+        private static Lesson FindLesson(Scene scene, LearningStageId stage)
         {
             Lesson lesson = new Lesson { Scene = scene };
             foreach (GameObject root in scene.GetRootGameObjects())
             {
-                bool found;
-                switch (room)
+                if (stage == LearningStageId.Tutorial)
                 {
-                    case RoomId.Tutorial:
-                        lesson.Tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
-                        found = lesson.Tutorial != null;
-                        break;
-                    case RoomId.PixelLab:
-                        lesson.Pixels = root.GetComponentInChildren<CNNPixelLabManager>(true);
-                        found = lesson.Pixels != null;
-                        break;
-                    case RoomId.FeatureMapLab:
-                        lesson.Maps = root.GetComponentInChildren<CNNFeatureMapLabManager>(true);
-                        found = lesson.Maps != null;
-                        break;
-                    case RoomId.ModelDesignLab:
-                        lesson.Model = root.GetComponentInChildren<CNNModelDesignLabManager>(true);
-                        found = lesson.Model != null;
-                        break;
-                    default: throw new ArgumentOutOfRangeException(nameof(room));
+                    lesson.Tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
+                    if (lesson.Tutorial == null) { continue; }
                 }
-                if (!found) { continue; }
+                else
+                {
+                    foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true))
+                    {
+                        if (component is ILearningExperience experience && experience.StageId == stage)
+                        {
+                            lesson.Experience = experience;
+                            break;
+                        }
+                    }
+                    if (lesson.Experience == null) { continue; }
+                }
                 lesson.Root = root;
                 return lesson;
             }
             throw new InvalidOperationException("Missing lesson entry point in " + scene.name);
         }
 
-        private static void PlaceContent(GameObject content, LearningPlacement placement)
+        private void PlaceContent(GameObject content, LearningStageId stage)
         {
-            content.transform.SetPositionAndRotation(placement.Pose.position, placement.Pose.rotation);
-            content.transform.localScale = placement.Scale;
-            if (placement.UseEnvironmentLighting)
+            if (stage == LearningStageId.Tutorial)
             {
+                content.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                content.transform.localScale = Vector3.one;
+            }
+            else
+            {
+                Transform anchor = _navigationData.Get(stage).ContentAnchor;
+                content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+                content.transform.localScale = anchor.lossyScale;
                 foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
             }
             foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
@@ -133,7 +128,7 @@ namespace Learning
         public IEnumerator LoadEnding()
         {
             IsLeaving = true;
-            AsyncOperation loading = BeginLoad(LearningStageCatalog.GetSceneName(RoomId.Exit), LoadSceneMode.Single);
+            AsyncOperation loading = BeginLoad(LearningStageCatalog.GetSceneName(LearningStageId.Exit), LoadSceneMode.Single);
             if (loading == null) { IsLeaving = false; yield break; }
             yield return loading;
         }

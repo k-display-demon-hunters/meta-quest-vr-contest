@@ -210,7 +210,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 980100001}
-  - {fileID: 980100003}
   - {fileID: 980100005}
   - {fileID: 980100007}
   - {fileID: 720000003}
@@ -15128,7 +15127,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7369ff3ff5b44e038f6edbf956c32a67, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Learning.LearningSceneLoadController
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactorySceneLoadController
+  _navigationData: {fileID: 720003516}
 --- !u!114 &720003514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36820,37 +36820,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
---- !u!1 &980100002
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 980100003}
-  m_Layer: 0
-  m_Name: Convolution Arrival
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &980100003
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 980100002}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071067811865476, z: 0, w: 0.7071067811865476}
-  m_LocalPosition: {x: -22, y: 0, z: -1.5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 720000001}
-  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!1 &980100004
 GameObject:
   m_ObjectHideFlags: 0
@@ -36932,13 +36901,11 @@ MonoBehaviour:
   _convolutionArea: {fileID: 970000114}
   _convolutionAnchor: {fileID: 970000110}
   _stageArrivals:
-  - Stage: 2
+  - Stage: 1
     Arrival: {fileID: 980100001}
-  - Stage: 3
-    Arrival: {fileID: 980100003}
-  - Stage: 4
+  - Stage: 2
     Arrival: {fileID: 980100005}
-  - Stage: 5
+  - Stage: 3
     Arrival: {fileID: 980100007}
 --- !u!1 &980200000
 GameObject:

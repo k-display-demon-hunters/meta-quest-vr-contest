@@ -8,11 +8,10 @@ namespace Learning
         public static IReadOnlyList<LearningStageDefinition> Stages { get; } =
             Array.AsReadOnly(new[]
             {
-                new LearningStageDefinition(LearningStageId.Tutorial, RoomId.Tutorial, "튜토리얼", false),
-                new LearningStageDefinition(LearningStageId.PixelObservation, RoomId.PixelLab, "픽셀", true, 4),
-                new LearningStageDefinition(LearningStageId.Convolution, RoomId.PixelLab, "합성곱", true, 0),
-                new LearningStageDefinition(LearningStageId.FeatureMap, RoomId.FeatureMapLab, "특징 맵", true, 1),
-                new LearningStageDefinition(LearningStageId.ModelDesign, RoomId.ModelDesignLab, "모델 제작", true, 2, 3)
+                new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", false, Array.Empty<int>()),
+                new LearningStageDefinition(LearningStageId.PixelLab, "픽셀 랩", true, new[] { 4 }, 0),
+                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", true, new[] { 1 }),
+                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", true, new[] { 2, 3 })
             });
 
         public static IReadOnlyList<LearningStageDefinition> ProgressStages { get; } = CreateProgressStages();
@@ -48,21 +47,21 @@ namespace Learning
             throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown learning stage.");
         }
 
-        public static string GetSceneName(RoomId room) => room switch
+        public static string GetSceneName(LearningStageId stage) => stage switch
         {
-            RoomId.Tutorial => "FactoryTutorial",
-            RoomId.PixelLab => "CNNPixelLab",
-            RoomId.FeatureMapLab => "CNNFeatureMapLab",
-            RoomId.ModelDesignLab => "CNNModelDesignLab",
-            RoomId.Exit => "FactoryEnding",
-            _ => throw new ArgumentOutOfRangeException(nameof(room), room, "Unknown learning room.")
+            LearningStageId.Tutorial => "FactoryTutorial",
+            LearningStageId.PixelLab => "CNNPixelLab",
+            LearningStageId.FeatureMap => "CNNFeatureMapLab",
+            LearningStageId.ModelDesign => "CNNModelDesignLab",
+            LearningStageId.Exit => "FactoryEnding",
+            _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown learning stage.")
         };
 
-        public static LearningStageId GetParchmentEntranceStage(int documentId)
+        public static LearningStageId GetParchmentStage(int documentId)
         {
             foreach (LearningStageDefinition stage in Stages)
             {
-                foreach (int assignedId in stage.EntranceParchmentIds)
+                foreach (int assignedId in stage.ParchmentIds)
                 {
                     if (assignedId == documentId) { return stage.Id; }
                 }

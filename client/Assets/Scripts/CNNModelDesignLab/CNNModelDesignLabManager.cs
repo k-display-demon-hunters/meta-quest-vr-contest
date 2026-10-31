@@ -12,7 +12,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace ModelDesignScene
 {
-    public sealed class CNNModelDesignLabManager : MonoBehaviour
+    public sealed class CNNModelDesignLabManager : MonoBehaviour, ILearningExperience
     {
         [SerializeField] private ModelBuilderManager _builder;
         [SerializeField] private ModelBlockSettingsManager _settings;
@@ -26,15 +26,28 @@ namespace ModelDesignScene
         private bool _hasValidationResult;
         private bool _initialized;
         private bool _trainingCompleted;
-        private bool _hasCompleted;
         private bool _progressionAvailable;
-        public event System.Action<LearningStageId> StageCompleted;
-        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
+        public System.Collections.IEnumerator EndSession()
+        {
+            _execution.CloseSession();
+            yield break;
+        }
+
+        public LearningStageId StageId => LearningStageId.ModelDesign;
+        public float Progress { get; private set; }
+        public event System.Action<float> ProgressChanged;
+        public event System.Action<bool> ExitAvailabilityChanged;
+
+        private void SetProgress(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Progress == value) { return; }
+            Progress = value;
+            ProgressChanged?.Invoke(value);
+        }
         private bool _modelUIIsDirty;
 
-        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.ModelDesign && _hasCompleted;
-        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.ModelDesign
-            && isActiveAndEnabled && _trainingCompleted && !_execution.IsBusy;
+        public bool CanExit => isActiveAndEnabled && _trainingCompleted && !_execution.IsBusy;
 
         private void Awake()
         {
@@ -144,6 +157,7 @@ namespace ModelDesignScene
                 if (_execution.State == ModelExecutionState.Training)
                 {
                     _trainingCompleted = false;
+                    SetProgress(0f);
                     _validationIssues = System.Array.Empty<ValidationIssue>();
                     _hasValidationResult = true;
                     _controlPanel.ResetTraining();
@@ -155,7 +169,11 @@ namespace ModelDesignScene
             }
         }
 
-        private void HandleTrainingProgress(TrainingProgress progress) => _controlPanel.ShowProgress(progress);
+        private void HandleTrainingProgress(TrainingProgress progress)
+        {
+            _controlPanel.ShowProgress(progress);
+            SetProgress(progress.Epochs > 0 ? 0.95f * progress.Epoch / progress.Epochs : 0f);
+        }
         private void HandleTrainingCancelled() => _controlPanel.ShowCancelled();
         private void HandleInferenceCompleted(InferenceResult result) => _controlPanel.ShowInference(result);
         private void HandleExecutionError(string message) => _controlPanel.ShowError(message);
@@ -164,20 +182,16 @@ namespace ModelDesignScene
         {
             _controlPanel.ShowCompleted(result);
             _trainingCompleted = result != null;
+            if (_trainingCompleted) { SetProgress(1f); }
             PublishProgressionState();
         }
 
         private void PublishProgressionState()
         {
-            if (!_hasCompleted && CanProceed(LearningStageId.ModelDesign))
-            {
-                _hasCompleted = true;
-                StageCompleted?.Invoke(LearningStageId.ModelDesign);
-            }
-            bool available = CanProceed(LearningStageId.ModelDesign);
+            bool available = CanExit;
             if (_progressionAvailable == available) { return; }
             _progressionAvailable = available;
-            ProgressionAvailabilityChanged?.Invoke(LearningStageId.ModelDesign, available);
+            ExitAvailabilityChanged?.Invoke(available);
         }
 
         private void HandleModelChanged()
@@ -209,6 +223,7 @@ namespace ModelDesignScene
         private void OnDisable()
         {
             _trainingCompleted = false;
+            SetProgress(0f);
             PublishProgressionState();
             _hasValidationResult = false;
             _validationIssues = System.Array.Empty<ValidationIssue>();

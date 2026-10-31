@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CNNFeatureMaps
 {
     [DefaultExecutionOrder(-100)]
-    public sealed class CNNFeatureMapLabManager : MonoBehaviour
+    public sealed class CNNFeatureMapLabManager : MonoBehaviour, ILearningExperience
     {
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
@@ -14,14 +14,26 @@ namespace CNNFeatureMaps
         private LessonStep _step = LessonStep.BuildFeatureMap;
         private int _channel;
         private bool _lastStepSkipped;
-        private bool _hasCompleted;
         private bool _progressionAvailable;
-        public event System.Action<LearningStageId> StageCompleted;
-        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
+        public System.Collections.IEnumerator EndSession()
+        {
+            yield break;
+        }
 
-        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.FeatureMap && _hasCompleted;
-        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.FeatureMap
-            && isActiveAndEnabled && _ready && _step == LessonStep.EditInput
+        public LearningStageId StageId => LearningStageId.FeatureMap;
+        public float Progress { get; private set; }
+        public event System.Action<float> ProgressChanged;
+        public event System.Action<bool> ExitAvailabilityChanged;
+
+        private void SetProgress(float value)
+        {
+            value = Mathf.Clamp01(value);
+            if (Progress == value) { return; }
+            Progress = value;
+            ProgressChanged?.Invoke(value);
+        }
+
+        public bool CanExit => isActiveAndEnabled && _ready && _step == LessonStep.EditInput
             && (_featureMaps.EditCount > 0 || _lastStepSkipped) && !_featureMaps.HasHeldTargets;
 
         private void Awake()
@@ -207,15 +219,18 @@ namespace CNNFeatureMaps
 
         private void PublishProgressionState()
         {
-            if (!_hasCompleted && CanProceed(LearningStageId.FeatureMap))
+            float progress = _step switch
             {
-                _hasCompleted = true;
-                StageCompleted?.Invoke(LearningStageId.FeatureMap);
-            }
-            bool available = CanProceed(LearningStageId.FeatureMap);
+                LessonStep.CompareFilters => 0.25f,
+                LessonStep.TraceReceptiveField => 0.5f,
+                LessonStep.EditInput => (_featureMaps.EditCount > 0 || _lastStepSkipped) ? 1f : 0.75f,
+                _ => 0f
+            };
+            SetProgress(_ready ? progress : 0f);
+            bool available = CanExit;
             if (_progressionAvailable == available) { return; }
             _progressionAvailable = available;
-            ProgressionAvailabilityChanged?.Invoke(LearningStageId.FeatureMap, available);
+            ExitAvailabilityChanged?.Invoke(available);
         }
 
         private void UpdateButtons()

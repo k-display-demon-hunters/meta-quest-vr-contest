@@ -7,7 +7,7 @@ namespace FactoryEnvironment
     {
         [SerializeField] private GameObject _convolutionEntranceRoute;
         private FactoryNavigationData _navigationData;
-        private RoomId _destination = RoomId.None;
+        private LearningStageId _destination = LearningStageId.None;
 
         private void Awake()
         {
@@ -23,7 +23,7 @@ namespace FactoryEnvironment
             }
         }
 
-        public void SetDestination(RoomId destination)
+        public void SetDestination(LearningStageId destination)
         {
             _convolutionEntranceRoute.SetActive(false);
             if (destination == _destination)
@@ -39,10 +39,10 @@ namespace FactoryEnvironment
 
         public void SetConvolutionRouteVisible(bool visible)
         {
-            if (visible) { SetDestination(RoomId.None); }
+            if (visible) { SetDestination(LearningStageId.None); }
             _convolutionEntranceRoute.SetActive(visible);
         }
 
-        private void OnDisable() => SetDestination(RoomId.None);
+        private void OnDisable() => SetDestination(LearningStageId.None);
     }
 }

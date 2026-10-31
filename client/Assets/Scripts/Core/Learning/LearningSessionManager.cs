@@ -1,12 +1,9 @@
 using System;
 using System.Collections;
-using CNNFeatureMaps;
 using FactoryEnvironment;
 using FactoryTutorial;
-using ModelDesignScene;
 using Parchment;
 using Tablet;
-using UI;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 
@@ -16,15 +13,13 @@ namespace Learning
     public sealed class LearningSessionManager : MonoBehaviour
     {
         [SerializeField] private FactoryEnvironmentManager _factory;
-        [SerializeField] private LearningSceneLoadController _sceneLoader;
+        [SerializeField] private FactorySceneLoadController _sceneLoader;
         private readonly LearningProgress _progress = new LearningProgress();
         private TabletManager _tablet;
         private ParchmentManager _parchment;
         private XROrigin _rig;
         private FactoryTutorialManager _tutorial;
-        private CNNPixelLabManager _pixels;
-        private CNNFeatureMapLabManager _maps;
-        private CNNModelDesignLabManager _model;
+        private ILearningExperience _experience;
         private LearningStageId _currentStage;
         private LearningStageId _destination = LearningStageId.Tutorial;
         private bool _canProceed;
@@ -113,15 +108,6 @@ namespace Learning
             RequestEvaluation();
         }
 
-        private void HandleConvolutionStarted()
-        {
-            SetCurrentStage(LearningStageId.Convolution);
-            _canProceed = _pixels.CanProceed(_currentStage);
-            _factory.StageActivated(_currentStage);
-            PublishState();
-            RequestEvaluation();
-        }
-
         // Coalesce synchronous events so listeners finish before any scene is unloaded.
         private void RequestEvaluation()
         {
@@ -156,12 +142,10 @@ namespace Learning
                     return;
                 }
                 bool available = HasEntranceParchments(_destination);
-                if (_destination == LearningStageId.Convolution) { available &= _canProceed; }
                 _factory.SetEntranceAvailable(_destination, available);
                 if (available && _factory.IsStageAreaInside(_destination))
                 {
-                    BeginOperation(_destination == LearningStageId.Convolution
-                        ? StartConvolution() : EnterPreparedLesson(_destination));
+                    BeginOperation(EnterPreparedLesson(_destination));
                 }
                 return;
             }
@@ -172,12 +156,6 @@ namespace Learning
                 _destination = LearningStageId.None;
                 _passagePrepared = true;
                 _factory.AllowExit(_currentStage);
-                RequestEvaluation();
-            }
-            else if (next == LearningStageId.Convolution)
-            {
-                _destination = next;
-                _passagePrepared = true;
                 RequestEvaluation();
             }
             else { BeginOperation(PrepareNextLesson(next)); }
@@ -222,7 +200,7 @@ namespace Learning
         private IEnumerator EnterTutorial()
         {
             _factory.BeginEntry(LearningStageId.Tutorial);
-            yield return _sceneLoader.Prepare(LearningStageId.Tutorial, _factory.GetPlacement(LearningStageId.Tutorial));
+            yield return _sceneLoader.Prepare(LearningStageId.Tutorial);
             if (_sceneLoader.LastError != null)
             {
                 _factory.SetEntranceAvailable(LearningStageId.Tutorial, true);
@@ -242,7 +220,7 @@ namespace Learning
             // A finished tutorial releases its input and UI before the first lesson is prepared.
             if (_currentStage == LearningStageId.Tutorial && _tutorial != null)
                 yield return EndCurrentLesson();
-            yield return _sceneLoader.Prepare(next, _factory.GetPlacement(next));
+            yield return _sceneLoader.Prepare(next);
             if (_sceneLoader.LastError != null) { Fail(_sceneLoader.LastError, true); yield break; }
             ConfigurePrepared(next);
             if (!_canProceed)
@@ -265,14 +243,6 @@ namespace Learning
             ConnectPrepared(stage);
             _factory.ActivateEnvironment();
             _sceneLoader.ActivatePrepared();
-            _factory.StageActivated(stage);
-            FinishOperation();
-        }
-
-        private IEnumerator StartConvolution()
-        {
-            yield return _pixels.StartConvolution();
-            if (_pixels.LoadError != null) { Fail(_pixels.LoadError, true); yield break; }
             FinishOperation();
         }
 
@@ -300,7 +270,7 @@ namespace Learning
             // Grant on request; rejection, loading failure and backward travel never revoke documents.
             foreach (LearningStageDefinition definition in LearningStageCatalog.ProgressStages)
             {
-                _parchment.CollectDocuments(definition.EntranceParchmentIds);
+                _parchment.CollectDocuments(definition.ParchmentIds);
                 if (definition.Id == stage) { break; }
             }
             if (!CanTravel) { return; }
@@ -316,7 +286,7 @@ namespace Learning
             yield return EndCurrentLesson();
             SetCurrentStage(LearningStageId.None);
             PublishState();
-            yield return _sceneLoader.Prepare(stage, _factory.GetPlacement(stage));
+            yield return _sceneLoader.Prepare(stage);
             if (_sceneLoader.LastError != null)
             {
                 _tablet.ShowTravelFailed();
@@ -329,18 +299,6 @@ namespace Learning
             _factory.ActivateEnvironment();
             _sceneLoader.ActivatePrepared();
             _factory.MovePlayerToStage(stage);
-            // The Pixel manager starts its nested scene load in Start.
-            yield return null;
-            if (_pixels != null)
-            {
-                while (_pixels.IsSwitching) { yield return null; }
-                if (_pixels.LoadError != null)
-                {
-                    _tablet.ShowTravelFailed();
-                    Fail(_pixels.LoadError, false);
-                    yield break;
-                }
-            }
             _tablet.ShowTravelCompleted();
             FinishOperation();
         }
@@ -349,8 +307,7 @@ namespace Learning
         {
             if (stage == LearningStageId.Tutorial)
                 _sceneLoader.PreparedTutorial.Initialize(_rig, _factory.TutorialPose);
-            if (LearningStageCatalog.Get(stage).Room == RoomId.PixelLab)
-                _sceneLoader.PreparedPixels.ConfigureHostedStages(_factory.ConvolutionPose, stage == LearningStageId.Convolution);
+
         }
 
         private void SetCurrentStage(LearningStageId stage)
@@ -365,90 +322,75 @@ namespace Learning
         {
             SetCurrentStage(stage);
             _tutorial = _sceneLoader.PreparedTutorial;
-            _pixels = _sceneLoader.PreparedPixels;
-            _maps = _sceneLoader.PreparedMaps;
-            _model = _sceneLoader.PreparedModel;
+            _experience = _sceneLoader.PreparedExperience;
             SubscribeLesson();
             ReadLessonState();
         }
 
         private void SubscribeLesson()
         {
+            if (_experience != null)
+            {
+                _experience.ProgressChanged += HandleExperienceProgress;
+                _experience.ExitAvailabilityChanged += HandleExperienceExit;
+            }
             if (_tutorial != null)
             {
                 _tutorial.StageCompleted += HandleStageCompleted;
                 _tutorial.ProgressionAvailabilityChanged += HandleAvailabilityChanged;
             }
-            if (_pixels != null)
-            {
-                _pixels.StageCompleted += HandleStageCompleted;
-                _pixels.ProgressionAvailabilityChanged += HandleAvailabilityChanged;
-                _pixels.ConvolutionStarted += HandleConvolutionStarted;
-            }
-            if (_maps != null)
-            {
-                _maps.StageCompleted += HandleStageCompleted;
-                _maps.ProgressionAvailabilityChanged += HandleAvailabilityChanged;
-            }
-            if (_model != null)
-            {
-                _model.StageCompleted += HandleStageCompleted;
-                _model.ProgressionAvailabilityChanged += HandleAvailabilityChanged;
-            }
         }
 
         private void UnsubscribeLesson()
         {
+            if (_experience != null)
+            {
+                _experience.ProgressChanged -= HandleExperienceProgress;
+                _experience.ExitAvailabilityChanged -= HandleExperienceExit;
+            }
             if (_tutorial != null)
             {
                 _tutorial.StageCompleted -= HandleStageCompleted;
                 _tutorial.ProgressionAvailabilityChanged -= HandleAvailabilityChanged;
             }
-            if (_pixels != null)
-            {
-                _pixels.StageCompleted -= HandleStageCompleted;
-                _pixels.ProgressionAvailabilityChanged -= HandleAvailabilityChanged;
-                _pixels.ConvolutionStarted -= HandleConvolutionStarted;
-            }
-            if (_maps != null)
-            {
-                _maps.StageCompleted -= HandleStageCompleted;
-                _maps.ProgressionAvailabilityChanged -= HandleAvailabilityChanged;
-            }
-            if (_model != null)
-            {
-                _model.StageCompleted -= HandleStageCompleted;
-                _model.ProgressionAvailabilityChanged -= HandleAvailabilityChanged;
-            }
+        }
+
+        private void HandleExperienceProgress(float progress)
+        {
+            if (_progress.RecordProgress(_experience.StageId, progress)) { PublishState(); }
+            RequestEvaluation();
+        }
+
+        private void HandleExperienceExit(bool available)
+        {
+            _canProceed = available;
+            RequestEvaluation();
         }
 
         private void ReadLessonState()
         {
             if (_currentStage == LearningStageId.None) { return; }
-            foreach (LearningStageDefinition stage in LearningStageCatalog.Stages)
+            if (_experience != null)
             {
-                bool complete = _tutorial != null ? _tutorial.HasCompleted(stage.Id)
-                    : _pixels != null ? _pixels.HasCompleted(stage.Id)
-                    : _maps != null ? _maps.HasCompleted(stage.Id)
-                    : _model != null && _model.HasCompleted(stage.Id);
-                if (complete) { _progress.RecordCompletion(stage.Id); }
+                _progress.RecordProgress(_experience.StageId, _experience.Progress);
+                _canProceed = _experience.CanExit;
             }
-            _canProceed = _tutorial != null ? _tutorial.CanProceed(_currentStage)
-                : _pixels != null ? _pixels.CanProceed(_currentStage)
-                : _maps != null ? _maps.CanProceed(_currentStage)
-                : _model != null && _model.CanProceed(_currentStage);
+            else if (_tutorial != null)
+            {
+                if (_tutorial.HasCompleted(LearningStageId.Tutorial))
+                    _progress.RecordCompletion(LearningStageId.Tutorial);
+                _canProceed = _tutorial.CanProceed(LearningStageId.Tutorial);
+            }
             PublishState();
         }
 
         private IEnumerator EndCurrentLesson()
         {
-            CNNPixelLabManager pixels = _pixels;
+            ILearningExperience experience = _experience;
             UnsubscribeLesson();
+            _experience = null;
             _tutorial = null;
-            _pixels = null;
-            _maps = null;
-            _model = null;
-            if (pixels != null) { yield return pixels.EndSession(); }
+            if (experience != null) { yield return experience.EndSession(); }
             _factory.ReleaseSceneObjects(_sceneLoader.CurrentScene);
             yield return _sceneLoader.UnloadCurrent();
         }

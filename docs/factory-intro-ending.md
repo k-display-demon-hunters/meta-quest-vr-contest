@@ -68,11 +68,11 @@ VillageOpening 프리팹에는 공장 상단의 기존 픽셀 글자 앞에 불�
 
 ## 공장 내부 조작 안내와 미션 시작
 
-FactoryLearningFlowManager는 플레이어를 공장 정문에 배치하고 튜토리얼실로 안내한다. 튜토리얼실에 진입하면 입구 셔터를 닫고 FactorySceneLoadController.RunTutorial을 실행한다. 안내는 TutorialStart 기준점 앞에 배치하며, 튜토리얼이 완료될 때까지 다음 실습실로 진행하지 않는다.
+Core의 LearningSessionManager는 FactoryEnvironmentManager를 통해 플레이어를 공장 정문에 배치하고 튜토리얼실로 안내한다. 튜토리얼실에 진입하면 입구 셔터를 닫고 FactoryEnvironment의 FactorySceneLoadController.Prepare로 씬을 준비한다. LearningSessionManager가 튜토리얼 초기화와 이벤트 연결을 마친 뒤 로더의 ActivatePrepared를 호출한다. 안내는 TutorialStart 기준점 앞에 배치하며, 튜토리얼이 완료될 때까지 다음 실습실로 진행하지 않는다.
 
 FactoryTutorial은 준비 안내 → 버튼 선택 → 이동·방향 전환 → 잡기 → 정면 맞추기 → 태블릿 역할 → 태블릿 항목 이동 → X 선택 → Y 뒤로 → 메뉴 설정 → 준비 완료의 11개 안내 화면으로 구성한다. 조작 안내는 [이전]·[다음], 마지막은 [미션 시작]이다. 시작 안내는 A로도 진행한다. 건너뛰기 버튼은 없다.
 
-[미션 시작] 뒤 확대 컨트롤러·태블릿 연습 그림을 숨기고 “CNN 공장 복구 미션 / 양피지에서 원리를 배우고, 세 실습실의 미션을 완료하세요!”를 표시한다. [확인]을 눌러야 IsComplete가 설정된다. SceneLoadController는 성공 완료 여부를 TutorialCompleted로 제공한다. 완료 후 튜토리얼을 닫고 첫 학습 콘텐츠를 준비한 뒤 튜토리얼실 출구와 ROOM #1로 가는 경로를 연다. ROOM #1 입구 셔터는 해당 위치의 양피지 수집 조건에 따라 열린다.
+[미션 시작] 뒤 확대 컨트롤러·태블릿 연습 그림을 숨기고 “CNN 공장 복구 미션 / 양피지에서 원리를 배우고, 세 실습실의 미션을 완료하세요!”를 표시한다. [확인]을 눌러야 IsComplete가 설정된다. FactoryTutorialManager의 StageCompleted와 ProgressionAvailabilityChanged를 Core의 LearningSessionManager가 받아 완료 기록과 다음 체험 준비를 조율한다. 완료 후 튜토리얼을 닫고 첫 학습 콘텐츠를 준비한 뒤 튜토리얼실 출구와 ROOM #1로 가는 경로를 연다. ROOM #1 입구 셔터는 해당 위치의 양피지 수집 조건에 따라 열린다.
 
 튜토리얼 제목/본문/버튼 크기는 48/40/42, 버튼 영역은 320×96이다. 진행 번호를 제목에서 분리하고 글은 짧게 유지한다. 확대 Touch Plus 모델은 해당 버튼·조이스틱을 노란색으로 강조한다. 태블릿 그림은 연습 도식이며 실제 태블릿도 기존 입력을 유지한다. 실제 동작 성공을 페이지 진행 조건으로 검사하지는 않는다. 방별 양피지 수집 조건과 체험 완료 조건은 [공장 환경](factory-environment.md)을 따른다.
 

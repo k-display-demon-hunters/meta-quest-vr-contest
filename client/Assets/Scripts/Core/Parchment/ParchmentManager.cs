@@ -14,10 +14,25 @@ namespace Parchment
         {
             foreach (int id in documentIds)
             {
-                if (!HasCollected(id)) { return false; }
+                foreach (int scrollId in GetScrollIdsForDocument(id))
+                {
+                    if (!HasCollected(scrollId)) { return false; }
+                }
             }
             return true;
         }
+
+        private static readonly int[] Room1ScrollIds = { 0 };
+        private static readonly int[] Room2ScrollIds = { 1, 2 };
+
+        // The learning catalog still requests its original five document IDs.
+        // Translate only at that boundary; pickups, the reader and tablet use the three scroll IDs directly.
+        private static IReadOnlyList<int> GetScrollIdsForDocument(int documentId) => documentId switch
+        {
+            0 or 4 => Room1ScrollIds,
+            1 or 2 or 3 => Room2ScrollIds,
+            _ => throw new ArgumentOutOfRangeException(nameof(documentId), documentId, "Unknown learning document ID.")
+        };
         public ParchmentInventoryItem GetInventoryItem(int id) =>
             new ParchmentInventoryItem(id, ParchmentCatalog.Get(id).Title, HasCollected(id));
         private const float CollectionDistance = 3f;
@@ -61,9 +76,12 @@ namespace Parchment
         {
             foreach (int id in documentIds)
             {
-                if (!Collect(id)) { continue; }
-                // A pickup can be absent while its document remains available in the session.
-                _pickups[id]?.Collected();
+                foreach (int scrollId in GetScrollIdsForDocument(id))
+                {
+                    if (!Collect(scrollId)) { continue; }
+                    // A pickup can be absent while its document remains available in the session.
+                    _pickups[scrollId]?.Collected();
+                }
             }
         }
 

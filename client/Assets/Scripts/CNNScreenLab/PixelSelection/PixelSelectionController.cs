@@ -3,7 +3,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class PixelSelectionController : MonoBehaviour
     {

@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace UI
+namespace CNNConvolution
 {
     // The same short guided exercise is used first for R, then for G.
     internal sealed class RedCalculationController

@@ -1,9 +1,10 @@
+using Core;
 using System;
 using Learning;
 using System.Collections;
 using UnityEngine;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class CNNScreenLabManager : MonoBehaviour, ILearningExperience
     {

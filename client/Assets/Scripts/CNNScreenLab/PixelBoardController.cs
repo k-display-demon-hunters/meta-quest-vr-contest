@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class PixelBoardController : MonoBehaviour
     {

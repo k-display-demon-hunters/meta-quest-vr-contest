@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-namespace UI
+namespace CNNConvolution
 {
     public sealed class ResultObservationController : MonoBehaviour
     {

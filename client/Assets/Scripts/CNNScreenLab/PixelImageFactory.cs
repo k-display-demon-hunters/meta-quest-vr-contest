@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class PixelImageFactory : MonoBehaviour
     {

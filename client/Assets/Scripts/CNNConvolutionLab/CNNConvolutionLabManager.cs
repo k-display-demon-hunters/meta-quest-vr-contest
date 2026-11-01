@@ -1,9 +1,11 @@
+using Core;
+using UI;
 using System;
 using System.Collections;
 using Learning;
 using UnityEngine;
 
-namespace UI
+namespace CNNConvolution
 {
     public sealed class CNNConvolutionLabManager : MonoBehaviour, ILearningExperience
     {

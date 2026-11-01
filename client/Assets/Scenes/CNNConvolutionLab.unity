@@ -263,7 +263,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48dda6ef379e497a834553e6ca908f4c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.CNNConvolutionLabManager
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.CNNConvolutionLabManager
   _lesson: {fileID: 990000001}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -307,7 +307,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b1209d8fa9d607741afbfabc4b20972f, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.LessonUIController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.LessonUIController
 --- !u!1 &820000040
 GameObject:
   m_ObjectHideFlags: 0
@@ -350,7 +350,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72ab7e0925614ae6a69ea1da3c191bad, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbVolumeController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.RgbVolumeController
 --- !u!114 &990000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -362,7 +362,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0374b2b699a47a690d5ef91cf414e5e, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.ConvolutionLessonManager
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.ConvolutionLessonManager
   _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   _ui: {fileID: 820000023}
   _spatial: {fileID: 820000042}

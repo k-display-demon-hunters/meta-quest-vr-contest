@@ -1,7 +1,8 @@
+using Core;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class RgbValuesUIController : MonoBehaviour
     {

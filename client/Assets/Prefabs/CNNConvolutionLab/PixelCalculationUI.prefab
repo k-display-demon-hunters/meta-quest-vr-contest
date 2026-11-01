@@ -112,7 +112,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b1209d8fa9d607741afbfabc4b20972f, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.LessonUIController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.LessonUIController
   _exerciseRoot: {fileID: 100007}
   _observationUi: {fileID: 100090}
   _title: {fileID: 100016}
@@ -848,7 +848,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestNext
         m_Mode: 1
         m_Arguments:
@@ -1060,7 +1060,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestSkip
         m_Mode: 1
         m_Arguments:
@@ -1430,7 +1430,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestAnswer
         m_Mode: 3
         m_Arguments:
@@ -1642,7 +1642,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestAnswer
         m_Mode: 3
         m_Arguments:
@@ -1854,7 +1854,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestAnswer
         m_Mode: 3
         m_Arguments:
@@ -2260,7 +2260,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestAdvance
         m_Mode: 1
         m_Arguments:
@@ -2472,7 +2472,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestRestart
         m_Mode: 1
         m_Arguments:
@@ -2684,7 +2684,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestCombine
         m_Mode: 1
         m_Arguments:
@@ -2896,7 +2896,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 100006}
-        m_TargetAssemblyTypeName: UI.LessonUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNConvolution.LessonUIController, Assembly-CSharp
         m_MethodName: RequestReturn
         m_Mode: 1
         m_Arguments:

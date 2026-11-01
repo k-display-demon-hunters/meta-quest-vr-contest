@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UI
+namespace CNNConvolution
 {
     // Layout is saved in PixelCalculationUI.prefab; this component only presents state.
     public sealed class LessonUIController : MonoBehaviour

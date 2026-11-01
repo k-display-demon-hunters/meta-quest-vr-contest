@@ -1284,7 +1284,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 883faab29cfb46758dd3cbcc9393ceff, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.SelectedPixelsController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.SelectedPixelsController
   _pixels:
   - {fileID: 100008}
   - {fileID: 100012}

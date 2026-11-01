@@ -1,8 +1,9 @@
+using Core;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UI
+namespace CNNScreen
 {
     // Owns the generated textures; the Inspector source asset is not owned by this result.
     public sealed class PixelImageData : IDisposable

@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace UI.Editor
+namespace CNNScreen.Editor
 {
     public static class PixelRevealStageBuilder
     {

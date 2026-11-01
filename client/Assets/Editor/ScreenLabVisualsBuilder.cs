@@ -1,3 +1,4 @@
+using UI;
 using System;
 using System.IO;
 using UnityEditor;
@@ -6,7 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace UI.Editor
+namespace CNNScreen.Editor
 {
     // Creates saved assets and scene bindings; none of this runs in the player.
     public static class ScreenLabVisualsBuilder

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UI.Editor
+namespace CNNScreen.Editor
 {
     // A shared bevelled unit block; no textures or external model assets.
     internal static class PixelBlockMeshBuilder

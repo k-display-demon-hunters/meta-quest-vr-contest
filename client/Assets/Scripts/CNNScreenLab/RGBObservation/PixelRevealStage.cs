@@ -1,9 +1,10 @@
+using Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UI
+namespace CNNScreen
 {
     public sealed class PixelRevealStage : MonoBehaviour
     {

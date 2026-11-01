@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-namespace UI
+namespace CNNConvolution
 {
     internal sealed class CalculationAnimationController
     {

@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Object;
 
-namespace UI
+namespace CNNConvolution
 {
     // Geometry is in metres; the parent is the existing world-space UI canvas.
     public sealed class RgbVolumeController : MonoBehaviour

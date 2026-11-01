@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UI
+namespace Core
 {
     // Immutable snapshot, top row first, left to right. Alpha is not used in calculation.
     public sealed class PixelPatchData

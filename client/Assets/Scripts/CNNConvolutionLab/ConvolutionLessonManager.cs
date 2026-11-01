@@ -1,8 +1,9 @@
+using Core;
 using System;
 using System.Collections;
 using UnityEngine;
 
-namespace UI
+namespace CNNConvolution
 {
     // Owns arithmetic lesson sequencing, display and user input within ConvolutionLab.
     public sealed class ConvolutionLessonManager : MonoBehaviour

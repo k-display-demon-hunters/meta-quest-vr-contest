@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace UI
+namespace CNNConvolution
 {
     // Physical actions for the RGB volume. Arithmetic belongs to ConvolutionCalculation.
     public sealed class RgbLayerInteractionController : MonoBehaviour

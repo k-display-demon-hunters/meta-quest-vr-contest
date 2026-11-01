@@ -52905,7 +52905,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b93241abdbcff348abdbf41df680481, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.PixelRevealStage
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelRevealStage
   _pixelRoot: {fileID: 100003}
   _columns:
   - {fileID: 100006}

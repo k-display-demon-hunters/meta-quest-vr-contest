@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
-namespace UI
+namespace CNNConvolution
 {
     public sealed class FilterAlignmentController : MonoBehaviour
     {

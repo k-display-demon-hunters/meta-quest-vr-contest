@@ -5,7 +5,7 @@ namespace XR.Editor
 {
     public static class QuestSetup
     {
-        public const string ScenePath = UI.Editor.ScreenLabBuilder.ScenePath;
+        public const string ScenePath = CNNScreen.Editor.ScreenLabBuilder.ScenePath;
 
         [MenuItem("Tools/CNN/Configure Quest VR")]
         public static void Configure()

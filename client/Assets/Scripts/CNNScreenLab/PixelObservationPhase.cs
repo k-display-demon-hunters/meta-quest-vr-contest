@@ -1,4 +1,4 @@
-namespace UI
+namespace CNNScreen
 {
     public enum PixelObservationPhase
     {

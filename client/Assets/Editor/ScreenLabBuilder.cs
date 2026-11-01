@@ -11,7 +11,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 
-namespace UI.Editor
+namespace CNNScreen.Editor
 {
     public static class ScreenLabBuilder
     {

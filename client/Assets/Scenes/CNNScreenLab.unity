@@ -679,7 +679,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448786}
-        m_TargetAssemblyTypeName: UI.ScreenLabUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNScreen.ScreenLabUIController, Assembly-CSharp
         m_MethodName: RequestNext
         m_Mode: 0
         m_Arguments:
@@ -1072,7 +1072,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448786}
-        m_TargetAssemblyTypeName: UI.ScreenLabUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNScreen.ScreenLabUIController, Assembly-CSharp
         m_MethodName: RequestReset
         m_Mode: 0
         m_Arguments:
@@ -1950,7 +1950,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2024448786}
-        m_TargetAssemblyTypeName: UI.ScreenLabUIController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CNNScreen.ScreenLabUIController, Assembly-CSharp
         m_MethodName: RequestDetails
         m_Mode: 0
         m_Arguments:
@@ -2352,7 +2352,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7ba0b356c691854e93b96608ad06758, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.CNNScreenLabManager
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.CNNScreenLabManager
   _imageFactory: {fileID: 2024448787}
   _board: {fileID: 2024448788}
   _selection: {fileID: 2024448789}
@@ -2369,7 +2369,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a80f05abfab04818945451f881bee97f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.PixelBoardController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelBoardController
   _boardRenderer: {fileID: 712224470}
   _presentationRoot: {fileID: 1902821098}
 --- !u!114 &2024448789
@@ -2383,7 +2383,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cb03e131f8564089b824878db81364ab, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.PixelSelectionController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelSelectionController
   _board: {fileID: 1902821098}
   _boardSize: {x: 2.4, y: 1.35}
   _filter: {fileID: 1241807121}
@@ -2401,7 +2401,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2f0c18e21ece41dfad1ceff977be938d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.ScreenLabUIController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.ScreenLabUIController
   _detailButton: {fileID: 1804970965}
   _nextButton: {fileID: 705629121}
   _instruction: {fileID: 300000104}
@@ -2583,7 +2583,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 68743328071a4699a27bc2fa8f1caf04, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI.PixelImageFactory
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelImageFactory
   _sourceImage: {fileID: 2800000, guid: 67b08e27b4d8dd94a9828493264db320, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -2619,7 +2619,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 883faab29cfb46758dd3cbcc9393ceff, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.SelectedPixelsController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.SelectedPixelsController
 --- !u!1001 &300000010
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2676,7 +2676,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f3b051256544d378f7a7105907362a9, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbPixelStackController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.RgbPixelStackController
 --- !u!114 &300000013 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 100252, guid: b2e714a6f99549c4bf2e6c582d579b96, type: 3}
@@ -2687,7 +2687,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f487cfcf4524d79acd65a7bf70d0a7b, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbValuesUIController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.RgbValuesUIController
 --- !u!1001 &300000020
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2724,7 +2724,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b93241abdbcff348abdbf41df680481, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.PixelRevealStage
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelRevealStage
 --- !u!1 &300000101
 GameObject:
   m_ObjectHideFlags: 0

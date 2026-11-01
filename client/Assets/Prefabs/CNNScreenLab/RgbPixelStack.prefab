@@ -5216,7 +5216,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f3b051256544d378f7a7105907362a9, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbPixelStackController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.RgbPixelStackController
   _content: {fileID: 100003}
   _layers:
   - {fileID: 100006}
@@ -5262,7 +5262,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f487cfcf4524d79acd65a7bf70d0a7b, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UI.RgbValuesUIController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.RgbValuesUIController
   _values:
   - {fileID: 100022}
   - {fileID: 100030}

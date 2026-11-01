@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 
-namespace UI.Editor
+namespace CNNConvolution.Editor
 {
     public static class ConvolutionLabBuilder
     {

@@ -38,7 +38,9 @@ namespace CNNScreen.Editor
             rgb.transform.localPosition = new Vector3(0.5f, 1.9f, 1.3f);
             rgb.transform.localScale = Vector3.one * 2.2f;
             Bind(rgb, "_sourceBoard", board);
-            Bind(lab.GetComponentInChildren<PixelBoardController>(true), "_presentationRoot", board);
+            PixelBoardController boardController = lab.GetComponentInChildren<PixelBoardController>(true);
+            Bind(boardController, "_presentationRoot", board);
+            Bind(boardController, "_layoutRoot", lab.transform);
             PixelRevealStage stage = Instance<PixelRevealStage>("ImagePixelGrid", board);
             Bind(stage, "_rgbStack", rgb);
             Bind(selection, "_volume", volume);

@@ -2372,6 +2372,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelBoardController
   _boardRenderer: {fileID: 712224470}
   _presentationRoot: {fileID: 1902821098}
+  _layoutRoot: {fileID: 2024448783}
+  _selectionHorizontalOffset: -0.15
+  _rgbHorizontalOffset: 0.5
 --- !u!114 &2024448789
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2630,7 +2633,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 100002, guid: b2e714a6f99549c4bf2e6c582d579b96, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.5
+      value: 0.55
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: b2e714a6f99549c4bf2e6c582d579b96, type: 3}
       propertyPath: m_LocalPosition.y

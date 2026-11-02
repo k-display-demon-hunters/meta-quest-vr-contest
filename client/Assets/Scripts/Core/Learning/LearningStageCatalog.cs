@@ -9,10 +9,10 @@ namespace Learning
             Array.AsReadOnly(new[]
             {
                 new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", false, Array.Empty<int>()),
-                new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", true, new[] { 4 }),
+                new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", true, new[] { 0 }),
                 new LearningStageDefinition(LearningStageId.ConvolutionLab, "합성곱", true, new[] { 0 }),
-                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", true, new[] { 1 }),
-                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", true, new[] { 2, 3 })
+                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", true, new[] { 1, 2 }),
+                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", true, new[] { 1, 2 })
             });
 
         public static IReadOnlyList<LearningStageDefinition> ProgressStages { get; } = CreateProgressStages();

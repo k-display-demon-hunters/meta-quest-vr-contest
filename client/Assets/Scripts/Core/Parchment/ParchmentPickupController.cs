@@ -8,7 +8,7 @@ namespace Parchment
     [RequireComponent(typeof(BoxCollider), typeof(XRSimpleInteractable))]
     public sealed class ParchmentPickupController : MonoBehaviour
     {
-        [SerializeField, Range(0, 4)] private int _lessonIndex;
+        [SerializeField, Range(0, 2)] private int _lessonIndex;
         [SerializeField] private ParchmentReaderController _readerPrefab;
         [SerializeField] private ParchmentPickupVisualController _visuals;
         private XRSimpleInteractable _interactable;

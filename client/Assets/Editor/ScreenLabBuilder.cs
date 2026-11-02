@@ -92,6 +92,7 @@ namespace CNNScreen.Editor
             SerializedObject boardFields = new SerializedObject(boardController);
             Assign(boardFields, "_boardRenderer", image);
             Assign(boardFields, "_presentationRoot", board);
+            Assign(boardFields, "_layoutRoot", lab.transform);
             boardFields.ApplyModifiedPropertiesWithoutUndo();
             SerializedObject selectionFields = new SerializedObject(selectionController);
             Assign(selectionFields, "_board", board);

@@ -17,6 +17,7 @@ Screen의 PixelImageFactory가 기존 OpeningBroadcast.png를 128×72 축소·5�
 | 위치 | 책임 |
 | --- | --- |
 | Scripts/CNNScreenLab/CNNScreenLabManager.cs | 이미지 수명·관찰 순서·선택 스냅샷·Screen 완료 |
+| Scripts/CNNScreenLab/PixelBoardController.cs | 이미지 표시·기존 축소 이동·관찰 단계별 전체 배치 오프셋 |
 | Scripts/CNNScreenLab/PixelSelection | 돋보기 입력·선택 판정·선택 픽셀 표시 |
 | Scripts/CNNScreenLab/RGBObservation | 선택 영역 RGB 공간 전개와 27개 원본 숫자 표시 |
 | Scripts/CNNConvolutionLab/CNNConvolutionLabManager.cs | 입력·시작·종료·진행률과 학습 모듈 연결 |
@@ -34,6 +35,8 @@ Screen의 PixelImageFactory가 기존 OpeningBroadcast.png를 128×72 축소·5�
 Screen의 입장 문서는 ID 4(표시 번호 05), Convolution의 입장 문서는 ID 0(표시 번호 01)이다. 내부 셔터는 Screen 출구와 Convolution 입구가 공유한다. 관찰 완료·다음 씬 준비·문서 수집을 모두 충족하면 열리고 두 번째 영역 진입 시 닫힌다. 다음 씬 준비만으로 공유 셔터를 열지 않는다. 준비 이후 Screen을 초기화하면 세션이 다음 씬을 취소하고 입구·안내선을 닫는다.
 
 공장의 기존 공간·문·경로·콘텐츠 기준점을 일반 목적지 데이터로 연결한다. Convolution 기준점의 배율은 2이며 기존 콘텐츠 표시 크기를 유지한다. 태블릿은 픽셀 관찰·합성곱·특징 맵·모델 제작 네 체험을 제공한다. 전체 진행은 네 체험의 평균이며 Convolution은 R/G/B 완료에 따라 1/3씩 진행한다.
+
+Screen의 로드 기준 위치에서 첫 픽셀 선택 화면은 화면 왼쪽으로 0.15m, RGB 전개 화면부터 관찰 종료 안내까지는 화면 오른쪽으로 0.5m 이동한다. PixelBoardController가 씬에 연결된 전체 콘텐츠 루트에 각 오프셋을 절대 적용하므로 이미지·돋보기·RGB·설명·버튼이 함께 이동하고, 반복 전환·초기화로 이동량이 누적되지 않는다. 기존 MoveAside 축소 이동은 유지하며 처음으로를 누르면 첫 화면 위치로 복원한다. 공장의 Y 회전 -90°에서 화면 오른쪽은 월드 +Z이며, 루트 위치는 첫 화면 (-17.6,0,-2.60), RGB 화면 (-17.6,0,-1.95)다.
 
 Prefabs/CNNScreenLab의 FilterDisplay·ImagePixelGrid·RgbPixelStack은 관찰 전용이다. Prefabs/CNNConvolutionLab/PixelCalculationUI.prefab은 계산 전용이다. 기존 .meta와 GUID를 보존해 이동했으며 두 씬 사이에 계산 UI 인스턴스를 공유하지 않는다. 원본 이미지는 Textures/CNNScreenLab/OpeningBroadcast.png, 관찰용 재질은 Materials/CNNScreenLab에 둔다. 파일 내용·GUID와 기존 폰트 라이선스 고지를 유지한다.
 

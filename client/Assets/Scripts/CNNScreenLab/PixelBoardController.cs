@@ -7,11 +7,17 @@ namespace CNNScreen
     {
         [SerializeField] private MeshRenderer _boardRenderer;
         [SerializeField] private Transform _presentationRoot;
+        [SerializeField] private Transform _layoutRoot;
+        [SerializeField] private float _selectionHorizontalOffset = -0.15f;
+        [SerializeField] private float _rgbHorizontalOffset = 0.5f;
         private Material _material;
         private Vector3 _homePosition;
         private Vector3 _homeScale;
+        private Vector3 _layoutHomePosition;
         public void ShowPhoto(Texture2D photo)
         {
+            _layoutHomePosition = _layoutRoot.position;
+            SetHorizontalOffset(_selectionHorizontalOffset);
             _homePosition = _presentationRoot.localPosition;
             _homeScale = _presentationRoot.localScale;
             _material = _boardRenderer.material;
@@ -20,6 +26,7 @@ namespace CNNScreen
         public void SetPhotoVisible(bool visible) { _boardRenderer.enabled = visible; }
         public IEnumerator MoveAside()
         {
+            SetHorizontalOffset(_rgbHorizontalOffset);
             Vector3 target = new Vector3(-2.8f, 2.4f, 1.4f);
             for (float time = 0; time < 1.6f; time += Time.unscaledDeltaTime)
             {
@@ -33,9 +40,14 @@ namespace CNNScreen
         }
         public void RestorePresentation()
         {
+            SetHorizontalOffset(_selectionHorizontalOffset);
             _presentationRoot.localPosition = _homePosition;
             _presentationRoot.localScale = _homeScale;
             SetPhotoVisible(true);
+        }
+        private void SetHorizontalOffset(float offset)
+        {
+            _layoutRoot.position = _layoutHomePosition + _layoutRoot.TransformVector(Vector3.right * offset);
         }
         private void OnDestroy() { Destroy(_material); }
     }

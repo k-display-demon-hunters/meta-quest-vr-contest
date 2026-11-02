@@ -19,7 +19,7 @@ namespace CNNConvolution
             _spatial.BeginProductDisplay(channel, index);
             Vector3 start = _spatial.InputCellPosition(channel, index);
             Vector3 weightStart = _spatial.KernelCellPosition(index);
-            Vector3 meeting = new Vector3(0.1f, 0.42f, -0.65f);
+            Vector3 meeting = _spatial.EquationPosition;
             _spatial.HighlightRow(index / 3);
             for (float time = 0; time < 0.7f; time += Time.unscaledDeltaTime)
             {

@@ -25,7 +25,7 @@ namespace CNNConvolution
             _ui.AdvanceRequested += FinishDisplay;
             _ui.CloseRequested += FinishDisplay;
         }
-        private void HandleAnswer(int option) { _quiz?.Choose(option); }
+        private void HandleAnswer(int answer) { _quiz?.SubmitAnswer(answer); }
         private void OnDisable()
         {
             _ui.SkipRequested -= HandleAssist;

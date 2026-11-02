@@ -24,7 +24,6 @@ namespace CNNConvolution
         private RgbLayerInteractionController _volume;
         private int _channel;
         private ConvolutionCalculation _calculation;
-        private AnswerInteractionController _answers;
         private static readonly string[] Names = { "R", "G", "B" };
         private static readonly Color CalculationAccent = new Color(1f, 0.86f, 0.57f);
         private static readonly Color PendingValueColor = new Color(0.46f, 0.53f, 0.57f);
@@ -217,7 +216,6 @@ namespace CNNConvolution
             _view.Slot.SetPositionAndRotation(_sumAnchor.position, _sumAnchor.rotation);
             _view.DropTarget.SetPositionAndRotation(_kernelTarget.position, _kernelTarget.rotation);
             _interaction = new KernelInteractionController(transform, _view, _kernelHome, _kernelTarget, _placementHint);
-            _answers = new AnswerInteractionController(transform, _view);
             _volume = gameObject.AddComponent<RgbLayerInteractionController>();
             if (isActiveAndEnabled) { _volume.PairHighlighted += HighlightSpatialPair; }
             _volume.Initialize(_view.Layers, _view.ParkedKernels, _view.ColourPatch,
@@ -246,7 +244,6 @@ namespace CNNConvolution
         {
             ReleaseInteractions();
             PrepareFilterDisplay();
-            HideAnswers();
             _view.SpatialGuide.gameObject.SetActive(false);
             _view.Flying.gameObject.SetActive(false);
             _view.WeightCopy.gameObject.SetActive(false);
@@ -313,7 +310,6 @@ namespace CNNConvolution
 
         public IEnumerator Observe(Vector3 source, bool extract = true)
         {
-            HideAnswers();
             _view.Kernel.gameObject.SetActive(false);
             _view.Result.gameObject.SetActive(false);
             _view.Slot.gameObject.SetActive(false);
@@ -422,19 +418,11 @@ namespace CNNConvolution
 
         public void ShowAnswer(int value)
         {
+            _view.Slot.gameObject.SetActive(true);
             _view.SumLabel.text = value.ToString();
         }
 
-        public void ShowAnswers(int[] options, Action<int> choose)
-        {
-            _view.SumLabel.text = "여기에 답 놓기";
-            _answers.ShowAnswers(options, choose);
-        }
-
-        public void HideAnswers()
-        {
-            _answers.HideAnswers();
-        }
+        internal void HideAnswer() { _view.Slot.gameObject.SetActive(false); }
 
         public IEnumerator CombineSums(int[] sums)
         {
@@ -494,7 +482,6 @@ namespace CNNConvolution
             }
             if (_volume != null) { _volume.StopInteraction(); }
             _interaction?.DisableKernel();
-            _answers?.ReleaseInteractions();
         }
 
         private void LateUpdate()
@@ -528,7 +515,6 @@ namespace CNNConvolution
         private void OnDestroy()
         {
             _interaction?.Dispose();
-            _answers?.Dispose();
             _builder?.Dispose();
         }
         private sealed class GeometryBuilder : IDisposable
@@ -657,13 +643,6 @@ namespace CNNConvolution
                 _view.WeightCopyLabel.fontSize = 52;
                 _view.WeightCopyLabel.color = CalculationAccent;
                 _view.WeightCopy.gameObject.SetActive(false);
-                for (int i = 0; i < 3; i++)
-                {
-                    Transform answer = Root("Numeric answer " + i);
-                    _view.Answers[i] = answer;
-                    Tile(answer, Vector3.zero, new Vector3(0.3f, 0.13f, 0.04f), new Color(0.3f, 0.34f, 0.4f));
-                    _view.AnswerLabels[i] = Caption(answer, "", new Vector3(0, 0, -0.025f), 0.29f);
-                }
                 _view.SpatialGuide = Caption(_root, "", new Vector3(0, -0.55f, -0.15f), 1.9f);
                 _view.SpatialGuide.transform.parent.localRotation = Quaternion.Euler(0, 55, 0);
                 _view.SpatialGuide.rectTransform.sizeDelta = new Vector2(1900, 180);
@@ -854,8 +833,6 @@ namespace CNNConvolution
             public readonly Text[] Weights = new Text[9];
             public readonly Text[] Products = new Text[9];
             public readonly Transform[] ProductMarks = new Transform[9];
-            public readonly Transform[] Answers = new Transform[3];
-            public readonly Text[] AnswerLabels = new Text[3];
             public readonly List<KeyValuePair<Text, Text>> SideLabels = new List<KeyValuePair<Text, Text>>();
             public readonly Transform[] ParkedKernels = new Transform[3];
             public readonly MeshRenderer[] ColourTiles = new MeshRenderer[9];

@@ -15,7 +15,10 @@ namespace CNNConvolution
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
         [SerializeField] private Button _next, _skip, _return, _restart, _nextObservation, _combine;
-        [SerializeField] private Button[] _answers;
+        [SerializeField] private GameObject _notebook, _keypadRoot;
+        [SerializeField] private Text _keypadValue, _keypadFeedback;
+        [SerializeField] private Button _submitAnswer;
+        private string _answerInput = "";
         // Display history only; the lesson and quiz decide when a channel is complete.
         private readonly int?[] _completedChannelSums = new int?[3];
         private int _activeChannel = -1;
@@ -29,7 +32,7 @@ namespace CNNConvolution
         public string Title { set => _title.text = value; }
         public string Explanation { set => _explanation.text = value; }
         public string Equation { set => _equation.text = value; }
-        public string Feedback { set => _feedback.text = value; }
+        public string Feedback { set { _feedback.text = value; _keypadFeedback.text = value; } }
         public string ChannelSums { set => _channelSums.text = value; }
         public string Guide { set => _guide.text = value; }
         public void Initialize(Font font)
@@ -38,27 +41,59 @@ namespace CNNConvolution
         }
         public void RequestNext() { _advance = true; }
         public void RequestSkip() { SkipRequested?.Invoke(); }
-        public void RequestAnswer(int option) { AnswerRequested?.Invoke(option); }
         public void RequestReturn() { CloseRequested?.Invoke(); }
         public void RequestRestart() { RestartRequested?.Invoke(); }
         public void RequestAdvance() { AdvanceRequested?.Invoke(); }
         public void RequestCombine() { CombineRequested?.Invoke(); }
         public void SetEquationSize(int size) { _equation.fontSize = Mathf.Max(42, size); }
-        public void SetChoices(int[] choices)
+        public void ShowKeypad(bool visible)
         {
-            for (int i = 0; i < _answers.Length; i++)
+            _keypadRoot.SetActive(visible);
+            _notebook.SetActive(!visible);
+            _equation.gameObject.SetActive(!visible);
+            _channelSums.gameObject.SetActive(!visible);
+            _answerInput = "";
+            RefreshAnswerInput();
+        }
+        public void AppendAnswerDigit(int digit)
+        {
+            if (!_keypadRoot.activeSelf) { return; }
+            if (_answerInput.Length >= 2)
             {
-                _answers[i].GetComponentInChildren<Text>().text = choices[i].ToString();
-                _answers[i].interactable = true;
+                Feedback = "←로 지우고 다시 입력해 주세요.";
+                return;
             }
+            _answerInput = _answerInput == "0" ? digit.ToString() : _answerInput + digit;
+            AnswerInputEdited();
         }
-        public void SetAnswersEnabled(bool enabled)
+        public void ClearAnswerInput()
         {
-            foreach (Button answer in _answers) { answer.interactable = enabled; }
+            if (!_keypadRoot.activeSelf) { return; }
+            _answerInput = "";
+            AnswerInputEdited();
         }
-        public void ShowAnswers(bool visible)
+        public void DeleteAnswerDigit()
         {
-            foreach (Button answer in _answers) { answer.gameObject.SetActive(visible); }
+            if (!_keypadRoot.activeSelf || _answerInput.Length == 0) { return; }
+            _answerInput = _answerInput.Substring(0, _answerInput.Length - 1);
+            AnswerInputEdited();
+        }
+        public void RequestAnswer()
+        {
+            if (!_keypadRoot.activeSelf || _answerInput.Length == 0) { return; }
+            AnswerRequested?.Invoke(int.Parse(_answerInput));
+        }
+        private void AnswerInputEdited()
+        {
+            RefreshAnswerInput();
+            Feedback = _answerInput.Length == 0
+                ? "숫자를 누른 뒤 답 확인을 눌러 주세요."
+                : "입력한 값을 확인하고\n답 확인을 눌러 주세요.";
+        }
+        private void RefreshAnswerInput()
+        {
+            _keypadValue.text = "답: " + (_answerInput.Length == 0 ? "—" : _answerInput);
+            _submitAnswer.interactable = _answerInput.Length > 0;
         }
         public void ShowSkip(bool physical, bool waiting)
         {
@@ -75,7 +110,7 @@ namespace CNNConvolution
             Array.Clear(_completedChannelSums, 0, _completedChannelSums.Length);
             _activeChannel = -1;
             RefreshChannelProgress();
-            ShowAnswers(false);
+            ShowKeypad(false);
             _next.gameObject.SetActive(false);
             _skip.gameObject.SetActive(false);
         }

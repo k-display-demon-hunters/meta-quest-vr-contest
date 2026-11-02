@@ -6,7 +6,7 @@
 
 CNNScreenLab은 이미지·돋보기 선택, 선택한 3×3 픽셀의 RGB 전개와 원래 0~255 값 관찰까지 담당한다. 픽셀 설명과 RGB 세 페이지를 확인한 뒤 관찰 마치기를 누르면 완료한다. 이동 대기 중에는 관찰 결과를 유지하며 처음으로를 누르면 현재 체험의 완료 상태를 초기화한다. 세션의 누적 최대 진행 기록은 유지한다.
 
-CNNConvolutionLab은 스크린 없는 입체 RGB 계산 체험이다. 연습용 0~3 값 소개 → 별도의 0/1 가중치 등장 → R 계산 안내 → G 계산 안내 → B 퀴즈 → 결과 확인을 한 공간에서 진행한다. 각 채널의 가중치는 대각선 세 칸이 1이고 나머지가 0이다. B 퀴즈는 숫자 블록 또는 버튼으로 답하며 오답은 재시도한다. 자동 배치는 물리 조작만 보조한다.
+CNNConvolutionLab은 스크린 없는 입체 RGB 계산 체험이다. 연습용 0~3 값 소개 → 별도의 0/1 가중치 등장 → R 계산 안내 → G 계산 안내 → B 퀴즈 → 결과 확인을 한 공간에서 진행한다. 각 채널의 가중치는 대각선 세 칸이 1이고 나머지가 0이다. B 퀴즈는 화면의 숫자 키패드로 값을 입력하고 답 확인 버튼으로 제출하며 오답은 수정 후 재시도한다. 자동 배치는 물리 조작만 보조한다.
 
 ## 데이터와 책임
 
@@ -23,8 +23,9 @@ Screen의 PixelImageFactory가 기존 OpeningBroadcast.png를 128×72 축소·5�
 | Scripts/CNNConvolutionLab/CNNConvolutionLabManager.cs | 입력·시작·종료·진행률과 학습 모듈 연결 |
 | Scripts/CNNConvolutionLab/ConvolutionLessonManager.cs | 안내·가중치·R/G 학습·B 퀴즈·결과 순서와 UI 입력 연결 |
 | Scripts/CNNConvolutionLab/CalculationLesson | R/G 곱셈·누적 합 안내와 애니메이션 |
-| Scripts/CNNConvolutionLab/Quiz | B 정오답과 숫자 블록 답 슬롯 |
-| Scripts/CNNConvolutionLab/RgbVolumeController.cs | 계산 공간 표시와 내부 층·가중치·답 블록 조작 연결 |
+| Scripts/CNNConvolutionLab/Quiz | 키패드로 제출한 B 합의 정오답 판정 |
+| Scripts/CNNConvolutionLab/LessonUIController.cs | 안내·진행 카드 표시, 키패드 입력 편집과 제출 요청 |
+| Scripts/CNNConvolutionLab/RgbVolumeController.cs | 계산 공간 표시와 내부 층·가중치 조작 연결 |
 | Scripts/Core/PixelPatchData.cs | 읽기 전용 선택 픽셀 데이터 |
 | Scripts/Core/PixelUIInputController.cs | 선택적 EventSystem·XR UI 입력 보조 |
 
@@ -50,7 +51,7 @@ ScreenLabBuilder와 ScreenLabVisualsBuilder는 관찰 표시만 연결하고 Con
 
 RgbVolumeController가 프리팹 기준점을 내부 계산·표시에 연결한다. KernelInteractionController는 전달받은 대기·정렬 기준점으로 필터를 복귀·배치하고, CalculationAnimationController는 계산식 기준점을 사용한다. 이동 숫자와 연결선은 각 숫자 표시의 실제 위치에서 출발한다. 씬 Manager나 다른 모듈에는 내부 기준점을 공개하지 않는다.
 
-PixelCalculationUI는 상단 제목·행동 안내, 입력 아래의 마지막 계산식, 하단 계산 메모·피드백·고정 다음 버튼으로 배치한다. R/G 안내 계산은 현재 줄의 최대 세 계산식만 메모에 남기고 다음 줄에서 비운다. 누적 합은 별도 표시하며 계산 규칙·줄 단위 진행·B 숫자 블록/버튼 답변·정오답 처리는 유지한다. R 계산을 기준으로 만든 외형과 배치는 같은 표시 구현을 사용하는 G/B에도 적용된다. 최종 결과는 기존 텍스트 요약 방식이다.
+PixelCalculationUI는 상단 제목·행동 안내, 입력 아래의 마지막 계산식, 하단 계산 메모·피드백·고정 다음 버튼으로 배치한다. R/G 안내 계산은 현재 줄의 최대 세 계산식만 메모에 남기고 다음 줄에서 비운다. 누적 합은 별도 표시하며 계산 규칙·줄 단위 진행은 유지하고 B 답변은 고정 숫자 키패드를 사용한다. R 계산을 기준으로 만든 외형과 배치는 같은 표시 구현을 사용하는 G/B에도 적용된다. 최종 결과는 기존 텍스트 요약 방식이다.
 
 ### 필터 배치 피드백
 
@@ -84,9 +85,19 @@ R/G 안내 계산은 현재 한 칸의 입력·가중치에만 얇은 테두리�
 
 PixelCalculationUI의 상단 안내판에 R·G·B 카드 세 개를 저장하고 LessonUIController의 Text·Image 배열로 연결한다. 기존 안내판의 아래 경계는 유지하고 위쪽에 카드 공간을 추가했다. 작은 RGB 색 띠는 채널을 구분하며, 진행 상태는 색에만 의존하지 않고 `대기`, `진행 중`, `완료 · 합 n` 문구로 표시한다. 완료한 채널은 따뜻한 색으로 표시하고 다음 채널에서도 합을 유지한다. 합이 0인 경우에도 완료로 표시한다.
 
-RedCalculationController가 각 채널을 시작할 때 BeginChannel을 호출하고 9칸 계산·합 확인을 마치면 CompleteChannel에 누적 합을 전달한다. ConvolutionQuizController는 B 입력 준비부터 진행 중으로 표시하며 정답을 선택한 경우에만 합과 완료 상태를 공개한다. 오답은 B를 진행 중으로 유지한다. B 준비 시 이전 G 계산식·누적 합·피드백은 비워 두고 완료한 R/G 합은 카드에서 확인한다. LessonUIController는 전달받은 완료 합을 표시용으로만 보관하며 학습 순서나 정답을 판정하지 않는다. BeginCalculation에서 세 카드의 기록을 함께 초기화한다.
+RedCalculationController가 각 채널을 시작할 때 BeginChannel을 호출하고 9칸 계산·합 확인을 마치면 CompleteChannel에 누적 합을 전달한다. ConvolutionQuizController는 B 입력 준비부터 진행 중으로 표시하며 정답을 제출한 경우에만 합과 완료 상태를 공개한다. 오답은 B를 진행 중으로 유지한다. B 준비 시 이전 G 계산식·누적 합·피드백은 비워 두고 완료한 R/G 합은 카드에서 확인한다. LessonUIController는 전달받은 완료 합을 표시용으로만 보관하며 학습 순서나 정답을 판정하지 않는다. BeginCalculation에서 세 카드의 기록을 함께 초기화한다.
 
 RgbLayerInteractionController는 각 채널을 꺼내기 전에 입력 층과 대기 가중치를 0.55초 동안 SmoothStep으로 준비 위치에 배치한다. 현재 보이는 층은 현재 위치에서 이동하고 숨겨진 층은 작업대 근처에서 나타나므로 숨겨 둔 먼 위치를 가로질러 오지 않는다. 이동 중에는 잡기·호버 연결선·자동 배치를 활성화하지 않는다. 이동이 끝나면 해당 채널의 층만 잡을 수 있고 기존 자동 배치도 다시 제공한다. Focus 이후에는 해당 채널만 계산 공간에 표시한다.
+
+### B 퀴즈 숫자 키패드
+
+PixelCalculationUI에 저장된 고정 패널을 계산판 아래에 표시한다. 키는 `1 2 3 / 4 5 6 / 7 8 9 / × 0 ←` 순서이며, 위에는 입력값, 아래에는 답 확인 버튼을 둔다. 숫자 키는 140×70, 간격은 가로 20·세로 14 UI 단위다. 왼쪽에는 계산·삭제 안내, 오른쪽에는 입력·오답 피드백을 표시한다. 기존 XR UI 레이와 마우스 클릭을 사용하며 물리 키보드 입력은 추가하지 않았다.
+
+LessonUIController는 최대 두 자리의 숫자 입력을 보관하고, ×는 전체 삭제, ←는 마지막 자리 삭제를 수행한다. 앞의 0에 숫자를 입력하면 해당 숫자로 교체한다. 빈 입력은 `답: —`로 표시하고 제출을 비활성화하며, 입력한 0은 유효하게 제출할 수 있다. 패널을 열고 닫거나 학습을 다시 시작할 때 입력을 초기화한다. 현재 계산의 정답 범위는 0~9지만 두 자리 오답도 입력·수정할 수 있다.
+
+답 확인 시 정수 값으로 AnswerRequested 이벤트를 보내고 ConvolutionLessonManager가 ConvolutionQuizController.SubmitAnswer로 전달한다. 정오답은 기존 ConvolutionCalculation의 B 합과 비교한다. 오답은 입력값과 키패드를 유지하고 수정 안내를 표시한다. 정답은 즉시 키패드를 닫고 B 완료 카드·합계·계산 결과를 공개한다. 퀴즈 중에는 기존 계산 메모·계산식·합계 표시를 숨기고 정답 후 다시 표시한다.
+
+기존 세 개의 객관식 버튼, 무작위 보기 생성, 입체 숫자 답 블록 생성 및 AnswerInteractionController와 해당 .meta를 제거했다. 입력 층 꺼내기·필터 배치와 그 자동 배치는 유지한다.
 
 ## 확인 범위
 

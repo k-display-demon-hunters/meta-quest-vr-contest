@@ -12,8 +12,13 @@ namespace CNNConvolution
         [SerializeField] private GameObject _observationUi;
         [SerializeField] private Text _title, _explanation, _equation, _feedback, _channelSums, _guide;
         [SerializeField] private Text _summary;
+        [SerializeField] private Text[] _channelProgress;
+        [SerializeField] private Image[] _channelProgressBackgrounds;
         [SerializeField] private Button _next, _skip, _return, _restart, _nextObservation, _combine;
         [SerializeField] private Button[] _answers;
+        // Display history only; the lesson and quiz decide when a channel is complete.
+        private readonly int?[] _completedChannelSums = new int?[3];
+        private int _activeChannel = -1;
         private bool _advance;
         public event Action<int> AnswerRequested;
         public event Action SkipRequested;
@@ -67,9 +72,48 @@ namespace CNNConvolution
             _exerciseRoot.SetActive(true);
             _observationUi.SetActive(false);
             _equation.text = _feedback.text = _guide.text = _channelSums.text = "";
+            Array.Clear(_completedChannelSums, 0, _completedChannelSums.Length);
+            _activeChannel = -1;
+            RefreshChannelProgress();
             ShowAnswers(false);
             _next.gameObject.SetActive(false);
             _skip.gameObject.SetActive(false);
+        }
+        public void BeginChannel(int channel)
+        {
+            _activeChannel = channel;
+            RefreshChannelProgress();
+        }
+        public void CompleteChannel(int channel, int sum)
+        {
+            _completedChannelSums[channel] = sum;
+            _activeChannel = -1;
+            RefreshChannelProgress();
+        }
+        private void RefreshChannelProgress()
+        {
+            for (int channel = 0; channel < 3; channel++)
+            {
+                char name = "RGB"[channel];
+                if (_completedChannelSums[channel].HasValue)
+                {
+                    _channelProgress[channel].text = $"{name} 완료 · 합 {_completedChannelSums[channel].Value}";
+                    _channelProgress[channel].color = new Color(1, 0.86f, 0.56f);
+                    _channelProgressBackgrounds[channel].color = new Color(0.22f, 0.18f, 0.10f);
+                }
+                else if (channel == _activeChannel)
+                {
+                    _channelProgress[channel].text = name + " · 진행 중";
+                    _channelProgress[channel].color = Color.white;
+                    _channelProgressBackgrounds[channel].color = new Color(0.22f, 0.29f, 0.33f);
+                }
+                else
+                {
+                    _channelProgress[channel].text = name + " · 대기";
+                    _channelProgress[channel].color = new Color(0.63f, 0.68f, 0.70f);
+                    _channelProgressBackgrounds[channel].color = new Color(0.09f, 0.12f, 0.14f);
+                }
+            }
         }
         public void SetReturnAvailable(bool available) { _return.gameObject.SetActive(available); }
         public void ShowCalculation() { _observationUi.SetActive(false); }

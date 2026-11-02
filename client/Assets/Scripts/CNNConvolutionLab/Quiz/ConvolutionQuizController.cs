@@ -19,12 +19,17 @@ namespace CNNConvolution
         }
         public IEnumerator Run()
         {
-            _ui.Title = "B 층을 앞으로 꺼내세요";
-            _ui.Explanation = "Grip으로 잡아 옮기고 놓으세요.";
+            _ui.BeginChannel(2);
+            _ui.Title = "B 채널 · 입력 준비";
+            _ui.Explanation = "B 층을 Grip으로 잡아 앞으로 꺼내 주세요.";
+            _ui.Equation = "";
+            _ui.ChannelSums = "";
+            _ui.Guide = "R · G에서 연습한 방법으로\n이번에는 직접 계산해요.";
+            _ui.Feedback = "";
             yield return _spatial.PullColour(2);
             yield return _spatial.Focus(2);
-            _ui.Title = "B 가중치를 맞춰 보세요";
-            _ui.Explanation = "가중치를 Grip으로 잡아\n빛나는 테두리에 놓으세요.";
+            _ui.Title = "B 채널 · 필터 배치";
+            _ui.Explanation = "필터 손잡이를 잡아 표시된 위치에 놓아 주세요.";
             yield return _spatial.WaitForKernel();
             _ui.Title = "B의 계산 결과는 얼마일까요?";
             _ui.Explanation = "같은 위치끼리 곱하고 모두 더하세요.";
@@ -59,6 +64,10 @@ namespace CNNConvolution
             }
             _answered = true;
             Waiting = false;
+            _ui.CompleteChannel(2, _calculation.Sum(2));
+            _ui.Title = "B 계산 완료";
+            _ui.Explanation = "가중치가 1인 세 칸을 더한 값이 B의 합이에요.";
+            _ui.ChannelSums = "B 합: " + _calculation.Sum(2);
             _ui.Feedback = "맞아요! 곱한 값을 모두 더했어요.";
             _ui.SetAnswersEnabled(false);
             _spatial.ShowAnswer(_calculation.Sum(2));

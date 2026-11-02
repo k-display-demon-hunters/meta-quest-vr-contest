@@ -105,20 +105,51 @@ namespace CNNConvolution
             StopInteraction();
             _expected = channel;
             _pulled = false;
+            _instruction.text = "RGB"[channel] + " 층을 준비하고 있어요.";
+            yield return ArrangeForPull();
             _pending = PendingAction.Pull;
             _exploring = true;
-            for (int c = 0; c < 3; c++)
-            {
-                _layers[c].gameObject.SetActive(true);
-                _layerHomes[c] = FilterTarget + new Vector3(c * 0.24f, c * 0.1f, c * 0.14f);
-                _layers[c].localPosition = _layerHomes[c];
-                _weights[c].gameObject.SetActive(true);
-                _weights[c].localPosition = new Vector3(0.65f + c * 0.14f, c * 0.1f, 0.15f + c * 0.14f);
-                if (c == channel) { EnableGrab(_layerGrabs[c]); }
-            }
+            EnableGrab(_layerGrabs[channel]);
             _instruction.text = "RGB"[channel] + " 층을 Grip으로 잡아 앞으로 꺼내세요.";
             yield return new WaitUntil(() => _pulled);
             StopInteraction();
+        }
+
+        private IEnumerator ArrangeForPull()
+        {
+            const float duration = 0.55f;
+            Vector3[] layerStarts = new Vector3[3];
+            Vector3[] weightStarts = new Vector3[3];
+            Vector3[] weightHomes = new Vector3[3];
+            for (int c = 0; c < 3; c++)
+            {
+                _layerHomes[c] = FilterTarget + new Vector3(c * 0.24f, c * 0.1f, c * 0.14f);
+                weightHomes[c] = new Vector3(0.65f + c * 0.14f, c * 0.1f, 0.15f + c * 0.14f);
+                // Hidden slices re-enter near the workbench, not from their offstage positions.
+                layerStarts[c] = _layers[c].gameObject.activeSelf
+                    ? _layers[c].localPosition : _layerHomes[c] + Vector3.up * 0.12f;
+                weightStarts[c] = _weights[c].gameObject.activeSelf
+                    ? _weights[c].localPosition : weightHomes[c] + Vector3.up * 0.12f;
+                _layers[c].localPosition = layerStarts[c];
+                _weights[c].localPosition = weightStarts[c];
+                _layers[c].gameObject.SetActive(true);
+                _weights[c].gameObject.SetActive(true);
+            }
+            for (float time = 0; time < duration; time += Time.unscaledDeltaTime)
+            {
+                float t = Mathf.SmoothStep(0, 1, time / duration);
+                for (int c = 0; c < 3; c++)
+                {
+                    _layers[c].localPosition = Vector3.Lerp(layerStarts[c], _layerHomes[c], t);
+                    _weights[c].localPosition = Vector3.Lerp(weightStarts[c], weightHomes[c], t);
+                }
+                yield return null;
+            }
+            for (int c = 0; c < 3; c++)
+            {
+                _layers[c].localPosition = _layerHomes[c];
+                _weights[c].localPosition = weightHomes[c];
+            }
         }
 
         public void Released(XRGrabInteractable target)

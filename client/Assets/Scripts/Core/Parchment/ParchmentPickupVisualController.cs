@@ -112,7 +112,7 @@ namespace Parchment
 
         public void ConfigureLesson(ParchmentLesson lesson)
         {
-            // Start runs after the pickup applies its corridor pose; keep that base when a scroll returns.
+            // Use the scene placement as the resting position when an unfinished scroll returns.
             _restPosition = transform.localPosition;
             _labelCanvas = GetComponentInChildren<Canvas>(true);
             if (_labelCanvas == null)

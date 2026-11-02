@@ -8,12 +8,11 @@ namespace Parchment
     [RequireComponent(typeof(BoxCollider), typeof(XRSimpleInteractable))]
     public sealed class ParchmentPickupController : MonoBehaviour
     {
-        [SerializeField, Range(0, 4)] private int _lessonIndex;
+        [SerializeField, Range(0, 2)] private int _lessonIndex;
         [SerializeField] private ParchmentReaderController _readerPrefab;
         [SerializeField] private ParchmentPickupVisualController _visuals;
         private XRSimpleInteractable _interactable;
         private ParchmentManager _parchment;
-        private bool _hasLesson;
 
         public int LessonIndex => _lessonIndex;
 
@@ -21,17 +20,6 @@ namespace Parchment
         {
             _interactable = GetComponent<XRSimpleInteractable>();
             _parchment = FindFirstObjectByType<ParchmentManager>();
-            // Existing scenes still contain the previous five pickups. Keep only scrolls 1, 2 and 3.
-            _hasLesson = _lessonIndex >= 0 && _lessonIndex < ParchmentCatalog.All.Count;
-            if (!_hasLesson)
-            {
-                gameObject.SetActive(false);
-                Destroy(gameObject);
-                return;
-            }
-
-            Pose pose = ParchmentCatalog.Get(_lessonIndex).PickupPose;
-            transform.SetPositionAndRotation(pose.position, pose.rotation);
         }
 
         private void Start()
@@ -41,7 +29,6 @@ namespace Parchment
 
         private void OnEnable()
         {
-            if (!_hasLesson) { return; }
             _interactable.activated.AddListener(HandleActivated);
             _interactable.selectEntered.AddListener(HandleSelected);
             _parchment.RegisterPickup(_lessonIndex, transform, _readerPrefab,
@@ -50,7 +37,6 @@ namespace Parchment
 
         private void OnDisable()
         {
-            if (!_hasLesson) { return; }
             _interactable.activated.RemoveListener(HandleActivated);
             _interactable.selectEntered.RemoveListener(HandleSelected);
             // The persistent session may already be destroyed during shutdown.

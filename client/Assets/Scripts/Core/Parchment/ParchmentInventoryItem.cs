@@ -13,9 +13,20 @@ namespace Parchment
         {
             Title = title;
             Collected = collected;
-            // Inventory IDs describe the three physical scrolls, not the learning catalog's legacy documents.
-            Stage = documentId == 0 ? LearningStageId.ScreenLab : LearningStageId.FeatureMap;
-            LocationText = documentId == 0 ? "ROOM 1 입구 앞 복도" : "ROOM 2 입구 앞 복도";
+            LearningStageId stage = LearningStageCatalog.GetParchmentStage(documentId);
+            Stage = stage;
+            if (stage == LearningStageId.None)
+            {
+                LocationText = "위치 배정 전";
+                return;
+            }
+            LearningStageDefinition definition = LearningStageCatalog.Get(stage);
+            bool atEntrance = false;
+            foreach (int id in definition.EntranceParchmentIds)
+            {
+                if (id == documentId) { atEntrance = true; break; }
+            }
+            LocationText = definition.Title + (atEntrance ? " 체험 입구 앞" : " 체험실 내부");
         }
     }
 }

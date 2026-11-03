@@ -54,16 +54,16 @@ namespace CNNConvolution
         {
             _ui.Title = example ? "기본 예제로 연습해요" : "선택한 픽셀로 연습해요";
             _ui.Explanation = "지금부터는 실제 RGB 값을\n0~3의 작은 연습용 값으로 바꿔요.";
-            _ui.Guide = "연습용 값 0~3\n\n원래 색의 값은 0~255예요.";
+            _ui.Guide = "연습용 값: 0~3\n원래 RGB 값: 0~255";
             yield return _spatial.ArrangePractice();
             yield return _ui.WaitForNext("다음");
             _ui.Title = "옆에 나타난 것은 가중치예요";
             _ui.Explanation = "각 칸의 숫자에 곱할 값이에요.\n입력 RGB와는 다른 블록이에요.";
             yield return _spatial.RevealWeights();
             yield return _ui.WaitForNext("다음");
-            _ui.Title = "1은 남기고, 0은 빼요";
+            _ui.Title = "1은 그대로, 0은 결과도 0";
             _ui.Explanation = "숫자 × 1 = 그대로\n숫자 × 0 = 0";
-            _ui.Guide = "같은 위치끼리 곱해요.\n\n곱한 값을 모두 더해요.";
+            _ui.Guide = "같은 위치끼리 곱한 뒤\n9칸의 값을 더해요.";
             yield return _ui.WaitForNext("R 시작");
             RedCalculationController lesson = new RedCalculationController(_spatial, _ui, calculation);
             yield return lesson.Run(0);
@@ -78,17 +78,19 @@ namespace CNNConvolution
             _quiz.Cancel();
             _running = false;
             _spatial.ReleaseInteractions();
+            _spatial.gameObject.SetActive(false);
             _ui.ShowCompleted(calculation.ChannelSums());
             ProgressChanged?.Invoke(1f);
             Completed?.Invoke();
         }
         private void Update()
         {
-            if (_running) { _ui.ShowSkip(_spatial.HasPendingAction || _spatial.WaitingForKernel, false); }
+            if (_running) { _ui.ShowSkip(_spatial.HasPendingAction, _spatial.WaitingForKernel); }
         }
         private void HandleAssist()
         {
-            if (!_spatial.CompletePendingAction()) { _spatial.AlignKernel(); }
+            if (_spatial.HasPendingAction) { _spatial.CompletePendingAction(); }
+            else if (_spatial.WaitingForKernel) { _spatial.AlignKernel(); }
         }
         public void StopPractice()
         {

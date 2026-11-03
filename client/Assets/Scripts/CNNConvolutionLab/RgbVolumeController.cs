@@ -201,7 +201,8 @@ namespace CNNConvolution
             _view.Kernel.gameObject.SetActive(false);
             _view.Result.gameObject.SetActive(false);
             _view.Slot.gameObject.SetActive(false);
-            _view.SpatialGuide.gameObject.SetActive(true);
+            // The main instruction panel owns this prompt; avoid a second label across the stacked layers.
+            _view.SpatialGuide.gameObject.SetActive(false);
             yield return _volume.PullLayer(channel);
             _view.SpatialGuide.gameObject.SetActive(false);
         }
@@ -284,8 +285,8 @@ namespace CNNConvolution
                 for (float time = 0; time < 0.6f; time += Time.unscaledDeltaTime)
                 {
                     float t = Mathf.SmoothStep(0, 1, time / 0.6f);
-                    layer.localPosition = Vector3.Lerp(target + Vector3.up * 0.7f, target, t);
-                    layer.localScale = Vector3.one * Mathf.Lerp(0.1f, 1, t);
+                    layer.localPosition = Vector3.Lerp(target + Vector3.up * 0.16f, target, t);
+                    layer.localScale = Vector3.one * Mathf.Lerp(0.85f, 1, t);
                     yield return null;
                 }
                 layer.localPosition = target;
@@ -364,7 +365,9 @@ namespace CNNConvolution
             _view.ColourPatch.gameObject.SetActive(false);
             _view.Flying.gameObject.SetActive(false);
             _view.WeightCopy.gameObject.SetActive(false);
+            Vector3 kernelStart = _view.ParkedKernels[channel].localPosition;
             _interaction.PrepareKernel();
+            _view.Kernel.localPosition = kernelStart;
             _view.Kernel.gameObject.SetActive(true);
             _view.Result.gameObject.SetActive(true);
             _view.Slot.gameObject.SetActive(true);
@@ -393,7 +396,7 @@ namespace CNNConvolution
                     _view.ParkedKernels[c].gameObject.SetActive(false);
                     _view.ParkedKernels[c].localPosition = _view.Layers[c].localPosition + new Vector3(0.08f, 0.055f, -0.3f);
                 }
-                _view.Kernel.localPosition = Vector3.Lerp(_inputAnchor.localPosition, _kernelHome.localPosition, t);
+                _view.Kernel.localPosition = Vector3.Lerp(kernelStart, _kernelHome.localPosition, t);
                 yield return null;
             }
             for (int c = 0; c < 3; c++)

@@ -21,15 +21,15 @@ namespace CNNConvolution
             string name = channel == 0 ? "R" : "G";
             _ui.BeginChannel(channel);
             _ui.Title = name + " 채널 · 입력 준비";
-            _ui.Explanation = name + " 층을 Grip으로 잡아 앞으로 꺼내 주세요.";
+            _ui.Explanation = name + " 층을 Grip으로 잡아 꺼내세요.\n아래의 입력 자동 배치로도 진행할 수 있어요.";
             _ui.Equation = "";
             _ui.ChannelSums = "";
-            _ui.Guide = "연습용 값 0~3\n\n같은 위치끼리 곱해요.";
+            _ui.Guide = "연습용 값: 0~3\n같은 위치끼리 곱해요.";
             _ui.Feedback = "";
             yield return _spatial.PullColour(channel);
             yield return _spatial.Focus(channel);
             _ui.Title = name + " 채널 · 필터 배치";
-            _ui.Explanation = "필터 손잡이를 잡아 표시된 위치에 놓아 주세요.";
+            _ui.Explanation = "필터 손잡이를 잡아 점선에 놓으세요.\n아래의 필터 자동 배치로도 진행할 수 있어요.";
             yield return _spatial.WaitForKernel();
             _ui.Title = name + " 채널 · 곱하고 더하기";
             _ui.Explanation = "같은 위치끼리 곱하고, 오른쪽 계산판에 기록해요.";
@@ -56,6 +56,9 @@ namespace CNNConvolution
                 _ui.Guide = notebook;
                 if (i % 3 == 2)
                 {
+                    _ui.Explanation = i == 8
+                        ? "9칸을 모두 계산했어요.\n합 확인을 눌러 채널의 결과를 정리해요."
+                        : $"{i / 3 + 1}행의 계산이 끝났어요.\n계산 메모를 확인한 뒤 다음 줄로 진행하세요.";
                     yield return _ui.WaitForNext(i == 8 ? name + " 합 확인" : "다음 줄 계산");
                 }
             }

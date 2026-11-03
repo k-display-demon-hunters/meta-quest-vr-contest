@@ -224,6 +224,7 @@ namespace CNNConvolution
             foreach (XRGrabInteractable grab in _layerGrabs) { StopGrab(grab); }
             foreach (LineRenderer pair in _pairs) { if (pair != null) { pair.enabled = false; } }
             if (_depthLine != null) { _depthLine.enabled = false; }
+            PairHighlighted?.Invoke(-1);
             _closing = false;
         }
 

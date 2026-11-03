@@ -60,7 +60,7 @@ namespace CNNConvolution
             if (!_keypadRoot.activeSelf) { return; }
             if (_answerInput.Length >= 2)
             {
-                Feedback = "←로 지우고 다시 입력해 주세요.";
+                Feedback = "두 자리까지 입력돼요.\n←로 지우고 고쳐 주세요.";
                 return;
             }
             _answerInput = _answerInput == "0" ? digit.ToString() : _answerInput + digit;
@@ -87,7 +87,7 @@ namespace CNNConvolution
         {
             RefreshAnswerInput();
             Feedback = _answerInput.Length == 0
-                ? "숫자를 누른 뒤 답 확인을 눌러 주세요."
+                ? "숫자를 입력한 뒤\n답 확인을 눌러 주세요."
                 : "입력한 값을 확인하고\n답 확인을 눌러 주세요.";
         }
         private void RefreshAnswerInput()
@@ -95,11 +95,11 @@ namespace CNNConvolution
             _keypadValue.text = "답: " + (_answerInput.Length == 0 ? "—" : _answerInput);
             _submitAnswer.interactable = _answerInput.Length > 0;
         }
-        public void ShowSkip(bool physical, bool waiting)
+        public void ShowSkip(bool pendingInput, bool pendingKernel)
         {
             // Quiz answers are never bypassed: this assistance only finishes a physical action.
-            _skip.gameObject.SetActive(physical);
-            _skip.GetComponentInChildren<Text>().text = "자동 배치";
+            _skip.gameObject.SetActive(pendingInput || pendingKernel);
+            _skip.GetComponentInChildren<Text>().text = pendingKernel ? "필터 자동 배치" : "입력 자동 배치";
         }
         public void BeginCalculation()
         {
@@ -158,7 +158,11 @@ namespace CNNConvolution
             _observationUi.SetActive(true);
             _restart.gameObject.SetActive(false);
             _combine.gameObject.SetActive(false);
-            _summary.text = $"합성곱 학습 완료!\n\nR = {sums[0]}    G = {sums[1]}    B = {sums[2]}\n\n세 색의 합을 더하면 {sums[0] + sums[1] + sums[2]}\n(이번 연습의 편향은 0이에요.)";
+            _summary.text = "<size=48><b>합성곱 계산 완료</b></size>\n\n"
+                + $"R 합  {sums[0]}     G 합  {sums[1]}     B 합  {sums[2]}\n\n"
+                + "세 채널의 합 + 편향\n"
+                + $"<size=48><color=#FFDB91>{sums[0]} + {sums[1]} + {sums[2]} + 0 = {sums[0] + sums[1] + sums[2]}</color></size>\n\n"
+                + "세 채널의 계산이 하나의 출력값이 돼요.\n이번 연습의 편향은 0이에요.";
             _nextObservation.GetComponentInChildren<Text>().text = "학습 마치기";
         }
         public void SetObservationBusy(bool busy) { _nextObservation.interactable = !busy; }

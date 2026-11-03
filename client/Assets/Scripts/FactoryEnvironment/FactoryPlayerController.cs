@@ -84,9 +84,9 @@ namespace FactoryEnvironment
             Rig.MoveCameraToWorldLocation(arrival.position + Vector3.up * height);
         }
 
-        private void HandleAreaChanged(FactoryAreaId area)
+        private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            if (area != FactoryAreaId.RearCourt) { return; }
+            if (area.Stage != LearningStageId.Exit) { return; }
             foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
             {
                 if (_sceneLoader.IsLoaded(space.Id))

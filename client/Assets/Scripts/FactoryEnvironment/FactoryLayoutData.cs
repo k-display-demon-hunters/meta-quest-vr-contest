@@ -28,16 +28,19 @@ namespace FactoryEnvironment
     // One scene-owned source of factory layout data shared by the factory components.
     public sealed class FactoryLayoutData : MonoBehaviour
     {
+        [Serializable]
         public sealed class Area
         {
-            public FactoryAreaId Id { get; }
-            public LearningStageId? Stage { get; }
+            [SerializeField] private FactoryAreaId _id;
+            [SerializeField] private LearningStageId _stage;
+            [FormerlySerializedAs("_entryVolume")]
+            [SerializeField] private BoxCollider _volume;
+            [SerializeField] private BoxCollider[] _floorVolumes;
 
-            public Area(FactoryAreaId id, LearningStageId? stage)
-            {
-                Id = id;
-                Stage = stage;
-            }
+            public FactoryAreaId Id => _id;
+            public LearningStageId? Stage => _stage == LearningStageId.None ? null : _stage;
+            public BoxCollider Volume => _volume;
+            public ReadOnlySpan<BoxCollider> FloorVolumes => _floorVolumes;
         }
 
         [Serializable]
@@ -57,25 +60,37 @@ namespace FactoryEnvironment
             internal FactoryShutterController ExitDoor => _exitDoor;
         }
 
-        private readonly Area[] _areaOrder =
+        private readonly FactoryAreaId[] _areaOrder =
         {
-            new Area(FactoryAreaId.FrontCourtToTutorialRoom, null),
-            new Area(FactoryAreaId.TutorialRoom, LearningStageId.Tutorial),
-            new Area(FactoryAreaId.TutorialRoomToInspectionRoom, null),
-            new Area(FactoryAreaId.ScreenRoom, LearningStageId.ScreenLab),
-            new Area(FactoryAreaId.ConvolutionRoom, LearningStageId.ConvolutionLab),
-            new Area(FactoryAreaId.InspectionRoomToFeatureMapRoom, null),
-            new Area(FactoryAreaId.FeatureMapRoom, LearningStageId.FeatureMap),
-            new Area(FactoryAreaId.FeatureMapRoomToModelDesignRoom, null),
-            new Area(FactoryAreaId.ModelDesignRoom, LearningStageId.ModelDesign),
-            new Area(FactoryAreaId.ModelDesignRoomToRearCourt, null),
-            new Area(FactoryAreaId.RearCourt, LearningStageId.Exit)
+            FactoryAreaId.FrontCourtToTutorialRoom,
+            FactoryAreaId.TutorialRoom,
+            FactoryAreaId.TutorialRoomToInspectionRoom,
+            FactoryAreaId.ScreenRoom,
+            FactoryAreaId.ConvolutionRoom,
+            FactoryAreaId.InspectionRoomToFeatureMapRoom,
+            FactoryAreaId.FeatureMapRoom,
+            FactoryAreaId.FeatureMapRoomToModelDesignRoom,
+            FactoryAreaId.ModelDesignRoom,
+            FactoryAreaId.ModelDesignRoomToRearCourt,
+            FactoryAreaId.RearCourt
         };
 
-        public ReadOnlySpan<Area> AreaOrder => _areaOrder;
+        [SerializeField] private Area[] _areas;
+        public ReadOnlySpan<Area> Areas => _areas;
 
-        public int GetAreaIndex(FactoryAreaId id) =>
-            Array.FindIndex(_areaOrder, area => area.Id == id);
+        public Area GetArea(FactoryAreaId id) =>
+            Array.Find(_areas, area => area.Id == id);
+
+        public bool TryGetAdjacentAreas(Area area, out Area previous, out Area next)
+        {
+            int index = Array.IndexOf(_areaOrder, area.Id);
+            previous = null;
+            next = null;
+            if (index < 0) { return false; }
+            if (index > 0) { previous = GetArea(_areaOrder[index - 1]); }
+            if (index + 1 < _areaOrder.Length) { next = GetArea(_areaOrder[index + 1]); }
+            return true;
+        }
 
         [SerializeField] private Transform _entrance;
         [FormerlySerializedAs("_destinations")]

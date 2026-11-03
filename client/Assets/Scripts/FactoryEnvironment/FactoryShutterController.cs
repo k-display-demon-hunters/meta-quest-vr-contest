@@ -1,3 +1,4 @@
+using Unity.XR.CoreUtils;
 using UnityEngine;
 
 namespace FactoryEnvironment
@@ -14,8 +15,13 @@ namespace FactoryEnvironment
         private float _amount;
         private bool _open;
 
-        private void Awake() => _closedPosition = _panel.localPosition;
-        public void Bind(Transform camera) => _camera = camera;
+        private void Awake()
+        {
+            _closedPosition = _panel.localPosition;
+        }
+
+        private void Start() => _camera = FindFirstObjectByType<XROrigin>().Camera.transform;
+
         public void Open() => _open = true;
         public void Close() => _open = false;
 

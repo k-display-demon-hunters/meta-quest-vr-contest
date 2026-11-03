@@ -186,6 +186,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000001}
   - component: {fileID: 980100010}
+  - component: {fileID: 980100012}
   - component: {fileID: 980100011}
   - component: {fileID: 720003512}
   - component: {fileID: 720003514}
@@ -14709,6 +14710,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6b1bf875ba84847bd399f7b29701e38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _areaController: {fileID: 980100011}
 --- !u!114 &720003516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14721,6 +14723,87 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 885e045bc6ef404f8360bab4456d034d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _areas:
+  - _id: 1
+    _stage: 5
+    _volume: {fileID: 720003479}
+    _floorVolumes:
+    - {fileID: 720000022}
+  - _id: 2
+    _stage: 6
+    _volume: {fileID: 720003485}
+    _floorVolumes: []
+  - _id: 3
+    _stage: 7
+    _volume: {fileID: 970000113}
+    _floorVolumes: []
+  - _id: 4
+    _stage: 2
+    _volume: {fileID: 720003491}
+    _floorVolumes:
+    - {fileID: 720000396}
+  - _id: 5
+    _stage: 3
+    _volume: {fileID: 720003497}
+    _floorVolumes:
+    - {fileID: 720000589}
+  - _id: 6
+    _stage: 4
+    _volume: {fileID: 720003503}
+    _floorVolumes:
+    - {fileID: 720001181}
+  - _id: 7
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720001107}
+  - _id: 8
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 994900112}
+    - {fileID: 994900115}
+  - _id: 10
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000792}
+  - _id: 11
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000841}
+  - _id: 12
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000890}
+    - {fileID: 720000900}
+  - _id: 13
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000975}
+  - _id: 14
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720001024}
+    - {fileID: 720001034}
+  - _id: 15
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 995500062}
+  - _id: 16
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000199}
+  - _id: 0
+    _stage: 0
+    _volume: {fileID: 0}
+    _floorVolumes: []
   _entrance: {fileID: 720003508}
   _stageSpaces:
   - _id: 5
@@ -41905,68 +41988,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d195e88e6b949989a76e94948297373, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryAreaController
-  _areas:
-  - _id: 1
-    _entryVolume: {fileID: 720003479}
-    _floorVolumes:
-    - {fileID: 720000022}
-  - _id: 2
-    _entryVolume: {fileID: 720003485}
-    _floorVolumes: []
-  - _id: 3
-    _entryVolume: {fileID: 970000113}
-    _floorVolumes: []
-  - _id: 4
-    _entryVolume: {fileID: 720003491}
-    _floorVolumes:
-    - {fileID: 720000396}
-  - _id: 5
-    _entryVolume: {fileID: 720003497}
-    _floorVolumes:
-    - {fileID: 720000589}
-  - _id: 6
-    _entryVolume: {fileID: 720003503}
-    _floorVolumes:
-    - {fileID: 720001181}
-  - _id: 7
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720001107}
-  - _id: 8
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 994900112}
-    - {fileID: 994900115}
-  - _id: 10
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720000792}
-  - _id: 11
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720000841}
-  - _id: 12
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720000890}
-    - {fileID: 720000900}
-  - _id: 13
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720000975}
-  - _id: 14
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720001024}
-    - {fileID: 720001034}
-  - _id: 15
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 995500062}
-  - _id: 16
-    _entryVolume: {fileID: 0}
-    _floorVolumes:
-    - {fileID: 720000199}
 --- !u!114 &980100010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41985,6 +42006,20 @@ MonoBehaviour:
   _session: {fileID: 720003511}
   _player: {fileID: 720003512}
   _routeGuide: {fileID: 720003515}
+  _shutters: {fileID: 980100012}
+--- !u!114 &980100012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af5d5e598e4b4733924b9c95cef142b0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryShuttersManager
+  _layoutData: {fileID: 720003516}
 --- !u!1 &980200000
 GameObject:
   m_ObjectHideFlags: 0

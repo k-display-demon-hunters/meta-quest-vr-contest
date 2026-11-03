@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace FactoryEnvironment
 {
-    // Owns space, placement and passage conditions, responding to scene lifecycle results.
+    // Coordinates progression, passage conditions and route guidance.
     public sealed class FactoryEnvironmentManager : MonoBehaviour
     {
         [FormerlySerializedAs("_navigationData")]
@@ -18,6 +18,7 @@ namespace FactoryEnvironment
         [SerializeField] private LearningSessionManager _session;
         [SerializeField] private FactoryPlayerController _player;
         [SerializeField] private FactoryRouteGuideController _routeGuide;
+        [SerializeField] private FactoryShuttersManager _shutters;
         private ParchmentManager _parchment;
         private LearningStageId _preparedStage;
         private LearningStageId _preparationSource;
@@ -57,32 +58,17 @@ namespace FactoryEnvironment
 
         private void Start()
         {
-            foreach (FactoryLayoutData.StageSpace room in _layoutData.StageSpaces)
-            {
-                room.EntryDoor.Bind(_player.CameraTransform);
-                if (room.Id != LearningStageId.Exit) { room.ExitDoor.Bind(_player.CameraTransform); }
-            }
-            SetEntranceAvailable(LearningStageId.Tutorial, true);
-            ShowDestination(LearningStageId.Tutorial);
+            _routeGuide.SetDestination(LearningStageId.Tutorial);
         }
 
-        public void SetEntranceAvailable(LearningStageId stage, bool available)
+        private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            FactoryShutterController door = _layoutData.GetStageSpace(stage).EntryDoor;
-            if (available) { door.Open(); } else { door.Close(); }
-        }
-
-        private void HandleAreaChanged(FactoryAreaId area)
-        {
-            int index = _layoutData.GetAreaIndex(area);
-            
-            LearningStageId stage = _layoutData.AreaOrder[index].Stage ?? LearningStageId.None;
+            if (!_layoutData.TryGetAdjacentAreas(area, out var previous, out var next)) { return; }
+            LearningStageId stage = area.Stage ?? LearningStageId.None;
             if (stage != LearningStageId.None && stage != CurrentStage) { HandleStageEntryStarted(stage); }
             CurrentStage = stage;
-            _preparationSource = stage != LearningStageId.None ? stage
-                : index > 0 ? _layoutData.AreaOrder[index - 1].Stage ?? LearningStageId.None : LearningStageId.None;
-            _preparedStage = index + 1 < _layoutData.AreaOrder.Length
-                ? _layoutData.AreaOrder[index + 1].Stage ?? LearningStageId.None : LearningStageId.None;
+            _preparationSource = area.Stage ?? previous?.Stage ?? LearningStageId.None;
+            _preparedStage = next?.Stage ?? LearningStageId.None;
             StageChanged?.Invoke(stage);
             RefreshPreparedEntrance();
         }
@@ -115,19 +101,23 @@ namespace FactoryEnvironment
             if (CurrentStage != LearningStageId.None && _preparationSource != CurrentStage) { return; }
             if (!IsStageAvailable(_preparationSource))
             {
-                if (_preparedStage != LearningStageId.None) { SetEntranceAvailable(_preparedStage, false); }
-                ShowDestination(LearningStageId.None);
+                if (_preparedStage != LearningStageId.None) { _shutters.SetEntranceAvailable(_preparedStage, false); }
                 return;
             }
             if (_preparedStage == LearningStageId.None)
             {
-                _layoutData.GetStageSpace(_preparationSource).ExitDoor.Open();
-                ShowDestination(LearningStageId.None);
+                _shutters.OpenExit(_preparationSource);
                 return;
             }
-            if (_preparedStage == LearningStageId.Exit) { AllowExit(_preparationSource); return; }
-            SetNextStagePrepared(_preparationSource, _preparedStage);
-            SetEntranceAvailable(_preparedStage,
+            if (_preparedStage == LearningStageId.Exit)
+            {
+                _shutters.AllowFactoryExit(_preparationSource);
+                _routeGuide.SetDestination(LearningStageId.Exit);
+                return;
+            }
+            _shutters.OpenPassage(_preparationSource, _preparedStage);
+            _routeGuide.SetDestination(_preparedStage);
+            _shutters.SetEntranceAvailable(_preparedStage,
                 _parchment.HasCollectedAll(LearningStageCatalog.Get(_preparedStage).EntranceParchmentIds));
         }
 
@@ -135,11 +125,7 @@ namespace FactoryEnvironment
         {
             _preparationSource = LearningStageId.None;
             _preparedStage = LearningStageId.None;
-            if (stage == LearningStageId.Exit)
-            {
-                BeginExit();
-            }
-            else { BeginEntry(stage); }
+            _shutters.SetEntranceAvailable(stage, false);
         }
 
         private void HandleStageMoveRequested(LearningStageId stage)
@@ -160,7 +146,7 @@ namespace FactoryEnvironment
             _travelStage = LearningStageId.None;
             if (succeeded)
             {
-                ResetForStageMove();
+                _shutters.CloseAll();
                 RefreshPreparedEntrance();
             }
             TravelFinished?.Invoke(stage, succeeded);
@@ -171,54 +157,14 @@ namespace FactoryEnvironment
             if (_travelStage == stage) { FinishTravel(stage, false); }
             if (stage == LearningStageId.Tutorial)
             {
-                SetEntranceAvailable(stage, true);
-                ShowDestination(stage);
+                _shutters.SetEntranceAvailable(stage, true);
+                _routeGuide.SetDestination(stage);
             }
             else if (stage == LearningStageId.Exit)
             {
-                SetEntranceAvailable(stage, true);
-                ShowDestination(stage);
+                _shutters.SetEntranceAvailable(stage, true);
+                _routeGuide.SetDestination(stage);
             }
-        }
-
-        public void ShowDestination(LearningStageId stage) =>
-            _routeGuide.SetDestination(stage);
-
-        public void SetNextStagePrepared(LearningStageId current, LearningStageId next)
-        {
-            FactoryShutterController exit = _layoutData.GetStageSpace(current).ExitDoor;
-            if (exit != _layoutData.GetStageSpace(next).EntryDoor) { exit.Open(); }
-            ShowDestination(next);
-        }
-
-        public void BeginEntry(LearningStageId stage)
-        {
-            SetEntranceAvailable(stage, false);
-            _routeGuide.SetDestination(LearningStageId.None);
-        }
-
-
-        public void AllowExit(LearningStageId current)
-        {
-            if (current != LearningStageId.None) { _layoutData.GetStageSpace(current).ExitDoor.Open(); }
-            _layoutData.GetStageSpace(LearningStageId.Exit).EntryDoor.Open();
-            _routeGuide.SetDestination(LearningStageId.Exit);
-        }
-
-        public void BeginExit()
-        {
-            _layoutData.GetStageSpace(LearningStageId.Exit).EntryDoor.Close();
-            _routeGuide.SetDestination(LearningStageId.None);
-        }
-
-        public void ResetForStageMove()
-        {
-            foreach (FactoryLayoutData.StageSpace room in _layoutData.StageSpaces)
-            {
-                room.EntryDoor.Close();
-                if (room.Id != LearningStageId.Exit) { room.ExitDoor.Close(); }
-            }
-            _routeGuide.SetDestination(LearningStageId.None);
         }
 
     }

@@ -14,7 +14,7 @@ namespace FactoryEnvironment
         [FormerlySerializedAs("_navigationData")]
         [SerializeField] private FactoryLayoutData _layoutData;
         private readonly Dictionary<LearningStageId, Scene> _loadedScenes = new Dictionary<LearningStageId, Scene>();
-        private int _requestedIndex;
+        private FactoryLayoutData.Area _requestedArea;
         private bool _hasPendingArea;
         private bool _loadingSingle;
         private bool _loadFailed;
@@ -29,32 +29,29 @@ namespace FactoryEnvironment
         private void OnEnable() => _areaController.AreaChanged += HandleAreaChanged;
         private void OnDisable() => _areaController.AreaChanged -= HandleAreaChanged;
 
-        private void HandleAreaChanged(FactoryAreaId area)
+        private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            for (int i = 0; i < _layoutData.AreaOrder.Length; i++)
+            if (!_layoutData.TryGetAdjacentAreas(area, out _, out _)) { return; }
+            _requestedArea = area;
+            if (IsBusy)
             {
-                if (_layoutData.AreaOrder[i].Id != area) { continue; }
-                _requestedIndex = i;
-                if (IsBusy)
-                {
-                    _hasPendingArea = true;
-                    return;
-                }
-                IsBusy = true;
-                StateChanged?.Invoke();
-                StartCoroutine(UpdateScenes());
+                _hasPendingArea = true;
                 return;
             }
+            IsBusy = true;
+            StateChanged?.Invoke();
+            StartCoroutine(UpdateScenes());
         }
 
         private IEnumerator UpdateScenes()
         {
-            int index = _requestedIndex;
+            FactoryLayoutData.Area area = _requestedArea;
+            _layoutData.TryGetAdjacentAreas(area, out var previous, out var next);
             _hasPendingArea = false;
             _loadFailed = false;
             // Finish notifying area listeners before loading or unloading scenes.
             yield return null;
-            if (_layoutData.AreaOrder[index].Stage == LearningStageId.Exit)
+            if (area.Stage == LearningStageId.Exit)
             {
                 if (!_hasPendingArea)
                     yield return Load(LearningStageId.Exit, LoadSceneMode.Single);
@@ -62,9 +59,9 @@ namespace FactoryEnvironment
             else
             {
                 var required = new List<LearningStageId>();
-                for (int i = Math.Max(0, index - 1); i <= Math.Min(index + 1, _layoutData.AreaOrder.Length - 1); i++)
+                foreach (FactoryLayoutData.Area nearbyArea in new[] { previous, area, next })
                 {
-                    LearningStageId? stage = _layoutData.AreaOrder[i].Stage;
+                    LearningStageId? stage = nearbyArea?.Stage;
                     if (stage.HasValue && stage.Value != LearningStageId.None && stage.Value != LearningStageId.Exit
                         && !required.Contains(stage.Value))
                         required.Add(stage.Value);

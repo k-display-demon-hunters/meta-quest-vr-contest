@@ -69,16 +69,11 @@ namespace FactoryTutorial
             PublishExitAvailability();
         }
 
-        public void Initialize(XROrigin rig, Pose entrance)
+        private void Start()
         {
-            if (_initialized)
-            {
-                return;
-            }
+            XROrigin rig = FindFirstObjectByType<XROrigin>();
             _playerInput = rig.GetComponent<XRPlayerInputController>();
 
-            _panel.transform.SetPositionAndRotation(
-                entrance.position + entrance.rotation * Vector3.forward * 3f + Vector3.up * 1.65f, entrance.rotation);
             _panel.Initialize(_font, rig.Camera);
             _panel.ConfigureVisualGuide();
             _visuals = _panel.gameObject.AddComponent<FactoryTutorialVisualController>();

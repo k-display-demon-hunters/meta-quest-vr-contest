@@ -14660,6 +14660,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7609a1ad4fd64c7bb2ff22c63eac9e1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _sceneLoader: {fileID: 720003513}
+  _areaController: {fileID: 980100011}
+  _stageArrivals:
+  - Stage: 6
+    Arrival: {fileID: 980100001}
+  - Stage: 7
+    Arrival: {fileID: 1999100001}
+  - Stage: 2
+    Arrival: {fileID: 980100005}
+  - Stage: 3
+    Arrival: {fileID: 980100007}
 --- !u!114 &720003513
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14711,7 +14722,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _entrance: {fileID: 720003508}
-  _tutorialStart: {fileID: 720003510}
   _stageSpaces:
   - _id: 5
     _route: {fileID: 720002855}
@@ -41975,16 +41985,6 @@ MonoBehaviour:
   _session: {fileID: 720003511}
   _player: {fileID: 720003512}
   _routeGuide: {fileID: 720003515}
-  _map: {fileID: 720003514}
-  _stageArrivals:
-  - Stage: 6
-    Arrival: {fileID: 980100001}
-  - Stage: 7
-    Arrival: {fileID: 1999100001}
-  - Stage: 2
-    Arrival: {fileID: 980100005}
-  - Stage: 3
-    Arrival: {fileID: 980100007}
 --- !u!1 &980200000
 GameObject:
   m_ObjectHideFlags: 0

@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using CNNConvolution;
 using CNNScreen;
 using FactoryEnvironment;
-using FactoryTutorial;
 using Parchment;
 using Tablet;
-using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -30,7 +28,6 @@ namespace Learning
             new Dictionary<LearningStageId, ExperienceSubscription>();
         private TabletManager _tablet;
         private ParchmentManager _parchment;
-        private XROrigin _rig;
 
         public event Action<LearningProgressSnapshot> StateChanged;
         public event Action<LearningStageId, bool> StageAvailabilityChanged;
@@ -41,14 +38,12 @@ namespace Learning
         {
             _tablet = FindFirstObjectByType<TabletManager>();
             _parchment = FindFirstObjectByType<ParchmentManager>();
-            _rig = FindFirstObjectByType<XROrigin>();
         }
 
         private void OnEnable()
         {
             _tablet.StageMoveRequested += HandleStageMoveRequested;
             StateChanged += _tablet.SetLearningState;
-            _factory.MapChanged += _tablet.SetMapData;
             _sceneLoader.ContentLoaded += HandleContentLoaded;
             _sceneLoader.ContentUnloading += HandleContentUnloading;
             _factory.StageChanged += HandleStageChanged;
@@ -60,7 +55,6 @@ namespace Learning
                 subscription.Experience.ProgressChanged += subscription.ProgressChanged;
                 subscription.Experience.ExitAvailabilityChanged += subscription.AvailabilityChanged;
             }
-            if (_factory.MapData != null) { _tablet.SetMapData(_factory.MapData); }
             HandleStageChanged(_factory.CurrentStage);
         }
 
@@ -72,7 +66,6 @@ namespace Learning
             _sceneLoader.StateChanged -= PublishState;
             _factory.TravelStarted -= _tablet.ShowTravelStarted;
             _factory.TravelFinished -= HandleTravelFinished;
-            _factory.MapChanged -= _tablet.SetMapData;
             foreach (ExperienceSubscription subscription in _experiences.Values)
             {
                 subscription.Experience.ProgressChanged -= subscription.ProgressChanged;
@@ -84,16 +77,12 @@ namespace Learning
                 _tablet.StageMoveRequested -= HandleStageMoveRequested;
                 _tablet.SetLearningState(LearningProgressSnapshot.Empty);
                 _tablet.ShowTravelCompleted();
-                _tablet.ClearMapData(_factory.MapData);
             }
         }
 
         private void HandleContentLoaded(LearningStageId stage, Scene scene)
         {
             ILearningExperience experience = FindExperience(scene, stage);
-            if (experience is FactoryTutorialManager tutorial)
-                tutorial.Initialize(_rig, _factory.TutorialPose);
-
             ExperienceSubscription subscription = new ExperienceSubscription
             {
                 Experience = experience,

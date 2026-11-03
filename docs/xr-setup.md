@@ -71,7 +71,7 @@
 
 수집 전 문서는 목록에 표시하지 않는다. 문서가 없으면 빈 목록 안내를 표시하며, 수집된 문서는 기존 `ParchmentReader.prefab`으로 다시 읽는다. 문서 본문·수집 여부는 공용 ParchmentManager와 ParchmentCatalog가 소유한다. `Tablet.Brightness`, `Tablet.Volume`, `Tablet.Vibration`, `Tablet.Inventory` 저장 키를 유지한다. 이전 `Tablet.Stage` 값은 학습 완료 상태로 사용하지 않는다. 학습 진행률과 양피지 수집 기록은 디스크에 저장하지 않는다.
 
-지도 형상은 FactoryMapController가 생성하고 FactoryEnvironmentManager가 MapChanged와 최초 MapData 조회로 공개한다. Core LearningSessionManager가 태블릿 SetMapData/ClearMapData에 연결한다. 이전 씬의 해제가 새 지도를 지우지 않도록 ClearMapData는 동일한 데이터만 해제한다.
+지도 형상은 공장 씬의 TabletMiniMapController가 생성하고 자체 생명주기에서 TabletManager의 SetMapData/ClearMapData를 직접 호출한다. 이전 씬의 해제가 새 지도를 지우지 않도록 ClearMapData는 동일한 데이터만 해제한다.
 
 ### 뒷면 로고와 확인 범위
 
@@ -79,7 +79,7 @@
 
 2026-10-31, Core 학습 세션 분리 이전 기록: 당시 소스·직렬화 참조·에셋 경로를 정적으로 점검했다. 사용자 허가로 Unity를 열고 코루틴 안의 ReadOnlySpan 반복문 컴파일 오류를 일반 메서드로 분리해 수정했다. 일반 에디터 모드와 FactoryEnvironment Play에서 진행률·앱 아이콘·주변 미니맵 표시를 확인했다. 당시 설정 버튼의 글자 잘림을 발견했으며 미수정 상태다. 이후 평면 아이콘으로 교체했고 이 교체 후 화면은 재확인하지 않았다. 앱 전환·텔레포트·재진입·뒷면 로고·Quest 실기기 및 빌드는 확인하지 않았다.
 
-FactoryMapController가 만든 TabletMapData는 공장 진입점과 Core 세션을 통해 태블릿에 전달한다. ClearMapData(data)는 현재 지도와 전달된 데이터가 같을 때만 지운다. 주변 지도는 XZ 평면을 +Z 위쪽으로 투영하고 카메라 위치·방향과 수집 상태를 주기적으로 갱신한다.
+공장 씬의 TabletMiniMapController는 생성한 TabletMapData를 TabletManager에 직접 전달한다. ClearMapData(data)는 현재 지도와 전달된 데이터가 같을 때만 지운다. 주변 지도는 XZ 평면을 +Z 위쪽으로 투영하고 카메라 위치·방향과 수집 상태를 주기적으로 갱신한다.
 
 ## 에디터 시뮬레이터
 

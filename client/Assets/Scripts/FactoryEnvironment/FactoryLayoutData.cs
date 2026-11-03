@@ -74,13 +74,14 @@ namespace FactoryEnvironment
 
         public ReadOnlySpan<Area> AreaOrder => _areaOrder;
 
+        public int GetAreaIndex(FactoryAreaId id) =>
+            Array.FindIndex(_areaOrder, area => area.Id == id);
+
         [SerializeField] private Transform _entrance;
-        [SerializeField] private Transform _tutorialStart;
         [FormerlySerializedAs("_destinations")]
         [SerializeField] private StageSpace[] _stageSpaces;
 
         public Transform Entrance => _entrance;
-        public Transform TutorialStart => _tutorialStart;
         public ReadOnlySpan<StageSpace> StageSpaces => _stageSpaces;
 
         public StageSpace GetStageSpace(LearningStageId id)

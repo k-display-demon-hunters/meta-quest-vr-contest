@@ -101,7 +101,7 @@ namespace FactoryEnvironment
         {
             string sceneName = LearningStageCatalog.GetSceneName(stage);
             _loadFailed = false;
-            // sceneLoaded runs before Start, so subscribers can place and initialize content.
+            // Prepare content before Start and before notifying subscribers.
             void HandleLoaded(Scene scene, LoadSceneMode loadedMode)
             {
                 if (scene.name != sceneName) { return; }
@@ -113,6 +113,7 @@ namespace FactoryEnvironment
                     return;
                 }
                 _loadedScenes.Add(stage, scene);
+                PrepareContent(stage, scene);
                 ContentLoaded?.Invoke(stage, scene);
                 SceneManager.SetActiveScene(gameObject.scene);
             }
@@ -133,6 +134,36 @@ namespace FactoryEnvironment
             _loadingSingle = mode == LoadSceneMode.Single;
             yield return operation;
             yield return null;
+        }
+
+        private void PrepareContent(LearningStageId stage, Scene scene)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (component is ILearningExperience experience && experience.StageId == stage)
+                    {
+                        foreach (GameObject other in scene.GetRootGameObjects())
+                            if (other != root) { other.SetActive(false); }
+                        PlaceContent(stage, root);
+                        return;
+                    }
+                }
+            }
+        }
+
+        private void PlaceContent(LearningStageId stage, GameObject content)
+        {
+            Transform anchor = _layoutData.GetStageSpace(stage).ContentAnchor;
+            content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+            content.transform.localScale = anchor.lossyScale;
+            foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
+            foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
+            {
+                body.position = body.transform.position;
+                body.rotation = body.transform.rotation;
+            }
         }
 
         private IEnumerator Unload(LearningStageId stage)

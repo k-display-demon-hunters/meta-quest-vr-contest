@@ -69,7 +69,7 @@ VillageOpening 프리팹에는 공장 상단의 기존 픽셀 글자 앞에 불�
 
 ## 공장 내부 조작 안내와 미션 시작
 
-FactoryEnvironmentManager가 플레이어를 정문에 배치하고 튜토리얼실로 안내한다. 공장은 AreaChanged로 튜토리얼실 진입을 받아 입구 셔터를 닫는다. 로더가 튜토리얼을 Additive 로드하고 ContentLoaded를 발행하면 공장은 콘텐츠를 배치하고 LearningSessionManager는 튜토리얼 초기화와 공통 ProgressChanged 이벤트 구독을 처리한다. 배치와 초기화는 Unity의 sceneLoaded 알림에서 Start 전에 처리한다. 안내는 TutorialStart 기준점 앞에 배치하며, 튜토리얼이 완료될 때까지 다음 실습실로 진행하지 않는다.
+FactoryPlayerController가 플레이어를 정문에 배치하고 FactoryEnvironmentManager가 튜토리얼실로 안내한다. 공장은 AreaChanged로 튜토리얼실 진입을 받아 입구 셔터를 닫는다. 로더가 튜토리얼을 Additive 로드하고 콘텐츠를 배치한 뒤 ContentLoaded를 발행하면 LearningSessionManager는 공통 진행률·진행 가능 상태 이벤트를 구독한다. FactorySceneLoadController는 Unity의 sceneLoaded 알림에서 다른 체험과 동일하게 Tutorial 단계의 ContentAnchor로 콘텐츠 루트를 배치한다. FactoryTutorialManager는 Start에서 공용 XR 리그를 확보하고 안내 UI와 입력을 초기화한다. 안내 패널의 루트 기준 로컬 위치 (0, 1.65, 2.5)는 FactoryTutorial 씬에 저장하며, 튜토리얼이 완료될 때까지 다음 실습실로 진행하지 않는다.
 
 FactoryTutorial은 준비 안내 → 버튼 선택 → 이동·방향 전환 → 잡기 → 정면 맞추기 → 태블릿 역할 → 태블릿 항목 이동 → X 선택 → Y 뒤로 → 메뉴 설정 → 준비 완료의 11개 안내 화면으로 구성한다. 조작 안내는 [이전]·[다음], 마지막은 [미션 시작]이다. 시작 안내는 A로도 진행한다. 건너뛰기 버튼은 없다.
 

@@ -186,6 +186,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000001}
   - component: {fileID: 980100010}
+  - component: {fileID: 980100011}
   - component: {fileID: 720003512}
   - component: {fileID: 720003514}
   - component: {fileID: 720003516}
@@ -2062,7 +2063,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000787}
   m_Layer: 0
-  m_Name: "Corridor 1"
+  m_Name: "FrontCourtToTutorialRoom"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2104,7 +2105,7 @@ GameObject:
   - component: {fileID: 720000789}
   - component: {fileID: 720000792}
   m_Layer: 0
-  m_Name: "Corridor 1 floor structural slab"
+  m_Name: "FrontCourtToTutorialRoom floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2136,7 +2137,7 @@ GameObject:
   - component: {fileID: 720000794}
   - component: {fileID: 720000797}
   m_Layer: 0
-  m_Name: "Corridor 1 sealed roof"
+  m_Name: "FrontCourtToTutorialRoom sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2168,7 +2169,7 @@ GameObject:
   - component: {fileID: 720000799}
   - component: {fileID: 720000802}
   m_Layer: 0
-  m_Name: "Corridor 1 concrete"
+  m_Name: "FrontCourtToTutorialRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2200,7 +2201,7 @@ GameObject:
   - component: {fileID: 720000812}
   - component: {fileID: 720000815}
   m_Layer: 0
-  m_Name: "Corridor 1 concrete"
+  m_Name: "FrontCourtToTutorialRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2232,7 +2233,7 @@ GameObject:
   - component: {fileID: 720000833}
   - component: {fileID: 720000834}
   m_Layer: 0
-  m_Name: "Corridor 1 service light light"
+  m_Name: "FrontCourtToTutorialRoom service light light"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2263,7 +2264,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000836}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1"
+  m_Name: "TutorialRoomToInspectionRoom"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2305,7 +2306,7 @@ GameObject:
   - component: {fileID: 720000838}
   - component: {fileID: 720000841}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1 floor structural slab"
+  m_Name: "TutorialRoomToInspectionRoom floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2337,7 +2338,7 @@ GameObject:
   - component: {fileID: 720000843}
   - component: {fileID: 720000846}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1 sealed roof"
+  m_Name: "TutorialRoomToInspectionRoom sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2369,7 +2370,7 @@ GameObject:
   - component: {fileID: 720000848}
   - component: {fileID: 720000851}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1 concrete"
+  m_Name: "TutorialRoomToInspectionRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2401,7 +2402,7 @@ GameObject:
   - component: {fileID: 720000861}
   - component: {fileID: 720000864}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1 concrete"
+  m_Name: "TutorialRoomToInspectionRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2433,7 +2434,7 @@ GameObject:
   - component: {fileID: 720000882}
   - component: {fileID: 720000883}
   m_Layer: 0
-  m_Name: "Tutorial to Room 1 service light light"
+  m_Name: "TutorialRoomToInspectionRoom service light light"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2464,7 +2465,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000885}
   m_Layer: 0
-  m_Name: "Corridor 2"
+  m_Name: "InspectionRoomToFeatureMapRoom"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2509,7 +2510,7 @@ GameObject:
   - component: {fileID: 720000887}
   - component: {fileID: 720000890}
   m_Layer: 0
-  m_Name: "Corridor 2 floor structural slab"
+  m_Name: "InspectionRoomToFeatureMapRoom floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2541,7 +2542,7 @@ GameObject:
   - component: {fileID: 720000892}
   - component: {fileID: 720000895}
   m_Layer: 0
-  m_Name: "Corridor 2 sealed roof"
+  m_Name: "InspectionRoomToFeatureMapRoom sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2573,7 +2574,7 @@ GameObject:
   - component: {fileID: 720000897}
   - component: {fileID: 720000900}
   m_Layer: 0
-  m_Name: "Corridor 2 floor structural slab"
+  m_Name: "InspectionRoomToFeatureMapRoom floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2605,7 +2606,7 @@ GameObject:
   - component: {fileID: 720000902}
   - component: {fileID: 720000905}
   m_Layer: 0
-  m_Name: "Corridor 2 sealed roof"
+  m_Name: "InspectionRoomToFeatureMapRoom sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2637,7 +2638,7 @@ GameObject:
   - component: {fileID: 720000907}
   - component: {fileID: 720000910}
   m_Layer: 0
-  m_Name: "Corridor 2 concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2669,7 +2670,7 @@ GameObject:
   - component: {fileID: 720000920}
   - component: {fileID: 720000923}
   m_Layer: 0
-  m_Name: "Corridor 2 concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2701,7 +2702,7 @@ GameObject:
   - component: {fileID: 720000933}
   - component: {fileID: 720000936}
   m_Layer: 0
-  m_Name: "Corridor 2 concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2733,7 +2734,7 @@ GameObject:
   - component: {fileID: 720000967}
   - component: {fileID: 720000968}
   m_Layer: 0
-  m_Name: "Corridor 2 service light light"
+  m_Name: "InspectionRoomToFeatureMapRoom service light light"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2764,7 +2765,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720000970}
   m_Layer: 0
-  m_Name: "Corridor 3"
+  m_Name: "FeatureMapRoomToModelDesignRoom"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2806,7 +2807,7 @@ GameObject:
   - component: {fileID: 720000972}
   - component: {fileID: 720000975}
   m_Layer: 0
-  m_Name: "Corridor 3 floor structural slab"
+  m_Name: "FeatureMapRoomToModelDesignRoom floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2838,7 +2839,7 @@ GameObject:
   - component: {fileID: 720000977}
   - component: {fileID: 720000980}
   m_Layer: 0
-  m_Name: "Corridor 3 sealed roof"
+  m_Name: "FeatureMapRoomToModelDesignRoom sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2870,7 +2871,7 @@ GameObject:
   - component: {fileID: 720000982}
   - component: {fileID: 720000985}
   m_Layer: 0
-  m_Name: "Corridor 3 concrete"
+  m_Name: "FeatureMapRoomToModelDesignRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2902,7 +2903,7 @@ GameObject:
   - component: {fileID: 720000995}
   - component: {fileID: 720000998}
   m_Layer: 0
-  m_Name: "Corridor 3 concrete"
+  m_Name: "FeatureMapRoomToModelDesignRoom concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2934,7 +2935,7 @@ GameObject:
   - component: {fileID: 720001016}
   - component: {fileID: 720001017}
   m_Layer: 0
-  m_Name: "Corridor 3 service light light"
+  m_Name: "FeatureMapRoomToModelDesignRoom service light light"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2965,7 +2966,7 @@ GameObject:
   m_Component:
   - component: {fileID: 720001019}
   m_Layer: 0
-  m_Name: "Corridor 4"
+  m_Name: "ModelDesignRoomToRearCourt"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3011,7 +3012,7 @@ GameObject:
   - component: {fileID: 720001021}
   - component: {fileID: 720001024}
   m_Layer: 0
-  m_Name: "Corridor 4 floor structural slab"
+  m_Name: "ModelDesignRoomToRearCourt floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3043,7 +3044,7 @@ GameObject:
   - component: {fileID: 720001026}
   - component: {fileID: 720001029}
   m_Layer: 0
-  m_Name: "Corridor 4 sealed roof"
+  m_Name: "ModelDesignRoomToRearCourt sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3075,7 +3076,7 @@ GameObject:
   - component: {fileID: 720001031}
   - component: {fileID: 720001034}
   m_Layer: 0
-  m_Name: "Corridor 4 floor structural slab"
+  m_Name: "ModelDesignRoomToRearCourt floor structural slab"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3107,7 +3108,7 @@ GameObject:
   - component: {fileID: 720001036}
   - component: {fileID: 720001039}
   m_Layer: 0
-  m_Name: "Corridor 4 sealed roof"
+  m_Name: "ModelDesignRoomToRearCourt sealed roof"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3139,7 +3140,7 @@ GameObject:
   - component: {fileID: 720001041}
   - component: {fileID: 720001044}
   m_Layer: 0
-  m_Name: "Corridor 4 concrete"
+  m_Name: "ModelDesignRoomToRearCourt concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3171,7 +3172,7 @@ GameObject:
   - component: {fileID: 720001054}
   - component: {fileID: 720001057}
   m_Layer: 0
-  m_Name: "Corridor 4 concrete"
+  m_Name: "ModelDesignRoomToRearCourt concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3203,7 +3204,7 @@ GameObject:
   - component: {fileID: 720001067}
   - component: {fileID: 720001070}
   m_Layer: 0
-  m_Name: "Corridor 4 concrete"
+  m_Name: "ModelDesignRoomToRearCourt concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3235,7 +3236,7 @@ GameObject:
   - component: {fileID: 720001080}
   - component: {fileID: 720001083}
   m_Layer: 0
-  m_Name: "Corridor 4 concrete"
+  m_Name: "ModelDesignRoomToRearCourt concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3267,7 +3268,7 @@ GameObject:
   - component: {fileID: 720001101}
   - component: {fileID: 720001102}
   m_Layer: 0
-  m_Name: "Corridor 4 service light light"
+  m_Name: "ModelDesignRoomToRearCourt service light light"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6757,7 +6758,6 @@ GameObject:
   m_Component:
   - component: {fileID: 720003478}
   - component: {fileID: 720003479}
-  - component: {fileID: 720003480}
   m_Layer: 0
   m_Name: "Tutorial entry area"
   m_TagString: Untagged
@@ -6821,7 +6821,6 @@ GameObject:
   m_Component:
   - component: {fileID: 720003484}
   - component: {fileID: 720003485}
-  - component: {fileID: 720003486}
   m_Layer: 0
   m_Name: "ROOM 01 entry area"
   m_TagString: Untagged
@@ -6838,7 +6837,7 @@ Transform:
   m_GameObject: {fileID: 720003483}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -20, y: 2, z: -4}
+  m_LocalPosition: {x: -16, y: 2, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6885,7 +6884,6 @@ GameObject:
   m_Component:
   - component: {fileID: 720003490}
   - component: {fileID: 720003491}
-  - component: {fileID: 720003492}
   m_Layer: 0
   m_Name: "ROOM 02 entry area"
   m_TagString: Untagged
@@ -6949,7 +6947,6 @@ GameObject:
   m_Component:
   - component: {fileID: 720003496}
   - component: {fileID: 720003497}
-  - component: {fileID: 720003498}
   m_Layer: 0
   m_Name: "ROOM 03 entry area"
   m_TagString: Untagged
@@ -7013,7 +7010,6 @@ GameObject:
   m_Component:
   - component: {fileID: 720003502}
   - component: {fileID: 720003503}
-  - component: {fileID: 720003504}
   m_Layer: 0
   m_Name: "Rear court entry area"
   m_TagString: Untagged
@@ -14554,18 +14550,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 15.6, y: 4, z: 5.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &720003480
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720003477}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!65 &720003485
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14585,20 +14569,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 13.6, y: 4, z: 13.6}
+  m_Size: {x: 5.6, y: 4, z: 13.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &720003486
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720003483}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!65 &720003491
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14620,18 +14592,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 17.6, y: 4, z: 9.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &720003492
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720003489}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!65 &720003497
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14653,18 +14613,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 15.6, y: 4, z: 11.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &720003498
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720003495}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!65 &720003503
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14686,18 +14634,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 27.6, y: 4, z: 15.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &720003504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 720003501}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &720003511
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14736,7 +14672,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7369ff3ff5b44e038f6edbf956c32a67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactorySceneLoadController
-  _navigationData: {fileID: 720003516}
+  _areaController: {fileID: 980100011}
+  _layoutData: {fileID: 720003516}
 --- !u!114 &720003514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14775,40 +14712,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _entrance: {fileID: 720003508}
   _tutorialStart: {fileID: 720003510}
-  _destinations:
+  _stageSpaces:
   - _id: 5
     _route: {fileID: 720002855}
-    _area: {fileID: 720003480}
     _contentAnchor: {fileID: 720003482}
     _entryDoor: {fileID: 720001566}
     _exitDoor: {fileID: 720001727}
   - _id: 6
     _route: {fileID: 720002925}
-    _area: {fileID: 720003486}
     _contentAnchor: {fileID: 720003488}
     _entryDoor: {fileID: 720001888}
     _exitDoor: {fileID: 970000108}
   - _id: 7
     _route: {fileID: 970000115}
-    _area: {fileID: 970000114}
     _contentAnchor: {fileID: 970000110}
     _entryDoor: {fileID: 970000108}
     _exitDoor: {fileID: 720002049}
   - _id: 2
     _route: {fileID: 720003035}
-    _area: {fileID: 720003492}
     _contentAnchor: {fileID: 720003494}
     _entryDoor: {fileID: 720002210}
     _exitDoor: {fileID: 720002371}
   - _id: 3
     _route: {fileID: 720003209}
-    _area: {fileID: 720003498}
     _contentAnchor: {fileID: 720003500}
     _entryDoor: {fileID: 720002532}
     _exitDoor: {fileID: 720002693}
   - _id: 4
     _route: {fileID: 720003311}
-    _area: {fileID: 720003504}
     _contentAnchor: {fileID: 720003506}
     _entryDoor: {fileID: 720002854}
     _exitDoor: {fileID: 0}
@@ -25653,7 +25584,6 @@ GameObject:
   m_Component:
   - component: {fileID: 970000112}
   - component: {fileID: 970000113}
-  - component: {fileID: 970000114}
   m_Layer: 0
   m_Name: "ROOM 01 convolution start area"
   m_TagString: Untagged
@@ -26676,18 +26606,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 5.4, y: 4, z: 13.6}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &970000114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 970000111}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0e836c46d9c47fcb778396c12924c56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!33 &970000117
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -41965,6 +41883,80 @@ Transform:
   m_Children: []
   m_Father: {fileID: 720000001}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &980100011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d195e88e6b949989a76e94948297373, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryAreaController
+  _areas:
+  - _id: 1
+    _entryVolume: {fileID: 720003479}
+    _floorVolumes:
+    - {fileID: 720000022}
+  - _id: 2
+    _entryVolume: {fileID: 720003485}
+    _floorVolumes: []
+  - _id: 3
+    _entryVolume: {fileID: 970000113}
+    _floorVolumes: []
+  - _id: 4
+    _entryVolume: {fileID: 720003491}
+    _floorVolumes:
+    - {fileID: 720000396}
+  - _id: 5
+    _entryVolume: {fileID: 720003497}
+    _floorVolumes:
+    - {fileID: 720000589}
+  - _id: 6
+    _entryVolume: {fileID: 720003503}
+    _floorVolumes:
+    - {fileID: 720001181}
+  - _id: 7
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720001107}
+  - _id: 8
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 994900112}
+    - {fileID: 994900115}
+  - _id: 10
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000792}
+  - _id: 11
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000841}
+  - _id: 12
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000890}
+    - {fileID: 720000900}
+  - _id: 13
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000975}
+  - _id: 14
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720001024}
+    - {fileID: 720001034}
+  - _id: 15
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 995500062}
+  - _id: 16
+    _entryVolume: {fileID: 0}
+    _floorVolumes:
+    - {fileID: 720000199}
 --- !u!114 &980100010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41977,7 +41969,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40498301392646988f60c52f0edcbc9e, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryEnvironmentManager
-  _navigationData: {fileID: 720003516}
+  _layoutData: {fileID: 720003516}
+  _sceneLoader: {fileID: 720003513}
+  _areaController: {fileID: 980100011}
+  _session: {fileID: 720003511}
   _player: {fileID: 720003512}
   _routeGuide: {fileID: 720003515}
   _map: {fileID: 720003514}
@@ -53225,7 +53220,7 @@ GameObject:
   - component: {fileID: 995500073}
   - component: {fileID: 995500074}
   m_Layer: 0
-  m_Name: "Corridor 2 staff door west concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom staff door west concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -53278,7 +53273,7 @@ GameObject:
   - component: {fileID: 995500076}
   - component: {fileID: 995500077}
   m_Layer: 0
-  m_Name: "Corridor 2 staff door east concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom staff door east concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -53331,7 +53326,7 @@ GameObject:
   - component: {fileID: 995500079}
   - component: {fileID: 995500080}
   m_Layer: 0
-  m_Name: "Corridor 2 staff door header concrete"
+  m_Name: "InspectionRoomToFeatureMapRoom staff door header concrete"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

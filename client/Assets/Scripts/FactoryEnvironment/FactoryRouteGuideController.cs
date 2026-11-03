@@ -5,17 +5,17 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryRouteGuideController : MonoBehaviour
     {
-        private FactoryNavigationData _navigationData;
+        private FactoryLayoutData _layoutData;
         private LearningStageId _destination = LearningStageId.None;
 
         private void Awake()
         {
-            _navigationData = GetComponentInParent<FactoryNavigationData>();
+            _layoutData = GetComponentInParent<FactoryLayoutData>();
         }
 
         private void Start()
         {
-            foreach (FactoryNavigationData.DestinationData data in _navigationData.Destinations)
+            foreach (FactoryLayoutData.StageSpace data in _layoutData.StageSpaces)
             {
                 data.Route.SetActive(data.Id == _destination);
             }
@@ -28,7 +28,7 @@ namespace FactoryEnvironment
                 return;
             }
             _destination = destination;
-            foreach (FactoryNavigationData.DestinationData data in _navigationData.Destinations)
+            foreach (FactoryLayoutData.StageSpace data in _layoutData.StageSpaces)
             {
                 data.Route.SetActive(data.Id == _destination);
             }

@@ -2,9 +2,9 @@
 
 ## 배분과 위치
 
-`client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs`가 체험별 문서 배분의 원본이다. 각 단계의 `EntranceParchmentIds`는 바깥문 입장 필수 문서이며, `ParchmentIds`는 입장 문서와 내부 문서를 합친 전체 소속 목록이다. 태블릿 이동 시 지급과 문서 소속 조회에는 전체 목록을 사용한다. `ParchmentCatalog`는 문서 ID와 제목·본문·페이지·삽화만 소유한다.
+`client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs`가 체험별 문서 배분의 원본이다. 각 단계는 문서 ID 배열 하나를 받는다. `EntranceParchmentIds`는 바깥문 입장 조건에, `ParchmentIds`는 태블릿 이동 시 지급과 문서 소속 조회에 사용하며 두 프로퍼티는 같은 읽기 전용 목록을 참조한다. `ParchmentCatalog`는 문서 ID와 제목·본문·페이지·삽화만 소유한다.
 
-ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. LearningSessionManager가 완료·양피지·영역 변화에 따라 전환을 조율한다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. FeatureMap과 ModelDesign은 ID 1·2(02·03)를 요구한다. 내부 공유 문은 관찰 완료·콘텐츠 준비·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
+ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. FactorySceneLoadController가 지역 진입 이벤트로 씬을 전환하고, FactoryEnvironmentManager가 준비 결과와 양피지 조건으로 문을 제어한다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. FeatureMap과 ModelDesign은 ID 1·2(02·03)를 요구한다. 내부 공유 문은 관찰 완료·콘텐츠 준비·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
 
 양피지 3개는 씬의 `Factory Environment/Parchments` 아래에 문서 번호 순서로 저장한다. 부모의 위치·회전은 0, Scale은 1이다. 위치·회전은 씬 Transform이 소유하며 런타임 좌표 적용이나 여분 Pickup 삭제는 하지 않는다.
 
@@ -28,7 +28,7 @@ Core/Parchment의 Pickup은 씬에 저장된 위치·방향을 유지하며 활�
 
 ## 학습 세션과 공장 연결
 
-Core의 `LearningSessionManager`가 `Collected` 이벤트를 받아 공통 학습 카탈로그의 `EntranceParchmentIds`와 `HasCollectedAll`로 진입 조건을 갱신한다. 수집 기록은 복제하지 않는다. `FactoryEnvironmentManager`는 세션이 전달한 진입 가능 상태로 실제 문과 경로를 제어한다. 문·영역·기준점 참조는 공장의 `FactoryNavigationData`에 둔다.
+`FactoryEnvironmentManager`가 `Collected` 이벤트를 받아 공통 학습 카탈로그의 `EntranceParchmentIds`와 `HasCollectedAll`로 준비된 다음 체험의 입구 조건을 갱신한다. 수집 기록은 복제하지 않는다. 문 개방 조건은 공장에서 처리하며 로더는 `AreaChanged`만 구독한다. 문·기준점 참조는 `FactoryLayoutData`, 영역 정의는 `FactoryAreaController`에 둔다. `LearningSessionManager`는 태블릿 이동 요청에 따른 문서 지급을 담당한다.
 
 ## 태블릿 단계 이동 요청에 따른 지급
 

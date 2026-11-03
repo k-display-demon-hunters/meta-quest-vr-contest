@@ -61,9 +61,9 @@
 
 ### 학습과 이동 연결
 
-학습 카드의 순서와 요청 ID는 Core LearningStageCatalog.ProgressStages에 연결한다. TabletUI 프리팹에는 픽셀 관찰·합성곱·특징 맵·모델 제작 네 카드의 제목 Text를 배치한다. 공통 LearningStageId를 쓰며 UI 배열 인덱스를 학습 단계로 전달하지 않는다. 진행률은 네 체험별 최대 도달 진행률의 평균으로 표시하며 튜토리얼과 양피지 수는 제외한다. 태블릿은 StageMoveRequested(LearningStageId) 로컬 C# 이벤트로 이동 의도를 알린다. LearningSessionManager가 이벤트를 연결·해제하고 씬 수명·전환 순서를 조율하며, 실제 씬 로드는 FactorySceneLoadController에, 문·안내선·플레이어 이동은 FactoryEnvironmentManager에 요청한다. 결과 상태는 SetLearningState(LearningProgressSnapshot), 이동 안내는 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted로 표시한다. 세션 연결이 없으면 빈 스냅샷을 표시하고 이동 카드는 비활성화한다.
+학습 카드의 순서와 요청 ID는 Core LearningStageCatalog.ProgressStages에 연결한다. TabletUI 프리팹에는 픽셀 관찰·합성곱·특징 맵·모델 제작 네 카드의 제목 Text를 배치한다. 공통 LearningStageId를 쓰며 UI 배열 인덱스를 학습 단계로 전달하지 않는다. 전체 진행률은 Core가 Stages의 튜토리얼 포함 다섯 체험별 최대 도달 진행률을 평균 낸 값이다. ProgressStages는 기존 네 카드의 연결용 목록으로 유지하며, 태블릿 코드·프리팹은 수정하지 않는다. 양피지 수는 학습 진행률에 합산하지 않는다. 태블릿은 StageMoveRequested(LearningStageId) 로컬 C# 이벤트로 이동 의도를 알린다. FactoryEnvironmentManager가 요청을 받아 이동 가능 여부를 판단하고 플레이어를 이동시킨다. FactoryAreaController의 LateUpdate 구역 판정에서 발생한 AreaChanged만 로더가 받아 이전·현재·다음 씬을 준비한다. LearningSessionManager는 요청 기준으로 문서를 지급하고 로더 상태와 공장의 이동 결과를 받아 태블릿을 갱신한다. 결과 상태는 SetLearningState(LearningProgressSnapshot), 이동 안내는 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted로 표시한다. 세션 연결이 없으면 빈 스냅샷을 표시하고 이동 카드는 비활성화한다.
 
-네 체험 모두 완료 여부와 무관하게 선택할 수 있다. 로딩 중에는 이동을 시작하지 않으며 재방문한 체험은 처음부터 시작한다. 누적 완료는 공장 씬 수명의 LearningSessionManager가 소유한 LearningProgress에 보관한다. 같은 공장 세션 안의 재방문·초기화·태블릿 비활성화는 기록을 지우지 않으며, 공장 씬 종료 시 폐기되고 재진입 시 새로 시작한다. 태블릿에는 수정할 수 없는 스냅샷만 전달한다. 공용 양피지 기록의 기존 영속 수명은 별개로 유지한다. 이동만으로 완료 처리하지 않는다. ScreenLab과 ConvolutionLab은 각각 독립된 체험이며, 직접 이동 시 각 체험의 처음부터 시작한다.
+네 체험 모두 완료 여부와 무관하게 선택할 수 있다. 로딩 중에는 이동을 시작하지 않으며 로드된 체험으로 이동하면 상태를 유지하며 언로드된 체험은 새로 로드한다. 누적 완료는 공장 씬 수명의 LearningSessionManager가 소유한 LearningProgress에 보관한다. 같은 공장 세션 안의 재방문·초기화·태블릿 비활성화는 기록을 지우지 않으며, 공장 씬 종료 시 폐기되고 재진입 시 새로 시작한다. 태블릿에는 수정할 수 없는 스냅샷만 전달한다. 공용 양피지 기록의 기존 영속 수명은 별개로 유지한다. 이동만으로 완료 처리하지 않는다. ScreenLab과 ConvolutionLab은 각각 독립된 체험이며, 같은 구역을 다시 선택하면 도착점으로 이동하며 체험을 재시작하지 않는다.
 
 ### 포커스·양피지·설정
 
@@ -138,7 +138,7 @@ Unity 6000.3.24f1에서 설치·가져오기·컴파일 완료를 확인했다 (
 
 `PersistentXRPlayerRig`의 직렬화된 좌·우 Touch Plus 모델 및 Animator 참조로 손의 grip pose 아래 실제 컨트롤러 모델을 생성한다. `TouchPlusHandController`가 Unity XR의 버튼·Grip·Trigger·스틱 값을 공식 Animator에 전달한다. 오른손 Meta 시스템 버튼은 앱 입력으로 가로채지 않는다. 패키지 모델·애니메이션 원본은 수정하지 않고 표시용 런타임 재질과 튜토리얼 표식만 별도로 생성·정리한다.
 
-당시 `TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. 당시의 `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시했다. 단계 선택은 이동 안내였으며 실제로 걸어서 방에 들어갔다. 이 동작은 이후 Core 학습 세션과 자유 이동으로 교체되었으며, 현재는 ScreenLab·ConvolutionLab·FeatureMap·ModelDesign 네 체험을 기준으로 한다.
+당시 `TabletLearningController`의 고정 75% 예시 진행률과 확인 버튼으로 임의 완료하던 동작을 제거했다. 당시의 `FactoryLearningFlowManager`가 양피지 보유 수와 방 체험 완료 수를 전달해 8개 목표 기준 비율을 표시했다. 단계 선택은 이동 안내였으며 실제로 걸어서 방에 들어갔다. 이 동작은 이후 Core 학습 세션과 자유 이동으로 교체되었으며, 현재 이동 카드는 ScreenLab·ConvolutionLab·FeatureMap·ModelDesign 네 체험이며, 전체 진행률은 Tutorial까지 포함한 다섯 체험을 기준으로 한다.
 
 SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안내용 확대 모델 2개의 생성, 카메라 렌더 표시 및 실제 수집 상태에 따른 태블릿 갱신을 확인했다. 당시에는 공장 씬에서 별도 마우스 미리보기를 실행하지 않아 공용 XR 리그를 유지했다. 현재는 픽셀 씬 전용 마우스 미리보기와 설치 메뉴를 제거했으며 공용 XR 시뮬레이터를 사용한다. Quest 버튼 입력과 애니메이션의 실기기 일치는 아직 확인하지 않았다.
 
@@ -154,6 +154,6 @@ SDK가 설치된 당시의 후속 컴파일·Play에서 손 모델 2개와 안�
 
 XRPlayerRig에는 공용 AudioManager 컴포넌트와 Tablet Rear Logo를 함께 유지한다. 태블릿의 이동 안내는 TabletManager의 ShowTravelStarted/ShowTravelFailed/ShowTravelCompleted를 통해 TabletLearningController가 표시한다.
 
-세 체험은 ILearningExperience의 Progress(0~1), CanExit, ProgressChanged(float), ExitAvailabilityChanged(bool), EndSession()으로 Core 세션과 통신한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. 전체 진행률은 세 체험의 동일 비중 평균이다. 재방문·초기화로 누적 기록은 감소하지 않는다. 튜토리얼은 기존 완료 이벤트를 사용하며 전체 진행률에서 제외한다. 상태 스냅샷은 TabletManager로 전달하고 Factory 지도 이벤트 연결은 LearningSessionManager가 담당한다.
+튜토리얼을 포함한 다섯 체험의 ILearningExperience 중 Progress·ProgressChanged와 EndSession은 Core 세션이 기록·종료에 사용하고, CanExit·ExitAvailabilityChanged는 세션이 구독하여 공장에 전달하고 문 개방 판단에 사용한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. 전체 진행률은 LearningStageCatalog.Stages에 등록한 다섯 체험의 동일 비중 평균이다. 재방문·초기화로 누적 기록은 감소하지 않는다. 튜토리얼도 공통 ProgressChanged·ExitAvailabilityChanged 이벤트와 EndSession을 사용하며 최종 확인 후 진행률이 0에서 1로 바뀐다. 상태 스냅샷은 TabletManager로 전달하고 Factory 지도 이벤트 연결은 LearningSessionManager가 담당한다.
 
 TabletManager와 TabletLearningController는 누적 완료 집합을 소유하지 않는다. Core 세션의 스냅샷을 표시하며 같은 단계의 중복 완료·일시적 진행 불가·이전 체험 복귀에 대한 기록 정책은 Core LearningProgress가 처리한다. 공장 씬 종료 시 세션은 폐기되고 태블릿에는 LearningProgressSnapshot.Empty를 전달한다. 이번 Core 분리 변경에 대한 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

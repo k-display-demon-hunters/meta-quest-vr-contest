@@ -1,177 +1,159 @@
 using System;
 using System.Collections;
-using FactoryTutorial;
+using System.Collections.Generic;
 using Learning;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.SceneManagement;
 
 namespace FactoryEnvironment
 {
-    // Owns loaded content and asynchronous operations; the session chooses their order.
     public sealed class FactorySceneLoadController : MonoBehaviour
     {
-        private sealed class Lesson
-        {
-            public Scene Scene;
-            public GameObject Root;
-            public FactoryTutorialManager Tutorial;
-            public ILearningExperience Experience;
-        }
+        [SerializeField] private FactoryAreaController _areaController;
+        [FormerlySerializedAs("_navigationData")]
+        [SerializeField] private FactoryLayoutData _layoutData;
+        private readonly Dictionary<LearningStageId, Scene> _loadedScenes = new Dictionary<LearningStageId, Scene>();
+        private int _requestedIndex;
+        private bool _hasPendingArea;
+        private bool _loadingSingle;
+        private bool _loadFailed;
 
-        [SerializeField] private FactoryNavigationData _navigationData;
-        private Lesson _current;
-        private Lesson _prepared;
-        private string _loadingSceneName;
-        private bool _destroying;
-        public bool HasPreparedLesson => _prepared != null;
-        public Scene CurrentScene => _current == null ? default : _current.Scene;
-        public string LastError { get; private set; }
-        public bool IsLeaving { get; private set; }
-        public FactoryTutorialManager PreparedTutorial => _prepared.Tutorial;
-        public ILearningExperience PreparedExperience => _prepared.Experience;
+        public bool IsBusy { get; private set; }
+        public bool IsLoaded(LearningStageId stage) => _loadedScenes.ContainsKey(stage);
+        public event Action StateChanged;
+        public event Action<LearningStageId, Scene> ContentLoaded;
+        public event Func<LearningStageId, Scene, IEnumerator> ContentUnloading;
+        public event Action<LearningStageId, string> LoadFailed;
 
-        public IEnumerator Prepare(LearningStageId stage)
+        private void OnEnable() => _areaController.AreaChanged += HandleAreaChanged;
+        private void OnDisable() => _areaController.AreaChanged -= HandleAreaChanged;
+
+        private void HandleAreaChanged(FactoryAreaId area)
         {
-            _loadingSceneName = LearningStageCatalog.GetSceneName(stage);
-            SceneManager.sceneLoaded += HoldLoadedLesson;
-            AsyncOperation loading = BeginLoad(_loadingSceneName);
-            if (loading == null)
+            for (int i = 0; i < _layoutData.AreaOrder.Length; i++)
             {
-                SceneManager.sceneLoaded -= HoldLoadedLesson;
-                yield break;
-            }
-            loading.completed += HandleLessonLoaded;
-            yield return loading;
-            Scene scene = SceneManager.GetSceneByName(_loadingSceneName);
-            _prepared = FindLesson(scene, stage);
-            PlaceContent(_prepared.Root, stage);
-        }
-
-        private void HoldLoadedLesson(Scene scene, LoadSceneMode mode)
-        {
-            if (scene.name != _loadingSceneName) { return; }
-            SceneManager.sceneLoaded -= HoldLoadedLesson;
-            // Configure and connect before Start caches positions or starts nested lessons.
-            foreach (GameObject root in scene.GetRootGameObjects()) { root.SetActive(false); }
-        }
-
-        private static Lesson FindLesson(Scene scene, LearningStageId stage)
-        {
-            Lesson lesson = new Lesson { Scene = scene };
-            foreach (GameObject root in scene.GetRootGameObjects())
-            {
-                if (stage == LearningStageId.Tutorial)
+                if (_layoutData.AreaOrder[i].Id != area) { continue; }
+                _requestedIndex = i;
+                if (IsBusy)
                 {
-                    lesson.Tutorial = root.GetComponentInChildren<FactoryTutorialManager>(true);
-                    if (lesson.Tutorial == null) { continue; }
+                    _hasPendingArea = true;
+                    return;
                 }
-                else
-                {
-                    foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true))
-                    {
-                        if (component is ILearningExperience experience && experience.StageId == stage)
-                        {
-                            lesson.Experience = experience;
-                            break;
-                        }
-                    }
-                    if (lesson.Experience == null) { continue; }
-                }
-                lesson.Root = root;
-                return lesson;
+                IsBusy = true;
+                StateChanged?.Invoke();
+                StartCoroutine(UpdateScenes());
+                return;
             }
-            throw new InvalidOperationException("Missing lesson entry point in " + scene.name);
         }
 
-        private void PlaceContent(GameObject content, LearningStageId stage)
+        private IEnumerator UpdateScenes()
         {
-            if (stage == LearningStageId.Tutorial)
+            int index = _requestedIndex;
+            _hasPendingArea = false;
+            _loadFailed = false;
+            // Finish notifying area listeners before loading or unloading scenes.
+            yield return null;
+            if (_layoutData.AreaOrder[index].Stage == LearningStageId.Exit)
             {
-                content.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-                content.transform.localScale = Vector3.one;
+                if (!_hasPendingArea)
+                    yield return Load(LearningStageId.Exit, LoadSceneMode.Single);
             }
             else
             {
-                Transform anchor = _navigationData.Get(stage).ContentAnchor;
-                content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
-                content.transform.localScale = anchor.lossyScale;
-                foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
+                var required = new List<LearningStageId>();
+                for (int i = Math.Max(0, index - 1); i <= Math.Min(index + 1, _layoutData.AreaOrder.Length - 1); i++)
+                {
+                    LearningStageId? stage = _layoutData.AreaOrder[i].Stage;
+                    if (stage.HasValue && stage.Value != LearningStageId.None && stage.Value != LearningStageId.Exit
+                        && !required.Contains(stage.Value))
+                        required.Add(stage.Value);
+                }
+                foreach (LearningStageId stage in required)
+                {
+                    if (_hasPendingArea) { break; }
+                    if (!IsLoaded(stage))
+                    {
+                        yield return Load(stage, LoadSceneMode.Additive);
+                        if (_loadFailed) { break; }
+                    }
+                }
+                if (!_loadFailed && !_hasPendingArea)
+                {
+                    foreach (LearningStageId stage in new List<LearningStageId>(_loadedScenes.Keys))
+                    {
+                        if (_hasPendingArea) { break; }
+                        if (!required.Contains(stage)) { yield return Unload(stage); }
+                    }
+                }
             }
-            foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
+            // Only an AreaChanged received during this operation schedules another pass.
+            if (_hasPendingArea)
             {
-                body.position = body.transform.position;
-                body.rotation = body.transform.rotation;
+                StartCoroutine(UpdateScenes());
+                yield break;
             }
+            IsBusy = false;
+            StateChanged?.Invoke();
         }
 
-        public void ActivatePrepared()
+        private IEnumerator Load(LearningStageId stage, LoadSceneMode mode)
         {
-            _current = _prepared;
-            _prepared = null;
-            _current.Root.SetActive(true);
-        }
-
-        public IEnumerator UnloadCurrent()
-        {
-            if (_current != null && _current.Scene.IsValid() && _current.Scene.isLoaded)
-                yield return SceneManager.UnloadSceneAsync(_current.Scene);
-            _current = null;
-        }
-
-        public IEnumerator CancelPrepared()
-        {
-            if (_prepared != null && _prepared.Scene.IsValid() && _prepared.Scene.isLoaded)
-                yield return SceneManager.UnloadSceneAsync(_prepared.Scene);
-            _prepared = null;
-        }
-
-        public IEnumerator LoadEnding()
-        {
-            IsLeaving = true;
-            AsyncOperation loading = BeginLoad(LearningStageCatalog.GetSceneName(LearningStageId.Exit), LoadSceneMode.Single);
-            if (loading == null) { IsLeaving = false; yield break; }
-            yield return loading;
-        }
-
-        private AsyncOperation BeginLoad(string sceneName, LoadSceneMode mode = LoadSceneMode.Additive)
-        {
-            LastError = null;
-            if (SceneManager.GetSceneByName(sceneName).isLoaded)
+            string sceneName = LearningStageCatalog.GetSceneName(stage);
+            _loadFailed = false;
+            // sceneLoaded runs before Start, so subscribers can place and initialize content.
+            void HandleLoaded(Scene scene, LoadSceneMode loadedMode)
             {
-                LastError = sceneName + " 씬이 이미 로드되어 있습니다.";
-                return null;
+                if (scene.name != sceneName) { return; }
+                SceneManager.sceneLoaded -= HandleLoaded;
+                if (mode == LoadSceneMode.Single) { return; }
+                if (this == null)
+                {
+                    SceneManager.UnloadSceneAsync(scene);
+                    return;
+                }
+                _loadedScenes.Add(stage, scene);
+                ContentLoaded?.Invoke(stage, scene);
+                SceneManager.SetActiveScene(gameObject.scene);
             }
-            try
+            SceneManager.sceneLoaded += HandleLoaded;
+            AsyncOperation operation = null;
+            string error = null;
+            try { operation = SceneManager.LoadSceneAsync(sceneName, mode); }
+            catch (Exception exception) { error = exception.Message; }
+            if (operation == null)
             {
-                AsyncOperation loading = SceneManager.LoadSceneAsync(sceneName, mode);
-                if (loading != null) { return loading; }
+                SceneManager.sceneLoaded -= HandleLoaded;
+                _loadFailed = true;
+                string message = error ?? sceneName + " 씬을 열지 못했습니다.";
+                Debug.LogError(message, this);
+                LoadFailed?.Invoke(stage, message);
+                yield break;
             }
-            catch (Exception exception) { Debug.LogException(exception, this); }
-            LastError = sceneName + " 씬을 열지 못했습니다.";
-            return null;
+            _loadingSingle = mode == LoadSceneMode.Single;
+            yield return operation;
+            yield return null;
         }
 
-        private void HandleLessonLoaded(AsyncOperation loading)
+        private IEnumerator Unload(LearningStageId stage)
         {
-            loading.completed -= HandleLessonLoaded;
-            if (_destroying) { UnloadIfLoaded(_loadingSceneName); }
-        }
-
-        private static void UnloadIfLoaded(string sceneName)
-        {
-            Scene scene = SceneManager.GetSceneByName(sceneName);
-            if (scene.IsValid() && scene.isLoaded) { SceneManager.UnloadSceneAsync(scene); }
+            Scene scene = _loadedScenes[stage];
+            if (ContentUnloading != null)
+            {
+                foreach (Func<LearningStageId, Scene, IEnumerator> handler in ContentUnloading.GetInvocationList())
+                    yield return handler(stage, scene);
+            }
+            _loadedScenes.Remove(stage);
+            yield return SceneManager.UnloadSceneAsync(scene);
         }
 
         private void OnDestroy()
         {
-            _destroying = true;
-            SceneManager.sceneLoaded -= HoldLoadedLesson;
-            if (IsLeaving || !Application.isPlaying) { return; }
-            if (_current != null && _current.Scene.IsValid() && _current.Scene.isLoaded)
-                SceneManager.UnloadSceneAsync(_current.Scene);
-            if (_prepared != null && _prepared.Scene.IsValid() && _prepared.Scene.isLoaded)
-                SceneManager.UnloadSceneAsync(_prepared.Scene);
+            if (_loadingSingle || !Application.isPlaying) { return; }
+            foreach (Scene scene in _loadedScenes.Values)
+            {
+                if (scene.IsValid() && scene.isLoaded) { SceneManager.UnloadSceneAsync(scene); }
+            }
         }
     }
 }

@@ -567,10 +567,12 @@ namespace CNNConvolution
                     }
                     _view.ParkedKernels[c] = Root(Names[c] + " fixed filter slice");
                     FilterFrame(_view.ParkedKernels[c]);
-                    Caption(_view.ParkedKernels[c], Names[c] + " 가중치", new Vector3(0, 0.3f, 0), 0.6f);
+                    // Only the parked stack has a backing; the movable filter must reveal the input beneath it.
+                    Tile(_view.ParkedKernels[c], new Vector3(0, 0, 0.03f), new Vector3(0.69f, 0.65f, 0.02f), new Color(0.055f, 0.065f, 0.075f));
+                    Caption(_view.ParkedKernels[c], Names[c] + " 가중치", new Vector3(0, 0.4f, 0), 0.6f);
                     for (int i = 0; i < 9; i++)
                     {
-                        Transform tile = Tile(_view.ParkedKernels[c], Cell(i), new Vector3(0.075f, 0.06f, 0.025f), new Color(0.19f, 0.23f, 0.25f));
+                        Transform tile = Tile(_view.ParkedKernels[c], Cell(i), new Vector3(0.17f, 0.15f, 0.025f), new Color(0.10f, 0.13f, 0.15f));
                         _view.VolumeWeightLabels[c, i] = Caption(tile, "", new Vector3(0, 0, -0.018f), 0.075f);
                         _view.VolumeWeightLabels[c, i].fontSize = 42;
                     }
@@ -584,11 +586,11 @@ namespace CNNConvolution
                 _view.ColourPatch.gameObject.SetActive(false);
                 _view.Kernel = Root("Fixed weight slice");
                 _view.GripAccents = FilterFrame(_view.Kernel);
-                _view.KernelTitle = Caption(_view.Kernel, "고정 가중치", new Vector3(0, 0.32f, 0), 0.7f);
+                _view.KernelTitle = Caption(_view.Kernel, "고정 가중치", new Vector3(0, 0.4f, 0), 0.7f);
                 _view.GripArrow = Root("Grip arrow");
                 _view.GripArrow.SetParent(_view.Kernel, false);
                 _view.GripArrow.localScale = Vector3.one * 0.45f;
-                _view.GripArrow.localPosition = new Vector3(0, 0.45f, -0.04f);
+                _view.GripArrow.localPosition = new Vector3(0, 0.55f, -0.04f);
                 Tile(_view.GripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
                 for (int side = -1; side <= 1; side += 2)
                 {
@@ -689,17 +691,17 @@ namespace CNNConvolution
             private MeshRenderer[] FilterFrame(Transform parent)
             {
                 Color metal = new Color(0.47f, 0.38f, 0.24f);
-                Frame(parent, 0.59f, 0.52f, 0.03f, metal);
+                // Leave the input numerals visible when the offset filter lies over them.
+                Frame(parent, 0.72f, 0.68f, 0.03f, metal);
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    Tile(parent, new Vector3(side * 0.095f, -0.30f, 0), new Vector3(0.025f, 0.08f, 0.035f), metal);
-                    Tile(parent, new Vector3(side * 0.095f, 0, 0.016f), new Vector3(0.008f, 0.50f, 0.01f), metal);
+                    Tile(parent, new Vector3(side * 0.095f, -0.385f, 0), new Vector3(0.025f, 0.09f, 0.035f), metal);
                 }
-                Tile(parent, new Vector3(0, -0.35f, 0), new Vector3(0.25f, 0.055f, 0.055f), new Color(0.08f, 0.10f, 0.11f));
+                Tile(parent, new Vector3(0, -0.43f, 0), new Vector3(0.25f, 0.055f, 0.055f), new Color(0.08f, 0.10f, 0.11f));
                 MeshRenderer[] accents = new MeshRenderer[5];
                 for (int i = -2; i <= 2; i++)
                 {
-                    Transform groove = Tile(parent, new Vector3(i * 0.035f, -0.35f, -0.03f), new Vector3(0.008f, 0.045f, 0.008f), metal);
+                    Transform groove = Tile(parent, new Vector3(i * 0.035f, -0.43f, -0.03f), new Vector3(0.008f, 0.045f, 0.008f), metal);
                     accents[i + 2] = groove.Find("Tile mesh").GetComponent<MeshRenderer>();
                 }
                 return accents;
@@ -720,13 +722,13 @@ namespace CNNConvolution
                 {
                     for (int segment = -2; segment <= 2; segment++)
                     {
-                        Tile(_view.PlacementDashed, new Vector3(segment * 0.13f, side * 0.295f, -0.035f),
+                        Tile(_view.PlacementDashed, new Vector3(segment * 0.15f, side * 0.375f, -0.035f),
                             new Vector3(0.075f, 0.012f, 0.012f), waiting);
-                        Tile(_view.PlacementDashed, new Vector3(side * 0.33f, segment * 0.115f, -0.035f),
+                        Tile(_view.PlacementDashed, new Vector3(side * 0.39f, segment * 0.15f, -0.035f),
                             new Vector3(0.012f, 0.065f, 0.012f), waiting);
                     }
                 }
-                Frame(_view.PlacementSolid, 0.66f, 0.59f, 0.014f, ready);
+                Frame(_view.PlacementSolid, 0.78f, 0.75f, 0.014f, ready);
                 _view.PlacementSolid.localPosition = new Vector3(0, 0, -0.035f);
                 Transform shortStroke = Tile(_view.PlacementCheck, new Vector3(0.40f, -0.28f, -0.05f),
                     new Vector3(0.022f, 0.075f, 0.015f), ready);
@@ -793,9 +795,9 @@ namespace CNNConvolution
                 label.color = Color.white;
                 label.raycastTarget = false;
                 label.text = value;
-                if (parent.name == "Number tile")
+                if (parent.name == "Number tile" && parent.Find("Tile mesh").localScale.z >= 0.08f)
                 {
-                    // Fixed side faces make walking around the block informative without billboarding.
+                    // Only thick input/result blocks have room for readable side numerals.
                     for (int side = -1; side <= 1; side += 2)
                     {
                         Text copy = Instantiate(label, parent);

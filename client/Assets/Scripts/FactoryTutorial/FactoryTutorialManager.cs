@@ -7,7 +7,7 @@ using XR;
 
 namespace FactoryTutorial
 {
-    public sealed class FactoryTutorialManager : MonoBehaviour
+    public sealed class FactoryTutorialManager : MonoBehaviour, ILearningExperience
     {
         private static readonly string[] Titles =
         {
@@ -43,13 +43,14 @@ namespace FactoryTutorial
         private bool _finishing;
         private bool _showingMission;
         private int _advancedFrame = -1;
-        private bool _progressionAvailable;
+        private bool _exitAvailable;
 
         public bool IsComplete { get; private set; }
-        public event System.Action<LearningStageId> StageCompleted;
-        public event System.Action<LearningStageId, bool> ProgressionAvailabilityChanged;
-        public bool HasCompleted(LearningStageId stage) => stage == LearningStageId.Tutorial && IsComplete;
-        public bool CanProceed(LearningStageId stage) => stage == LearningStageId.Tutorial && isActiveAndEnabled && IsComplete;
+        public LearningStageId StageId => LearningStageId.Tutorial;
+        public float Progress => IsComplete ? 1f : 0f;
+        public bool CanExit => isActiveAndEnabled && IsComplete && !_ownsRay;
+        public event System.Action<float> ProgressChanged;
+        public event System.Action<bool> ExitAvailabilityChanged;
 
         private void Awake()
         {
@@ -65,7 +66,7 @@ namespace FactoryTutorial
                 SubscribePanel();
                 HoldGuideRay();
             }
-            PublishProgressionAvailability();
+            PublishExitAvailability();
         }
 
         public void Initialize(XROrigin rig, Pose entrance)
@@ -162,19 +163,19 @@ namespace FactoryTutorial
         {
             // Let the XR UI callback finish before the factory unloads this scene.
             yield return null;
-            ReleaseGuideRay();
+            ReleaseInput();
             _panel.gameObject.SetActive(false);
             IsComplete = true;
-            StageCompleted?.Invoke(LearningStageId.Tutorial);
-            PublishProgressionAvailability();
+            ProgressChanged?.Invoke(Progress);
+            PublishExitAvailability();
         }
 
-        private void PublishProgressionAvailability()
+        private void PublishExitAvailability()
         {
-            bool available = CanProceed(LearningStageId.Tutorial);
-            if (_progressionAvailable == available) { return; }
-            _progressionAvailable = available;
-            ProgressionAvailabilityChanged?.Invoke(LearningStageId.Tutorial, available);
+            bool available = CanExit;
+            if (_exitAvailable == available) { return; }
+            _exitAvailable = available;
+            ExitAvailabilityChanged?.Invoke(available);
         }
 
         private void HoldGuideRay()
@@ -211,7 +212,17 @@ namespace FactoryTutorial
             _panel.OnNext += Next;
         }
 
-        private void OnDisable()
+        public IEnumerator EndSession()
+        {
+            StopAllCoroutines();
+            _finishing = true;
+            ReleaseInput();
+            _visuals.SetVisible(false);
+            _panel.gameObject.SetActive(false);
+            yield break;
+        }
+
+        private void ReleaseInput()
         {
             _startGuide.Disable();
             if (_initialized)
@@ -220,12 +231,17 @@ namespace FactoryTutorial
                 _panel.OnNext -= Next;
             }
             ReleaseGuideRay();
+        }
+
+        private void OnDisable()
+        {
+            ReleaseInput();
             if (_finishing && !IsComplete)
             {
                 StopAllCoroutines();
                 _finishing = false;
             }
-            PublishProgressionAvailability();
+            PublishExitAvailability();
         }
 
         private void OnDestroy()

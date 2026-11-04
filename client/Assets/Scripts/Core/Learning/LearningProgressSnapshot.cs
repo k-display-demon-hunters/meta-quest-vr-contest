@@ -14,7 +14,7 @@ namespace Learning
         public LearningStageId CurrentStage { get; }
         public bool CanTravel { get; }
         public int CompletedCount { get; }
-        public int TotalCount => LearningStageCatalog.ProgressStages.Count;
+        public int TotalCount => LearningStageCatalog.Stages.Count;
         public float Progress01 { get; }
 
         internal LearningProgressSnapshot(LearningStageId currentStage, bool canTravel,
@@ -26,7 +26,7 @@ namespace Learning
             _completedStages = new HashSet<LearningStageId>(completedStages);
             int completedCount = 0;
             float totalProgress = 0f;
-            foreach (LearningStageDefinition stage in LearningStageCatalog.ProgressStages)
+            foreach (LearningStageDefinition stage in LearningStageCatalog.Stages)
             {
                 totalProgress += GetProgress(stage.Id);
                 if (_completedStages.Contains(stage.Id)) { completedCount++; }

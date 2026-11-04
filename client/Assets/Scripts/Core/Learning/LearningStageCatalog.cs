@@ -8,42 +8,28 @@ namespace Learning
         public static IReadOnlyList<LearningStageDefinition> Stages { get; } =
             Array.AsReadOnly(new[]
             {
-                new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", false, Array.Empty<int>()),
-                new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", true, new[] { 0 }),
-                new LearningStageDefinition(LearningStageId.ConvolutionLab, "합성곱", true, new[] { 0 }),
-                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", true, new[] { 1, 2 }),
-                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", true, new[] { 1, 2 })
+                new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", Array.Empty<int>()),
+                new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", new[] { 0 }),
+                new LearningStageDefinition(LearningStageId.ConvolutionLab, "합성곱", new[] { 0 }),
+                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", new[] { 1, 2 }),
+                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", new[] { 1, 2 })
             });
 
-        public static IReadOnlyList<LearningStageDefinition> ProgressStages { get; } = CreateProgressStages();
-
-        private static IReadOnlyList<LearningStageDefinition> CreateProgressStages()
-        {
-            List<LearningStageDefinition> stages = new List<LearningStageDefinition>();
-            foreach (LearningStageDefinition stage in Stages)
+        // Preserve the existing tablet card order. Overall progress uses all Stages.
+        public static IReadOnlyList<LearningStageDefinition> ProgressStages { get; } =
+            Array.AsReadOnly(new[]
             {
-                if (stage.CountsForProgress) { stages.Add(stage); }
-            }
-            return stages.AsReadOnly();
-        }
+                Get(LearningStageId.ScreenLab),
+                Get(LearningStageId.ConvolutionLab),
+                Get(LearningStageId.FeatureMap),
+                Get(LearningStageId.ModelDesign)
+            });
 
         public static LearningStageDefinition Get(LearningStageId stage)
         {
             foreach (LearningStageDefinition definition in Stages)
             {
                 if (definition.Id == stage) { return definition; }
-            }
-            throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown learning stage.");
-        }
-
-        public static LearningStageId Next(LearningStageId stage)
-        {
-            for (int i = 0; i < Stages.Count; i++)
-            {
-                if (Stages[i].Id == stage)
-                {
-                    return i + 1 < Stages.Count ? Stages[i + 1].Id : LearningStageId.None;
-                }
             }
             throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown learning stage.");
         }

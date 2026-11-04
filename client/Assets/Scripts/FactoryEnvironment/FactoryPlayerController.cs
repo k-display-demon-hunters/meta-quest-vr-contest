@@ -8,19 +8,19 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryPlayerController : MonoBehaviour
     {
-        private FactoryNavigationData _navigationData;
+        private FactoryLayoutData _layoutData;
         private XRBaseInteractor[] _interactors;
 
         public XROrigin Rig { get; private set; }
         public Transform CameraTransform => Rig.Camera.transform;
         private void Awake()
         {
-            _navigationData = GetComponent<FactoryNavigationData>();
+            _layoutData = GetComponent<FactoryLayoutData>();
         }
 
         public void PlaceAtEntrance(XROrigin rig)
         {
-            Transform entrance = _navigationData.Entrance;
+            Transform entrance = _layoutData.Entrance;
             Rig = rig;
             _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
             float height = rig.Camera.transform.position.y - rig.Origin.transform.position.y;

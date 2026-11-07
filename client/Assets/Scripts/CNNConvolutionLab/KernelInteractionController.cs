@@ -8,7 +8,7 @@ namespace CNNConvolution
 {
     internal sealed class KernelInteractionController : IDisposable
     {
-        private const float PlacementRadius = 0.3f;
+        private const float LocalPlacementRadius = 0.1f;
         private const float PlacementDuration = 0.18f;
         private const float ReturnDuration = 0.3f;
         private enum PlacementState { Hidden, Waiting, Hovered, Moving, Ready, Returning, Settling, Complete }
@@ -28,7 +28,8 @@ namespace CNNConvolution
         private bool _active;
         private bool _closing;
         public bool IsAligned { get; private set; }
-        private bool IsWithinTarget => Vector3.Distance(_view.Kernel.position, _target.position) <= PlacementRadius;
+        private bool IsWithinTarget => _target.InverseTransformPoint(_view.Kernel.position).sqrMagnitude
+            <= LocalPlacementRadius * LocalPlacementRadius;
         public KernelInteractionController(Transform root, RgbVolumeController.Geometry view, Transform home, Transform target, Text hint)
         {
             _root = root;

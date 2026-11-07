@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ModelDesignScene.Model;
 using UnityEngine;
 
 namespace ModelDesignScene.ModelBuilder
@@ -22,10 +23,16 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private Transform _settingsControlsRoot;
 
         private readonly List<Renderer> _slotRenderers = new List<Renderer>();
+        private readonly List<MeshFilter> _slotMeshes = new List<MeshFilter>();
+        private readonly List<Mesh> _originalSlotMeshes = new List<Mesh>();
         private readonly List<SlotSettingsController> _settingsControls = new List<SlotSettingsController>();
+        private readonly List<Vector3> _settingsPositions = new List<Vector3>();
+        private readonly List<Vector3> _popupPositions = new List<Vector3>();
         private ConveyorSlots _slots;
         private MaterialPropertyBlock _properties;
         private int _previewSlot = -1;
+        private bool _previewIsConv;
+        private Mesh _convSlotMesh;
 
         internal IReadOnlyList<SlotSettingsController> SettingsControls => _settingsControls;
 
@@ -35,14 +42,24 @@ namespace ModelDesignScene.ModelBuilder
             _properties = new MaterialPropertyBlock();
             _previewSlot = -1;
             _slotRenderers.Clear();
+            _slotMeshes.Clear();
+            _originalSlotMeshes.Clear();
+            _convSlotMesh = ConvBlockVisualController.CreateSlotMesh();
             _settingsControls.Clear();
+            _settingsPositions.Clear();
+            _popupPositions.Clear();
             // Sibling order matches the saved block anchors; scene transforms remain editable.
             for (int index = 0; index < _blockAnchors.Length; index++)
             {
                 _slotRenderers.Add(_slotVisualsRoot.GetChild(index).GetComponent<Renderer>());
+                MeshFilter slotMesh = _slotVisualsRoot.GetChild(index).GetComponent<MeshFilter>();
+                _slotMeshes.Add(slotMesh);
+                _originalSlotMeshes.Add(slotMesh.sharedMesh);
                 SlotSettingsController control = _settingsControlsRoot.GetChild(index).GetComponent<SlotSettingsController>();
                 control.Initialize(index);
                 _settingsControls.Add(control);
+                _settingsPositions.Add(control.transform.localPosition);
+                _popupPositions.Add(control.PopupAnchor.localPosition);
                 RefreshSlot(index);
             }
         }
@@ -50,12 +67,14 @@ namespace ModelDesignScene.ModelBuilder
         internal void PreviewPlacement(ModelBlockController block)
         {
             int slot = block != null ? FindSlot(block.transform.position) : -1;
-            if (_previewSlot == slot)
+            bool isConv = block != null && block.Layer.Type == LayerType.Conv2D;
+            if (_previewSlot == slot && _previewIsConv == isConv)
             {
                 return;
             }
             ClearPreview();
             _previewSlot = slot;
+            _previewIsConv = isConv;
             if (slot >= 0)
             {
                 RefreshSlot(slot);
@@ -66,6 +85,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             int previousSlot = _previewSlot;
             _previewSlot = -1;
+            _previewIsConv = false;
             if (previousSlot >= 0)
             {
                 RefreshSlot(previousSlot);
@@ -108,6 +128,14 @@ namespace ModelDesignScene.ModelBuilder
             ModelBlockController block = _slots[index];
             _settingsControls[index].SetBlock(block);
             bool occupied = block != null;
+            bool showConvSlot = occupied ? block.Layer.Type == LayerType.Conv2D
+                : index == _previewSlot && _previewIsConv;
+            _slotMeshes[index].sharedMesh = showConvSlot ? _convSlotMesh : _originalSlotMeshes[index];
+            bool hasConv = occupied && block.Layer.Type == LayerType.Conv2D;
+            _settingsControls[index].transform.localPosition = _settingsPositions[index]
+                + (hasConv ? new Vector3(0f, 0f, -0.3f) : Vector3.zero);
+            _settingsControls[index].PopupAnchor.localPosition = _popupPositions[index]
+                + (hasConv ? new Vector3(0f, 0.5f, 0f) : Vector3.zero);
             Color color = index == _previewSlot
                 ? (occupied ? _blockedColor : _candidateColor)
                 : (occupied ? _occupiedColor : _emptyColor);
@@ -119,6 +147,11 @@ namespace ModelDesignScene.ModelBuilder
         private void OnDisable()
         {
             ClearPreview();
+        }
+
+        private void OnDestroy()
+        {
+            Destroy(_convSlotMesh);
         }
     }
 }

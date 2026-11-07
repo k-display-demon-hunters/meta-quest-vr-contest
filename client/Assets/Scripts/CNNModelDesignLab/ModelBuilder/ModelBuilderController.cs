@@ -88,7 +88,25 @@ namespace ModelDesignScene.ModelBuilder
         {
             foreach (ModelBlockController block in _blocks)
             {
-                block.RefreshLabel();
+                if (block.IsPalette || block.IsFixed || block.IsGrabbed)
+                {
+                    block.RefreshLabel();
+                }
+            }
+            int inputChannels = LayerLimits.InputChannels;
+            for (int slot = 0; slot < _slots.Count; slot++)
+            {
+                ModelBlockController block = _slots[slot];
+                if (block == null) continue;
+                block.RefreshLabel(inputChannels);
+                if (block.Layer.Type == LayerType.Conv2D && inputChannels > 0)
+                {
+                    inputChannels = block.Layer.Filters;
+                }
+                else if (block.Layer.Type == LayerType.Flatten || block.Layer.Type == LayerType.Dense)
+                {
+                    inputChannels = 0;
+                }
             }
         }
 

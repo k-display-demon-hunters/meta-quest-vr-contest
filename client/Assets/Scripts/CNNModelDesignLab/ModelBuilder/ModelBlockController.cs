@@ -16,6 +16,8 @@ namespace ModelDesignScene.ModelBuilder
 
         private Rigidbody _rigidbody;
         private bool _interactionEnabled;
+        private ConvBlockVisualController _convVisual;
+        private int _inputChannels = LayerLimits.InputChannels;
 
         internal event Action<ModelBlockController> OnGrabbed;
         internal event Action<ModelBlockController, bool> OnReleased;
@@ -47,6 +49,11 @@ namespace ModelDesignScene.ModelBuilder
             Layer = layer;
             IsPalette = isPalette;
             name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
+            if (layer.Type == LayerType.Conv2D)
+            {
+                _convVisual = new ConvBlockVisualController(GetComponentInChildren<MeshFilter>(),
+                    GetComponent<BoxCollider>(), _label);
+            }
             RefreshLabel();
         }
 
@@ -83,12 +90,18 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        internal void RefreshLabel()
+        internal void RefreshLabel(int? inputChannels = null)
         {
             switch (Layer.Type)
             {
                 case LayerType.Conv2D:
-                    _label.text = $"CONV2D\n{Layer.Filters} filters / {Layer.Height} x {Layer.Width}\n{Layer.Activation}";
+                    if (inputChannels.HasValue) _inputChannels = inputChannels.Value;
+                    _convVisual.Refresh(Layer, _inputChannels);
+                    _label.text = $"CONV2D / {Layer.Height} x {Layer.Width}\n" +
+                        (_inputChannels > 0
+                            ? $"{Layer.Filters} filters / {_inputChannels} input channels\n" +
+                              $"{Layer.Height * Layer.Width * _inputChannels * Layer.Filters} weights / {Layer.Activation}"
+                            : "Spatial input required");
                     break;
                 case LayerType.MaxPooling2D:
                     _label.text = $"MAX POOL\n{Layer.Height} x {Layer.Width}";
@@ -126,6 +139,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void OnDestroy()
         {
+            _convVisual?.Dispose();
             _grabInteractable.selectFilters.Remove(this);
             _grabInteractable.selectEntered.RemoveListener(HandleGrabbed);
             _grabInteractable.selectExited.RemoveListener(HandleReleased);

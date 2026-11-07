@@ -1,34 +1,46 @@
 using System.Collections.Generic;
-using System;
 using Parchment;
 using Tablet;
 using UnityEngine;
 
 namespace FactoryEnvironment
 {
-    public sealed class FactoryMapController : MonoBehaviour
+    public sealed class TabletMiniMapController : MonoBehaviour
     {
-        public TabletMapData MapData { get; private set; }
-        public event Action<TabletMapData> MapChanged;
+        private TabletManager _tablet;
+        private TabletMapData _mapData;
+
+        private void Awake()
+        {
+            _tablet = FindFirstObjectByType<TabletManager>();
+        }
 
         private void OnEnable()
         {
-            // OnEnable can precede session initialization; publish an existing map on reactivation.
-            if (MapData != null)
+            // The first map is published in Start, after the tablet initializes.
+            if (_mapData != null)
             {
                 PublishMap();
             }
         }
 
-        public void Initialize()
+        private void Start()
         {
             PublishMap();
         }
 
         private void PublishMap()
         {
-            MapData = ReadMap();
-            MapChanged?.Invoke(MapData);
+            _mapData = ReadMap();
+            _tablet.SetMapData(_mapData);
+        }
+
+        private void OnDisable()
+        {
+            if (_tablet != null && _mapData != null)
+            {
+                _tablet.ClearMapData(_mapData);
+            }
         }
 
         private TabletMapData ReadMap()

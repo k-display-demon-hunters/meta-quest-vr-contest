@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+using Learning;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -8,6 +11,16 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryPlayerController : MonoBehaviour
     {
+        [Serializable]
+        private sealed class StageArrival
+        {
+            public LearningStageId Stage;
+            public Transform Arrival;
+        }
+
+        [SerializeField] private FactorySceneLoadController _sceneLoader;
+        [SerializeField] private FactoryAreaController _areaController;
+        [SerializeField] private StageArrival[] _stageArrivals;
         private FactoryLayoutData _layoutData;
         private XRBaseInteractor[] _interactors;
 
@@ -16,34 +29,75 @@ namespace FactoryEnvironment
         private void Awake()
         {
             _layoutData = GetComponent<FactoryLayoutData>();
+            Rig = FindFirstObjectByType<XROrigin>();
+            _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
         }
 
-        public void PlaceAtEntrance(XROrigin rig)
+        private void OnEnable()
+        {
+            _sceneLoader.ContentUnloading += HandleContentUnloading;
+            _areaController.AreaChanged += HandleAreaChanged;
+        }
+
+        private void OnDisable()
+        {
+            _sceneLoader.ContentUnloading -= HandleContentUnloading;
+            _areaController.AreaChanged -= HandleAreaChanged;
+        }
+
+        private void Start()
         {
             Transform entrance = _layoutData.Entrance;
-            Rig = rig;
-            _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
-            float height = rig.Camera.transform.position.y - rig.Origin.transform.position.y;
+            float height = CameraTransform.position.y - Rig.Origin.transform.position.y;
 #if UNITY_EDITOR
             // Keep the editor simulator at eye level without changing real headset tracking.
             if (!UnityEngine.XR.XRSettings.isDeviceActive
                 && FindFirstObjectByType<XR.XREditorSimulator>() != null && height < 0.5f)
             {
-                Vector3 offset = rig.CameraFloorOffsetObject.transform.localPosition;
-                offset.y += rig.CameraYOffset - height;
-                rig.CameraFloorOffsetObject.transform.localPosition = offset;
-                height = rig.CameraYOffset;
+                Vector3 offset = Rig.CameraFloorOffsetObject.transform.localPosition;
+                offset.y += Rig.CameraYOffset - height;
+                Rig.CameraFloorOffsetObject.transform.localPosition = offset;
+                height = Rig.CameraYOffset;
             }
 #endif
-            rig.MatchOriginUpCameraForward(Vector3.up, entrance.forward);
-            rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
+            Rig.MatchOriginUpCameraForward(Vector3.up, entrance.forward);
+            Rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
+            // Keep the UI input module in the factory scene when the guide scene is unloaded.
+            Rig.GetComponent<XR.XRPlayerInputController>().EnsureRayReady();
         }
 
-        public void MoveTo(Transform arrival)
+        public void MoveToStage(LearningStageId stage)
+        {
+            foreach (StageArrival arrival in _stageArrivals)
+            {
+                if (arrival.Stage != stage) { continue; }
+                MoveTo(arrival.Arrival);
+                return;
+            }
+            throw new InvalidOperationException("No arrival for " + stage);
+        }
+
+        private void MoveTo(Transform arrival)
         {
             float height = CameraTransform.position.y - Rig.Origin.transform.position.y;
             Rig.MatchOriginUpCameraForward(Vector3.up, arrival.forward);
             Rig.MoveCameraToWorldLocation(arrival.position + Vector3.up * height);
+        }
+
+        private void HandleAreaChanged(FactoryLayoutData.Area area)
+        {
+            if (area.Stage != LearningStageId.Exit) { return; }
+            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
+            {
+                if (_sceneLoader.IsLoaded(space.Id))
+                    ReleaseSceneObjects(SceneManager.GetSceneByName(LearningStageCatalog.GetSceneName(space.Id)));
+            }
+        }
+
+        private IEnumerator HandleContentUnloading(LearningStageId stage, Scene scene)
+        {
+            ReleaseSceneObjects(scene);
+            yield break;
         }
 
         public void ReleaseSceneObjects(Scene scene)
@@ -65,10 +119,5 @@ namespace FactoryEnvironment
             }
         }
 
-        public void PrepareRayInput()
-        {
-            // Keep the UI input module in the factory scene when the guide scene is unloaded.
-            Rig.GetComponent<XR.XRPlayerInputController>().EnsureRayReady();
-        }
     }
 }

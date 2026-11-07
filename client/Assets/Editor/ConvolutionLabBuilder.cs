@@ -35,9 +35,9 @@ namespace CNNConvolution.Editor
             GameObject uiObject = (GameObject)PrefabUtility.InstantiatePrefab(
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/PixelCalculationUI.prefab"), content.transform);
             LessonUIController ui = uiObject.GetComponent<LessonUIController>();
-            GameObject blocks = new GameObject("B quiz blocks");
-            blocks.transform.SetParent(content.transform, false);
-            RgbVolumeController spatial = blocks.AddComponent<RgbVolumeController>();
+            GameObject blocks = (GameObject)PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/ConvolutionWorkbench.prefab"), content.transform);
+            RgbVolumeController spatial = blocks.GetComponent<RgbVolumeController>();
             ConvolutionLessonManager lesson = root.AddComponent<ConvolutionLessonManager>();
             SerializedObject managerFields = new SerializedObject(manager);
             managerFields.FindProperty("_lesson").objectReferenceValue = lesson;

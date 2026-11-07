@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &100100000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2000, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_Name
+      value: "WorldUIConfirmPopup"
+      objectReference: {fileID: 0}
+    - target: {fileID: 4004, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_IsActive
+      value: "1"
+      objectReference: {fileID: 0}
+    - target: {fileID: 2013, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_Text
+      value: "확인"
+      objectReference: {fileID: 0}
+    - target: {fileID: 2023, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_Text
+      value: "이 동작을 실행할까요?"
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a77aaf51b52449738343f861a881419a, type: 3}
+--- !u!224 &100100001 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2001, guid: a77aaf51b52449738343f861a881419a, type: 3}
+  m_PrefabInstance: {fileID: 100100000}
+  m_PrefabAsset: {fileID: 0}

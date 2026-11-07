@@ -25,9 +25,36 @@ namespace FactoryEnvironment
         InspectionRoom = 16,
     }
 
+    public enum FactoryShutterId
+    {
+        None = 0,
+        TutorialEntrance = 1,
+        TutorialExit = 2,
+        ScreenEntrance = 3,
+        ScreenToConvolution = 4,
+        ConvolutionExit = 5,
+        FeatureMapEntrance = 6,
+        FeatureMapExit = 7,
+        ModelDesignEntrance = 8,
+        ModelDesignExit = 9,
+        RearCourtEntrance = 10
+    }
+
     // One scene-owned source of factory layout data shared by the factory components.
     public sealed class FactoryLayoutData : MonoBehaviour
     {
+        [Serializable]
+        public sealed class Shutter
+        {
+            [SerializeField] private FactoryShutterId _id;
+            [SerializeField] private Transform _frame;
+            [SerializeField] private float _approachDistance = 2f;
+
+            public FactoryShutterId Id => _id;
+            public Transform Frame => _frame;
+            public float ApproachDistance => _approachDistance;
+        }
+
         [Serializable]
         public sealed class Area
         {
@@ -49,15 +76,15 @@ namespace FactoryEnvironment
             [SerializeField] private LearningStageId _id;
             [SerializeField] private GameObject _route;
             [SerializeField] private Transform _contentAnchor;
-            [SerializeField] private FactoryShutterController _entryDoor;
-            [SerializeField] private FactoryShutterController _exitDoor;
+            [SerializeField] private FactoryShutterId _entryShutter;
+            [SerializeField] private FactoryShutterId _exitShutter;
 
             public LearningStageId Id => _id;
             public GameObject Route => _route;
             public Transform ContentAnchor => _contentAnchor;
-            internal FactoryShutterController EntryDoor => _entryDoor;
+            public FactoryShutterId EntryShutter => _entryShutter;
             // The rear exit court has no onward shutter.
-            internal FactoryShutterController ExitDoor => _exitDoor;
+            public FactoryShutterId ExitShutter => _exitShutter;
         }
 
         private readonly FactoryAreaId[] _areaOrder =
@@ -77,6 +104,9 @@ namespace FactoryEnvironment
 
         [SerializeField] private Area[] _areas;
         public ReadOnlySpan<Area> Areas => _areas;
+
+        [SerializeField] private Shutter[] _shutters;
+        public ReadOnlySpan<Shutter> Shutters => _shutters;
 
         public Area GetArea(FactoryAreaId id) =>
             Array.Find(_areas, area => area.Id == id);

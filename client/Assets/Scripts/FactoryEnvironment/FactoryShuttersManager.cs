@@ -1,42 +1,48 @@
-using Learning;
+using System;
 using UnityEngine;
 
 namespace FactoryEnvironment
 {
     public sealed class FactoryShuttersManager : MonoBehaviour
     {
-        [SerializeField] private FactoryLayoutData _layoutData;
+        [SerializeField] private FactoryShutterController[] _shutters;
+        [SerializeField] private FactoryAreaController _areaController;
+        private Func<FactoryShutterId, bool> _canOpen;
 
-        public void SetEntranceAvailable(LearningStageId stage, bool available)
+        public void Configure(Func<FactoryShutterId, bool> canOpen)
         {
-            FactoryShutterController door = _layoutData.GetStageSpace(stage).EntryDoor;
-            if (available) { door.Open(); } else { door.Close(); }
+            _canOpen = canOpen;
         }
 
-        public void OpenExit(LearningStageId stage) =>
-            _layoutData.GetStageSpace(stage).ExitDoor.Open();
+        private void OnEnable() => _areaController.ShutterProximityChanged += HandleProximityChanged;
 
-        public void OpenPassage(LearningStageId current, LearningStageId next)
+        private void OnDisable() => _areaController.ShutterProximityChanged -= HandleProximityChanged;
+
+        private void HandleProximityChanged(FactoryShutterId id, bool isNear)
         {
-            FactoryShutterController exit = _layoutData.GetStageSpace(current).ExitDoor;
-            // A shared shutter follows the next room's entrance conditions.
-            if (exit != _layoutData.GetStageSpace(next).EntryDoor) { exit.Open(); }
+            RefreshShutter(GetShutter(id), isNear);
         }
 
-        public void AllowFactoryExit(LearningStageId current)
+        public void RefreshConditions()
         {
-            if (current != LearningStageId.None) { OpenExit(current); }
-            SetEntranceAvailable(LearningStageId.Exit, true);
-        }
-
-        public void CloseAll()
-        {
-            foreach (FactoryLayoutData.StageSpace room in _layoutData.StageSpaces)
+            foreach (FactoryShutterController shutter in _shutters)
             {
-                room.EntryDoor.Close();
-                room.ExitDoor.close();
-                if (room.Id != LearningStageId.Exit) { room.ExitDoor.Close(); }
+                RefreshShutter(shutter, _areaController.IsNearShutter(shutter.Id));
             }
         }
+
+        private void RefreshShutter(FactoryShutterController shutter, bool isNear)
+        {
+            shutter.SetNear(isNear);
+            if (!isNear)
+            {
+                shutter.Close();
+                return;
+            }
+            if (_canOpen(shutter.Id)) { shutter.Open(); }
+        }
+
+        private FactoryShutterController GetShutter(FactoryShutterId id) =>
+            Array.Find(_shutters, shutter => shutter.Id == id);
     }
 }

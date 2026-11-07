@@ -13726,10 +13726,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 1
   _panel: {fileID: 720001460}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720001573
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13826,10 +13826,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 2
   _panel: {fileID: 720001621}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720001734
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13926,10 +13926,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 3
   _panel: {fileID: 720001782}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720001895
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14026,10 +14026,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 5
   _panel: {fileID: 720001943}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720002056
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14126,10 +14126,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 6
   _panel: {fileID: 720002104}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720002217
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14226,10 +14226,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 7
   _panel: {fileID: 720002265}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720002378
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14326,10 +14326,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 8
   _panel: {fileID: 720002426}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720002539
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14426,10 +14426,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 9
   _panel: {fileID: 720002587}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720002700
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14526,10 +14526,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 10
   _panel: {fileID: 720002748}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &720003479
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -14723,6 +14723,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 885e045bc6ef404f8360bab4456d034d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _shutters:
+  - _id: 1
+    _frame: {fileID: 720001407}
+    _approachDistance: 2
+  - _id: 2
+    _frame: {fileID: 720001568}
+    _approachDistance: 2
+  - _id: 3
+    _frame: {fileID: 720001729}
+    _approachDistance: 2
+  - _id: 4
+    _frame: {fileID: 970000001}
+    _approachDistance: 2
+  - _id: 5
+    _frame: {fileID: 720001890}
+    _approachDistance: 2
+  - _id: 6
+    _frame: {fileID: 720002051}
+    _approachDistance: 2
+  - _id: 7
+    _frame: {fileID: 720002212}
+    _approachDistance: 2
+  - _id: 8
+    _frame: {fileID: 720002373}
+    _approachDistance: 2
+  - _id: 9
+    _frame: {fileID: 720002534}
+    _approachDistance: 2
+  - _id: 10
+    _frame: {fileID: 720002695}
+    _approachDistance: 2
   _areas:
   - _id: 1
     _stage: 5
@@ -14809,33 +14840,33 @@ MonoBehaviour:
   - _id: 5
     _route: {fileID: 720002855}
     _contentAnchor: {fileID: 720003482}
-    _entryDoor: {fileID: 720001566}
-    _exitDoor: {fileID: 720001727}
+    _entryShutter: 1
+    _exitShutter: 2
   - _id: 6
     _route: {fileID: 720002925}
     _contentAnchor: {fileID: 720003488}
-    _entryDoor: {fileID: 720001888}
-    _exitDoor: {fileID: 970000108}
+    _entryShutter: 3
+    _exitShutter: 4
   - _id: 7
     _route: {fileID: 970000115}
     _contentAnchor: {fileID: 970000110}
-    _entryDoor: {fileID: 970000108}
-    _exitDoor: {fileID: 720002049}
+    _entryShutter: 4
+    _exitShutter: 5
   - _id: 2
     _route: {fileID: 720003035}
     _contentAnchor: {fileID: 720003494}
-    _entryDoor: {fileID: 720002210}
-    _exitDoor: {fileID: 720002371}
+    _entryShutter: 6
+    _exitShutter: 7
   - _id: 3
     _route: {fileID: 720003209}
     _contentAnchor: {fileID: 720003500}
-    _entryDoor: {fileID: 720002532}
-    _exitDoor: {fileID: 720002693}
+    _entryShutter: 8
+    _exitShutter: 9
   - _id: 4
     _route: {fileID: 720003311}
     _contentAnchor: {fileID: 720003506}
-    _entryDoor: {fileID: 720002854}
-    _exitDoor: {fileID: 0}
+    _entryShutter: 10
+    _exitShutter: 0
 --- !u!33 &720003519
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -26674,10 +26705,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1dd8e937ab834dbf1791b6d0152457e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _id: 4
   _panel: {fileID: 970000092}
   _travel: 3.3
   _duration: 1.6
-  _doorHalfWidth: 1.6
 --- !u!65 &970000113
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -42019,7 +42050,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af5d5e598e4b4733924b9c95cef142b0, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactoryShuttersManager
-  _layoutData: {fileID: 720003516}
+  _areaController: {fileID: 980100011}
+  _shutters:
+  - {fileID: 720001566}
+  - {fileID: 720001727}
+  - {fileID: 720001888}
+  - {fileID: 970000108}
+  - {fileID: 720002049}
+  - {fileID: 720002210}
+  - {fileID: 720002371}
+  - {fileID: 720002532}
+  - {fileID: 720002693}
+  - {fileID: 720002854}
 --- !u!1 &980200000
 GameObject:
   m_ObjectHideFlags: 0

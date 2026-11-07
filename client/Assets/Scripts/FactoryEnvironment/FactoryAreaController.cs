@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 
@@ -6,16 +7,32 @@ namespace FactoryEnvironment
 {
     public sealed class FactoryAreaController : MonoBehaviour
     {
+        private sealed class ShutterPresence
+        {
+            public FactoryLayoutData.Shutter Data;
+            public bool IsNear;
+            public bool ReportedNear;
+        }
+
         private FactoryLayoutData _layoutData;
         private Transform _player;
+        private readonly Dictionary<FactoryShutterId, ShutterPresence> _shutters =
+            new Dictionary<FactoryShutterId, ShutterPresence>();
 
         public FactoryLayoutData.Area CurrentArea { get; private set; }
         public event Action<FactoryLayoutData.Area> AreaChanged;
+        public event Action<FactoryShutterId, bool> ShutterProximityChanged;
+
+        public bool IsNearShutter(FactoryShutterId id) => _shutters[id].IsNear;
 
         private void Awake()
         {
             _layoutData = GetComponent<FactoryLayoutData>();
             CurrentArea = _layoutData.GetArea(FactoryAreaId.None);
+            foreach (FactoryLayoutData.Shutter data in _layoutData.Shutters)
+            {
+                _shutters.Add(data.Id, new ShutterPresence { Data = data });
+            }
         }
 
         private void Start()
@@ -26,6 +43,13 @@ namespace FactoryEnvironment
         private void LateUpdate()
         {
             Vector3 position = _player.position;
+            UpdateShutterPresence(position);
+            UpdateArea(position);
+            PublishShutterChanges();
+        }
+
+        private void UpdateArea(Vector3 position)
+        {
             FactoryLayoutData.Area selectedArea = _layoutData.GetArea(FactoryAreaId.None);
             foreach (FactoryLayoutData.Area area in _layoutData.Areas)
             {
@@ -40,6 +64,29 @@ namespace FactoryEnvironment
             if (CurrentArea == selectedArea) { return; }
             CurrentArea = selectedArea;
             AreaChanged?.Invoke(CurrentArea);
+        }
+
+        private void UpdateShutterPresence(Vector3 position)
+        {
+            foreach (ShutterPresence presence in _shutters.Values)
+            {
+                FactoryLayoutData.Shutter data = presence.Data;
+                Vector3 offset = position - data.Frame.position;
+                presence.IsNear = offset.x * offset.x + offset.z * offset.z
+                    <= data.ApproachDistance * data.ApproachDistance;
+            }
+        }
+
+        private void PublishShutterChanges()
+        {
+            foreach (ShutterPresence presence in _shutters.Values)
+            {
+                if (presence.ReportedNear != presence.IsNear)
+                {
+                    presence.ReportedNear = presence.IsNear;
+                    ShutterProximityChanged?.Invoke(presence.Data.Id, presence.IsNear);
+                }
+            }
         }
 
         private static bool ContainsVolume(FactoryLayoutData.Area area, Vector3 position) =>

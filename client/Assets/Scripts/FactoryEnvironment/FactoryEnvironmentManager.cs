@@ -20,9 +20,10 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryRouteGuideController _routeGuide;
         [SerializeField] private FactoryShuttersManager _shutters;
         private ParchmentManager _parchment;
-        private LearningStageId _preparedStage;
-        private LearningStageId _preparationSource;
+        private LearningStageId _routeDestination;
+        private LearningStageId _routeSource;
         private LearningStageId _travelStage;
+        private readonly HashSet<FactoryShutterId> _permittedShutters = new HashSet<FactoryShutterId>();
         private readonly Dictionary<LearningStageId, bool> _availability = new Dictionary<LearningStageId, bool>();
 
         public LearningStageId CurrentStage { get; private set; }
@@ -35,6 +36,7 @@ namespace FactoryEnvironment
         private void Awake()
         {
             _parchment = FindFirstObjectByType<ParchmentManager>();
+            _shutters.Configure(CanOpenShutter);
         }
 
         private void OnEnable()
@@ -65,12 +67,11 @@ namespace FactoryEnvironment
         {
             if (!_layoutData.TryGetAdjacentAreas(area, out var previous, out var next)) { return; }
             LearningStageId stage = area.Stage ?? LearningStageId.None;
-            if (stage != LearningStageId.None && stage != CurrentStage) { HandleStageEntryStarted(stage); }
             CurrentStage = stage;
-            _preparationSource = area.Stage ?? previous?.Stage ?? LearningStageId.None;
-            _preparedStage = next?.Stage ?? LearningStageId.None;
+            _routeSource = area.Stage ?? previous?.Stage ?? LearningStageId.None;
+            _routeDestination = next?.Stage ?? LearningStageId.None;
             StageChanged?.Invoke(stage);
-            RefreshPreparedEntrance();
+            RefreshShutterConditions();
         }
 
         private void HandleLoadingStateChanged()
@@ -78,7 +79,7 @@ namespace FactoryEnvironment
             if (_sceneLoader.IsBusy) { return; }
             if (_travelStage != LearningStageId.None)
                 FinishTravel(_travelStage, _sceneLoader.IsLoaded(_travelStage));
-            RefreshPreparedEntrance();
+            RefreshShutterConditions();
         }
 
         private bool IsStageAvailable(LearningStageId stage) =>
@@ -87,45 +88,61 @@ namespace FactoryEnvironment
         private void HandleStageAvailabilityChanged(LearningStageId stage, bool available)
         {
             _availability[stage] = available;
-            if (stage == _preparationSource) { RefreshPreparedEntrance(); }
+            RefreshShutterConditions();
         }
 
-        private void HandleParchmentCollected(int documentId) => RefreshPreparedEntrance();
+        private void HandleParchmentCollected(int documentId) => RefreshShutterConditions();
 
-        private void RefreshPreparedEntrance()
+        private void RefreshShutterConditions()
         {
-            if (_preparationSource == LearningStageId.None || _preparationSource == LearningStageId.Exit) { return; }
-            if (_sceneLoader.IsBusy || !_sceneLoader.IsLoaded(_preparationSource)) { return; }
-            if (_preparedStage != LearningStageId.None && _preparedStage != LearningStageId.Exit
-                && !_sceneLoader.IsLoaded(_preparedStage)) { return; }
-            if (CurrentStage != LearningStageId.None && _preparationSource != CurrentStage) { return; }
-            if (!IsStageAvailable(_preparationSource))
-            {
-                if (_preparedStage != LearningStageId.None) { _shutters.SetEntranceAvailable(_preparedStage, false); }
-                return;
-            }
-            if (_preparedStage == LearningStageId.None)
-            {
-                _shutters.OpenExit(_preparationSource);
-                return;
-            }
-            if (_preparedStage == LearningStageId.Exit)
-            {
-                _shutters.AllowFactoryExit(_preparationSource);
-                _routeGuide.SetDestination(LearningStageId.Exit);
-                return;
-            }
-            _shutters.OpenPassage(_preparationSource, _preparedStage);
-            _routeGuide.SetDestination(_preparedStage);
-            _shutters.SetEntranceAvailable(_preparedStage,
-                _parchment.HasCollectedAll(LearningStageCatalog.Get(_preparedStage).EntranceParchmentIds));
+            _shutters.RefreshConditions();
+            RefreshRouteGuide();
         }
 
-        private void HandleStageEntryStarted(LearningStageId stage)
+        private bool CanOpenShutter(FactoryShutterId id)
         {
-            _preparationSource = LearningStageId.None;
-            _preparedStage = LearningStageId.None;
-            _shutters.SetEntranceAvailable(stage, false);
+            if (_sceneLoader.IsBusy) { return false; }
+            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
+            {
+                if (space.EntryShutter != id && space.ExitShutter != id) { continue; }
+                // The ending is loaded only after entering the rear court.
+                if (space.Id != LearningStageId.Exit && !_sceneLoader.IsLoaded(space.Id)) { return false; }
+            }
+            if (_permittedShutters.Contains(id)) { return true; }
+
+            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
+            {
+                if (space.ExitShutter == id && !IsStageAvailable(space.Id)) { return false; }
+                if (space.EntryShutter == id && !CanEnterStage(space.Id)) { return false; }
+            }
+            // Keep an earned passage permission across closing, resets and scene reloads.
+            _permittedShutters.Add(id);
+            return true;
+        }
+
+        private bool CanEnterStage(LearningStageId stage)
+        {
+            LearningStageId previous = LearningStageId.None;
+            foreach (LearningStageDefinition definition in LearningStageCatalog.Stages)
+            {
+                if (definition.Id == stage)
+                {
+                    return (previous == LearningStageId.None || IsStageAvailable(previous))
+                        && _parchment.HasCollectedAll(definition.EntranceParchmentIds);
+                }
+                previous = definition.Id;
+            }
+            // Exit follows the last learning stage and has no entrance parchment.
+            return stage == LearningStageId.Exit && IsStageAvailable(previous);
+        }
+
+        private void RefreshRouteGuide()
+        {
+            if (_sceneLoader.IsBusy || _routeSource == LearningStageId.None
+                || _routeSource == LearningStageId.Exit || _routeDestination == LearningStageId.None) { return; }
+            if (!_sceneLoader.IsLoaded(_routeSource) || !IsStageAvailable(_routeSource)) { return; }
+            if (_routeDestination != LearningStageId.Exit && !_sceneLoader.IsLoaded(_routeDestination)) { return; }
+            _routeGuide.SetDestination(_routeDestination);
         }
 
         private void HandleStageMoveRequested(LearningStageId stage)
@@ -144,25 +161,14 @@ namespace FactoryEnvironment
         private void FinishTravel(LearningStageId stage, bool succeeded)
         {
             _travelStage = LearningStageId.None;
-            if (succeeded)
-            {
-                _shutters.CloseAll();
-                RefreshPreparedEntrance();
-            }
             TravelFinished?.Invoke(stage, succeeded);
         }
 
         private void HandleLoadFailed(LearningStageId stage, string message)
         {
             if (_travelStage == stage) { FinishTravel(stage, false); }
-            if (stage == LearningStageId.Tutorial)
+            if (stage == LearningStageId.Tutorial || stage == LearningStageId.Exit)
             {
-                _shutters.SetEntranceAvailable(stage, true);
-                _routeGuide.SetDestination(stage);
-            }
-            else if (stage == LearningStageId.Exit)
-            {
-                _shutters.SetEntranceAvailable(stage, true);
                 _routeGuide.SetDestination(stage);
             }
         }

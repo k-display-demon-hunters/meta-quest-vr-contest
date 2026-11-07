@@ -43,7 +43,7 @@
 2. 기존 슬롯의 블록을 잡으면 슬롯 점유와 모델의 해당 레이어를 제거한다. 나머지 슬롯은 이동하지 않는다.
 3. 놓을 때 컨베이어 로컬 좌표와 슬롯의 `Placement Half Extents`로 위치를 판단한다. 유효한 빈 슬롯이면 점유·모델 데이터를 등록하고 블록을 앵커에 정렬한다.
 4. 슬롯 밖·점유 슬롯에 놓거나 잡기가 취소되면 블록을 등록 해제하고 파괴한다. 상호작용 종료 시 아직 손에 들린 임시 블록도 정리한다.
-5. 실행 정의를 만들 때 빈 슬롯을 건너뛰고 슬롯 순서대로 레이어를 복사한 뒤 고정 Output(Dense 10·Softmax)을 붙인다.
+5. 실행 정의를 만들 때 빈 슬롯을 건너뛰고 슬롯 순서대로 레이어를 복사한 뒤 고정 Output(Dense 4·Softmax)을 붙인다.
 
 설정 입력은 Builder 내부에서 잡기 여부와 오른손 레이 적중을 확인한다. 선택한 슬롯의 `Popup Anchor` 위치를 Settings 모듈에 전달하며, 팝업은 하나만 열린다. 값 변경은 `LayerDefinition.SetFilters/SetKernelSize/SetPoolSize/SetUnits/SetActivation`을 사용한다. 삭제 요청은 씬 Manager를 거쳐 Builder에 돌아오므로 Settings가 실제 블록이나 컨베이어를 직접 조작하지 않는다.
 
@@ -51,7 +51,7 @@
 
 시작 버튼은 씬이 활성 상태이고 실행 중이 아니며 블록을 잡고 있지 않을 때 Execution에 요청한다. Execution은 Dataset 준비 오류를 먼저 처리하고, 현재 모델의 값 스냅샷과 원래 슬롯 대응표를 만든 뒤 구조를 검사한다. 첫 오류가 있으면 엔진을 실행하지 않고 `ValidationIssue.SlotIndex`와 메시지를 전달한다. 모델 전체 오류에는 임의의 슬롯을 지정하지 않는다.
 
-현재 검사는 Flatten 이전의 공간 레이어, 명시적 Flatten 한 번, Flatten 이후 Dense, 현재 입력 크기에 맞는 커널·풀 크기, 최종 Dense 10·Softmax를 확인한다. 첫 레이어를 Conv2D로 강제하지 않으므로 `Flatten → Output`도 구조상 허용한다. Dense 앞에 Flatten을 자동으로 추가하지 않는다. 빈 모델은 Flatten 누락으로 거절한다. 개별 값 범위는 `LayerLimits`가 관리하고, 모델 전체 연산량·파라미터 수의 별도 상한은 없다.
+현재 검사는 Flatten 이전의 공간 레이어, 명시적 Flatten 한 번, Flatten 이후 Dense, 현재 입력 크기에 맞는 커널·풀 크기, 최종 Dense 4·Softmax를 확인한다. 첫 레이어를 Conv2D로 강제하지 않으므로 `Flatten → Output`도 구조상 허용한다. Dense 앞에 Flatten을 자동으로 추가하지 않는다. 빈 모델은 Flatten 누락으로 거절한다. 개별 값 범위는 `LayerLimits`가 관리하고, 모델 전체 연산량·파라미터 수의 별도 상한은 없다.
 
 `ModelExecutionManager`는 같은 GameObject의 Controller를 `Awake()`에서 연결하고, 최초 유효한 학습 요청 때 `CnnEngineManager`를 만든다. 엔진 Manager가 재사용하는 `CnnTrainingSession`을 소유한다. 학습 설정은 `Execution/CnnTrainingSettings.cs`의 코드 상수이며 현재 10 epoch, batch 16, learning rate 0.001, seed 42다.
 
@@ -61,20 +61,9 @@
 
 ## 추론과 공장 완료 조건
 
-Dataset 모듈이 텍스처 이름 `mnist-test-N`을 내장 test 데이터의 원본 인덱스와 연결한다. ControlPanel은 `DatasetSample` 목록으로 샘플을 표시하고 선택한 ID만 추론 요청으로 전달한다. Execution이 해당 픽셀을 조회해 엔진에 전달하며 엔진은 ID를 결과 식별값으로만 사용한다. 화면은 요청한 ID와 결과 ID를 비교하여 예측 숫자와 10개 출력을 표시한다.
+Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍스처와 `DatasetSample` 목록을 만든다. `mnist-color-test-N`의 N은 원본 MNIST training 인덱스이며 PNG 이름에 의존하지 않는다. ControlPanel은 기존 10개 샘플 버튼과 페이지 이동으로 120장을 표시하고 선택한 ID를 추론 요청으로 전달한다. Execution이 같은 레코드의 정규화된 RGB 픽셀을 엔진에 전달한다. 화면은 요청·결과 ID를 비교하고 숫자 0~3의 확률 네 개를 표시한다. 씬 인스턴스에서 나머지 확률 행은 비활성화한다.
 
-| 정답 | 이미지 이름 |
-| --- | --- |
-| 0 | `mnist-test-3` |
-| 1 | `mnist-test-2` |
-| 2 | `mnist-test-1` |
-| 3 | `mnist-test-18` |
-| 4 | `mnist-test-4` |
-| 5 | `mnist-test-8` |
-| 6 | `mnist-test-11` |
-| 7 | `mnist-test-0` |
-| 8 | `mnist-test-61` |
-| 9 | `mnist-test-7` |
+입력은 28×28×3, 출력은 Dense 4·Softmax다. Conv 시각화는 전달받은 입력 채널 수를 사용하므로 첫 Conv의 필터마다 RGB 세 커널 평면을 표시한다. 3×3 필터 한 개는 가중치 구체 27개이며 편향은 이 구체 개수에 포함하지 않는다.
 
 공장 흐름은 `ReadyForFactoryExit`를 읽는다. 이 값은 `_trainingCompleted && !_execution.IsBusy`이며, 학습 완료 결과를 화면에 전달한 뒤 완료 상태를 설정한다. 새 학습의 `Training` 상태와 씬 비활성화 시 초기화한다. 현재 씬에는 단계 건너뛰기로 출구를 허용하는 경로가 없다. 추론 완료나 특정 정확도 달성은 출구 조건이 아니다.
 
@@ -88,7 +77,7 @@ Dataset 모듈이 텍스처 이름 `mnist-test-N`을 내장 test 데이터의 �
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
 | `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 배치는 프리팹에 저장한다. |
-| `ModelDatasetController` | `_trainingDataset`, `_testDataset`, `_sampleImages`로 바이너리 에셋과 샘플 텍스처 연결 |
+| `ModelDatasetController` | `_trainingDataset`, `_testDataset`으로 RGB 바이너리 연결. 평가 픽셀에서 샘플 텍스처 생성 |
 | `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 모델 씬은 `ModelXRInputController`를 통해 레이 적중을 조회한다. |
 
 ## 확인 범위

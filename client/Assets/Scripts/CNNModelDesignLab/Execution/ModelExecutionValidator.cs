@@ -108,7 +108,7 @@ namespace ModelDesignScene.Execution
             if (final.Kind != LayerKind.Dense || final.Units != LayerLimits.OutputClassCount ||
                 final.Activation != CnnActivation.Softmax)
             {
-                throw new ModelExecutionValidationException("The output must be Dense(10, Softmax).");
+                throw new ModelExecutionValidationException($"The output must be Dense({LayerLimits.OutputClassCount}, Softmax).");
             }
         }
     }

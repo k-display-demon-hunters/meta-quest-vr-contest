@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using ModelDesignScene.Model;
 using ModelDesignScene.Execution.Engine;
 
 namespace ModelDesignScene.Dataset
@@ -9,14 +10,23 @@ namespace ModelDesignScene.Dataset
     // Scene adapter: the engine only receives normalized arrays and integer labels.
     internal sealed class MnistDataset
     {
-        private const int ImageSize = 28 * 28;
+        private const int ImageSize = LayerLimits.InputHeight * LayerLimits.InputWidth * LayerLimits.InputChannels;
         private const uint Magic = 0x544E4D43; // CMNT in little-endian byte order.
-        private const string TestImagePrefix = "mnist-test-";
+        private const string TestImagePrefix = "mnist-color-test-";
         private readonly Dictionary<int, int> _testPositions;
         private readonly float[] _testImages;
         private readonly int[] _testLabels;
 
         public TrainingData Data { get; }
+
+        public IEnumerable<string> TestImageIds
+        {
+            get
+            {
+                foreach (int index in _testPositions.Keys)
+                    yield return TestImagePrefix + index.ToString(CultureInfo.InvariantCulture);
+            }
+        }
 
         private MnistDataset(TrainingData data, DecodedDataset test)
         {
@@ -28,11 +38,16 @@ namespace ModelDesignScene.Dataset
 
         public static MnistDataset Load(byte[] trainingBytes, byte[] testBytes)
         {
-            DecodedDataset source = Decode(trainingBytes, expectedSplit: 0);
-            DecodedDataset test = Decode(testBytes, expectedSplit: 1);
+            DecodedDataset source = Decode(trainingBytes);
+            DecodedDataset test = Decode(testBytes);
+            foreach (int index in test.Positions.Keys)
+            {
+                if (source.Positions.ContainsKey(index))
+                    throw new InvalidDataException("학습·평가 데이터의 원본 이미지가 중복됩니다.");
+            }
             List<int> trainingRows = new List<int>();
             List<int> validationRows = new List<int>();
-            int[] classCounts = new int[10];
+            int[] classCounts = new int[LayerLimits.OutputClassCount];
             // Every tenth example of each class is held out, independent of shuffle seed.
             for (int row = 0; row < source.Labels.Length; row++)
             {
@@ -97,7 +112,7 @@ namespace ModelDesignScene.Dataset
             return new TrainingDataset(images, labels, ImageSize);
         }
 
-        private static DecodedDataset Decode(byte[] bytes, int expectedSplit)
+        private static DecodedDataset Decode(byte[] bytes)
         {
             const int HeaderSize = 24;
             const int RecordSize = sizeof(int) + sizeof(byte) + ImageSize;
@@ -108,14 +123,15 @@ namespace ModelDesignScene.Dataset
             using (MemoryStream stream = new MemoryStream(bytes, false))
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                if (reader.ReadUInt32() != Magic || reader.ReadInt32() != 1
-                    || reader.ReadInt32() != expectedSplit
-                    || reader.ReadInt32() != 28 || reader.ReadInt32() != 28)
+                if (reader.ReadUInt32() != Magic || reader.ReadInt32() != 2
+                    || reader.ReadInt32() != LayerLimits.InputHeight
+                    || reader.ReadInt32() != LayerLimits.InputWidth
+                    || reader.ReadInt32() != LayerLimits.InputChannels)
                 {
                     throw new InvalidDataException("지원하지 않는 MNIST 데이터 형식입니다.");
                 }
                 int count = reader.ReadInt32();
-                int maxCount = expectedSplit == 0 ? 60000 : 10000;
+                const int maxCount = 60000;
                 if (count < 1 || count > maxCount || bytes.Length != HeaderSize + (long)count * RecordSize)
                 {
                     throw new InvalidDataException("MNIST 데이터 개수 또는 파일 길이가 올바르지 않습니다.");
@@ -125,7 +141,7 @@ namespace ModelDesignScene.Dataset
                 {
                     int sourceIndex = reader.ReadInt32();
                     int label = reader.ReadByte();
-                    if (sourceIndex < 0 || sourceIndex >= maxCount || label > 9
+                    if (sourceIndex < 0 || sourceIndex >= maxCount || label >= LayerLimits.OutputClassCount
                         || data.Positions.ContainsKey(sourceIndex))
                     {
                         throw new InvalidDataException("MNIST 원본 인덱스 또는 정답이 올바르지 않습니다.");

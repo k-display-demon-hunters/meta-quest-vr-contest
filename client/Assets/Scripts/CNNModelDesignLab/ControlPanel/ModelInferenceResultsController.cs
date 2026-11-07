@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using ModelDesignScene.Dataset;
+using ModelDesignScene.Model;
 using ModelDesignScene.Execution.Engine;
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,7 +12,7 @@ namespace ModelDesignScene.ControlPanel
 {
     public sealed class ModelInferenceResultsController : MonoBehaviour
     {
-        private const int ClassCount = 10;
+        private const int ClassCount = LayerLimits.OutputClassCount;
 
         [SerializeField] private Button[] _sampleButtons = Array.Empty<Button>();
         [SerializeField] private RawImage[] _sampleThumbnails = Array.Empty<RawImage>();
@@ -113,7 +114,7 @@ namespace ModelDesignScene.ControlPanel
             }
             if (result.Output == null || result.Output.Count != ClassCount)
             {
-                RejectPrediction("숫자 0~9의 예측 결과를 모두 받지 못했습니다.");
+                RejectPrediction("숫자 0~3의 예측 결과를 모두 받지 못했습니다.");
                 return false;
             }
             // Validate the complete response before changing any chart or prediction label.

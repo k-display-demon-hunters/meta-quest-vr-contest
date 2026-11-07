@@ -37,7 +37,7 @@ normalized = images.astype(np.float32) / 255.0
 python mnist-color-data/export_bytes.py
 ```
 
-세 `.bytes` 파일은 Unity에서 TextAsset의 `bytes`로 접근할 수 있는 일반 바이너리 파일이다. 기존 CMNT v1의 레코드 방식(원본 인덱스·정답·픽셀)을 유지하고, RGB 데이터를 표현하는 **CMNT v2** 헤더를 사용한다. 현재 프로젝트의 v1 전용 로더는 이 파일을 읽을 수 없으며, Unity 코드 수정·에셋 연결은 사용자가 별도로 진행한다.
+세 `.bytes` 파일은 Unity에서 TextAsset의 `bytes`로 접근할 수 있는 일반 바이너리 파일이다. 기존 CMNT v1의 레코드 방식(원본 인덱스·정답·픽셀)을 유지하고, RGB 데이터를 표현하는 **CMNT v2** 헤더를 사용한다. 현재 ModelDesign 로더는 v2 RGB 형식을 읽는다. training/test 파일은 기존 Unity 런타임 데이터 경로에 적용되며 입력 3채널·출력 4클래스로 연결한다. 런타임 상세는 `../docs/CNN_TRAINING.md`를 참고한다.
 
 모든 int32는 little-endian이다. 헤더는 24바이트이며 split 필드는 없다.
 
@@ -64,7 +64,7 @@ python mnist-color-data/export_bytes.py
 
 `export_bytes.py`는 시드 `20261108`의 NumPy default_rng(PCG64)로 숫자별 행을 독립적으로 섞고, 앞 120개는 training, 뒤 30개는 test에 배정한다. 저장할 때는 원본 행 순서로 정렬한다. 두 파일의 원본 인덱스는 겹치지 않고 합치면 전체 600장이 된다. 재합성·픽셀 변경 없이 기존 RGB와 정답을 그대로 기록한다. 통합 `.npy`와 `MnistColor.bytes`는 보존한다.
 
-별도 validation 파일은 만들지 않는다. 현재 Unity 로더의 숫자별 매 10번째 validation 분리 정책을 나중에 RGB·4클래스 로더에도 유지하면, training 파일의 480장은 실제 학습 432장(숫자별 108), validation 48장(숫자별 12)이 된다. test 120장은 이 과정과 별개다. 현재 로더의 v1·흑백·10클래스 제한은 파일 이름만 바꿔서는 해결되지 않으며 사용자 측 코드 변경이 필요하다.
+별도 validation 파일은 만들지 않는다. Unity RGB·4클래스 로더는 숫자별 매 10번째 validation 분리 정책을 유지하므로, training 파일의 480장은 실제 학습 432장(숫자별 108), validation 48장(숫자별 12)이 된다. test 120장은 이 과정과 별개다. 현재 로더는 v2·RGB·4클래스 기준으로 동작한다. 이 전환의 Unity 실행·컴파일·테스트·빌드는 아직 수행하지 않았다.
 
 ## 원본과 선택
 

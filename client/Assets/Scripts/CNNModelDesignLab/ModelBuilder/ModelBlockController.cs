@@ -113,10 +113,10 @@ namespace ModelDesignScene.ModelBuilder
                     _label.text = "FLATTEN\nImage to vector";
                     break;
                 case LayerType.Input:
-                    _label.text = "INPUT\n28 x 28 x 1";
+                    _label.text = $"INPUT\n{LayerLimits.InputHeight} x {LayerLimits.InputWidth} x {LayerLimits.InputChannels} / RGB";
                     break;
                 case LayerType.Output:
-                    _label.text = "OUTPUT\n10 classes / Softmax";
+                    _label.text = $"OUTPUT\n{Layer.Units} classes / Softmax";
                     break;
             }
         }

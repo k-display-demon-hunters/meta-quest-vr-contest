@@ -16,7 +16,7 @@ namespace ModelDesignScene.Execution.Engine
     {
         private readonly List<ICnnLayer> _layers = new List<ICnnLayer>();
         private readonly DenseLayer _classifier;
-        private readonly float[] _lossGradient = new float[10];
+        private readonly float[] _lossGradient;
         internal int InputSize { get; }
         internal float[] Output => _classifier.Output;
         internal float[] Logits => _classifier.Logits;
@@ -56,6 +56,7 @@ namespace ModelDesignScene.Execution.Engine
                 }
             }
             _classifier = (DenseLayer)_layers[_layers.Count - 1];
+            _lossGradient = new float[_classifier.Output.Length];
         }
 
         internal void Forward(float[] input, CancellationToken cancellation)

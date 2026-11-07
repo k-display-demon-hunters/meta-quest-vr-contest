@@ -1,0 +1,7 @@
+images: (600, 28, 28, 3), uint8, range 43..255
+labels: (600,), uint8
+class counts: [150, 150, 150, 150]
+unique source indices / original pixel arrays: 600 / 600
+source records consumed: 1597
+array bytes: images=1411200, labels=600
+seed: 20261107

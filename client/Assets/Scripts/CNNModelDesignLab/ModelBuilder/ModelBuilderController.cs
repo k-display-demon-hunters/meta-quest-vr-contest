@@ -94,20 +94,61 @@ namespace ModelDesignScene.ModelBuilder
                 }
             }
             int inputChannels = LayerLimits.InputChannels;
+            int inputHeight = LayerLimits.InputHeight;
+            int inputWidth = LayerLimits.InputWidth;
+            int inputElements = 0;
+            List<Vector3> connections = new List<Vector3>();
+            ModelBlockController previousBlock = _inputBlock;
             for (int slot = 0; slot < _slots.Count; slot++)
             {
                 ModelBlockController block = _slots[slot];
                 if (block == null) continue;
-                block.RefreshLabel(inputChannels);
-                if (block.Layer.Type == LayerType.Conv2D && inputChannels > 0)
+                block.RefreshLabel(inputChannels, inputHeight, inputWidth, inputElements);
+                connections.Add(previousBlock.FlowEnd);
+                connections.Add(block.FlowStart);
+                previousBlock = block;
+                if (block.Layer.Type == LayerType.Conv2D)
                 {
-                    inputChannels = block.Layer.Filters;
+                    inputElements = 0;
+                    if (inputChannels > 0)
+                    {
+                        inputHeight = Mathf.Max(0, inputHeight - block.Layer.Height + 1);
+                        inputWidth = Mathf.Max(0, inputWidth - block.Layer.Width + 1);
+                        inputChannels = inputHeight > 0 && inputWidth > 0 ? block.Layer.Filters : 0;
+                    }
                 }
-                else if (block.Layer.Type == LayerType.Flatten || block.Layer.Type == LayerType.Dense)
+                else if (block.Layer.Type == LayerType.MaxPooling2D)
                 {
+                    inputElements = 0;
+                    if (inputChannels > 0)
+                    {
+                        inputHeight /= block.Layer.Height;
+                        inputWidth /= block.Layer.Width;
+                        if (inputHeight == 0 || inputWidth == 0)
+                        {
+                            inputChannels = 0;
+                        }
+                    }
+                }
+                else if (block.Layer.Type == LayerType.Flatten)
+                {
+                    inputElements = inputHeight * inputWidth * inputChannels;
                     inputChannels = 0;
                 }
+                else if (block.Layer.Type == LayerType.Dense)
+                {
+                    inputElements = inputElements > 0 ? block.Layer.Units : 0;
+                    inputChannels = 0;
+                }
+                if (inputChannels == 0)
+                {
+                    inputHeight = 0;
+                    inputWidth = 0;
+                }
             }
+            connections.Add(previousBlock.FlowEnd);
+            connections.Add(_outputBlock.FlowStart);
+            _conveyor.RefreshConnections(connections);
         }
 
         internal void DeleteLayer(LayerDefinition layer)

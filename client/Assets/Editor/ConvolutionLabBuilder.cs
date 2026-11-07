@@ -22,6 +22,7 @@ namespace CNNConvolution.Editor
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             SceneManager.SetActiveScene(scene);
             GameObject root = new GameObject("CNN Convolution Lab");
+            root.transform.localScale = Vector3.one * 2f;
             CNNConvolutionLabManager manager = root.AddComponent<CNNConvolutionLabManager>();
             GameObject content = new GameObject("Floating pixel values", typeof(RectTransform),
                 typeof(Canvas), typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
@@ -38,9 +39,13 @@ namespace CNNConvolution.Editor
             GameObject blocks = (GameObject)PrefabUtility.InstantiatePrefab(
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/ConvolutionWorkbench.prefab"), content.transform);
             RgbVolumeController spatial = blocks.GetComponent<RgbVolumeController>();
+            GameObject inspectionObject = (GameObject)PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/FeatureInspectionDesk.prefab"), content.transform);
+            FeatureInspectionManager inspection = inspectionObject.GetComponent<FeatureInspectionManager>();
             ConvolutionLessonManager lesson = root.AddComponent<ConvolutionLessonManager>();
             SerializedObject managerFields = new SerializedObject(manager);
             managerFields.FindProperty("_lesson").objectReferenceValue = lesson;
+            managerFields.FindProperty("_inspection").objectReferenceValue = inspection;
             managerFields.ApplyModifiedPropertiesWithoutUndo();
             SerializedObject fields = new SerializedObject(lesson);
             fields.FindProperty("_ui").objectReferenceValue = ui;

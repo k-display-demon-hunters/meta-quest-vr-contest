@@ -12,6 +12,8 @@ namespace CNNConvolution
         [SerializeField] private GameObject _observationUi;
         [SerializeField] private Text _title, _explanation, _equation, _feedback, _channelSums, _guide;
         [SerializeField] private Text _summary;
+        [SerializeField] private Text[] _summaryOutputs;
+        [SerializeField] private Text _summaryFormula;
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
         [SerializeField] private Button _next, _skip, _return, _restart, _nextObservation, _combine;
@@ -119,6 +121,12 @@ namespace CNNConvolution
             _activeChannel = channel;
             RefreshChannelProgress();
         }
+        public void ResetChannelProgress()
+        {
+            Array.Clear(_completedChannelSums, 0, _completedChannelSums.Length);
+            _activeChannel = -1;
+            RefreshChannelProgress();
+        }
         public void CompleteChannel(int channel, int sum)
         {
             _completedChannelSums[channel] = sum;
@@ -133,13 +141,13 @@ namespace CNNConvolution
                 if (_completedChannelSums[channel].HasValue)
                 {
                     _channelProgress[channel].text = $"{name} 완료 · 합 {_completedChannelSums[channel].Value}";
-                    _channelProgress[channel].color = new Color(1, 0.86f, 0.56f);
-                    _channelProgressBackgrounds[channel].color = new Color(0.22f, 0.18f, 0.10f);
+                    _channelProgress[channel].color = RgbVolumeController.ChannelColor(channel);
+                    _channelProgressBackgrounds[channel].color = new Color(0.08f, 0.12f, 0.14f);
                 }
                 else if (channel == _activeChannel)
                 {
                     _channelProgress[channel].text = name + " · 진행 중";
-                    _channelProgress[channel].color = Color.white;
+                    _channelProgress[channel].color = RgbVolumeController.ChannelColor(channel);
                     _channelProgressBackgrounds[channel].color = new Color(0.22f, 0.29f, 0.33f);
                 }
                 else
@@ -164,6 +172,25 @@ namespace CNNConvolution
                 + $"<size=48><color=#FFDB91>{sums[0]} + {sums[1]} + {sums[2]} + 0 = {sums[0] + sums[1] + sums[2]}</color></size>\n\n"
                 + "세 채널의 계산이 하나의 출력값이 돼요.\n이번 연습의 편향은 0이에요.";
             _nextObservation.GetComponentInChildren<Text>().text = "학습 마치기";
+        }
+        public void ShowOutputSummary(int[] outputs, int[] firstSums)
+        {
+            _exerciseRoot.SetActive(false);
+            _observationUi.SetActive(true);
+            _restart.gameObject.SetActive(false);
+            _combine.gameObject.SetActive(false);
+            _return.gameObject.SetActive(false);
+            _nextObservation.interactable = true;
+            _nextObservation.gameObject.SetActive(true);
+            _summary.text = "<size=48><b>필터가 지나간 자리</b></size>\n"
+                + "입력판 위를 이동하며 출력값 9개를 만들었어요.\n"
+                + "다음은 새로운 6×6 표본으로 필터를 비교해요.";
+            for (int index = 0; index < outputs.Length; index++)
+            {
+                _summaryOutputs[index].text = outputs[index].ToString();
+            }
+            _summaryFormula.text = $"<color=#FF666B>R {firstSums[0]}</color> + <color=#69EDA6>G {firstSums[1]}</color> + <color=#61ADFF>B {firstSums[2]}</color> = {outputs[0]}";
+            _nextObservation.GetComponentInChildren<Text>().text = "특징맵 비교하기";
         }
         public void SetObservationBusy(bool busy) { _nextObservation.interactable = !busy; }
         public void ShowObservationProgress(bool pending, bool busy) { _nextObservation.interactable = !busy; }

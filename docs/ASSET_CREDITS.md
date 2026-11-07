@@ -84,3 +84,10 @@ Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculuss
 | KD HUNTERS 로고 | `client/Assets/Textures/Common/KDHuntersLogo.png`; XRPlayerRig의 Tablet Rear Logo | 사용자가 지정한 `C:/Users/andre/Downloads/KakaoTalk_261031_001735.png`. 원출처 URL 미확인 | 제작자·저작권자·라이선스 미확인. 파일 제공자를 권리자로 추정하지 않음 | 이미지 내용 수정 없음. Codex 보조로 공용 셰이더·재질의 곱셈 혼합을 적용하여 흰 배경이 본체 색을 유지하도록 표시 |
 
 미사용 정리(2026-11-01): GrayscalePhoto.png는 씬·코드 참조가 없어 삭제했다. 원출처·권리자·라이선스는 미확인이다. OpeningBroadcast.png는 내용과 GUID를 유지해 CNNScreenLab 텍스처 폴더로 이동했다.
+
+## ROOM 1-2 연속 체험 폰트 재사용 (2026-11-08)
+
+- 에셋: 기존 `client/Assets/Fonts/NotoSansCJKkr-Regular.otf`.
+- 사용 위치: `ConvolutionWorkbench`의 5×5 입력·3×3 결과와 두 계산판, `PixelCalculationUI`의 고정 3×3 요약, 새 `FeatureInspectionDesk`의 명판·안내·필터 버튼·완료 표시.
+- 원출처·권리자·라이선스: 위 **Noto Sans CJK KR Regular 2.004** 기록의 공식 배포본과 © 2014–2021 Adobe, SIL OFL 1.1을 그대로 따른다. 기존 폰트 파일과 배포 라이선스 고지를 보존한다.
+- 수정: 폰트 원본 수정·복제 없음. Codex AI 보조로 씬 전용 프리팹의 글자 배치·크기·색과 참조를 추가·수정했다.

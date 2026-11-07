@@ -1,8 +1,9 @@
 using System.Collections;
+using UnityEngine;
 
 namespace CNNConvolution
 {
-    // The same short guided exercise is used first for R, then for G.
+    // First R records all nine products before the single channel-sum animation.
     internal sealed class RedCalculationController
     {
         private readonly RgbVolumeController _spatial;
@@ -16,58 +17,30 @@ namespace CNNConvolution
             _calculation = calculation;
             _animation = new CalculationAnimationController(spatial, ui, calculation);
         }
+
         public IEnumerator Run(int channel = 0)
         {
-            string name = channel == 0 ? "R" : "G";
             _ui.BeginChannel(channel);
-            _ui.Title = name + " 채널 · 입력 준비";
-            _ui.Explanation = name + " 층을 Grip으로 잡아 꺼내세요.\n아래의 입력 자동 배치로도 진행할 수 있어요.";
-            _ui.Equation = "";
-            _ui.ChannelSums = "";
-            _ui.Guide = "연습용 값: 0~3\n같은 위치끼리 곱해요.";
-            _ui.Feedback = "";
-            yield return _spatial.PullColour(channel);
-            yield return _spatial.Focus(channel);
-            _ui.Title = name + " 채널 · 필터 배치";
-            _ui.Explanation = "필터 손잡이를 잡아 점선에 놓으세요.\n아래의 필터 자동 배치로도 진행할 수 있어요.";
-            yield return _spatial.WaitForKernel();
-            _ui.Title = name + " 채널 · 곱하고 더하기";
-            _ui.Explanation = "같은 위치끼리 곱하고, 오른쪽 계산판에 기록해요.";
-            _ui.Guide = "";
-            int accumulated = 0;
-            _spatial.BeginGuidedCalculation();
-            _ui.ChannelSums = name + " 지금까지의 합: 0";
-            string notebook = "";
-            for (int i = 0; i < 9; i++)
+            _spatial.ShowSlidingChannel(channel, true);
+            for (int index = 0; index < 9; index++)
             {
-                // Keep only the current row in the compact notebook.
-                if (i % 3 == 0) { notebook = ""; _ui.Guide = ""; }
-                _ui.Title = name + " 채널 · " + (i + 1) + " / 9칸";
-                _ui.Explanation = $"{i / 3 + 1}행 {i % 3 + 1}열 · 같은 위치의 입력과 가중치를 곱해요.";
-                _ui.Equation = "";
-                int product = _calculation.Product(channel, i);
-                _ui.Feedback = _calculation.Weight(channel, i) == 0
-                    ? "0을 곱하므로 결과가 0이 돼요."
-                    : "1을 곱하므로 입력값이 유지돼요.";
-                yield return _animation.MultiplyAndAccumulate(channel, i, accumulated);
-                accumulated += product;
-                string term = $"{_calculation.Input(channel, i)} × {_calculation.Weight(channel, i)} = {_calculation.Product(channel, i)}";
-                notebook += (i % 3 == 0 ? "" : "\n") + term;
-                _ui.Guide = notebook;
-                if (i % 3 == 2)
-                {
-                    _ui.Explanation = i == 8
-                        ? "9칸을 모두 계산했어요.\n합 확인을 눌러 채널의 결과를 정리해요."
-                        : $"{i / 3 + 1}행의 계산이 끝났어요.\n계산 메모를 확인한 뒤 다음 줄로 진행하세요.";
-                    yield return _ui.WaitForNext(i == 8 ? name + " 합 확인" : "다음 줄 계산");
-                }
+                _ui.Title = $"R · {index / 3 + 1}행 {index % 3 + 1}열 · {index + 1} / 9";
+                _ui.Explanation = "현재 칸의 입력값과 같은 위치의 가중치를 곱해요.";
+                _ui.Guide = "원래 숫자는 제자리에 있고 사본만 이동해요.";
+                _ui.Feedback = _calculation.Weight(channel, index) == 0
+                    ? "0을 곱한 결과도 오른쪽 판에 기록해요."
+                    : "1을 곱하면 입력값이 그대로 남아요.";
+                yield return _animation.MultiplyAndRecord(channel, index);
             }
-            _ui.CompleteChannel(channel, accumulated);
-            _ui.Title = name + " 계산 완료";
-            _ui.Explanation = "가중치가 1인 세 칸만 더하면 돼요.";
-            _ui.Equation = $"{_calculation.Input(channel, 0)} + {_calculation.Input(channel, 4)} + {_calculation.Input(channel, 8)} = {accumulated}";
-            _ui.Feedback = channel == 0 ? "G도 같은 방법으로 연습해요." : "이제 B를 풀 준비가 됐어요.";
-            yield return _ui.WaitForNext(channel == 0 ? "G 시작" : "학습 정리");
+            _ui.Title = "R · 아홉 칸 계산 완료";
+            _ui.Explanation = "아홉 곱을 오른쪽 판 가운데로 모아 더해요.";
+            _ui.Guide = "아홉 칸의 곱을 모두 더하면 R의 합이에요.";
+            _ui.Feedback = "";
+            _spatial.ClearEquations();
+            yield return _spatial.GatherFirstChannelSum();
+            _spatial.ShowChannelSum(channel, true);
+            _ui.CompleteChannel(channel, _calculation.Sum(channel));
+            yield return new WaitForSecondsRealtime(0.9f);
         }
     }
 }

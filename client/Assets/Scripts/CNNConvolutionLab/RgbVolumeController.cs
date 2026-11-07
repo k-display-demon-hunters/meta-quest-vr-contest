@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 using static UnityEngine.Object;
 
 namespace CNNConvolution
@@ -17,6 +18,7 @@ namespace CNNConvolution
         [SerializeField] private Transform _resultAnchor;
         [SerializeField] private Transform _sumAnchor;
         [SerializeField] private Transform _equationAnchor;
+        [SerializeField] private Transform _sumEquationAnchor;
         [SerializeField] private Text _placementHint;
         private GeometryBuilder _builder;
         private Geometry _view;
@@ -24,6 +26,9 @@ namespace CNNConvolution
         private RgbLayerInteractionController _volume;
         private int _channel;
         private ConvolutionCalculation _calculation;
+        private bool _outputMode;
+        private bool _positionQuiz;
+        public event Action<int> OutputSelected;
         private static readonly string[] Names = { "R", "G", "B" };
         private static readonly Color CalculationAccent = new Color(1f, 0.86f, 0.57f);
         private static readonly Color PendingValueColor = new Color(0.46f, 0.53f, 0.57f);
@@ -34,11 +39,11 @@ namespace CNNConvolution
         public bool CompletePendingAction() => _volume.CompletePendingAction();
         internal void StopLayerInteraction() { _volume.StopInteraction(); }
         internal void ExplorePairs() { _volume.ExplorePairs(); }
-        internal Vector3 InputCellPosition(int channel, int index) => transform.InverseTransformPoint(_view.Values[channel, index].transform.position);
+        internal Vector3 InputCellPosition(int channel, int index) => transform.InverseTransformPoint(_view.Values[channel, _calculation.InputIndex(index)].transform.position);
         internal Vector3 KernelCellPosition(int index) => transform.InverseTransformPoint(_view.Weights[index].transform.position);
         internal Vector3 ResultCellPosition(int index) => transform.InverseTransformPoint(_view.Products[index].transform.position);
         internal Vector3 AnswerPosition => transform.InverseTransformPoint(_view.SumLabel.transform.position);
-        internal Vector3 EquationPosition => transform.InverseTransformPoint(_equationAnchor.position);
+        internal Vector3 EquationPosition => transform.InverseTransformPoint(_view.Equation.transform.position);
         internal void BeginGuidedCalculation()
         {
             _view.SumLabel.text = Names[_channel] + " 합  0";
@@ -46,9 +51,10 @@ namespace CNNConvolution
         internal void BeginProductDisplay(int channel, int index)
         {
             ClearCalculationFeedback();
-            PlaceHighlight(_view.InputHighlight, _view.Layers[channel], Cell(index) + Vector3.back * 0.083f);
-            PlaceHighlight(_view.WeightHighlight, _view.Kernel, Cell(index) + Vector3.back * 0.026f);
-            ShowCalculationPath(_view.Values[channel, index].transform.position, _view.Weights[index].transform.position);
+            _view.Equation.text = "";
+            PlaceHighlight(_view.InputHighlight, _view.Layers[channel], GeometryBuilder.InputCell(_calculation.InputIndex(index)) + Vector3.back * 0.083f);
+            PlaceHighlight(_view.WeightHighlight, _view.Kernel, Cell(index) + new Vector3(0.052f, 0.052f, -0.026f));
+            ShowCalculationPath(_view.Values[channel, _calculation.InputIndex(index)].transform.position, _view.Weights[index].transform.position);
         }
         internal void ShowOperandCopies(int channel, int index)
         {
@@ -56,7 +62,7 @@ namespace CNNConvolution
             _view.Flying.gameObject.SetActive(true);
             _view.WeightCopy.gameObject.SetActive(true);
             _view.FlyingLabel.fontSize = 52;
-            _view.FlyingLabel.color = CalculationAccent;
+            _view.FlyingLabel.color = ChannelColor(channel);
             _view.FlyingLabel.text = _calculation.Input(channel, index).ToString();
             _view.WeightCopyLabel.text = "× " + _calculation.Weight(channel, index);
             _view.CalculationPath.enabled = false;
@@ -70,15 +76,16 @@ namespace CNNConvolution
         internal void ShowProductEquation(int channel, int index)
         {
             _view.WeightCopy.gameObject.SetActive(false);
-            _view.FlyingLabel.fontSize = 60;
-            _view.FlyingLabel.color = Color.white;
-            _view.FlyingLabel.text = $"{_calculation.Input(channel, index)} × {_calculation.Weight(channel, index)} = {_calculation.Product(channel, index)}";
+            _view.Flying.gameObject.SetActive(false);
+            _view.Equation.color = ChannelColor(channel);
+            _view.Equation.text = $"{_calculation.Input(channel, index)} × {_calculation.Weight(channel, index)} = {_calculation.Product(channel, index)}";
         }
         internal void ShowProductValue(int index, int product)
         {
+            _view.Flying.gameObject.SetActive(true);
             _view.FlyingLabel.text = product.ToString();
             _view.FlyingLabel.fontSize = 52;
-            _view.FlyingLabel.color = CalculationAccent;
+            _view.FlyingLabel.color = ChannelColor(_channel);
             PlaceHighlight(_view.ProductHighlight, _view.Result, Cell(index) + Vector3.back * 0.075f);
             ShowCalculationPath(_view.Flying.position, _view.Products[index].transform.position);
         }
@@ -140,6 +147,8 @@ namespace CNNConvolution
             _view.SumHighlight.gameObject.SetActive(false);
             _view.SumLabel.fontSize = 60;
             _view.SumLabel.color = Color.white;
+            foreach (Transform copy in _view.SumCopies) { copy.gameObject.SetActive(false); }
+            foreach (Text product in _view.Products) { product.enabled = true; }
         }
         internal void ArrangeWholeFilter(Transform filter)
         {
@@ -208,6 +217,205 @@ namespace CNNConvolution
         }
 
 
+        public static Color ChannelColor(int channel)
+        {
+            return channel == 0 ? new Color(1f, 0.40f, 0.42f)
+                : channel == 1 ? new Color(0.41f, 0.93f, 0.65f)
+                : new Color(0.38f, 0.68f, 1f);
+        }
+
+        public void PrepareSlidingPractice()
+        {
+            ReleaseInteractions();
+            _calculation.SetWindow(0, 0);
+            _outputMode = false;
+            _workbenchVisuals.SetActive(true);
+            _view.ColourPatch.gameObject.SetActive(false);
+            _view.SpatialGuide.gameObject.SetActive(false);
+            _view.Result.gameObject.SetActive(true);
+            _view.Slot.gameObject.SetActive(true);
+            _view.EquationPlate.gameObject.SetActive(true);
+            _view.SumEquationPlate.gameObject.SetActive(true);
+            _view.Kernel.gameObject.SetActive(true);
+            _view.ResultTitle.text = "같은 위치의 곱";
+            _view.KernelTitle.text = "3×3 필터";
+            for (int channel = 0; channel < 3; channel++)
+            {
+                _view.Layers[channel].SetPositionAndRotation(_inputAnchor.position, _inputAnchor.rotation);
+                _view.Layers[channel].localScale = Vector3.one;
+                _view.ParkedKernels[channel].gameObject.SetActive(false);
+            }
+            ClearEquations();
+            ShowSlidingChannel(0, true);
+            _view.DropTarget.SetPositionAndRotation(_kernelTarget.position, _kernelTarget.rotation);
+            _interaction.EnableKernel();
+        }
+
+        public void ClearEquations()
+        {
+            ClearCalculationFeedback();
+            _view.Equation.text = "";
+            _view.SumEquation.text = "";
+            _view.SumLabel.text = "합계 —";
+        }
+
+        public void ShowSlidingChannel(int channel, bool clearProducts)
+        {
+            ClearCalculationFeedback();
+            _channel = channel;
+            _view.Equation.text = "";
+            _view.SumEquation.text = "";
+            _view.SumLabel.text = "합계 —";
+            for (int other = 0; other < 3; other++)
+            {
+                _view.Layers[other].gameObject.SetActive(other == channel);
+            }
+            for (int index = 0; index < 9; index++)
+            {
+                _view.Weights[index].text = _calculation.Weight(channel, index).ToString();
+                if (clearProducts && !_outputMode)
+                {
+                    _view.Products[index].text = "·";
+                    _view.Products[index].color = PendingValueColor;
+                    _view.ProductMarks[index].gameObject.SetActive(false);
+                }
+            }
+        }
+
+        public void ShowChannelSum(int channel, bool productsOnly)
+        {
+            _view.SumLabel.text = "합계 " + _calculation.Sum(channel);
+            string color = ColorUtility.ToHtmlStringRGB(ChannelColor(channel));
+            string equation = $"<color=#{color}>{Names[channel]}</color> ";
+            for (int index = 0; index < 9; index += 4)
+            {
+                if (index > 0) { equation += " + "; }
+                equation += $"<color=#{color}>{_calculation.Input(channel, index)}</color>";
+                if (!productsOnly) { equation += $"×<color=#{color}>1</color>"; }
+            }
+            _view.SumEquation.text = equation + " = " + _calculation.Sum(channel);
+            _view.SumEquation.color = CalculationAccent;
+        }
+
+        public void ShowRgbSum()
+        {
+            _view.SumEquation.color = Color.white;
+            _view.SumEquation.text = $"<color=#FF666B>R {_calculation.Sum(0)}</color> + "
+                + $"<color=#69EDA6>G {_calculation.Sum(1)}</color> + "
+                + $"<color=#61ADFF>B {_calculation.Sum(2)}</color> = "
+                + _calculation.Output(_calculation.Row, _calculation.Column);
+            _view.SumLabel.text = "출력 " + _calculation.Output(_calculation.Row, _calculation.Column);
+        }
+
+        public IEnumerator GatherFirstChannelSum()
+        {
+            Vector3 centre = ResultCellPosition(4) + Vector3.back * 0.025f;
+            Vector3[] starts = new Vector3[9];
+            for (int index = 0; index < 9; index++)
+            {
+                starts[index] = ResultCellPosition(index) + Vector3.back * 0.025f;
+                _view.SumCopies[index].localPosition = starts[index];
+                _view.SumCopyLabels[index].text = _calculation.Product(0, index).ToString();
+                _view.SumCopyLabels[index].color = ChannelColor(0);
+                _view.SumCopies[index].gameObject.SetActive(true);
+                _view.Products[index].color = new Color(0.43f, 0.48f, 0.52f);
+            }
+            for (float time = 0; time < 0.65f; time += Time.unscaledDeltaTime)
+            {
+                float t = Mathf.SmoothStep(0, 1, time / 0.65f);
+                for (int index = 0; index < 9; index++)
+                {
+                    _view.SumCopies[index].localPosition = Vector3.Lerp(starts[index], centre, t);
+                }
+                yield return null;
+            }
+            foreach (Transform copy in _view.SumCopies) { copy.gameObject.SetActive(false); }
+            _view.Flying.localPosition = centre;
+            _view.FlyingLabel.fontSize = 68;
+            _view.FlyingLabel.color = CalculationAccent;
+            _view.FlyingLabel.text = _calculation.Sum(0).ToString();
+            _view.Flying.gameObject.SetActive(true);
+            _view.Products[4].enabled = false;
+            yield return new WaitForSecondsRealtime(0.45f);
+            yield return Fly(centre, AnswerPosition, 0.6f);
+            _view.Flying.gameObject.SetActive(false);
+            _view.Products[4].enabled = true;
+            foreach (Text product in _view.Products) { product.color = Color.white; }
+            _view.SumLabel.text = "합계 " + _calculation.Sum(0);
+        }
+
+        public void BeginOutputMap()
+        {
+            _outputMode = true;
+            ClearCalculationFeedback();
+            _view.ResultTitle.text = "합성곱 출력 · 3×3";
+            for (int index = 0; index < 9; index++)
+            {
+                _view.Products[index].text = "·";
+                _view.Products[index].color = PendingValueColor;
+                _view.ProductMarks[index].gameObject.SetActive(false);
+            }
+        }
+
+        public IEnumerator MoveWindow(int row, int column)
+        {
+            ClearEquations();
+            EndPositionQuiz();
+            Vector3 start = _view.Kernel.position;
+            Vector3 target = _inputAnchor.TransformPoint(new Vector3((column - 1) * 0.19f, (1 - row) * 0.17f, -0.10f));
+            for (float time = 0; time < 0.45f; time += Time.unscaledDeltaTime)
+            {
+                _view.Kernel.position = Vector3.Lerp(start, target, Mathf.SmoothStep(0, 1, time / 0.45f));
+                yield return null;
+            }
+            _view.Kernel.SetPositionAndRotation(target, _inputAnchor.rotation);
+            _calculation.SetWindow(row, column);
+        }
+
+        public IEnumerator RecordWindowOutput()
+        {
+            int index = _calculation.Row * 3 + _calculation.Column;
+            int value = _calculation.Output(_calculation.Row, _calculation.Column);
+            Vector3 source = transform.InverseTransformPoint(_view.Kernel.position) + Vector3.back * 0.06f;
+            _view.Flying.localPosition = source;
+            _view.FlyingLabel.text = value.ToString();
+            _view.FlyingLabel.fontSize = 64;
+            _view.FlyingLabel.color = CalculationAccent;
+            _view.Flying.gameObject.SetActive(true);
+            PlaceHighlight(_view.ProductHighlight, _view.Result, Cell(index) + Vector3.back * 0.075f);
+            yield return Fly(source, ResultCellPosition(index), 0.55f);
+            RecordProduct(index, value);
+            _view.Flying.gameObject.SetActive(false);
+            _view.ProductHighlight.gameObject.SetActive(false);
+        }
+
+        public void BeginPositionQuiz()
+        {
+            _positionQuiz = true;
+            for (int index = 0; index < 9; index++)
+            {
+                _view.OutputButtons[index].interactable = true;
+                _view.OutputTargets[index].raycastTarget = true;
+                _view.OutputTargets[index].color = new Color(0.15f, 0.24f, 0.29f, 0.22f);
+            }
+        }
+
+        public void EndPositionQuiz()
+        {
+            _positionQuiz = false;
+            for (int index = 0; index < 9; index++)
+            {
+                _view.OutputButtons[index].interactable = false;
+                _view.OutputTargets[index].raycastTarget = false;
+                _view.OutputTargets[index].color = Color.clear;
+            }
+        }
+
+        private void SelectOutput(int index)
+        {
+            if (_positionQuiz) { OutputSelected?.Invoke(index); }
+        }
+
         public void Initialize(Font font)
         {
             // The prefab owns the presentation transform and editable layout anchors.
@@ -215,12 +423,19 @@ namespace CNNConvolution
             _view = _builder.Build();
             _view.Result.SetPositionAndRotation(_resultAnchor.position, _resultAnchor.rotation);
             _view.Slot.SetPositionAndRotation(_sumAnchor.position, _sumAnchor.rotation);
+            _view.EquationPlate.SetPositionAndRotation(_equationAnchor.position, _equationAnchor.rotation);
+            _view.SumEquationPlate.SetPositionAndRotation(_sumEquationAnchor.position, _sumEquationAnchor.rotation);
             _view.DropTarget.SetPositionAndRotation(_kernelTarget.position, _kernelTarget.rotation);
             _interaction = new KernelInteractionController(transform, _view, _kernelHome, _kernelTarget, _placementHint);
             _volume = gameObject.AddComponent<RgbLayerInteractionController>();
             if (isActiveAndEnabled) { _volume.PairHighlighted += HighlightSpatialPair; }
             _volume.Initialize(_view.Layers, _view.ParkedKernels, _view.ColourPatch,
                 _view.SpatialGuide, _builder.Material);
+            for (int index = 0; index < 9; index++)
+            {
+                int selected = index;
+                _view.OutputButtons[index].onClick.AddListener(() => SelectOutput(selected));
+            }
         }
 
         public void SetData(ConvolutionCalculation calculation)
@@ -228,11 +443,11 @@ namespace CNNConvolution
             _calculation = calculation;
             for (int c = 0; c < 3; c++)
             {
-                for (int i = 0; i < 9; i++)
+                for (int i = 0; i < 25; i++)
                 {
-                    _view.Values[c, i].text = _calculation.Input(c, i).ToString();
-                    float strength = 0.18f + _calculation.Input(c, i) / 3f * 0.82f;
-                    Color color = c == 0 ? new Color(strength, 0, 0) : c == 1 ? new Color(0, strength, 0) : new Color(0, 0, strength);
+                    _view.Values[c, i].text = _calculation.GridInput(c, i).ToString();
+                    float strength = 0.30f + _calculation.GridInput(c, i) / 3f * 0.35f;
+                    Color color = Color.Lerp(new Color(0.05f, 0.075f, 0.09f), ChannelColor(c), strength);
                     GeometryBuilder.Tint(_view.InputFaces[c, i], color);
                     _view.Values[c, i].color = Color.white;
                 }
@@ -479,9 +694,11 @@ namespace CNNConvolution
             WaitingForKernel = false;
             if (_view != null)
             {
+                EndPositionQuiz();
                 ClearCalculationFeedback();
                 _view.GripArrow.gameObject.SetActive(false);
                 _view.DropTarget.gameObject.SetActive(false);
+                _view.Products[4].enabled = true;
             }
             if (_volume != null) { _volume.StopInteraction(); }
             _interaction?.DisableKernel();
@@ -548,21 +765,24 @@ namespace CNNConvolution
                 for (int c = 0; c < 3; c++)
                 {
                     _view.Layers[c] = Root(Names[c] + " input slice");
-                    Frame(_view.Layers[c], 0.62f, 0.56f, 0.07f, new Color(0.22f, 0.25f, 0.27f));
-                    Caption(_view.Layers[c], Names[c] + " 색 성분", new Vector3(0, 0.32f, 0), 0.65f);
-                    Text leftSide = Caption(_view.Layers[c], Names[c], new Vector3(-0.31f, 0.28f, 0), 0.16f);
+                    Frame(_view.Layers[c], 0.97f, 0.86f, 0.055f, new Color(0.22f, 0.28f, 0.31f), 0.012f);
+                    Tile(_view.Layers[c], new Vector3(0, 0, 0.07f), new Vector3(0.97f, 0.86f, 0.05f), new Color(0.035f, 0.045f, 0.055f));
+                    Text heading = Caption(_view.Layers[c], Names[c] + " 입력 · 5×5", new Vector3(0, 0.49f, 0), 1.0f);
+                    heading.color = ChannelColor(c);
+                    heading.fontSize = 44;
+                    Text leftSide = Caption(_view.Layers[c], Names[c], new Vector3(-0.48f, 0.40f, 0), 0.16f);
                     leftSide.transform.parent.localRotation = Quaternion.Euler(0, 90, 0);
-                    Text rightSide = Caption(_view.Layers[c], Names[c], new Vector3(0.31f, 0.28f, 0), 0.16f);
+                    Text rightSide = Caption(_view.Layers[c], Names[c], new Vector3(0.48f, 0.40f, 0), 0.16f);
                     rightSide.transform.parent.localRotation = Quaternion.Euler(0, -90, 0);
-                    for (int i = 0; i < 9; i++)
+                    for (int i = 0; i < 25; i++)
                     {
-                        Transform tile = Tile(_view.Layers[c], Cell(i), new Vector3(0.17f, 0.15f, 0.12f), Color.gray);
+                        Transform tile = Tile(_view.Layers[c], InputCell(i), new Vector3(0.17f, 0.15f, 0.12f), Color.gray);
                         Tint(tile.Find("Tile mesh").GetComponent<MeshRenderer>(), new Color(0.08f, 0.10f, 0.12f));
                         Transform face = Tile(tile, new Vector3(0, 0, -0.063f), new Vector3(0.158f, 0.138f, 0.012f), Color.gray);
                         _view.InputFaces[c, i] = face.Find("Tile mesh").GetComponent<MeshRenderer>();
                         // A neutral number inset keeps zero and bright green equally readable.
-                        Tile(tile, new Vector3(-0.025f, -0.015f, -0.073f), new Vector3(0.085f, 0.095f, 0.008f), new Color(0.055f, 0.065f, 0.08f));
-                        _view.Values[c, i] = Caption(tile, "", new Vector3(-0.025f, -0.015f, -0.08f), 0.085f);
+                        Tile(tile, new Vector3(0, -0.008f, -0.073f), new Vector3(0.095f, 0.105f, 0.008f), new Color(0.025f, 0.035f, 0.045f));
+                        _view.Values[c, i] = Caption(tile, "", new Vector3(0, -0.008f, -0.08f), 0.095f);
                         _view.Values[c, i].fontSize = 48;
                     }
                     _view.ParkedKernels[c] = Root(Names[c] + " fixed filter slice");
@@ -586,11 +806,12 @@ namespace CNNConvolution
                 _view.ColourPatch.gameObject.SetActive(false);
                 _view.Kernel = Root("Fixed weight slice");
                 _view.GripAccents = FilterFrame(_view.Kernel);
-                _view.KernelTitle = Caption(_view.Kernel, "고정 가중치", new Vector3(0, 0.4f, 0), 0.7f);
+                _view.KernelTitle = Caption(_view.Kernel, "3×3 필터", new Vector3(0, -0.36f, 0), 0.7f);
+                _view.KernelTitle.fontSize = 40;
                 _view.GripArrow = Root("Grip arrow");
                 _view.GripArrow.SetParent(_view.Kernel, false);
                 _view.GripArrow.localScale = Vector3.one * 0.45f;
-                _view.GripArrow.localPosition = new Vector3(0, 0.55f, -0.04f);
+                _view.GripArrow.localPosition = new Vector3(0, 0.41f, -0.04f);
                 Tile(_view.GripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
                 for (int side = -1; side <= 1; side += 2)
                 {
@@ -603,20 +824,41 @@ namespace CNNConvolution
                 _view.DropTarget.gameObject.SetActive(false);
                 for (int i = 0; i < 9; i++)
                 {
-                    Transform tile = Tile(_view.Kernel, Cell(i), new Vector3(0.075f, 0.06f, 0.025f), new Color(0.19f, 0.23f, 0.25f));
-                    _view.Weights[i] = Caption(tile, "", new Vector3(0, 0, -0.018f), 0.075f);
-                    _view.Weights[i].fontSize = 42;
+                    Transform tile = Tile(_view.Kernel, Cell(i) + new Vector3(0.052f, 0.052f, 0), new Vector3(0.045f, 0.045f, 0.025f), new Color(0.11f, 0.15f, 0.17f));
+                    _view.Weights[i] = Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
+                    _view.Weights[i].fontSize = 32;
                 }
                 _view.Result = Root("Products at matching positions");
                 _view.Result.localPosition = new Vector3(0.45f, 0, 0.1f);
                 Frame(_view.Result, 0.64f, 0.57f, 0.08f, new Color(0.28f, 0.31f, 0.32f));
                 Tile(_view.Result, new Vector3(0, 0, 0.065f), new Vector3(0.60f, 0.53f, 0.035f), new Color(0.055f, 0.065f, 0.075f));
-                Caption(_view.Result, "같은 위치의 곱", new Vector3(0, 0.32f, 0), 0.7f);
+                _view.ResultTitle = Caption(_view.Result, "같은 위치의 곱", new Vector3(0, 0.34f, 0), 0.95f);
+                _view.ResultTitle.fontSize = 42;
                 for (int i = 0; i < 9; i++)
                 {
                     Transform productTile = Tile(_view.Result, Cell(i), new Vector3(0.17f, 0.15f, 0.12f), new Color(0.16f, 0.18f, 0.22f));
                     _view.Products[i] = Caption(productTile, "·", new Vector3(0, 0, -0.066f), 0.17f);
                     _view.Products[i].color = PendingValueColor;
+                    GameObject hitSurface = _view.Products[i].transform.parent.gameObject;
+                    RectTransform hitRect = (RectTransform)hitSurface.transform;
+                    hitRect.sizeDelta = new Vector2(170, 150);
+                    Image target = hitSurface.AddComponent<Image>();
+                    target.color = Color.clear;
+                    target.raycastTarget = false;
+                    hitSurface.AddComponent<GraphicRaycaster>();
+                    hitSurface.AddComponent<TrackedDeviceGraphicRaycaster>();
+                    Button button = hitSurface.AddComponent<Button>();
+                    button.targetGraphic = target;
+                    ColorBlock colors = button.colors;
+                    colors.normalColor = new Color(0.10f, 0.21f, 0.25f, 0.2f);
+                    colors.highlightedColor = new Color(0.95f, 0.75f, 0.40f, 0.65f);
+                    colors.pressedColor = new Color(1f, 0.85f, 0.57f, 0.8f);
+                    colors.selectedColor = colors.highlightedColor;
+                    colors.disabledColor = Color.clear;
+                    button.colors = colors;
+                    button.interactable = false;
+                    _view.OutputTargets[i] = target;
+                    _view.OutputButtons[i] = button;
                     Transform mark = Root("Recorded product " + i);
                     mark.SetParent(productTile, false);
                     mark.localPosition = new Vector3(0.058f, -0.05f, -0.075f);
@@ -634,8 +876,15 @@ namespace CNNConvolution
                 Tile(_view.Slot, Vector3.zero, new Vector3(0.64f, 0.16f, 0.045f), new Color(0.055f, 0.065f, 0.075f));
                 Frame(_view.Slot, 0.67f, 0.19f, 0.05f, new Color(0.47f, 0.38f, 0.24f));
                 _view.SumLabel = Caption(_view.Slot, "합: —", new Vector3(0, 0, -0.03f), 0.61f);
+                _view.SumLabel.fontSize = 42;
+                _view.EquationPlate = FormulaPlate("One cell multiplication plate", 0.9f);
+                _view.Equation = Caption(_view.EquationPlate, "", new Vector3(0, 0, -0.027f), 0.86f);
+                _view.Equation.fontSize = 48;
+                _view.SumEquationPlate = FormulaPlate("Channel and RGB sum plate", 1.12f);
+                _view.SumEquation = Caption(_view.SumEquationPlate, "", new Vector3(0, 0, -0.027f), 1.08f);
+                _view.SumEquation.fontSize = 42;
                 _view.InputHighlight = Highlight("Active input cell", 0.178f, 0.158f);
-                _view.WeightHighlight = Highlight("Active weight cell", 0.092f, 0.078f);
+                _view.WeightHighlight = Highlight("Active weight cell", 0.049f, 0.049f);
                 _view.ProductHighlight = Highlight("Active product cell", 0.178f, 0.158f);
                 _view.SumHighlight = Highlight("Active accumulated sum", 0.70f, 0.22f);
                 _view.SumHighlight.SetParent(_view.Slot, false);
@@ -648,6 +897,13 @@ namespace CNNConvolution
                 _view.WeightCopyLabel.fontSize = 52;
                 _view.WeightCopyLabel.color = CalculationAccent;
                 _view.WeightCopy.gameObject.SetActive(false);
+                for (int index = 0; index < 9; index++)
+                {
+                    _view.SumCopies[index] = Root("Product sum copy " + index);
+                    _view.SumCopyLabels[index] = Caption(_view.SumCopies[index], "", Vector3.zero, 0.17f);
+                    _view.SumCopyLabels[index].fontSize = 52;
+                    _view.SumCopies[index].gameObject.SetActive(false);
+                }
                 _view.SpatialGuide = Caption(_root, "", new Vector3(0, -0.55f, -0.15f), 1.9f);
                 _view.SpatialGuide.transform.parent.localRotation = Quaternion.Euler(0, 55, 0);
                 _view.SpatialGuide.rectTransform.sizeDelta = new Vector2(1900, 180);
@@ -671,6 +927,19 @@ namespace CNNConvolution
                 return new Vector3((index % 3 - 1) * 0.19f, (1 - index / 3) * 0.17f, 0);
             }
 
+            public static Vector3 InputCell(int index)
+            {
+                return new Vector3((index % 5 - 2) * 0.19f, (2 - index / 5) * 0.17f, 0);
+            }
+
+            private Transform FormulaPlate(string name, float width)
+            {
+                Transform plate = Root(name);
+                Tile(plate, Vector3.zero, new Vector3(width, 0.14f, 0.04f), new Color(0.025f, 0.035f, 0.045f));
+                Frame(plate, width, 0.14f, 0.043f, new Color(0.44f, 0.37f, 0.25f), 0.008f);
+                return plate;
+            }
+
             private Transform Highlight(string name, float width, float height)
             {
                 Transform highlight = Root(name);
@@ -692,16 +961,16 @@ namespace CNNConvolution
             {
                 Color metal = new Color(0.47f, 0.38f, 0.24f);
                 // Leave the input numerals visible when the offset filter lies over them.
-                Frame(parent, 0.72f, 0.68f, 0.03f, metal);
+                Frame(parent, 0.57f, 0.51f, 0.026f, metal, 0.012f);
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    Tile(parent, new Vector3(side * 0.095f, -0.385f, 0), new Vector3(0.025f, 0.09f, 0.035f), metal);
+                    Tile(parent, new Vector3(side * 0.075f, 0.282f, 0), new Vector3(0.018f, 0.048f, 0.035f), metal);
                 }
-                Tile(parent, new Vector3(0, -0.43f, 0), new Vector3(0.25f, 0.055f, 0.055f), new Color(0.08f, 0.10f, 0.11f));
+                Tile(parent, new Vector3(0, 0.32f, 0), new Vector3(0.22f, 0.05f, 0.05f), new Color(0.08f, 0.10f, 0.11f));
                 MeshRenderer[] accents = new MeshRenderer[5];
                 for (int i = -2; i <= 2; i++)
                 {
-                    Transform groove = Tile(parent, new Vector3(i * 0.035f, -0.43f, -0.03f), new Vector3(0.008f, 0.045f, 0.008f), metal);
+                    Transform groove = Tile(parent, new Vector3(i * 0.035f, 0.32f, -0.028f), new Vector3(0.006f, 0.035f, 0.008f), metal);
                     accents[i + 2] = groove.Find("Tile mesh").GetComponent<MeshRenderer>();
                 }
                 return accents;
@@ -722,13 +991,13 @@ namespace CNNConvolution
                 {
                     for (int segment = -2; segment <= 2; segment++)
                     {
-                        Tile(_view.PlacementDashed, new Vector3(segment * 0.15f, side * 0.375f, -0.035f),
-                            new Vector3(0.075f, 0.012f, 0.012f), waiting);
-                        Tile(_view.PlacementDashed, new Vector3(side * 0.39f, segment * 0.15f, -0.035f),
-                            new Vector3(0.012f, 0.065f, 0.012f), waiting);
+                        Tile(_view.PlacementDashed, new Vector3(segment * 0.11f, side * 0.27f, -0.035f),
+                            new Vector3(0.060f, 0.008f, 0.010f), waiting);
+                        Tile(_view.PlacementDashed, new Vector3(side * 0.30f, segment * 0.10f, -0.035f),
+                            new Vector3(0.008f, 0.055f, 0.010f), waiting);
                     }
                 }
-                Frame(_view.PlacementSolid, 0.78f, 0.75f, 0.014f, ready);
+                Frame(_view.PlacementSolid, 0.60f, 0.54f, 0.014f, ready, 0.008f);
                 _view.PlacementSolid.localPosition = new Vector3(0, 0, -0.035f);
                 Transform shortStroke = Tile(_view.PlacementCheck, new Vector3(0.40f, -0.28f, -0.05f),
                     new Vector3(0.022f, 0.075f, 0.015f), ready);
@@ -832,12 +1101,16 @@ namespace CNNConvolution
         internal sealed class Geometry
         {
             public readonly Transform[] Layers = new Transform[3];
-            public readonly Text[,] Values = new Text[3, 9];
-            public readonly MeshRenderer[,] InputFaces = new MeshRenderer[3, 9];
+            public readonly Text[,] Values = new Text[3, 25];
+            public readonly MeshRenderer[,] InputFaces = new MeshRenderer[3, 25];
             public readonly Text[,] VolumeWeightLabels = new Text[3, 9];
             public readonly Text[] Weights = new Text[9];
             public readonly Text[] Products = new Text[9];
             public readonly Transform[] ProductMarks = new Transform[9];
+            public readonly Button[] OutputButtons = new Button[9];
+            public readonly Image[] OutputTargets = new Image[9];
+            public readonly Transform[] SumCopies = new Transform[9];
+            public readonly Text[] SumCopyLabels = new Text[9];
             public readonly List<KeyValuePair<Text, Text>> SideLabels = new List<KeyValuePair<Text, Text>>();
             public readonly Transform[] ParkedKernels = new Transform[3];
             public readonly MeshRenderer[] ColourTiles = new MeshRenderer[9];
@@ -861,6 +1134,11 @@ namespace CNNConvolution
             public Transform WeightCopy;
             public Text WeightCopyLabel;
             public Text SumLabel;
+            public Text ResultTitle;
+            public Transform EquationPlate;
+            public Transform SumEquationPlate;
+            public Text Equation;
+            public Text SumEquation;
             public Text KernelTitle;
             public Text SpatialGuide;
         }

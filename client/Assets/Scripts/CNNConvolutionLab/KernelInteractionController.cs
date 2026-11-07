@@ -36,11 +36,11 @@ namespace CNNConvolution
             _home = home;
             _target = target;
             _hint = hint;
-            _kernelGrab = MakeGrab(view.Kernel, new Vector3(0.74f, 0.70f, 0.04f));
+            _kernelGrab = MakeGrab(view.Kernel, new Vector3(0.60f, 0.54f, 0.04f));
             _body = _kernelGrab.GetComponent<Rigidbody>();
             BoxCollider handle = view.Kernel.gameObject.AddComponent<BoxCollider>();
-            handle.center = new Vector3(0, -0.42f, 0);
-            handle.size = new Vector3(0.3f, 0.14f, 0.09f);
+            handle.center = new Vector3(0, 0.32f, 0);
+            handle.size = new Vector3(0.26f, 0.10f, 0.09f);
             _kernelGrab.colliders.Add(handle);
             _kernelGrab.selectEntered.AddListener(HandleKernelGrabbed);
             _kernelGrab.selectExited.AddListener(HandleKernelReleased);

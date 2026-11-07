@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CNNConvolution
 {
-    // Owns arithmetic lesson sequencing, display and user input within ConvolutionLab.
+    // Owns the learning sequence; spatial display and input remain in their controllers.
     public sealed class ConvolutionLessonManager : MonoBehaviour
     {
         [SerializeField] private LessonUIController _ui;
@@ -13,93 +13,177 @@ namespace CNNConvolution
         [SerializeField] private Font _font;
         private bool _initialized;
         private bool _running;
+        private bool _summaryReady;
         private ConvolutionQuizController _quiz;
         public event Action Completed;
+        public event Action ContinueRequested;
         public event Action<float> ProgressChanged;
-        private void FinishDisplay() { StopPractice(); }
 
         private void OnEnable()
         {
             _ui.SkipRequested += HandleAssist;
-            _ui.AnswerRequested += HandleAnswer;
-            _ui.AdvanceRequested += FinishDisplay;
-            _ui.CloseRequested += FinishDisplay;
+            _ui.AdvanceRequested += HandleContinue;
         }
-        private void HandleAnswer(int answer) { _quiz?.SubmitAnswer(answer); }
-        private void OnDisable()
+
+        public void BeginPractice(ConvolutionInputData input, bool example = false)
         {
-            _ui.SkipRequested -= HandleAssist;
-            _ui.AnswerRequested -= HandleAnswer;
-            _ui.AdvanceRequested -= FinishDisplay;
-            _ui.CloseRequested -= FinishDisplay;
-            StopPractice();
+            string inputNote = example ? "원래 RGB 값 0~255를 연습용 0~3으로 표시해요."
+                : input.WindowShifted ? "이미지 가장자리라 선택 영역을 포함하도록 5×5 창을 안쪽으로 옮겼어요."
+                : "선택한 3×3이 첫 필터 위치에 들어 있어요. 주변 실제 픽셀도 함께 계산해요.";
+            BeginCalculation(example ? ConvolutionCalculation.CreateExample() : new ConvolutionCalculation(input), example, inputNote);
         }
-        public void BeginPractice(PixelPatchData patch, bool example = false)
+
+        public void BeginPractice()
         {
+            BeginCalculation(ConvolutionCalculation.CreateExample(), true, "기본 예제의 값은 0~3이에요.");
+        }
+
+        private void BeginCalculation(ConvolutionCalculation calculation, bool example, string inputNote)
+        {
+            StopAllCoroutines();
+            _quiz?.Cancel();
+            _quiz = null;
             if (!_initialized)
             {
                 _ui.Initialize(_font);
                 _spatial.Initialize(_font);
                 _initialized = true;
             }
+            _summaryReady = false;
+            _running = true;
             _ui.SetReturnAvailable(false);
             _ui.BeginCalculation();
             _spatial.gameObject.SetActive(true);
-            ConvolutionCalculation calculation = new ConvolutionCalculation(patch);
             _spatial.SetData(calculation);
-            _running = true;
-            StartCoroutine(Run(calculation, example));
+            _spatial.PrepareSlidingPractice();
+            ProgressChanged?.Invoke(0f);
+            StartCoroutine(RunLesson(calculation, example, inputNote));
         }
-        private IEnumerator Run(ConvolutionCalculation calculation, bool example)
+
+        private IEnumerator RunLesson(ConvolutionCalculation calculation, bool example, string inputNote)
         {
-            _ui.Title = example ? "기본 예제로 연습해요" : "선택한 픽셀로 연습해요";
-            _ui.Explanation = "지금부터는 실제 RGB 값을\n0~3의 작은 연습용 값으로 바꿔요.";
-            _ui.Guide = "연습용 값: 0~3\n원래 RGB 값: 0~255";
-            yield return _spatial.ArrangePractice();
-            yield return _ui.WaitForNext("다음");
-            _ui.Title = "옆에 나타난 것은 가중치예요";
-            _ui.Explanation = "각 칸의 숫자에 곱할 값이에요.\n입력 RGB와는 다른 블록이에요.";
-            yield return _spatial.RevealWeights();
-            yield return _ui.WaitForNext("다음");
-            _ui.Title = "1은 그대로, 0은 결과도 0";
-            _ui.Explanation = "숫자 × 1 = 그대로\n숫자 × 0 = 0";
-            _ui.Guide = "같은 위치끼리 곱한 뒤\n9칸의 값을 더해요.";
-            yield return _ui.WaitForNext("R 시작");
-            RedCalculationController lesson = new RedCalculationController(_spatial, _ui, calculation);
-            yield return lesson.Run(0);
-            ProgressChanged?.Invoke(1f / 3f);
-            yield return lesson.Run(1);
-            ProgressChanged?.Invoke(2f / 3f);
-            _ui.Title = "R · G 학습 완료!";
-            _ui.Explanation = "이제 같은 방법으로 B를 직접 계산해요.";
-            yield return _ui.WaitForNext("B 퀴즈 시작");
+            _ui.Title = "필터가 지나간 자리";
+            _ui.Explanation = "손잡이를 잡아 입력판 맨 왼쪽 위의 점선에 놓으세요.";
+            _ui.Guide = example ? "기본 예제 · 입력 5×5 · 필터 3×3"
+                : "선택 영역과 주변 실제 픽셀 · 5×5\nRGB 0~255 → 연습용 값 0~3";
+            _ui.Feedback = inputNote;
+            yield return _spatial.WaitForKernel();
+            _ui.ShowSkip(false, false);
+            RedCalculationController firstChannel = new RedCalculationController(_spatial, _ui, calculation);
+            yield return firstChannel.Run();
+            yield return ShowCompactChannel(calculation, 1, true);
+            yield return ShowCompactChannel(calculation, 2, true);
+            _ui.Title = "세 채널의 합이 출력값 하나가 돼요";
+            _ui.Explanation = "오른쪽 판은 지금부터 출력값이 채워지는 지도예요.";
+            _spatial.BeginOutputMap();
+            yield return RecordOutput(calculation);
+            ProgressChanged?.Invoke(1f / 9f);
+
+            _ui.ResetChannelProgress();
+            _spatial.ClearEquations();
+            yield return _spatial.MoveWindow(0, 1);
             _quiz = new ConvolutionQuizController(_spatial, _ui, calculation);
             yield return _quiz.Run();
             _quiz.Cancel();
+            yield return CalculateCurrentWindow(calculation);
+            ProgressChanged?.Invoke(2f / 9f);
+
+            int[] remainingPositions = { 2, 5, 4, 3, 6, 7, 8 };
+            for (int step = 0; step < remainingPositions.Length; step++)
+            {
+                int index = remainingPositions[step];
+                _ui.ResetChannelProgress();
+                _spatial.ClearEquations();
+                _ui.Title = "필터를 한 칸 옮겨요";
+                _ui.Explanation = "새 위치에서도 R · G · B를 각각 계산해요.";
+                yield return _spatial.MoveWindow(index / 3, index % 3);
+                yield return CalculateCurrentWindow(calculation);
+                ProgressChanged?.Invoke((step + 3f) / 9f);
+            }
+
             _running = false;
+            _spatial.EndPositionQuiz();
+            _ui.Title = "아홉 위치의 계산이 끝났어요";
+            _ui.Explanation = "입력판 위를 이동하며 출력값 9개를 만들었어요.";
+            _ui.Guide = "입력 5×5 → 필터 3×3 → 출력 3×3";
+            _ui.Feedback = "결과 확인을 눌러 완성된 지도를 살펴보세요.";
+            yield return _ui.WaitForNext("결과 확인");
             _spatial.ReleaseInteractions();
             _spatial.gameObject.SetActive(false);
-            _ui.ShowCompleted(calculation.ChannelSums());
-            ProgressChanged?.Invoke(1f);
+            _ui.ShowOutputSummary(calculation.Outputs(), new[] {
+                calculation.Sum(0, 0, 0), calculation.Sum(1, 0, 0), calculation.Sum(2, 0, 0) });
+            _summaryReady = true;
             Completed?.Invoke();
         }
+
+        private IEnumerator CalculateCurrentWindow(ConvolutionCalculation calculation)
+        {
+            for (int channel = 0; channel < 3; channel++)
+            {
+                yield return ShowCompactChannel(calculation, channel, false);
+            }
+            yield return RecordOutput(calculation);
+        }
+
+        private IEnumerator ShowCompactChannel(ConvolutionCalculation calculation, int channel, bool showProducts)
+        {
+            _ui.BeginChannel(channel);
+            _ui.Title = $"{"RGB"[channel]} · 출력 {calculation.Row + 1}행 {calculation.Column + 1}열";
+            _ui.Explanation = "현재 위치의 아홉 곱을 모두 더해요.";
+            _ui.Guide = "R · G · B의 계산은 같은 위치에서 이어져요.";
+            _ui.Feedback = "";
+            _spatial.ShowSlidingChannel(channel, showProducts);
+            yield return new WaitForSecondsRealtime(0.25f);
+            if (showProducts) { _spatial.ShowProducts(channel, 9); }
+            _spatial.ShowChannelSum(channel, false);
+            _ui.CompleteChannel(channel, calculation.Sum(channel));
+            yield return new WaitForSecondsRealtime(0.8f);
+        }
+
+        private IEnumerator RecordOutput(ConvolutionCalculation calculation)
+        {
+            _ui.Title = $"출력 {calculation.Row + 1}행 {calculation.Column + 1}열에 기록해요";
+            _ui.Explanation = "R 합 + G 합 + B 합 = 출력값 하나";
+            _spatial.ShowRgbSum();
+            yield return new WaitForSecondsRealtime(0.7f);
+            yield return _spatial.RecordWindowOutput();
+            yield return new WaitForSecondsRealtime(0.35f);
+        }
+
         private void Update()
         {
-            if (_running) { _ui.ShowSkip(_spatial.HasPendingAction, _spatial.WaitingForKernel); }
+            if (_running) { _ui.ShowSkip(false, _spatial.WaitingForKernel); }
         }
+
         private void HandleAssist()
         {
-            if (_spatial.HasPendingAction) { _spatial.CompletePendingAction(); }
-            else if (_spatial.WaitingForKernel) { _spatial.AlignKernel(); }
+            if (_spatial.WaitingForKernel) { _spatial.AlignKernel(); }
         }
+
+        private void HandleContinue()
+        {
+            if (!_summaryReady) { return; }
+            _summaryReady = false;
+            StopPractice();
+            ContinueRequested?.Invoke();
+        }
+
         public void StopPractice()
         {
             StopAllCoroutines();
             _running = false;
+            _summaryReady = false;
             _quiz?.Cancel();
             if (_initialized) { _spatial.ReleaseInteractions(); }
             _ui.gameObject.SetActive(false);
             _spatial.gameObject.SetActive(false);
+        }
+
+        private void OnDisable()
+        {
+            _ui.SkipRequested -= HandleAssist;
+            _ui.AdvanceRequested -= HandleContinue;
+            StopPractice();
         }
     }
 }

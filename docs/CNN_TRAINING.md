@@ -2,7 +2,7 @@
 
 `CNNModelDesignLab`은 서버 없이 내장 MNIST 데이터로 CNN 전체를 학습한다. 합성곱 필터·Dense 가중치·편향을 실제 역전파와 Adam으로 갱신하며, 학습된 가중치로 평가와 숫자 예측을 수행한다. Python, 네트워크 연결, 외부 학습 프레임워크는 실행에 필요하지 않다.
 
-기존 `server/` 구현과 서버용 JSON·WebSocket 명세는 보관한다. 현재 Unity 씬은 로컬 학습 엔진을 사용하며, 보관된 서버는 별도로 실행할 수 있다.
+기존 Python 서버 구현은 제거되었다. 현재 Unity 씬은 로컬 학습 엔진을 사용한다.
 
 **현재 구현의 Quest 3S 학습 시간·정확도·VR 프레임은 이 문서 갱신에서 검증하지 않았다.** 완료 표시는 실제 학습·평가 결과를 사용하며, 제한 시간이 지났다는 이유로 성공이나 임의 지표를 표시하지 않는다.
 
@@ -36,9 +36,9 @@
 ## 지원 구조와 연산
 
 ```text
-Input(28 × 28 × 1)
+Input(28 × 28 × 3)
 → [Conv2D / MaxPooling2D ...]
-→ Flatten → [Dense ...] → Output(Dense 10, Softmax)
+→ Flatten → [Dense ...] → Output(Dense 4, Softmax)
 ```
 
 슬롯 순서의 순차 연결만 허용하며 분기·합류·순환·잔차 연결은 지원하지 않는다. 첫 레이어를 Conv2D로 강제하지 않으며 `Flatten → Output` 같은 구성도 검사를 통과할 수 있다. Flatten은 명시적으로 한 번 들어가고 이후에는 Dense만 허용한다. 공간 입력을 Dense에 직접 연결하거나 자동으로 Flatten을 삽입하는 동작은 없다.
@@ -51,7 +51,7 @@ Input(28 × 28 × 1)
 | Dense | 완전연결과 편향. 입력·가중치·편향 기울기 계산 |
 | Linear / ReLU / Sigmoid / Tanh | Conv 및 은닉 Dense에서 선택 가능. 각 함수의 미분을 사용 |
 | Softmax | Conv의 각 픽셀에서는 채널 축, Dense에서는 전체 출력 벡터에 적용. 은닉 Softmax는 벡터의 결합 미분을 계산 |
-| 최종 분류 | Dense 10·Softmax 고정. 클래스 0~9. 최종 로짓에서 안정적인 교차엔트로피와 결합 기울기 계산 |
+| 최종 분류 | Dense 4·Softmax 고정. 클래스 0~3. 최종 로짓에서 안정적인 교차엔트로피와 결합 기울기 계산 |
 | Adam | 미니배치 평균 기울기로 전체 학습 파라미터를 갱신. 모멘트·시점은 해당 실행 내부에 보관 |
 
 ## 학습 설정과 실행 검증
@@ -70,35 +70,24 @@ Input(28 × 28 × 1)
 
 아래 과거 측정 기록의 설정 에셋과 자원 한도는 당시 구현 기준이며 현재 실행 정책에는 적용되지 않는다.
 
-## 내장 MNIST 데이터
+## 내장 MNIST 컬러 데이터
 
-원본은 [Keras 공식 MNIST 배포](https://keras.io/api/datasets/mnist/)의 `mnist.npz`다. [공식 로더](https://github.com/keras-team/keras/blob/v3.15.1/keras/src/datasets/mnist.py)가 지정한 다운로드 경로와 SHA-256으로 원본을 확인하여 변환했다. 전체 원본 NPZ나 변환 스크립트 사본은 저장소에 추가하지 않는다. 데이터의 출처·라이선스는 [ASSET_CREDITS.md](ASSET_CREDITS.md)에 기록한다.
+`mnist-color-data/`에서 생성·분리한 RGB CMNT v2 파일을 `client/Assets/Data/CNNModelDesignLab/`의 기존 두 TextAsset에 적용한다. 생성 방법과 출처는 [데이터 README](../mnist-color-data/README.md), 권리 기록은 [ASSET_CREDITS.md](ASSET_CREDITS.md)를 참고한다.
 
-- `MnistTraining.bytes`: 원본 training split에서 숫자별로 가장 앞선 50개, 합계 500개. 원래 인덱스 순으로 저장한다. 로더가 숫자별 매 10번째를 validation에 배정하므로 실제 학습 450개(숫자별 45개), 검증 50개(숫자별 5개)다.
-- `MnistTest.bytes`: 원본 test split에서 숫자별로 가장 앞선 20개, 합계 200개. 최종 평가 및 UI 예측에 사용한다. 학습·검증 split에 포함되지 않는다.
-- 이미지는 원본 28×28 흑백 바이트와 정답을 보존한다. `MnistDataset.Load()`가 픽셀을 `value / 255f`로 정규화하며 회전·반전·재크기 조정은 없다.
-- 학습·검증·평가 정확도는 각각의 작은 부분집합 기준이다. MNIST 전체 10,000장에 대한 벤치마크 정확도로 해석하지 않는다.
-- 기존 표시 이미지 이름 `mnist-test-N`의 N은 원본 test split 인덱스다. `TryGetTestImage()`가 같은 원본 인덱스의 픽셀을 반환한다. 텍스처의 read/write 설정이나 GPU readback은 필요하지 않다.
+- 입력은 28×28×3 RGB, 정답은 숫자 0~3이다. 픽셀을 HWC 순서로 `/255f` 정규화하며 학습 데이터의 방향과 색을 변환하지 않는다.
+- training 480장(클래스별 120장)에서 각 클래스의 매 10번째를 검증용으로 분리한다. 실제 학습 432장, 검증 48장, 별도 평가 120장이다.
+- 두 파일의 인덱스는 모두 원본 MNIST training 이미지의 인덱스다. 파일별 중복과 학습·평가 사이 중복을 로더에서 거절한다.
+- Dataset Controller가 평가 120장의 픽셀로 RGB 미리보기 텍스처를 생성한다. 표시에서만 상하 좌표를 맞추며 Point 필터를 사용한다. 텍스처는 Controller 파괴 시 해제한다.
+- 샘플 ID는 `mnist-color-test-N`이며 N은 원본 인덱스다. 미리보기와 추론 입력은 같은 평가 레코드를 사용한다. 기존 흑백 PNG는 참조하지 않는다.
+- 학습·검증·평가 정확도는 이 컬러 4클래스 부분집합 기준이며 전체 MNIST 벤치마크 결과가 아니다.
 
-엔진에는 `TrainingDataset(float[] images, int[] labels, int inputSize)` 세 개를 묶은 `TrainingData`를 전달한다. 원본 인덱스와 MNIST 이미지 이름 해석은 씬 어댑터에만 남는다.
+### 바이너리 형식 (version 2)
 
-### 바이너리 형식 (version 1)
+헤더는 little-endian 24바이트다. `CMNT`, version=2, height=28, width=28, channels=3, count 순서이며 split 필드는 없다. 레코드는 원본 training 인덱스 int32, 정답 uint8, RGB 픽셀 2,352바이트로 구성한다. 학습·평가 역할은 씬의 TextAsset 연결로 정한다. 로더는 헤더·길이·개수·원본 인덱스·정답을 검사한다. v1 파일은 지원하지 않는다.
 
-모든 정수는 little-endian이다. 헤더 24바이트 뒤에 지정 개수의 레코드가 오며 뒤쪽 추가 바이트를 허용하지 않는다.
+출력은 Dense 4·Softmax이며 손실 기울기 버퍼는 최종 분류 레이어의 출력 길이로 할당한다. 엔진은 데이터 파일 형식과 Unity 텍스처에 의존하지 않는다.
 
-| 위치·크기 | 값 |
-| --- | --- |
-| 0, 4 bytes | ASCII `CMNT` |
-| 4, int32 | version = 1 |
-| 8, int32 | split = 0(training) 또는 1(test) |
-| 12, int32 | height = 28 |
-| 16, int32 | width = 28 |
-| 20, int32 | record count |
-| 각 레코드, int32 | 해당 원본 split의 index |
-| 각 레코드, uint8 | label 0~9 |
-| 각 레코드, 784 × uint8 | 행 우선 픽셀, 채널 1 |
-
-로더는 헤더, split, 길이, 개수, 인덱스 범위·중복, 정답을 검사한다. training split과 test split에서 같은 정수 인덱스는 서로 다른 원본 샘플이다.
+이번 전환은 소스·씬 참조와 데이터 파일을 정적으로 확인했으며 Unity 실행·컴파일·빌드·테스트는 수행하지 않았다. 아래 과거 실행 결과는 컬러 데이터 전환 후 검증 결과가 아니다.
 
 ## 과거 검증 기록
 

@@ -116,8 +116,8 @@ namespace CNNConvolution
         {
             _advance = false;
             _next.interactable = true;
-            _next.GetComponentInChildren<Text>().text = label;
             _next.gameObject.SetActive(true);
+            _next.GetComponentInChildren<Text>().text = label;
             yield return new WaitUntil(() => _advance);
             _next.gameObject.SetActive(false);
         }

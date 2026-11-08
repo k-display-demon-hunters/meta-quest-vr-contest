@@ -13,6 +13,12 @@ namespace RealityLab
         private bool _postProcessing;
         private bool _hdr;
 
+        public void Initialize(Camera camera)
+        {
+            _camera = camera;
+            _cameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+        }
+
         private void OnEnable()
         {
             _clearFlags = _camera.clearFlags;

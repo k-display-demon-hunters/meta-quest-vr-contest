@@ -1,12 +1,12 @@
 # CNNRealityLab 패스스루
 
-독립 씬 `client/Assets/Scenes/CNNRealityLab.unity`에 기존 XRPlayerRig 프리팹 인스턴스와 OVRManager·OVRPassthroughLayer를 배치한다. 태블릿, 컨트롤러, 레이, 입력은 원본 프리팹을 그대로 사용한다. 공장과 ModelDesignLab은 로드하지 않는다. 기존 빌드 씬 목록과 시작 씬은 변경하지 않는다.
+독립 씬 `client/Assets/Scenes/CNNRealityLab.unity`에 기존 XRPlayerRig 프리팹 인스턴스와 OVRManager·OVRPassthroughLayer를 배치한다. 태블릿, 컨트롤러, 레이, 입력은 원본 프리팹을 그대로 사용한다. 공장과 ModelDesignLab은 로드하지 않는다. 빌드 씬 목록에 CNNRealityLab을 추가했으며 시작 씬은 유지한다.
 
-RealityPassthroughController는 연결된 카메라의 배경을 투명하게 만들고 HDR·후처리를 중지한다. 종료 시 이전 상태를 복원한다. 패스스루는 Underlay로 배치한다. 태블릿과 컨트롤러의 표시·입력은 비활성화하지 않는다. MRUK 카메라 접근, 촬영, 추론, 방 스캔, 씬 전환은 구현하지 않았다.
+RealityPassthroughController는 연결된 카메라의 배경을 투명하게 만들고 HDR·후처리를 중지한다. 종료 시 이전 상태를 복원한다. 패스스루는 Underlay로 배치한다. 태블릿과 컨트롤러의 표시·입력은 비활성화하지 않는다. MRUK 카메라 접근·촬영·전처리·기존 모델 추론 및 Additive 진입·복귀 진입점을 추가했다. UI 버튼 연결과 방 스캔은 제공하지 않는다.
 
 Meta Core와 MRUK 207.0.1을 공식 scoped registry로 선언했다. 실제 패키지 다운로드·설치·Unity 임포트는 하지 않았고 packages-lock.json은 이전 해석 결과로 유지했다. 이후 허가된 Package Manager 실행에서 잠금 파일 갱신이 필요하다.
 
-Android 빌드 후처리 소스는 생성된 unityLibrary manifest에 optional com.oculus.feature.PASSTHROUGH를 추가한다. 카메라 픽셀 접근 권한은 추가하지 않는다. 이 후처리는 작성만 했으며 실행하지 않았다.
+Android 빌드 후처리 소스는 생성된 unityLibrary manifest에 optional com.oculus.feature.PASSTHROUGH를 추가한다. horizonos.permission.HEADSET_CAMERA 권한 선언도 추가하며 런타임 요청은 Reality 씬의 OVRManager가 담당한다. 이 후처리는 작성만 했으며 실행하지 않았다.
 
 ## UI 구성
 
@@ -29,4 +29,18 @@ UI 문구는 기존 Pretendard Regular·SemiBold 원본을 참조하며 폰트�
 
 씬 YAML과 기존 프리팹 참조를 정적으로 확인했다. UI의 실제 표시·한글 렌더링·컨트롤러 ray 반응 및 팝업 조작은 실행 확인 전이다. SDK 참조 GUID는 Meta 공식 Unity-PassthroughCameraApiSamples의 CameraViewer와 Unity-StarterSamples의 PassthroughAtStartup 씬에서 확인했다. 207.0.1 패키지의 실제 임포트 결과·OpenXR 연동·기기 동작은 아직 검증하지 않았다. Unity 실행·컴파일·빌드·테스트·Simulator 설치를 수행하지 않았다. 헤드셋 없는 일반 에디터 화면에서 실제 현실 영상이 나타나는 구현은 아니다.
 
-공용 리그가 DontDestroyOnLoad로 유지되므로 이 씬은 단독 시작을 대상으로 한다. 다른 씬에서 Additive로 들어오며 유지 중인 리그에 연결하는 기능은 제공하지 않는다.
+CNNRealityLab 자체 리그 및 패스스루 루트는 시작 시 비활성이다. ModelDesign 단독 실행에서 학습 후 EnterRealityAsync로 진입해야 기존 리그 카메라 연결과 패스스루 활성화가 이루어진다. FactoryEnvironment가 로드된 실행은 진입을 거절한다.
+
+## 기능 연결 (UI 미연결)
+
+ModelDesign의 EnterRealityAsync / ExitRealityAsync가 ModelRealitySessionController에 로드·복귀를 위임한다. 학습 엔진은 ModelDesign Execution에 유지된다. 씬 종료 시 전환 컴포넌트가 Reality도 정리한다. Core·공장·태블릿·컨트롤러 및 기존 UI 파일은 수정하지 않았다.
+
+EnterRealityAsync 완료 후 ModelDesign.Reality로 CNNRealityLabManager를 얻는다. IsCameraReady를 확인하고 Capture(Rect)로 카메라 영상 기준 정규화 선택 영역(좌하단 원점)을 전달한다. 머리 카메라 viewport를 그대로 사용하면 안 되며 WorldToCameraImage로 실제 카메라 투영 좌표를 얻을 수 있다. 원근 보정·자동 숫자 검출은 제공하지 않는다. 현재 고정 선택 프레임과 버튼에는 이 기능을 연결하지 않았다.
+
+Capture 결과는 RealityRecognitionData이며 28×28×3, RGB 0~1, 위쪽 행부터 HWC 순서다. 읽기 전용 Pixels와 CopyInput을 제공한다. 카메라 전체 프레임은 GPU에서 RGB24 CPU 이미지로 일회 읽기 후 해제한다. 전처리는 bilinear resize이며 배경 제거·이진화는 하지 않는다. InputPrepared 이벤트에서 동일 입력으로 UI 미리보기를 만들 수 있다. 원본 촬영 텍스처는 외부에 보관·제공하지 않는다.
+
+RecognizeAsync(input)는 같은 요청 ID로 ModelDesign의 외부 추론 진입점을 호출하며 InferenceCompleted 또는 Failed 이벤트를 보낸다. 출력은 기존 모델의 0~3 네 클래스다. UI의 0~9 자리·문구는 팀원 작업 범위로 그대로 두었다. 기존 내장 샘플 결과 표시에서는 reality: 요청을 제외한다. 실행 중에는 기존 엔진의 동시 실행 제한이 적용된다.
+
+RealityPresentationController는 출발 씬의 Renderer.forceRenderingOff, Canvas.enabled, Light.enabled를 저장·변경하고 복귀 시 복원한다. 모델 루트나 계산 컴포넌트를 비활성화하지 않는다. 제작 오브젝트의 Collider·물리·입력은 유지되므로 숨겨진 물체와의 레이 간섭은 아직 해결되지 않았다. MR 중 새로 생성된 시각 객체에는 초기 숨김 목록이 적용되지 않는다.
+
+카메라 API 근거: [Meta 공식 PCA 문서](https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/)의 PassthroughCameraAccess.GetTexture, IsPlaying, WorldToViewportPoint. 패키지를 설치하지 않아 선언된 207.0.1과의 실제 컴파일·권한·영상 방향·색상·프레임 동작은 검증하지 않았다. 카메라 읽기는 동기 GPU readback이므로 실기기 지연도 미측정이다.

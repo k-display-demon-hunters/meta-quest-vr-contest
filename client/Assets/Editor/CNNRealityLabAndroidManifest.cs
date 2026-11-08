@@ -15,6 +15,16 @@ public sealed class CNNRealityLabAndroidManifest : IPostGenerateGradleAndroidPro
         var document = new XmlDocument();
         document.Load(manifestPath);
         XmlElement manifest = document.DocumentElement;
+        bool hasCameraPermission = false;
+        foreach (XmlNode node in manifest.SelectNodes("uses-permission"))
+            hasCameraPermission |= node.Attributes["name", android]?.Value == "horizonos.permission.HEADSET_CAMERA";
+        if (!hasCameraPermission)
+        {
+            XmlElement permission = document.CreateElement("uses-permission");
+            permission.SetAttribute("name", android, "horizonos.permission.HEADSET_CAMERA");
+            manifest.AppendChild(permission);
+        }
+        document.Save(manifestPath);
         foreach (XmlNode node in manifest.SelectNodes("uses-feature"))
             if (node.Attributes["name", android]?.Value == "com.oculus.feature.PASSTHROUGH")
                 return;

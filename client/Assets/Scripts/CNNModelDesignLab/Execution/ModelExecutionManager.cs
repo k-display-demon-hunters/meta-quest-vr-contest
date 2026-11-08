@@ -134,6 +134,22 @@ namespace ModelDesignScene.Execution
             return _controller.InferAsync(() => engine.InferAsync(input, imageId));
         }
 
+        public async Task<InferenceResult> InferExternalAsync(float[] input, string requestId)
+        {
+            if (!isActiveAndEnabled || IsBusy || !HasTrainedModel)
+                throw new InvalidOperationException("The trained model is not available for inference.");
+            InferenceResult result = null;
+            Exception failure = null;
+            CnnEngineManager engine = _engine;
+            await _controller.InferAsync(async () =>
+            {
+                try { result = await engine.InferAsync(input, requestId); return result; }
+                catch (Exception exception) { failure = exception; throw; }
+            });
+            if (failure != null) { throw failure; }
+            return result;
+        }
+
         public void CloseSession()
         {
             CnnEngineManager engine = _engine;

@@ -2,6 +2,16 @@
 
 [CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)의 학습 진입점은 `CorridorRoot`의 `CorridorDirector`다. 기존 XR 리그와 공장 학습 세션을 사용한다. 공장에서는 Room 02의 기존 앵커와 출입구 사이에 들어오도록 복도를 0.53배로 배치한다. 단독 씬의 복도 좌표는 1:1이다.
 
+## 편집 모드의 배치
+
+씬의 `CorridorRoot`는 [FeatureMapCorridor.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/FeatureMapCorridor.prefab) 인스턴스다. 입력판, 피처맵, 바닥, 출력 장치, 문, 안내 UI와 연출용 오브젝트가 미리 저장되어 Play 없이 Scene 뷰에서 보이고 편집된다.
+
+- 씬에서 인스턴스를 편집하거나 프리팹을 열어 Transform과 UI 배치를 수정한다. 공통 원본에 반영할 변경만 프리팹에 Apply한다. 실행 시 복도 오브젝트를 다시 생성하지 않는다.
+- 입력 그림은 `Input image`, RGB 펼침 위치는 `RGB expanded 1~3`, 출력 통은 `Output 1~3`, 정답 도착 위치는 각 통의 `Answer destination`, 비교 연출 기준점은 `Evidence staging`, 문은 `Corridor door`에서 편집한다. 맵·입력판 크기는 패널 루트의 Scale로 조절한다.
+- 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 문은 저장된 닫힘 위치에서 움직인다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다. 필터·강조선·계산 결과판은 학습 단계에 따라 이동·표시되므로 편집 시의 위치가 고정 표시 위치를 뜻하지는 않는다.
+- RGB 채널, 필터 카드, 계산 연출, 완료 팝업 등 단계별 오브젝트는 프리팹에 존재하지만 초기에는 비활성 상태일 수 있다. Hierarchy에서 선택해 편집하고 초기 표시 상태를 유지한다.
+- `Editor/CorridorPrefabBuilder.cs`의 `Tools > CNN > Save Feature Map Corridor Prefab`은 최초 변환용이다. 기존 프리팹이 있으면 재생성하지 않으며, 이후 배치는 저장된 프리팹을 직접 편집한다.
+
 ## 진행
 
 에디터에서 단독으로 실행할 때는 Game 뷰에 포커스를 준다. 오른손 레이로 앞쪽 숫자 그림의 칸을 가리키고 Shift 없이 T를 누른다. 화면 아래에 다음 버튼이 뜨면 그 버튼에 레이를 옮기고 T를 누른다. 다음 버튼이 숨겨진 상태에서는 안내 말풍선이 가리키는 그림·맵·필터·스위치를 먼저 조작한다. 에디터 단독 실행은 눈높이에서 시작하며, 입력 그림은 시작 위치의 5m 레이 범위에 들어오도록 배치했다.
@@ -16,7 +26,7 @@
 
 ## 모델 교체
 
-`CnnModelProvider`의 Model Prefab 슬롯에는 현재 [DummyCnnModel.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/DummyCnnModel.prefab)의 모델 컴포넌트가 연결돼 있다. 같은 슬롯에 `ICnnModel`을 구현한 컴포넌트를 연결하면 해당 모델을 인스턴스화한다. 현재 공간 배치 계약은 입력 세 채널, 은닉층 2·3·5장, 출력 숫자 1·2·3이다. 모델의 `Size`로 텍스처와 칸 좌표를 정한다.
+`CnnModelProvider`의 Model Instance 슬롯에는 복도 안에 미리 배치한 [DummyCnnModel.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/DummyCnnModel.prefab) 인스턴스의 모델 컴포넌트가 연결돼 있다. 실행 시 모델 오브젝트를 새로 생성하지 않는다. 모델을 교체할 때는 `ICnnModel`을 구현한 컴포넌트를 복도에 배치해 이 슬롯에 연결한다. 저장된 배치는 입력 세 채널, 은닉층 2·3·5장, 출력 숫자 1·2·3 및 16×16 맵을 기준으로 한다. 크기·채널 구성을 변경할 때는 저장된 패널·텍스처·참조도 함께 맞춰야 한다.
 
 더미 모델의 각 층은 3×3 합성곱, stride 1, zero padding, bias와 ReLU를 사용한다. 꺼진 맵은 pre를 유지하고 act만 0으로 전달한다. 출력은 마지막 층의 정규화된 맵과 숫자별 템플릿을 내적으로 비교한다. softmax 확률은 최대 나머지 방식으로 정수화한다. 모델 교체 시 더미 필터에 대한 설명은 `CorridorDialogue`의 맵별 설명 테이블에서 함께 교체한다.
 
@@ -24,12 +34,15 @@
 
 - 복도 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`에 있다. `CorridorDirector`가 상태를, `RoundPlayer`와 `ReceptiveFieldTour`가 연출을, `CorridorDialogue`가 화면 문구를 관리한다. 스크립트의 `.meta`와 GUID는 이동 전과 동일하다.
 - [CorridorTheme.asset](../client/Assets/Settings/CorridorTheme.asset)에서 폰트, 셀 패널 크기, 색과 머티리얼용 셰이더를 바꿀 수 있다.
-- 바닥, 맵, 카드, 출력 장치 등 모델 값에 맞춰 움직이는 오브젝트는 복도 루트 아래에서 초기화한다. 공용 버튼과 팝업 원본은 기존 Common 프리팹을 참조한다.
-- 이전 필터 비교·8×8 피처맵·별도 활성화 함수의 미사용 스크립트, 프리팹, 재질, 입력 텍스처는 제거했다. 현재 씬의 학습 진입점은 복도이며, `Prefabs/CNNFeatureMapLab/`에는 현재 모델인 `DummyCnnModel.prefab`을 유지한다. 기존 씬과 모델 프리팹, 테마의 직렬화 참조는 변경하지 않았다.
+- `FeatureMapCorridor.prefab`에는 각 표시 클래스의 직렬화 참조와 모든 복도 오브젝트가 저장돼 있다. `CorridorDirector.Awake`는 이 참조에 계산·입력을 연결하고, 활성 기간의 입력 구독은 `OnEnable`/`OnDisable`에서 연결·해제한다. 런타임은 텍스처 픽셀, 강조 메시, 문구·색·활성 상태와 연출을 갱신한다. 변경하는 텍스처·메시는 인스턴스별 복사본을 사용해 저장 원본을 보존한다.
+- 복도 전용 재질·텍스처·강조 메시는 각각 `Materials/CNNFeatureMapLab/`, `Textures/CNNFeatureMapLab/`, `Meshes/CNNFeatureMapLab/`에, TMP 폰트·아틀라스는 `Fonts/CNNFeatureMapLab/`에 있다. 후처리 프로파일은 `Settings/CorridorPostProcessing.asset`이다. 버튼·팝업은 기존 Common 원본을 사용해 배치했다.
+- 이전 필터 비교·8×8 피처맵·별도 활성화 함수의 미사용 코드·에셋은 제거된 상태다. 새 복도 표시용 에셋은 이전 에셋을 복원한 것이 아니라 현재 복도 생성 결과를 저장한 것이다.
 
 ## 실행 확인
 
-아래는 파일 정리 전의 실행 확인 기록이다. 스크립트 이동·미사용 에셋 정리에서는 GUID 보존과 잔여 참조를 정적으로 확인했으며, Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
+2026-11-09 편집용 저장 전환: 사용자 허가 범위에서 Unity 스크립트를 컴파일하고 프리팹·씬·표시 에셋을 저장했다. Play하지 않은 Scene 뷰에서 복도 표시를 확인했다. 이번 전환의 Play 테스트·앱 빌드는 수행하지 않았다.
+
+아래는 전환 전 런타임 생성 방식의 실행 확인 기록이며, 이번 변경의 플레이 검증 결과가 아니다.
 
 Unity 6000.3.24f1 에디터에서 더미 숫자 1·2·3의 예측, 맵 스위치의 전파, 필수·선택 라운드와 완료 상태를 확인했다. 숫자 2의 예측 확률은 97.56%였다.
 

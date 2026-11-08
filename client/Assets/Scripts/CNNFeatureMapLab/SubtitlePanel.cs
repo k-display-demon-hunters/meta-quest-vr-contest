@@ -7,19 +7,32 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class SubtitlePanel
     {
-        private readonly RectTransform _root;
-        private readonly TMP_Text _header;
-        private readonly TMP_Text _body;
-        private readonly WorldUIButtonController _previous;
-        private readonly WorldUIButtonController _next;
+        [SerializeField] private RectTransform _root;
+        [SerializeField] private TMP_Text _header;
+        [SerializeField] private TMP_Text _body;
+        [SerializeField] private WorldUIButtonController _previous;
+        [SerializeField] private WorldUIButtonController _next;
         private Vector3 _targetHeading;
         private Vector3 _fromHeading;
         private Vector3 _displayHeading;
         private float _motion;
         private bool _placed;
+        private Vector3 _displayScale;
 
+
+        internal void Bind(CorridorVisuals visuals, Action previous, Action next)
+        {
+            _displayScale = _root.localScale;
+            visuals.Listen(_previous.GetComponent<Button>(), previous);
+            visuals.Listen(_next.GetComponent<Button>(), next);
+        }
+
+        private SubtitlePanel() { }
+
+#if UNITY_EDITOR
         internal SubtitlePanel(CorridorVisuals visuals, Transform parent, Action previous, Action next)
         {
             var canvasObject = new GameObject("Corridor subtitles",typeof(RectTransform),typeof(Canvas),
@@ -28,6 +41,8 @@ namespace FeatureMapCorridor
             _root.SetParent(parent,false);
             canvasObject.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
             _root.sizeDelta = new Vector2(1300,480);
+            _root.localScale = Vector3.one * .001f;
+            _root.localPosition = new Vector3(0, 1.2f, -9);
             Color cyan = visuals.Theme.Cyan;
             Color edge = cyan;
             edge.a = .22f;
@@ -44,7 +59,9 @@ namespace FeatureMapCorridor
             _previous.ApplyPalette(new Color(.06f,.14f,.18f,.12f),new Color(.09f,.28f,.29f,.42f),
                 new Color(.12f,.4f,.4f,.65f),visuals.Theme.Ink,cyan,true);
         }
+#endif
 
+#if UNITY_EDITOR
         private static void AddBackdrop(RectTransform parent, Sprite sprite, Vector2 size, Color color)
         {
             var panel = new GameObject("Backdrop",typeof(RectTransform),typeof(Image));
@@ -57,6 +74,7 @@ namespace FeatureMapCorridor
             image.color = color;
             image.raycastTarget = false;
         }
+#endif
 
         internal void Show(string header, string body, bool previous, string next)
         {
@@ -94,7 +112,7 @@ namespace FeatureMapCorridor
             Vector3 offset = Quaternion.AngleAxis(downwardAngle,right)*_displayHeading*1.6f;
             _root.SetPositionAndRotation(view.position+offset,Quaternion.LookRotation(offset,Vector3.up));
             Vector3 parentScale = _root.parent.lossyScale;
-            _root.localScale = new Vector3(.001f/parentScale.x,.001f/parentScale.y,.001f/parentScale.z);
+            _root.localScale = new Vector3(_displayScale.x/parentScale.x,_displayScale.y/parentScale.y,_displayScale.z/parentScale.z);
         }
 
         internal void SetVisible(bool visible) => _root.gameObject.SetActive(visible);

@@ -11,26 +11,75 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class CorridorVisuals : IDisposable
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
-        private readonly MaterialPropertyBlock _properties = new MaterialPropertyBlock();
-        private readonly List<UnityEngine.Object> _assets = new List<UnityEngine.Object>();
-        private readonly List<Transform> _billboards = new List<Transform>();
-        private readonly Material _opaque;
-        private Sprite _rounded;
-        private readonly Material _transparent;
-        private readonly Material _slab;
-        private readonly TMP_FontAsset _korean;
-        private readonly TMP_FontAsset _mono;
-        private readonly GameObject _button;
+        private MaterialPropertyBlock _properties;
+        private List<UnityEngine.Object> _assets = new List<UnityEngine.Object>();
+        [SerializeField] private List<Transform> _billboards = new List<Transform>();
+        [SerializeField] private Material _opaque;
+        [SerializeField] private Sprite _rounded;
+        [SerializeField] private Material _transparent;
+        [SerializeField] private Material _slab;
+        [SerializeField] private TMP_FontAsset _korean;
+        [SerializeField] private TMP_FontAsset _mono;
+        [SerializeField] private GameObject _button;
 
-        internal CorridorTheme Theme { get; }
+        [SerializeField] private CorridorTheme _theme;
+        internal CorridorTheme Theme => _theme;
 
+        private readonly List<Action> _subscribe = new List<Action>();
+        private readonly List<Action> _unsubscribe = new List<Action>();
+#if UNITY_EDITOR
+        private readonly Dictionary<(Material, Color), Material> _colored = new Dictionary<(Material, Color), Material>();
+#endif
+
+        private CorridorVisuals() { }
+
+        internal void InitializeRuntime()
+        {
+            _properties = new MaterialPropertyBlock();
+            _assets.Clear();
+            _subscribe.Clear();
+            _unsubscribe.Clear();
+        }
+
+        internal void Listen(Collider collider, Action<Vector3> clicked)
+        {
+            XRSimpleInteractable interactable = collider.GetComponent<XRSimpleInteractable>();
+            UnityEngine.Events.UnityAction<UnityEngine.XR.Interaction.Toolkit.ActivateEventArgs> listener = args =>
+            {
+                if (args.interactorObject is XRRayInteractor ray && ray.TryGetCurrent3DRaycastHit(out RaycastHit hit)
+                    && hit.collider == collider) { clicked(hit.point); }
+            };
+            _subscribe.Add(() => interactable.activated.AddListener(listener));
+            _unsubscribe.Add(() => interactable.activated.RemoveListener(listener));
+        }
+
+        internal void Listen(Button button, Action clicked)
+        {
+            UnityEngine.Events.UnityAction listener = () => clicked();
+            _subscribe.Add(() => button.onClick.AddListener(listener));
+            _unsubscribe.Add(() => button.onClick.RemoveListener(listener));
+        }
+
+        internal void EnableInput()
+        {
+            foreach (Action subscribe in _subscribe) { subscribe(); }
+        }
+
+        internal void DisableInput()
+        {
+            foreach (Action unsubscribe in _unsubscribe) { unsubscribe(); }
+        }
+
+#if UNITY_EDITOR
         internal CorridorVisuals(CorridorTheme theme, GameObject button)
         {
-            Theme = theme;
+            _properties = new MaterialPropertyBlock();
+            _theme = theme;
             _button = button;
 
             _opaque = Own(new Material(theme.Unlit) { enableInstancing = true });
@@ -49,7 +98,9 @@ namespace FeatureMapCorridor
             _mono = Own(TMP_FontAsset.CreateFontAsset(theme.Mono, 44, 6, GlyphRenderMode.SDFAA, 1024, 1024));
             _mono.fallbackFontAssetTable = new List<TMP_FontAsset> { _korean };
         }
+#endif
 
+#if UNITY_EDITOR
         internal Sprite RoundedSprite()
         {
             if (_rounded != null) { return _rounded; }
@@ -71,6 +122,7 @@ namespace FeatureMapCorridor
                 SpriteMeshType.FullRect,Vector4.one*radius));
             return _rounded;
         }
+#endif
 
         internal T Own<T>(T asset) where T : UnityEngine.Object
         {
@@ -78,6 +130,7 @@ namespace FeatureMapCorridor
             return asset;
         }
 
+#if UNITY_EDITOR
         internal static Transform Group(Transform parent, string name, Vector3 position)
         {
             var group = new GameObject(name).transform;
@@ -85,7 +138,9 @@ namespace FeatureMapCorridor
             group.localPosition = position;
             return group;
         }
+#endif
 
+#if UNITY_EDITOR
         internal Renderer Shape(Transform parent, string name, Vector3 position, Vector3 scale, Color color,
             PrimitiveType type = PrimitiveType.Cube, bool collider = false, bool transparent = false, bool lit = false)
         {
@@ -98,7 +153,7 @@ namespace FeatureMapCorridor
             if (!collider && hitbox != null)
             {
                 hitbox.enabled = false;
-                UnityEngine.Object.Destroy(hitbox);
+                UnityEngine.Object.DestroyImmediate(hitbox);
             }
             Renderer renderer = shape.GetComponent<Renderer>();
             renderer.sharedMaterial = lit ? _slab : transparent ? _transparent : _opaque;
@@ -107,9 +162,24 @@ namespace FeatureMapCorridor
             Paint(renderer, color);
             return renderer;
         }
+#endif
 
         internal void Paint(Renderer target, Color color)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                var key = (target.sharedMaterial, color);
+                if (!_colored.TryGetValue(key, out Material material))
+                {
+                    material = Own(new Material(target.sharedMaterial) { name = target.name + " color" });
+                    material.SetColor(BaseColor, color);
+                    _colored.Add(key, material);
+                }
+                target.sharedMaterial = material;
+                return;
+            }
+#endif
             target.GetPropertyBlock(_properties);
             _properties.SetColor(BaseColor, color);
             target.SetPropertyBlock(_properties);
@@ -117,18 +187,30 @@ namespace FeatureMapCorridor
 
         internal void Texture(Renderer target, Texture2D texture)
         {
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                Material material = Own(new Material(target.sharedMaterial) { name = target.name + " texture" });
+                material.SetTexture(BaseMap, texture);
+                target.sharedMaterial = material;
+                return;
+            }
+#endif
             target.GetPropertyBlock(_properties);
             _properties.SetTexture(BaseMap,texture);
             target.SetPropertyBlock(_properties);
         }
 
+#if UNITY_EDITOR
         internal Texture2D Pixels(int size)
         {
             return Own(new Texture2D(size,size,TextureFormat.RGBA32,false) {
                 filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp
             });
         }
+#endif
 
+#if UNITY_EDITOR
         internal TMP_Text Label(Transform parent, string text, Vector3 position, float size, float width, Color color,
             bool billboard = true, bool mono = false)
         {
@@ -147,7 +229,9 @@ namespace FeatureMapCorridor
             if (billboard) { _billboards.Add(label.transform); }
             return label;
         }
+#endif
 
+#if UNITY_EDITOR
         internal TMP_Text CanvasText(Transform parent, string name, Vector2 position, Vector2 size, float fontSize, Color color)
         {
             var holder = new GameObject(name,typeof(RectTransform));
@@ -166,8 +250,11 @@ namespace FeatureMapCorridor
             text.raycastTarget = false;
             return text;
         }
+#endif
 
+#if UNITY_EDITOR
         internal void FaceCamera(Transform target) => _billboards.Add(target);
+#endif
 
         internal void UpdateBillboards(Camera camera)
         {
@@ -186,6 +273,7 @@ namespace FeatureMapCorridor
             }
         }
 
+#if UNITY_EDITOR
         internal WorldUIButtonController Button(Transform parent, string caption, Vector3 position, Vector2 size,
             Action action, bool primary = false, bool nested = false)
         {
@@ -212,7 +300,9 @@ namespace FeatureMapCorridor
             button.GetComponent<Button>().onClick.AddListener(() => action());
             return controller;
         }
+#endif
 
+#if UNITY_EDITOR
         internal static void EnableNestedButton(GameObject button, int order)
         {
             Canvas canvas = button.GetComponent<Canvas>();
@@ -221,11 +311,14 @@ namespace FeatureMapCorridor
             canvas.sortingOrder = order;
             button.GetComponent<UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster>().enabled = true;
         }
+#endif
 
+#if UNITY_EDITOR
         internal static void Click(Collider collider, Action<Vector3> clicked, bool trigger = true)
         {
             // XRI's collider discovery skips triggers. Register the collider before enabling trigger mode.
             var interactable = collider.gameObject.AddComponent<XRSimpleInteractable>();
+            interactable.colliders.Add(collider);
             collider.isTrigger = trigger;
 
             interactable.activated.AddListener(args =>
@@ -235,7 +328,9 @@ namespace FeatureMapCorridor
                     clicked(hit.point);
             });
         }
+#endif
 
+#if UNITY_EDITOR
         internal void Line(LineRenderer line, Color color, float width)
         {
             line.sharedMaterial = _transparent;
@@ -243,6 +338,7 @@ namespace FeatureMapCorridor
             line.endWidth = width;
             Paint(line,color);
         }
+#endif
 
         internal void InstanceLights(Mesh mesh, Matrix4x4[] transforms, int count, Color color, int layer)
         {

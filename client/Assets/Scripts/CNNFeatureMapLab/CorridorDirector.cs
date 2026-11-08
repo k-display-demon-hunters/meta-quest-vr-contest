@@ -29,18 +29,18 @@ namespace FeatureMapCorridor
         private ICnnModel _model;
         private LayerOutput[][] _forward;
         private float[][] _values;
-        private CorridorVisuals _visuals;
-        private CorridorBuilder _builder;
-        private InputPanel _input;
+        [SerializeField] private CorridorVisuals _visuals;
+        [SerializeField] private CorridorBuilder _builder;
+        [SerializeField] private InputPanel _input;
         private FeatureMapPanel[][] _maps;
-        private MapLinks _links;
-        private ReceptiveFieldTour _tour;
-        private RoundPlayer _round;
-        private OutputStage _output;
-        private SubtitlePanel _subtitle;
-        private HintBubbles _hints;
-        private CompletionPopup _completion;
-        private CorridorDoor _door;
+        [SerializeField] private MapLinks _links;
+        [SerializeField] private ReceptiveFieldTour _tour;
+        [SerializeField] private RoundPlayer _round;
+        [SerializeField] private OutputStage _output;
+        [SerializeField] private SubtitlePanel _subtitle;
+        [SerializeField] private HintBubbles _hints;
+        [SerializeField] private CompletionPopup _completion;
+        [SerializeField] private CorridorDoor _door;
         private Phase _phase;
         private Phase _optionalReturn;
         private int _digit = 2;
@@ -56,8 +56,15 @@ namespace FeatureMapCorridor
         private bool _waitingForFilter;
         private bool _filterButtonPending;
         private bool _roomVisible;
-        private VolumeProfile _profile;
-        private Volume _volume;
+        [System.Serializable]
+        private sealed class MapLayerView
+        {
+            public FeatureMapPanel[] Panels;
+        }
+
+        [SerializeField] private MapLayerView[] _layers;
+
+        [SerializeField] private Volume _volume;
         private UniversalAdditionalCameraData _renderCamera;
         private bool _previousPostProcessing;
         private bool _standalone;
@@ -70,6 +77,47 @@ namespace FeatureMapCorridor
         public event Action<bool> ExitAvailabilityChanged;
 
         private void Awake()
+        {
+            _provider.Initialize();
+            _model = _provider.Model;
+            _visuals.InitializeRuntime();
+            _input.Bind(_visuals, InputSelected, DigitSelected);
+            _maps = new FeatureMapPanel[_layers.Length][];
+            for (int l = 0; l < _layers.Length; l++)
+            {
+                int layer = l + 1;
+                _maps[l] = _layers[l].Panels;
+                for (int m = 0; m < _maps[l].Length; m++)
+                {
+                    int map = m;
+                    _maps[l][m].Bind(_visuals, index => MapSelected(layer, map, index));
+                    _maps[l][m].BindSwitch(() => Toggle(layer, map));
+                }
+            }
+            _builder.Bind(_visuals);
+            _output.Bind(_visuals, _model, _input, _maps[2], TinSelected);
+            _links.Bind(_visuals, _root, _input, _maps, _output);
+            _tour.Bind(_visuals, _input.Picture, _maps, _model.Size);
+            _round.Bind(_visuals, _model, _input, _maps, _output);
+            _subtitle.Bind(_visuals, Previous, Next);
+            _hints.Bind(_visuals);
+            _completion.Bind();
+            _door.Bind(_visuals);
+            Recalculate();
+            ShowStart();
+        }
+
+        private void OnEnable()
+        {
+            if (!Application.isPlaying) { return; }
+            _builder.ZonePressed += ToggleZone;
+            _round.FilterPressed += FilterChanged;
+            _round.EnableInput();
+            _visuals.EnableInput();
+        }
+
+#if UNITY_EDITOR
+        public void BuildLayoutForEditor()
         {
             _provider.Initialize();
             _model = _provider.Model;
@@ -92,19 +140,33 @@ namespace FeatureMapCorridor
                 }
             }
             _builder = new CorridorBuilder(_visuals,_root,_model.MapsPerLayer);
-            _builder.ZonePressed += ToggleZone;
             _output = new OutputStage(_visuals,_root,_model,_input,_maps[2],TinSelected);
             _links = new MapLinks(_visuals,_root,_input,_maps,_output);
             _tour = new ReceptiveFieldTour(_visuals,_root,_input.Picture,_maps,_model.Size);
             _round = new RoundPlayer(_visuals,_root,_model,_input,_maps,_output);
-            _round.FilterPressed += FilterChanged;
             _subtitle = new SubtitlePanel(_visuals,transform,Previous,Next);
             _hints = new HintBubbles(_visuals,_root);
             _completion = new CompletionPopup(_popup,transform,_visuals);
             _door = new CorridorDoor(_visuals,_root);
+            _layers = new MapLayerView[_maps.Length];
+            for (int i = 0; i < _maps.Length; i++) { _layers[i] = new MapLayerView { Panels = _maps[i] }; }
+            _volume = gameObject.AddComponent<Volume>();
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            profile.name = "Corridor post processing";
+            var bloom = profile.Add<Bloom>(true);
+            bloom.threshold.value = 1;
+            bloom.intensity.value = .6f;
+            var vignette = profile.Add<Vignette>(true);
+            vignette.intensity.value = .14f;
+            _volume.isGlobal = true;
+            _volume.priority = 10;
+            _volume.sharedProfile = profile;
+            _volume.enabled = false;
             Recalculate();
             ShowStart();
         }
+
+#endif
 
         private void Start()
         {
@@ -126,16 +188,6 @@ namespace FeatureMapCorridor
                 RenderSettings.fogEndDistance = 46;
                 RenderSettings.fogColor = _theme.Void;
             }
-            _volume = gameObject.AddComponent<Volume>();
-            _profile = ScriptableObject.CreateInstance<VolumeProfile>();
-            var bloom = _profile.Add<Bloom>(true);
-            bloom.threshold.value = 1;
-            bloom.intensity.value = .6f;
-            var vignette = _profile.Add<Vignette>(true);
-            vignette.intensity.value = .14f;
-            _volume.isGlobal = true;
-            _volume.priority = 10;
-            _volume.sharedProfile = _profile;
             _volume.enabled = false;
         }
 
@@ -407,7 +459,7 @@ namespace FeatureMapCorridor
             _phase = Phase.Complete;
             _door.Open();
             _subtitle.Show("",CorridorDialogue.CompleteBody,false,null);
-            _hints.Show(CorridorDialogue.DoorOpenHint,CorridorDoor.Position+Vector3.up*4.45f);
+            _hints.Show(CorridorDialogue.DoorOpenHint,_root.InverseTransformPoint(_door.GuidePosition));
             _completion.Open(_camera);
             SetProgress(1);
             ExitAvailabilityChanged?.Invoke(true);
@@ -525,15 +577,20 @@ namespace FeatureMapCorridor
 
         private void OnDisable()
         {
+            if (!Application.isPlaying) { return; }
+            _builder.ZonePressed -= ToggleZone;
+            _round.FilterPressed -= FilterChanged;
+            _visuals.DisableInput();
+            _round.DisableInput();
             RestoreCamera();
             _roomVisible = false;
-            if (_volume != null) { _volume.enabled = false; }
+            _volume.enabled = false;
         }
 
         private void OnDestroy()
         {
-            _visuals?.Dispose();
-            if (_profile != null) { Destroy(_profile); }
+            if (!Application.isPlaying) { return; }
+            _visuals.Dispose();
         }
     }
 }

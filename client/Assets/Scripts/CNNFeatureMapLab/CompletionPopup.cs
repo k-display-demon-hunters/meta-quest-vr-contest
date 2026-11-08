@@ -4,12 +4,24 @@ using UnityEngine.UI;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class CompletionPopup
     {
-        private readonly WorldUIPopupController _popup;
-        private readonly Transform _parent;
+        [SerializeField] private WorldUIPopupController _popup;
+        [SerializeField] private Transform _parent;
         private float _time;
+        private Vector3 _displayScale;
 
+
+        internal void Bind()
+        {
+            _displayScale = _popup.transform.localScale;
+            _popup.Hide();
+        }
+
+        private CompletionPopup() { }
+
+#if UNITY_EDITOR
         internal CompletionPopup(GameObject prefab, Transform parent, CorridorVisuals visuals)
         {
             _parent = parent;
@@ -17,6 +29,7 @@ namespace FeatureMapCorridor
             var instance = Object.Instantiate(prefab,parent);
             foreach (Text label in instance.GetComponentsInChildren<Text>(true)) { label.font = theme.Korean; }
             _popup = instance.GetComponent<WorldUIPopupController>();
+            _popup.transform.localScale = Vector3.one * .0009375f;
             var button = instance.GetComponentInChildren<WorldUIButtonController>();
             CorridorVisuals.EnableNestedButton(button.gameObject,3);
             var buttonRect = (RectTransform)button.transform;
@@ -68,6 +81,7 @@ namespace FeatureMapCorridor
             image.color = Color.clear;
             _popup.Hide();
         }
+#endif
 
         internal void Open(Camera camera)
         {
@@ -85,8 +99,7 @@ namespace FeatureMapCorridor
             float t = _time/.45f;
             float scale = Mathf.Lerp(.7f,1,Mathf.SmoothStep(0,1,t))+.05f*Mathf.Sin(Mathf.PI*t);
             Vector3 parent = _parent.lossyScale;
-            const float width = .0009375f;
-            _popup.transform.localScale = new Vector3(scale*width/parent.x,scale*width/parent.y,scale*width/parent.z);
+            _popup.transform.localScale = new Vector3(scale*_displayScale.x/parent.x,scale*_displayScale.y/parent.y,scale*_displayScale.z/parent.z);
         }
     }
 }

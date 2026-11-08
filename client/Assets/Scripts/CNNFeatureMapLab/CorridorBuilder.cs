@@ -4,23 +4,42 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class CorridorBuilder
     {
         private static readonly float[] Starts = { -9.5f,-5.2f,-.2f,6.4f,16.4f };
         private static readonly float[] Ends = { -5.6f,-1.2f,5.4f,15.2f,25.5f };
         private const float Width = 6.8f;
-        private readonly CorridorVisuals _visuals;
-        private readonly Transform _root;
-        private readonly Mesh _cube;
-        private readonly Matrix4x4[] _edgeLights = new Matrix4x4[70];
-        private readonly Matrix4x4[] _stepLights = new Matrix4x4[108];
-        private readonly Renderer[] _stepGlow = new Renderer[4];
-        private readonly Renderer[] _zoneOverlay = new Renderer[5];
-        private readonly Transform[] _zoneEdges = new Transform[5];
-        private readonly TMP_Text[,] _names = new TMP_Text[3,2];
+        private CorridorVisuals _visuals;
+        [SerializeField] private Transform _root;
+        [SerializeField] private Mesh _cube;
+        private Matrix4x4[] _edgeLights = new Matrix4x4[70];
+        private Matrix4x4[] _stepLights = new Matrix4x4[108];
+        [SerializeField] private Renderer[] _stepGlow = new Renderer[4];
+        [SerializeField] private Renderer[] _zoneOverlay = new Renderer[5];
+        [SerializeField] private Transform[] _zoneEdges = new Transform[5];
+        [SerializeField] private TMP_Text[] _names = new TMP_Text[3*2];
+        private Vector3[] _nameScales = new Vector3[6];
         private int _highlight = -1;
         internal event Action<int> ZonePressed;
 
+        [SerializeField] private Collider[] _zoneHits = new Collider[5];
+
+        internal void Bind(CorridorVisuals visuals)
+        {
+            _visuals = visuals;
+            for (int i = 0; i < _names.Length; i++) { _nameScales[i] = _names[i].transform.localScale; }
+            for (int i = 0; i < _zoneHits.Length; i++)
+            {
+                int zone = i;
+                visuals.Listen(_zoneHits[i], _ => ZonePressed?.Invoke(zone));
+            }
+            Highlight(-1);
+        }
+
+        private CorridorBuilder() { }
+
+#if UNITY_EDITOR
         internal CorridorBuilder(CorridorVisuals visuals, Transform root, int[] mapCounts)
         {
             _visuals = visuals;
@@ -38,6 +57,7 @@ namespace FeatureMapCorridor
                 int id = zone;
                 float top = -.6f * zone;
                 Renderer slab = BuildSlab(Starts[zone],Ends[zone],top,.05f);
+                _zoneHits[zone] = slab.GetComponent<Collider>();
                 CorridorVisuals.Click(slab.GetComponent<Collider>(), _ => ZonePressed?.Invoke(id),trigger:false);
                 _zoneOverlay[zone] = Overlay(Starts[zone],Ends[zone],top,.14f);
                 _zoneEdges[zone] = CorridorVisuals.Group(root,"Zone border",Vector3.zero);
@@ -45,8 +65,8 @@ namespace FeatureMapCorridor
                 if (zone > 0 && zone < 4)
                 {
                     float center = (Starts[zone]+Ends[zone])*.5f;
-                    _names[zone-1,0] = FloorText(CorridorDialogue.Layer(zone),center+.32f,.53f,top);
-                    _names[zone-1,1] = FloorText(CorridorDialogue.MapCount(mapCounts[zone-1]),center-.38f,.33f,top);
+                    _names[(zone-1)*2+0] = FloorText(CorridorDialogue.Layer(zone),center+.32f,.53f,top);
+                    _names[(zone-1)*2+1] = FloorText(CorridorDialogue.MapCount(mapCounts[zone-1]),center-.38f,.33f,top);
                 }
                 if (zone == Ends.Length-1) { continue; }
                 float depth = (Starts[zone+1]-Ends[zone])/3;
@@ -58,9 +78,12 @@ namespace FeatureMapCorridor
                 _stepGlow[zone] = wash;
             }
             _cube = _zoneEdges[0].GetComponentInChildren<MeshFilter>().sharedMesh;
+            for (int i = 0; i < _names.Length; i++) { _nameScales[i] = _names[i].transform.localScale; }
             Highlight(-1);
         }
+#endif
 
+#if UNITY_EDITOR
         private Renderer BuildSlab(float start, float end, float y, float edgeHeight)
         {
             Vector3 center = new Vector3(0,y-1.8f,(start+end)*.5f);
@@ -70,7 +93,9 @@ namespace FeatureMapCorridor
             Edges(_root,start,end,y,edgeHeight,_visuals.Theme.Edge,false);
             return cap;
         }
+#endif
 
+#if UNITY_EDITOR
         private void Edges(Transform parent, float start, float end, float y, float height, Color color, bool uniform)
         {
             float center = (start+end)*.5f;
@@ -81,7 +106,9 @@ namespace FeatureMapCorridor
                 _visuals.Shape(parent,"Side edge",new Vector3(sign*Width*.5f,y+.014f,center),
                     new Vector3(.04f,.025f,end-start),color);
         }
+#endif
 
+#if UNITY_EDITOR
         private Renderer Overlay(float start, float end, float y, float alpha)
         {
             Color color = _visuals.Theme.Cyan;
@@ -91,13 +118,16 @@ namespace FeatureMapCorridor
             renderer.transform.localRotation = Quaternion.Euler(90,0,0);
             return renderer;
         }
+#endif
 
+#if UNITY_EDITOR
         private TMP_Text FloorText(string caption, float z, float size, float y)
         {
             TMP_Text label = _visuals.Label(_root,caption,new Vector3(0,y+.025f,z),size,6,new Color32(111,133,153,255),false);
             label.transform.localRotation = Quaternion.Euler(90,0,0);
             return label;
         }
+#endif
 
         internal int HighlightedZone => _highlight;
 
@@ -114,9 +144,9 @@ namespace FeatureMapCorridor
                 if (i == 0 || i == 4) { continue; }
                 for (int line = 0; line < 2; line++)
                 {
-                    TMP_Text label = _names[i-1,line];
+                    TMP_Text label = _names[(i-1)*2+line];
                     label.color = i == zone ? _visuals.Theme.Cyan : new Color32(111,133,153,255);
-                    label.transform.localScale = Vector3.one * (i == zone ? 1.08f : 1);
+                    label.transform.localScale = _nameScales[(i-1)*2+line] * (i == zone ? 1.08f : 1);
                 }
             }
         }

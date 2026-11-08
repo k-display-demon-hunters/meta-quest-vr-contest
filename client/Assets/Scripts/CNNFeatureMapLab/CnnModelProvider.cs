@@ -1,12 +1,14 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FeatureMapCorridor
 {
     public sealed class CnnModelProvider : MonoBehaviour
     {
-        [SerializeField] private MonoBehaviour _modelPrefab;
+        [FormerlySerializedAs("_modelPrefab")]
+        [SerializeField] private MonoBehaviour _modelInstance;
         public ICnnModel Model { get; private set; }
 
-        internal void Initialize() => Model = (ICnnModel)Instantiate(_modelPrefab, transform);
+        internal void Initialize() => Model = (ICnnModel)_modelInstance;
     }
 }

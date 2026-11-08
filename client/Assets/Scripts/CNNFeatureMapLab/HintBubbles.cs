@@ -3,24 +3,35 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class HintBubbles
     {
         private const int RecapCount = 5;
-        private readonly Transform _root;
-        private readonly CorridorVisuals _visuals;
-        private readonly Transform _hint;
-        private readonly TMP_Text _caption;
-        private readonly Renderer _dot;
-        private readonly Transform _offscreenChip;
-        private readonly TMP_Text _offscreen;
-        private readonly Transform[] _recaps = new Transform[RecapCount];
-        private readonly TMP_Text[,] _chips = new TMP_Text[RecapCount,6];
-        private readonly Renderer[,] _chipFrames = new Renderer[RecapCount,6];
-        private readonly float[] _expiration = new float[RecapCount];
+        [SerializeField] private Transform _root;
+        private CorridorVisuals _visuals;
+        [SerializeField] private Transform _hint;
+        [SerializeField] private TMP_Text _caption;
+        [SerializeField] private Renderer _dot;
+        [SerializeField] private Transform _offscreenChip;
+        [SerializeField] private TMP_Text _offscreen;
+        [SerializeField] private Transform[] _recaps = new Transform[RecapCount];
+        [SerializeField] private TMP_Text[] _chips = new TMP_Text[RecapCount*6];
+        [SerializeField] private Renderer[] _chipFrames = new Renderer[RecapCount*6];
+        private float[] _expiration = new float[RecapCount];
         private int _next;
         private int _direction = -1;
         private static readonly string[] Directions = { "→ "+CorridorDialogue.Arrow,"↗ "+CorridorDialogue.Arrow,"↑ "+CorridorDialogue.Arrow,"↖ "+CorridorDialogue.Arrow,"← "+CorridorDialogue.Arrow,"↙ "+CorridorDialogue.Arrow,"↓ "+CorridorDialogue.Arrow,"↘ "+CorridorDialogue.Arrow };
 
+
+        internal void Bind(CorridorVisuals visuals)
+        {
+            _visuals = visuals;
+            Hide();
+        }
+
+        private HintBubbles() { }
+
+#if UNITY_EDITOR
         internal HintBubbles(CorridorVisuals visuals, Transform root)
         {
             _visuals = visuals;
@@ -45,15 +56,16 @@ namespace FeatureMapCorridor
                 visuals.FaceCamera(_recaps[i]);
                 for (int j = 0; j < 6; j++)
                 {
-                    _chipFrames[i,j] = visuals.Shape(_recaps[i],"Chip",Vector3.zero,new Vector3(.66f,.27f,.02f),visuals.Theme.Amber);
-                    visuals.Shape(_chipFrames[i,j].transform,"Chip background",new Vector3(0,0,-.18f),new Vector3(.93f,.82f,1),
+                    _chipFrames[(i)*6+j] = visuals.Shape(_recaps[i],"Chip",Vector3.zero,new Vector3(.66f,.27f,.02f),visuals.Theme.Amber);
+                    visuals.Shape(_chipFrames[(i)*6+j].transform,"Chip background",new Vector3(0,0,-.18f),new Vector3(.93f,.82f,1),
                         new Color32(22,32,46,255));
-                    _chips[i,j] = visuals.Label(_recaps[i],"",Vector3.zero,.1f,.66f,visuals.Theme.Ink,false);
+                    _chips[(i)*6+j] = visuals.Label(_recaps[i],"",Vector3.zero,.1f,.66f,visuals.Theme.Ink,false);
                 }
                 _recaps[i].gameObject.SetActive(false);
             }
             Hide();
         }
+#endif
 
         internal void Show(string text, Vector3 position)
         {
@@ -77,14 +89,14 @@ namespace FeatureMapCorridor
             for (int i = 0; i < 6; i++)
             {
                 bool visible = i < count;
-                _chipFrames[index,i].gameObject.SetActive(visible);
-                _chips[index,i].gameObject.SetActive(visible);
+                _chipFrames[(index)*6+i].gameObject.SetActive(visible);
+                _chips[(index)*6+i].gameObject.SetActive(visible);
                 if (!visible) { continue; }
                 float x = (i-(count-1)*.5f)*.73f;
-                _chipFrames[index,i].transform.localPosition = new Vector3(x,0,0);
-                _chips[index,i].transform.localPosition = new Vector3(x,0,-.03f);
-                _chips[index,i].text = i < sources.Length ? sources[i]+(i < sources.Length-1 ? " +" : " →") : result;
-                _visuals.Paint(_chipFrames[index,i], i < sources.Length ? colors[i] : _visuals.Theme.Amber);
+                _chipFrames[(index)*6+i].transform.localPosition = new Vector3(x,0,0);
+                _chips[(index)*6+i].transform.localPosition = new Vector3(x,0,-.03f);
+                _chips[(index)*6+i].text = i < sources.Length ? sources[i]+(i < sources.Length-1 ? " +" : " →") : result;
+                _visuals.Paint(_chipFrames[(index)*6+i], i < sources.Length ? colors[i] : _visuals.Theme.Amber);
             }
             _expiration[index] = Time.unscaledTime+20;
         }

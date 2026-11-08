@@ -3,19 +3,52 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class MapLinks
     {
+        [System.Serializable]
         private struct Link
         {
-            internal LineRenderer Line;
-            internal int Destination;
-            internal string Source;
+            public LineRenderer Line;
+            public int Destination;
+            public string Source;
         }
-        private readonly List<Link> _links = new List<Link>();
-        private readonly float[] _amberUntil = new float[5];
-        private readonly CorridorVisuals _visuals;
+        [SerializeField] private List<Link> _links = new List<Link>();
+        private float[] _amberUntil = new float[5];
+        private CorridorVisuals _visuals;
         internal bool Dimmed { private get; set; }
 
+
+        internal void Bind(CorridorVisuals visuals, Transform root, InputPanel input, FeatureMapPanel[][] maps, OutputStage output)
+        {
+            _visuals = visuals;
+            int index = 0;
+            for (int layer = 1; layer <= maps.Length; layer++)
+            {
+                int count = layer == 1 ? 1 : maps[layer-2].Length;
+                for (int source = 0; source < count; source++)
+                foreach (FeatureMapPanel target in maps[layer-1])
+                {
+                    Vector3 start = layer == 1 ? input.Picture.Root.position : maps[layer-2][source].Root.position;
+                    Position(_links[index++].Line, start, target.Root.position, root.up * .33f);
+                }
+            }
+            for (int source = 0; source < maps[2].Length; source++)
+            for (int digit = 1; digit <= 3; digit++)
+                Position(_links[index++].Line, maps[2][source].Root.position, root.TransformPoint(output.Tin(digit)), root.up * .33f);
+        }
+
+        private static void Position(LineRenderer line, Vector3 start, Vector3 end, Vector3 lift)
+        {
+            line.SetPosition(0, line.transform.InverseTransformPoint(start));
+            line.SetPosition(1, line.transform.InverseTransformPoint((start + end) * .5f + lift));
+            line.SetPosition(2, line.transform.InverseTransformPoint(end));
+        }
+
+
+        private MapLinks() { }
+
+#if UNITY_EDITOR
         internal MapLinks(CorridorVisuals visuals, Transform root, InputPanel input, FeatureMapPanel[][] maps, OutputStage output)
         {
             _visuals = visuals;
@@ -33,7 +66,9 @@ namespace FeatureMapCorridor
             for (int digit = 1; digit <= 3; digit++)
                 Add(root,maps[2][source].Position,output.Tin(digit),4,CorridorMath.MapKey(3,source));
         }
+#endif
 
+#if UNITY_EDITOR
         private void Add(Transform root, Vector3 start, Vector3 end, int destination, string source)
         {
             var line = CorridorVisuals.Group(root,"Map link",Vector3.zero).gameObject.AddComponent<LineRenderer>();
@@ -45,6 +80,7 @@ namespace FeatureMapCorridor
             _visuals.Line(line,_visuals.Theme.Cyan,.016f);
             _links.Add(new Link { Line = line, Destination = destination, Source = source });
         }
+#endif
 
         internal void Celebrate(int layer) => _amberUntil[layer] = Time.unscaledTime+20;
 

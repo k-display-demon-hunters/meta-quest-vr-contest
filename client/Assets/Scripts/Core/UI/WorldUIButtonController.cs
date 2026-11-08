@@ -20,7 +20,7 @@ namespace UI
         [SerializeField] private Color _disabledTextColor = new Color(.55f, .62f, .65f);
         [SerializeField] private Color _outlineColor = new Color(.28f, .95f, .91f);
         [SerializeField, Min(0f)] private float _transitionSeconds = .08f;
-        private bool _outlineAtRest;
+        [SerializeField] private bool _outlineAtRest;
         private bool _hovered;
         private bool _pressed;
         private bool _wasInteractable;

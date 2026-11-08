@@ -2,17 +2,18 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class ReceptiveFieldTour
     {
         private static readonly float[] Interval = { 0,.5f,.2f,.11f };
-        private readonly FeatureMapPanel[][] _maps;
-        private readonly FeatureMapPanel _input;
-        private readonly CorridorTheme _theme;
-        private readonly Renderer _accumulated;
-        private readonly Mesh _mesh;
-        private readonly Vector3[] _vertices = new Vector3[49*16];
-        private readonly int[] _triangles = new int[49*24];
-        private readonly int _size;
+        private FeatureMapPanel[][] _maps;
+        private FeatureMapPanel _input;
+        private CorridorTheme _theme;
+        [SerializeField] private Renderer _accumulated;
+        [SerializeField] private Mesh _mesh;
+        private Vector3[] _vertices = new Vector3[49*16];
+        private int[] _triangles = new int[49*24];
+        private int _size;
         private int _stage;
         private int _index;
         private int _count;
@@ -24,6 +25,33 @@ namespace FeatureMapCorridor
         private float _start;
         private bool _running;
 
+
+        internal void Bind(CorridorVisuals visuals, FeatureMapPanel input, FeatureMapPanel[][] maps, int size)
+        {
+            _theme = visuals.Theme;
+            _input = input;
+            _maps = maps;
+            _size = size;
+            _mesh = visuals.Own(Object.Instantiate(_mesh));
+            _mesh.MarkDynamic();
+            _accumulated.GetComponent<MeshFilter>().sharedMesh = _mesh;
+            for (int quad = 0; quad < _triangles.Length / 6; quad++)
+            {
+                int vertex = quad * 4;
+                int t = quad * 6;
+                _triangles[t] = vertex;
+                _triangles[t + 1] = vertex + 1;
+                _triangles[t + 2] = vertex + 2;
+                _triangles[t + 3] = vertex + 2;
+                _triangles[t + 4] = vertex + 3;
+                _triangles[t + 5] = vertex;
+            }
+            _accumulated.enabled = false;
+        }
+
+        private ReceptiveFieldTour() { }
+
+#if UNITY_EDITOR
         internal ReceptiveFieldTour(CorridorVisuals visuals, Transform root, FeatureMapPanel input, FeatureMapPanel[][] maps, int size)
         {
             _theme = visuals.Theme;
@@ -47,6 +75,7 @@ namespace FeatureMapCorridor
             }
             _accumulated.enabled = false;
         }
+#endif
 
         internal void Show(int stage, int index)
         {

@@ -5,23 +5,24 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class FilterStack
     {
         private const int Capacity = 5;
-        private readonly CorridorVisuals _visuals;
-        private readonly ICnnModel _model;
-        private readonly Transform _root;
-        private readonly Renderer[] _frames = new Renderer[Capacity];
-        private readonly Transform[] _card = new Transform[Capacity];
-        private readonly Transform[] _weights = new Transform[Capacity];
-        private readonly TMP_Text[,] _numbers = new TMP_Text[Capacity,9];
-        private readonly TMP_Text[] _badges = new TMP_Text[Capacity];
-        private readonly FeatureMapPanel[] _templates = new FeatureMapPanel[Capacity];
-        private readonly LineRenderer[] _links = new LineRenderer[Capacity];
-        private readonly LineRenderer _resultLink;
-        private readonly TMP_Text _cover;
-        private readonly TMP_Text _title;
-        private readonly Vector3[] _starts = new Vector3[Capacity];
+        private CorridorVisuals _visuals;
+        private ICnnModel _model;
+        [SerializeField] private Transform _root;
+        [SerializeField] private Renderer[] _frames = new Renderer[Capacity];
+        [SerializeField] private Transform[] _card = new Transform[Capacity];
+        [SerializeField] private Transform[] _weights = new Transform[Capacity];
+        [SerializeField] private TMP_Text[] _numbers = new TMP_Text[Capacity*9];
+        [SerializeField] private TMP_Text[] _badges = new TMP_Text[Capacity];
+        [SerializeField] private FeatureMapPanel[] _templates = new FeatureMapPanel[Capacity];
+        [SerializeField] private LineRenderer[] _links = new LineRenderer[Capacity];
+        [SerializeField] private LineRenderer _resultLink;
+        [SerializeField] private TMP_Text _cover;
+        [SerializeField] private TMP_Text _title;
+        private Vector3[] _starts = new Vector3[Capacity];
         private FeatureMapPanel[] _sources;
         private FeatureMapPanel _result;
         private Color32[] _colors;
@@ -42,6 +43,26 @@ namespace FeatureMapCorridor
         internal Color32 WeightColor(float weight) => Mathf.Abs(weight) < .005f ? new Color32(107,122,138,255)
             : weight > 0 ? _visuals.Theme.Cyan : _visuals.Theme.Negative;
 
+        [SerializeField] private Collider[] _cardHits = new Collider[Capacity];
+        [SerializeField] private float _spreadSpacing = .95f;
+        private Vector3[] _foldedPositions = new Vector3[Capacity];
+
+        internal void Bind(CorridorVisuals visuals, ICnnModel model)
+        {
+            _visuals = visuals;
+            _model = model;
+            for (int i = 0; i < Capacity; i++)
+            {
+                _foldedPositions[i] = _card[i].localPosition;
+                _templates[i].Bind(visuals);
+                visuals.Listen(_cardHits[i], _ => Press());
+            }
+            Hide();
+        }
+
+        private FilterStack() { }
+
+#if UNITY_EDITOR
         internal FilterStack(CorridorVisuals visuals, Transform parent, ICnnModel model)
         {
             _visuals = visuals;
@@ -56,12 +77,15 @@ namespace FeatureMapCorridor
                 _frames[i] = visuals.Shape(_card[i],"Card frame",Vector3.zero,new Vector3(.8f,.8f,.042f),visuals.Theme.Amber);
                 var face = visuals.Shape(_card[i],"Card face",new Vector3(0,0,-.027f),new Vector3(.76f,.76f,.023f),
                     new Color32(22,32,46,255),collider:true);
+                _cardHits[i] = face.GetComponent<Collider>();
+                _foldedPositions[i] = new Vector3(i*.07f,i*.07f,i*.04f);
+                _card[i].localPosition = _foldedPositions[i];
                 CorridorVisuals.Click(face.GetComponent<Collider>(),_ => Press());
                 _weights[i] = CorridorVisuals.Group(_card[i],"Kernel weights",Vector3.zero);
                 for (int n = 0; n < 9; n++)
                 {
                     Vector3 position = new Vector3((n%3-1)*.249f,(1-n/3)*.249f,-.049f);
-                    _numbers[i,n] = visuals.Label(_weights[i],"",position,.117f,.245f,visuals.Theme.Cyan,false,true);
+                    _numbers[(i)*9+n] = visuals.Label(_weights[i],"",position,.117f,.245f,visuals.Theme.Cyan,false,true);
                 }
                 for (int j = -1; j <= 1; j += 2)
                 {
@@ -76,7 +100,9 @@ namespace FeatureMapCorridor
             _resultLink = CreateLine(parent,"Filter result");
             Hide();
         }
+#endif
 
+#if UNITY_EDITOR
         private LineRenderer CreateLine(Transform parent, string name)
         {
             var line = CorridorVisuals.Group(parent,name,Vector3.zero).gameObject.AddComponent<LineRenderer>();
@@ -85,6 +111,7 @@ namespace FeatureMapCorridor
             _visuals.Line(line,_visuals.Theme.Amber,.028f);
             return line;
         }
+#endif
 
         internal void Configure(int layer, int map, int digit, FeatureMapPanel[] sources, FeatureMapPanel result, Vector3 destination)
         {
@@ -111,7 +138,7 @@ namespace FeatureMapCorridor
                 for (int n = 0; n < 9; n++)
                 {
                     float value = kernel[n/3,n%3];
-                    TMP_Text number = _numbers[i,n];
+                    TMP_Text number = _numbers[(i)*9+n];
                     number.text = WeightText(value);
                     number.color = WeightColor(value);
                 }
@@ -164,8 +191,8 @@ namespace FeatureMapCorridor
             SetLinks(expanded && _connected);
         }
 
-        private static Vector3 Folded(int i) => new Vector3(i*.07f,i*.07f,i*.04f);
-        private Vector3 Spread(int i) => Vector3.right*(i-(_count-1)*.5f)*.95f;
+        private Vector3 Folded(int i) => _foldedPositions[i];
+        private Vector3 Spread(int i) => Vector3.right*(i-(_count-1)*.5f)*_spreadSpacing;
 
         private void SetLinks(bool enabled)
         {
@@ -184,7 +211,7 @@ namespace FeatureMapCorridor
                 // Use the same physical card at reduced brightness while its plate is in flight.
                 _visuals.Paint(_frames[i],(Color)_colors[i]*(dim ? .25f : 1));
                 if (_layer == 4) { _templates[i].Opacity(dim ? .25f : 1); }
-                else for (int n = 0; n < 9; n++) { _numbers[i,n].alpha = dim ? .25f : 1; }
+                else for (int n = 0; n < 9; n++) { _numbers[(i)*9+n].alpha = dim ? .25f : 1; }
             }
         }
 

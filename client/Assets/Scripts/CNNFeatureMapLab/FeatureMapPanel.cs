@@ -5,37 +5,62 @@ using UnityEngine.UI;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class FeatureMapPanel
     {
-        private readonly CorridorVisuals _visuals;
-        private readonly Renderer _frame;
-        private readonly Renderer _surface;
-        private readonly Texture2D _texture;
-        private readonly Color32[] _pixels;
-        private readonly Transform _border;
-        private readonly Renderer[] _borderBars = new Renderer[4];
-        private readonly TMP_Text _off;
-        private readonly TMP_Text _badge;
-        private Transform _switch;
-        private Renderer _switchTrack;
-        private Transform _knob;
-        private TMP_Text _switchText;
+        private CorridorVisuals _visuals;
+        [SerializeField] private Renderer _frame;
+        [SerializeField] private Renderer _surface;
+        [SerializeField] private Texture2D _texture;
+        private Color32[] _pixels;
+        [SerializeField] private Transform _border;
+        [SerializeField] private Renderer[] _borderBars = new Renderer[4];
+        [SerializeField] private TMP_Text _off;
+        [SerializeField] private TMP_Text _badge;
+        [SerializeField] private Transform _switch;
+        [SerializeField] private Renderer _switchTrack;
+        [SerializeField] private Transform _knob;
+        [SerializeField] private TMP_Text _switchText;
         private float _switchValue = 1;
-        private readonly int _size;
-        private readonly float _width;
-        private readonly Color _defaultFrame = new Color32(30,58,72,255);
-        internal Transform Root { get; }
+        private Vector3 _knobOn;
+        [SerializeField] private float _switchTravel = .72f;
+        [SerializeField] private int _size;
+        [SerializeField] private float _width;
+        private Color _defaultFrame = new Color32(30,58,72,255);
+        [SerializeField] private Transform _root;
+        internal Transform Root => _root;
         internal Vector3 Position => Root.localPosition;
         internal float Width => _width;
         internal Texture2D Texture => _texture;
 
+        [SerializeField] private BoxCollider _hit;
+        [SerializeField] private BoxCollider _switchHit;
+
+        internal void Bind(CorridorVisuals visuals, Action<int> clicked = null)
+        {
+            _visuals = visuals;
+            _texture = visuals.Own(UnityEngine.Object.Instantiate(_texture));
+            _pixels = new Color32[_texture.width * _texture.height];
+            visuals.Texture(_surface, _texture);
+            if (clicked != null) { visuals.Listen(_hit, point => clicked(CellAt(point))); }
+        }
+
+        internal void BindSwitch(Action toggle)
+        {
+            _knobOn = _knob.localPosition;
+            _visuals.Listen(_switchHit, _ => toggle());
+        }
+
+        private FeatureMapPanel() { }
+
+#if UNITY_EDITOR
         internal FeatureMapPanel(CorridorVisuals visuals, Transform parent, Vector3 position, float yaw, int size,
             string label, string source, Action<int> clicked, int textureScale = 1, float width = 0)
         {
             _visuals = visuals;
             _size = size;
             _width = width > 0 ? width : visuals.Theme.PanelSize;
-            Root = CorridorVisuals.Group(parent,label,position);
+            _root = CorridorVisuals.Group(parent,label.Length == 0 ? "Feature map panel" : label,position);
             Root.localRotation = Quaternion.Euler(0,yaw,0);
             _frame = visuals.Shape(Root,"Frame",new Vector3(0,0,.047f),new Vector3(_width+.14f,_width+.14f,.08f),_defaultFrame);
             _surface = visuals.Shape(Root,"Pixels",Vector3.zero,new Vector3(_width,_width,1),Color.white,
@@ -46,6 +71,7 @@ namespace FeatureMapCorridor
             if (clicked != null)
             {
                 BoxCollider hit = Root.gameObject.AddComponent<BoxCollider>();
+                _hit = hit;
                 hit.size = new Vector3(_width,_width,.06f);
                 CorridorVisuals.Click(hit,point => clicked(CellAt(point)));
             }
@@ -64,6 +90,7 @@ namespace FeatureMapCorridor
             if (source.Length > 0)
                 visuals.Label(Root,source,new Vector3(0,_width*.5f+.18f,0),.126f,_width+2,new Color32(127,147,168,255));
         }
+#endif
 
         private int CellAt(Vector3 world)
         {
@@ -158,6 +185,7 @@ namespace FeatureMapCorridor
             _texture.Apply(false);
         }
 
+#if UNITY_EDITOR
         internal void AddSwitch(Action toggle)
         {
             _switch = CorridorVisuals.Group(Root,"Map switch",new Vector3(0,-_width*.5f-.34f,0));
@@ -167,10 +195,12 @@ namespace FeatureMapCorridor
                 Color.white,PrimitiveType.Sphere).transform;
             _switchText = _visuals.Label(_switch,CorridorDialogue.On,new Vector3(.9f,0,-.04f),.16f,.62f,_visuals.Theme.Cyan);
             var hit = _switch.gameObject.AddComponent<BoxCollider>();
+            _switchHit = hit;
             hit.size = new Vector3(1.25f,.47f,.16f);
             CorridorVisuals.Click(hit,_ => toggle());
             ShowSwitch(false);
         }
+#endif
 
         internal void ShowSwitch(bool visible) => _switch.gameObject.SetActive(visible);
         internal Transform Switch => _switch;
@@ -181,7 +211,7 @@ namespace FeatureMapCorridor
             float next = Mathf.MoveTowards(_switchValue,enabled ? 1 : 0,delta*5);
             if (next == _switchValue) { return; }
             _switchValue = next;
-            _knob.localPosition = new Vector3(Mathf.Lerp(-.36f,.36f,next),0,-.07f);
+            _knob.localPosition = _knobOn + Vector3.left * (_switchTravel * (1 - next));
             Color color = Color.Lerp(_visuals.Theme.Negative,_visuals.Theme.Cyan,next);
             _visuals.Paint(_switchTrack,color);
             _switchText.color = color;

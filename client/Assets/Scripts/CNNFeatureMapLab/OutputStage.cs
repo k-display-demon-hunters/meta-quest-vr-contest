@@ -4,36 +4,37 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class OutputStage
     {
         private const float BaseY = -2.4f;
         private const float CenterZ = 18.5f;
         private static readonly Vector3 Staging = new Vector3(0,3.2f,17.6f);
-        private readonly CorridorVisuals _visuals;
-        private readonly Transform[] _liquid = new Transform[3];
-        private readonly TMP_Text[] _percent = new TMP_Text[3];
-        private readonly Transform[] _templates = new Transform[3];
+        private CorridorVisuals _visuals;
+        [SerializeField] private Transform[] _liquid = new Transform[3];
+        [SerializeField] private TMP_Text[] _percent = new TMP_Text[3];
+        [SerializeField] private Transform[] _templates = new Transform[3];
 
-        private readonly LineRenderer[] _templateFrame = new LineRenderer[3];
-        private readonly Transform[] _columns = new Transform[3];
-        private readonly TMP_Text[] _scoreLabels = new TMP_Text[3];
-        private readonly LineRenderer[] _streams = new LineRenderer[3];
-        private readonly Renderer[] _liquidRenderers = new Renderer[3];
-        private readonly Renderer _tankLiquid;
-        private readonly TMP_Text _tankLabel;
-        private readonly Transform _evidence;
-        private readonly Renderer[] _evidencePlates;
-        private readonly Transform _answer;
-        private readonly Renderer _answerImage;
-        private readonly TMP_Text _answerText;
-        private readonly ICnnModel _model;
-        private readonly InputPanel _input;
-        private readonly FeatureMapPanel[] _last;
-        private readonly int[] _displayPercent = new int[3];
-        private readonly int[] _targetPercent = new int[3];
-        private readonly float[] _fromFill = new float[3];
-        private readonly float[] _currentFill = new float[3];
-        private readonly float[] _fill = new float[3];
+        [SerializeField] private LineRenderer[] _templateFrame = new LineRenderer[3];
+        [SerializeField] private Transform[] _columns = new Transform[3];
+        [SerializeField] private TMP_Text[] _scoreLabels = new TMP_Text[3];
+        [SerializeField] private LineRenderer[] _streams = new LineRenderer[3];
+        [SerializeField] private Renderer[] _liquidRenderers = new Renderer[3];
+        [SerializeField] private Renderer _tankLiquid;
+        [SerializeField] private TMP_Text _tankLabel;
+        [SerializeField] private Transform _evidence;
+        [SerializeField] private Renderer[] _evidencePlates;
+        [SerializeField] private Transform _answer;
+        [SerializeField] private Renderer _answerImage;
+        [SerializeField] private TMP_Text _answerText;
+        private ICnnModel _model;
+        private InputPanel _input;
+        private FeatureMapPanel[] _last;
+        private int[] _displayPercent = new int[3];
+        private int[] _targetPercent = new int[3];
+        private float[] _fromFill = new float[3];
+        private float[] _currentFill = new float[3];
+        private float[] _fill = new float[3];
         private float[] _scores;
         private float[] _probabilities;
         private Vector3 _answerFrom;
@@ -50,6 +51,51 @@ namespace FeatureMapCorridor
         internal int Winner => _winner+1;
         internal int WinnerPercent => _targetPercent[_winner];
 
+        [SerializeField] private Transform _root;
+        [SerializeField] private Transform _staging;
+        [SerializeField] private Transform[] _tankAnchors = new Transform[3];
+        [SerializeField] private Transform[] _answerAnchors = new Transform[3];
+        [SerializeField] private Collider[] _tankHits = new Collider[3];
+        private Vector3[] _liquidPosition = new Vector3[3];
+        private Vector3[] _liquidScale = new Vector3[3];
+        private Vector3[] _columnPosition = new Vector3[3];
+        private Vector3[] _columnScale = new Vector3[3];
+        private Vector3 _tankPosition;
+        private Vector3 _tankScale;
+
+        internal void Bind(CorridorVisuals visuals, ICnnModel model, InputPanel input, FeatureMapPanel[] last, Action<int> chosen)
+        {
+            _visuals = visuals;
+            _model = model;
+            _input = input;
+            _last = last;
+            for (int i = 0; i < 3; i++)
+            {
+                int digit = i + 1;
+                visuals.Listen(_tankHits[i], _ => chosen(digit));
+                _liquidPosition[i] = _liquid[i].localPosition;
+                _liquidScale[i] = _liquid[i].localScale;
+                _columnPosition[i] = _columns[i].localPosition;
+                _columnScale[i] = _columns[i].localScale;
+            }
+            _tankPosition = _tankLiquid.transform.localPosition;
+            _tankScale = _tankLiquid.transform.localScale;
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 start = _tankLiquid.transform.TransformPoint(Vector3.down);
+                Vector3 end = _root.TransformPoint(Tin(i + 1));
+                Transform line = _streams[i].transform;
+                _streams[i].SetPosition(0, line.InverseTransformPoint(start));
+                _streams[i].SetPosition(1, line.InverseTransformPoint(Vector3.Lerp(start, end, .55f)));
+                _streams[i].SetPosition(2, line.InverseTransformPoint(end));
+            }
+            for (int i = 0; i < _evidencePlates.Length; i++) { visuals.Texture(_evidencePlates[i], last[i].Texture); }
+            Reset();
+        }
+
+        private OutputStage() { }
+
+#if UNITY_EDITOR
         internal OutputStage(CorridorVisuals visuals, Transform root, ICnnModel model, InputPanel input, FeatureMapPanel[] last,
             Action<int> chosen)
         {
@@ -58,21 +104,25 @@ namespace FeatureMapCorridor
             _input = input;
             _last = last;
 
+            _root = root;
+            _staging = CorridorVisuals.Group(root, "Evidence staging", Staging);
             _evidencePlates = new Renderer[last.Length];
             visuals.Label(root,CorridorDialogue.OutputLabel,new Vector3(0,5.9f,CenterZ),.28f,6,visuals.Theme.Ink);
             Color glass = new Color(159/255f,220/255f,1,.16f);
             for (int i = 0; i < 3; i++)
             {
+                int firstChild = root.childCount;
                 int digit = i+1;
-                Vector3 tin = Tin(digit);
+                Vector3 tin = new Vector3((digit-2)*1.7f,BaseY+2.5f,CenterZ);
                 var cylinder = visuals.Shape(root,"Glass tank",new Vector3(tin.x,BaseY+1.25f,CenterZ),
                     new Vector3(1,1.25f,1),glass,PrimitiveType.Cylinder,true,true);
+                _tankHits[i] = cylinder.GetComponent<Collider>();
                 CorridorVisuals.Click(cylinder.GetComponent<Collider>(),_ => chosen(digit));
                 visuals.Shape(root,"Tank support",new Vector3(tin.x,BaseY+.04f,CenterZ),
                     new Vector3(1.17f,.08f,1.17f),new Color32(30,58,72,255),PrimitiveType.Cylinder);
                 Ring(root,tin, .505f);
-                _liquidRenderers[i] = visuals.Shape(root,"Liquid",new Vector3(tin.x,BaseY,CenterZ),
-                    new Vector3(.95f,0,.95f),visuals.Theme.Amber,PrimitiveType.Cylinder);
+                _liquidRenderers[i] = visuals.Shape(root,"Liquid",new Vector3(tin.x,BaseY+1.125f,CenterZ),
+                    new Vector3(.94f,1.125f,.94f),visuals.Theme.Amber,PrimitiveType.Cylinder);
                 _liquid[i] = _liquidRenderers[i].transform;
                 visuals.Label(root,digit.ToString(),new Vector3(tin.x,BaseY+.4f,CenterZ-.58f),.48f,.6f,visuals.Theme.Ink,mono:true);
                 _percent[i] = visuals.Label(root,"",tin+Vector3.up*.23f,.29f,.7f,visuals.Theme.Ink,mono:true);
@@ -87,8 +137,8 @@ namespace FeatureMapCorridor
 
                 }
                 visuals.Label(_templates[i],CorridorDialogue.Template(digit),new Vector3(.1f,.82f,0),.2f,1.6f,visuals.Theme.Cyan);
-                _columns[i] = visuals.Shape(root,"Score pillar",new Vector3(tin.x+.78f,BaseY,CenterZ),
-                    new Vector3(.12f,0,.12f),new Color(1.3f,1.2f,.85f),PrimitiveType.Cylinder).transform;
+                _columns[i] = visuals.Shape(root,"Score pillar",new Vector3(tin.x+.78f,BaseY+1.15f,CenterZ),
+                    new Vector3(.12f,1.15f,.12f),new Color(1.3f,1.2f,.85f),PrimitiveType.Cylinder).transform;
                 _scoreLabels[i] = visuals.Label(root,CorridorDialogue.Score,new Vector3(tin.x+.78f,BaseY,CenterZ),.15f,.6f,visuals.Theme.Ink);
                 _streams[i] = CorridorVisuals.Group(root,"Light stream",Vector3.zero).gameObject.AddComponent<LineRenderer>();
                 _streams[i].useWorldSpace = false;
@@ -97,6 +147,13 @@ namespace FeatureMapCorridor
                 _streams[i].SetPosition(1,new Vector3(tin.x*.55f,2.5f,CenterZ-.12f));
                 _streams[i].SetPosition(2,tin);
                 _visuals.Line(_streams[i],visuals.Theme.Amber,.05f);
+                int lastChild = root.childCount;
+                Transform tankRoot = CorridorVisuals.Group(root, "Output " + digit, new Vector3(tin.x, BaseY, CenterZ));
+                var children = new Transform[lastChild - firstChild];
+                for (int child = firstChild; child < lastChild; child++) { children[child - firstChild] = root.GetChild(child); }
+                foreach (Transform child in children) { child.SetParent(tankRoot, true); }
+                _tankAnchors[i] = tankRoot;
+                _answerAnchors[i] = CorridorVisuals.Group(tankRoot, "Answer destination", new Vector3(0, 5.45f, 0));
             }
             var tank = new Vector3(0,5.1f,CenterZ);
             _tankLiquid = visuals.Shape(root,"Light tank liquid",tank,new Vector3(1.18f,.5f,1.18f),
@@ -113,9 +170,20 @@ namespace FeatureMapCorridor
             visuals.Shape(_answer,"Answer frame",new Vector3(0,0,.025f),new Vector3(1.37f,1.37f,.045f),visuals.Theme.Amber);
             _answerImage = visuals.Shape(_answer,"Answer image",Vector3.zero,new Vector3(1.25f,1.25f,1),Color.white,PrimitiveType.Quad);
             _answerText = visuals.Label(_answer,"",new Vector3(0,.9f,-.02f),.29f,2.7f,visuals.Theme.Amber);
-            Reset();
+            _answer.gameObject.SetActive(false);
+            _evidence.gameObject.SetActive(false);
+            for (int i = 0; i < 3; i++)
+            {
+                _templates[i].gameObject.SetActive(false);
+                _columns[i].gameObject.SetActive(false);
+                _scoreLabels[i].gameObject.SetActive(false);
+                _streams[i].enabled = false;
+                _liquid[i].gameObject.SetActive(false);
+            }
         }
+#endif
 
+#if UNITY_EDITOR
         private LineRenderer TemplateWire(Transform parent)
         {
             var line = CorridorVisuals.Group(parent,"Template wire",new Vector3(.11f,.11f,.35f)).gameObject.AddComponent<LineRenderer>();
@@ -131,7 +199,9 @@ namespace FeatureMapCorridor
             _visuals.Line(line,_visuals.Theme.Cyan,.021f);
             return line;
         }
+#endif
 
+#if UNITY_EDITOR
         private void Ring(Transform root, Vector3 center, float radius)
         {
             var ring = CorridorVisuals.Group(root,"Tank rim",center).gameObject.AddComponent<LineRenderer>();
@@ -145,9 +215,11 @@ namespace FeatureMapCorridor
             }
             _visuals.Line(ring,_visuals.Theme.Cyan,.032f);
         }
+#endif
 
-        internal Vector3 Tin(int digit) => new Vector3((digit-2)*1.7f,BaseY+2.5f,CenterZ);
-        internal Vector3 AnswerDestination => new Vector3(Tin(Winner).x,3.05f,CenterZ);
+        internal Vector3 Tin(int digit) => _root.InverseTransformPoint(_tankAnchors[digit-1].TransformPoint(Vector3.up*2.5f));
+        internal Vector3 AnswerDestination => _root.InverseTransformPoint(_answerAnchors[_winner].position);
+        private Vector3 StagingPosition => _root.InverseTransformPoint(_staging.position);
 
         internal void SetData(LayerOutput[][] forward)
         {
@@ -214,12 +286,12 @@ namespace FeatureMapCorridor
 
         private void SetScore(int digit, float fraction)
         {
-            float height = Mathf.Max(.04f,_scores[digit])*2.3f*fraction;
-            Vector3 position = _columns[digit].localPosition;
-            position.y = BaseY+height*.5f;
-            _columns[digit].localPosition = position;
-            _columns[digit].localScale = new Vector3(.12f,Mathf.Max(.001f,height*.5f),.12f);
-            _scoreLabels[digit].transform.localPosition = new Vector3(position.x,BaseY+height+.18f,position.z);
+            float level = Mathf.Max(.04f, _scores[digit]) * fraction;
+            Transform column = _columns[digit];
+            Vector3 scale = _columnScale[digit];
+            column.localPosition = _columnPosition[digit] + Vector3.down * (scale.y * (1 - level));
+            column.localScale = new Vector3(scale.x, Mathf.Max(.001f, scale.y * level), scale.z);
+            _scoreLabels[digit].transform.position = column.TransformPoint(Vector3.up) + _tankAnchors[digit].up * .18f;
         }
 
         private void Match(float elapsed)
@@ -227,12 +299,12 @@ namespace FeatureMapCorridor
             if (elapsed >= 7.55f) { FinishMatch(); return; }
             if (elapsed < 1.6f)
             {
-                _evidence.localPosition = Staging;
+                _evidence.localPosition = StagingPosition;
                 float t = Mathf.SmoothStep(0,1,elapsed/1.6f);
                 for (int i = 0; i < _evidencePlates.Length; i++)
                 {
                     Transform plate = _evidencePlates[i].transform;
-                    plate.localPosition = Vector3.Lerp(_last[i].Position-Staging,new Vector3(i*.06f,i*.06f,i*.16f),t);
+                    plate.localPosition = Vector3.Lerp(_last[i].Position-StagingPosition,new Vector3(i*.06f,i*.06f,i*.16f),t);
                     plate.localRotation = Quaternion.Slerp(_last[i].Root.localRotation,Quaternion.identity,t);
                     plate.localScale = Vector3.one*Mathf.Lerp(_last[i].Width,1,t);
                 }
@@ -240,8 +312,8 @@ namespace FeatureMapCorridor
             }
             float phase = (elapsed-1.6f)/1.5f;
             int digit = Mathf.Min(3,Mathf.FloorToInt(phase));
-            Vector3 from = digit == 0 ? Staging : _templates[digit-1].localPosition;
-            Vector3 to = digit == 3 ? Staging : _templates[digit].localPosition;
+            Vector3 from = digit == 0 ? StagingPosition : _root.InverseTransformPoint(_templates[digit-1].position);
+            Vector3 to = digit == 3 ? StagingPosition : _root.InverseTransformPoint(_templates[digit].position);
             _evidence.localPosition = Vector3.Lerp(from,to,Mathf.SmoothStep(0,1,Mathf.Clamp01((phase-digit)*2.5f)));
             _evidence.localPosition += Vector3.back*.12f;
             for (int i = 0; i < 3; i++)
@@ -295,19 +367,19 @@ namespace FeatureMapCorridor
         private void SetFill(int digit, float value)
         {
             _currentFill[digit] = value;
-            float height = value*2.25f;
             Transform fill = _liquid[digit];
-            fill.gameObject.SetActive(height > 0);
-            fill.localPosition = new Vector3(Tin(digit+1).x,BaseY+height*.5f,CenterZ);
-            fill.localScale = new Vector3(.94f,Mathf.Max(.001f,height*.5f),.94f);
+            Vector3 scale = _liquidScale[digit];
+            fill.gameObject.SetActive(value > 0);
+            fill.localPosition = _liquidPosition[digit] + Vector3.down * (scale.y * (1 - value));
+            fill.localScale = new Vector3(scale.x, Mathf.Max(.001f, scale.y * value), scale.z);
             _visuals.Paint(_liquidRenderers[digit], digit == _winner ? _visuals.Theme.Amber : new Color32(159,233,226,255));
         }
 
         private void UpdateTank(float fraction)
         {
             _tankLiquid.enabled = fraction > 0;
-            _tankLiquid.transform.localPosition = new Vector3(0,4.6f+.5f*fraction,CenterZ);
-            _tankLiquid.transform.localScale = new Vector3(1.18f,.5f*fraction,1.18f);
+            _tankLiquid.transform.localPosition = _tankPosition + Vector3.down * (_tankScale.y * (1 - fraction));
+            _tankLiquid.transform.localScale = new Vector3(_tankScale.x, _tankScale.y * fraction, _tankScale.z);
             _tankLabel.SetText("{0:0}%",Mathf.RoundToInt(fraction*100));
         }
 

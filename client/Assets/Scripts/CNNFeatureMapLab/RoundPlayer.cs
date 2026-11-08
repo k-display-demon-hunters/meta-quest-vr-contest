@@ -3,23 +3,24 @@ using UnityEngine;
 
 namespace FeatureMapCorridor
 {
+    [System.Serializable]
     internal sealed class RoundPlayer
     {
-        private readonly CorridorVisuals _visuals;
-        private readonly ICnnModel _model;
-        private readonly InputPanel _input;
-        private readonly FeatureMapPanel[][] _maps;
-        private readonly OutputStage _output;
-        private readonly FilterStack _filter;
-        private readonly FeatureMapPanel[] _rgb;
-        private readonly FeatureMapPanel[] _images;
-        private readonly Renderer[] _scanWindows;
-        private readonly TMPro.TMP_Text[,] _scanWeights = new TMPro.TMP_Text[5,9];
-        private readonly Texture2D _plain;
-        private readonly Vector3[] _mergePositions = new Vector3[5];
-        private readonly float[] _scales = new float[5];
-        private readonly int _size;
-        private readonly Transform _root;
+        private CorridorVisuals _visuals;
+        private ICnnModel _model;
+        private InputPanel _input;
+        private FeatureMapPanel[][] _maps;
+        private OutputStage _output;
+        [SerializeField] private FilterStack _filter;
+        private FeatureMapPanel[] _rgb;
+        [SerializeField] private FeatureMapPanel[] _images;
+        [SerializeField] private Renderer[] _scanWindows;
+        [SerializeField] private TMPro.TMP_Text[] _scanWeights = new TMPro.TMP_Text[5*9];
+        [SerializeField] private Texture2D _plain;
+        private Vector3[] _mergePositions = new Vector3[5];
+        private float[] _scales = new float[5];
+        private int _size;
+        [SerializeField] private Transform _root;
         private float[][] _results;
         private float[] _selectedTerms;
         private FeatureMapPanel[] _sources;
@@ -40,6 +41,27 @@ namespace FeatureMapCorridor
         internal float ButtonReadyAt { get; private set; }
         internal event Action<bool> FilterPressed;
 
+
+        internal void Bind(CorridorVisuals visuals, ICnnModel model, InputPanel input, FeatureMapPanel[][] maps, OutputStage output)
+        {
+            _visuals = visuals;
+            _model = model;
+            _input = input;
+            _maps = maps;
+            _output = output;
+            _size = model.Size;
+            _rgb = new[] { input.Channel(0), input.Channel(1), input.Channel(2) };
+            _filter.Bind(visuals, model);
+            foreach (FeatureMapPanel image in _images) { image.Bind(visuals); }
+        }
+
+        private void OnFilterExpansionChanged(bool expanded) => FilterPressed?.Invoke(expanded);
+        internal void EnableInput() => _filter.ExpansionChanged += OnFilterExpansionChanged;
+        internal void DisableInput() => _filter.ExpansionChanged -= OnFilterExpansionChanged;
+
+        private RoundPlayer() { }
+
+#if UNITY_EDITOR
         internal RoundPlayer(CorridorVisuals visuals, Transform root, ICnnModel model, InputPanel input,
             FeatureMapPanel[][] maps, OutputStage output)
         {
@@ -65,11 +87,12 @@ namespace FeatureMapCorridor
                 _scanWindows[i] = visuals.Shape(root,"Moving filter plate",Vector3.zero,Vector3.one,
                     Color.white,PrimitiveType.Quad,transparent:true);
                 for (int n = 0; n < 9; n++)
-                    _scanWeights[i,n] = visuals.Label(_scanWindows[i].transform,"",
+                    _scanWeights[(i)*9+n] = visuals.Label(_scanWindows[i].transform,"",
                         new Vector3((n%3-1)/3f,(1-n/3)/3f,-.016f),.11f,.32f,Color.white,false,true);
                 _scanWindows[i].gameObject.SetActive(false);
             }
         }
+#endif
 
         internal void Start(int layer, int map, int digit, int index, float[][] input, LayerOutput[][] forward)
         {
@@ -178,7 +201,7 @@ namespace FeatureMapCorridor
             float[,] weights = IsOutput ? null : _model.Kernel(Layer,Map,src);
             for (int n = 0; n < 9; n++)
             {
-                TMPro.TMP_Text label = _scanWeights[src,n];
+                TMPro.TMP_Text label = _scanWeights[(src)*9+n];
                 label.gameObject.SetActive(!IsOutput);
                 if (IsOutput) { continue; }
                 float weight = weights[n/3,n%3];

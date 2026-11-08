@@ -22,12 +22,14 @@
 
 ## 파일 위치
 
-- 명세에 지정한 복도 코드는 `client/Assets/CNNRoom/FeatureMapCorridor/`에 있다. `CorridorDirector`가 상태를, `RoundPlayer`와 `ReceptiveFieldTour`가 연출을, `CorridorDialogue`가 화면 문구를 관리한다.
+- 복도 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`에 있다. `CorridorDirector`가 상태를, `RoundPlayer`와 `ReceptiveFieldTour`가 연출을, `CorridorDialogue`가 화면 문구를 관리한다. 스크립트의 `.meta`와 GUID는 이동 전과 동일하다.
 - [CorridorTheme.asset](../client/Assets/Settings/CorridorTheme.asset)에서 폰트, 셀 패널 크기, 색과 머티리얼용 셰이더를 바꿀 수 있다.
 - 바닥, 맵, 카드, 출력 장치 등 모델 값에 맞춰 움직이는 오브젝트는 복도 루트 아래에서 초기화한다. 공용 버튼과 팝업 원본은 기존 Common 프리팹을 참조한다.
-- 이전 필터 비교·8×8 피처맵·별도 활성화 함수용 에셋은 기존 경로에 있다. 현재 씬의 학습 진입점은 복도다.
+- 이전 필터 비교·8×8 피처맵·별도 활성화 함수의 미사용 스크립트, 프리팹, 재질, 입력 텍스처는 제거했다. 현재 씬의 학습 진입점은 복도이며, `Prefabs/CNNFeatureMapLab/`에는 현재 모델인 `DummyCnnModel.prefab`을 유지한다. 기존 씬과 모델 프리팹, 테마의 직렬화 참조는 변경하지 않았다.
 
 ## 실행 확인
+
+아래는 파일 정리 전의 실행 확인 기록이다. 스크립트 이동·미사용 에셋 정리에서는 GUID 보존과 잔여 참조를 정적으로 확인했으며, Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
 
 Unity 6000.3.24f1 에디터에서 더미 숫자 1·2·3의 예측, 맵 스위치의 전파, 필수·선택 라운드와 완료 상태를 확인했다. 숫자 2의 예측 확률은 97.56%였다.
 

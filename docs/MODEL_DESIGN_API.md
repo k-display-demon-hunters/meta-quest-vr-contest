@@ -4,7 +4,7 @@
 
 ## 모듈과 책임
 
-런타임 루트는 `client/Assets/Scripts/CNNModelDesignLab/`다. `CNNModelDesignLabManager`는 편집 모델과 체험 완료 상태를 소유하고, 아래 다섯 모듈의 진입점과 공용 입력 어댑터 `ModelXRInputController`를 연결한다.
+런타임 루트는 `client/Assets/Scripts/CNNModelDesignLab/`다. `CNNModelDesignLabManager`는 편집 모델과 체험 완료 상태를 소유하고, 아래 다섯 모듈의 진입점을 연결한다.
 
 | 폴더·진입점 | 내부 담당과 책임 |
 | --- | --- |
@@ -19,10 +19,14 @@
 
 ## 초기화와 이벤트 연결
 
-1. 씬 Manager의 `Awake()`가 `ModelDefinition`을 만든다. `OnEnable()`은 XR 입력을 켜고 재활성화 시 블록 상호작용을 재개한다.
+1. 씬 Manager의 `Awake()`가 `ModelDefinition`을 만든다. `OnEnable()`은 UI 갱신을 예약하고 초기화 이후 재활성화 시 블록 상호작용을 재개한다.
 2. `Start()`가 Model·Builder·Settings·Execution·ControlPanel의 이벤트를 연결한다. 각 컴포넌트의 `Awake()`가 끝난 뒤 Dataset → Execution → ControlPanel → Builder 순서로 초기화한다.
-3. Builder 초기화에는 편집 모델과 XR 적중 조회 함수를 전달한다. Execution과 ControlPanel에는 Dataset 진입점을 전달하여 실행 데이터와 화면 샘플을 각각 준비한다.
+3. Builder 초기화에는 편집 모델을 전달한다. Execution과 ControlPanel에는 Dataset 진입점을 전달하여 실행 데이터와 화면 샘플을 각각 준비한다.
 4. 변경이 발생하면 `_modelUIIsDirty`를 설정한다. `LateUpdate()`는 필요한 때 블록 라벨·팝업·구성 검사 표시와 학습 당시 구성 여부를 갱신한다. 매 프레임 모델 구조를 재검증하지 않는다.
+
+EventSystem과 XRUIInputModule은 공용 `XRPlayerRig.prefab`의 자식으로 유지된다. 모델 씬은 UI 입력 환경을 생성·삭제하지 않는다. 제어 패널·팝업의 버튼은 기존 Button.onClick 연결로 요청을 받는다.
+
+3D 슬롯 설정 기기는 `SlotSettingsController`가 `XRSimpleInteractable.activated`를 직접 받는다. 활성 상태의 점유된 슬롯에서 오른손 `XRRayInteractor`가 보낸 입력만 허용하고, ray가 물체를 잡고 있거나 UI가 가장 가까운 적중 대상이면 차단한다. 입력 조건을 통과하면 슬롯의 로컬 이벤트를 Builder 내부로 전달한다. Builder는 상호작용 활성 상태와 블록 이동 여부를 확인한 뒤 레이어와 팝업 위치를 씬 Manager에 알린다. 씬 Manager는 Settings 모듈에 팝업 열기를 요청하며, 별도 입력 Controller나 적중 조회 콜백을 거치지 않는다.
 
 | 상향 이벤트 | 씬 Manager의 처리 |
 | --- | --- |
@@ -33,7 +37,7 @@
 | Execution `OnValidationFailed` | 문제 목록과 슬롯 대응을 표시하고 구성 검사 페이지에 초점을 맞춘다. |
 | Execution 상태·진행·완료·취소·오류 이벤트 | ControlPanel 진입점으로 화면을 갱신하고 학습 완료 상태를 관리한다. |
 
-현재 씬 Manager의 이벤트 연결 수명은 `Start()`부터 `OnDestroy()`까지다. `OnDisable()`에서는 학습 세션·상호작용·팝업·입력을 종료하고 UI와 완료 상태를 초기화한다. 활성 기간에만 구독하는 형태로 구현되어 있다고 해석하지 않는다.
+현재 씬 Manager의 이벤트 연결 수명은 `Start()`부터 `OnDestroy()`까지다. `OnDisable()`에서는 학습 세션·상호작용·팝업을 종료하고 UI와 완료 상태를 초기화한다. 활성 기간에만 구독하는 형태로 구현되어 있다고 해석하지 않는다.
 
 ## 슬롯 기반 편집
 
@@ -89,14 +93,14 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 
 | 연결 대상 | 현재 구성 |
 | --- | --- |
-| 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset`, `_xrInput` |
+| 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset` |
 | `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어 |
 | `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 표시와 설정 기기. 자식 순서는 슬롯 순서와 대응한다. |
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
 | `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 배치는 프리팹에 저장한다. |
 | `ModelDatasetController` | `_trainingDataset`, `_testDataset`으로 RGB 바이너리 연결. 평가 픽셀에서 샘플 텍스처 생성 |
-| `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 모델 씬은 `ModelXRInputController`를 통해 레이 적중을 조회한다. |
+| `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 오른손 ray가 슬롯의 XRI 활성화 이벤트와 제어 패널·팝업의 UI 입력을 제공한다. |
 
 ## 확인 범위
 

@@ -23,7 +23,7 @@ namespace ModelDesignScene.ModelBuilder
         private bool _hovered;
         private float _pressedUntil;
 
-        internal event Action<SlotSettingsController, IXRActivateInteractor> OnSettingsRequested;
+        internal event Action<SlotSettingsController> OnSettingsRequested;
 
         internal ModelBlockController Block { get; private set; }
         internal Transform PopupAnchor => _popupAnchor;
@@ -83,12 +83,21 @@ namespace ModelDesignScene.ModelBuilder
 
         private void HandleActivated(ActivateEventArgs args)
         {
-            if (isActiveAndEnabled && Block != null)
+            if (!isActiveAndEnabled || Block == null ||
+                !(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right || ray.hasSelection)
             {
-                _pressedUntil = Time.unscaledTime + 0.12f;
-                RefreshSurface();
-                OnSettingsRequested?.Invoke(this, args.interactorObject);
+                return;
             }
+            if (!ray.TryGetCurrentRaycast(out _, out _, out _, out _, out bool isUIHitClosest) ||
+                isUIHitClosest)
+            {
+                return;
+            }
+
+            _pressedUntil = Time.unscaledTime + 0.12f;
+            RefreshSurface();
+            OnSettingsRequested?.Invoke(this);
         }
 
         private void OnDestroy()

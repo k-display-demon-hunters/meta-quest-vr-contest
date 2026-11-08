@@ -131,7 +131,6 @@ GameObject:
   - component: {fileID: 1002}
   - component: {fileID: 1003}
   - component: {fileID: 1004}
-  - component: {fileID: 1006}
   - component: {fileID: 1007}
   - component: {fileID: 61001}
   - component: {fileID: 61002}
@@ -204,18 +203,6 @@ MonoBehaviour:
   - _type: 3
     _block: {fileID: 10502}
     _prefab: {fileID: 1005, guid: 21fbf6bbfa5a5afabb58a9564900cbd1, type: 3}
---- !u!114 &1006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6fc941e06c8b4d9da83e509724fba81e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelXRInputController
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,7 +821,6 @@ MonoBehaviour:
   _execution: {fileID: 61004}
   _controlPanel: {fileID: 50003}
   _dataset: {fileID: 61005}
-  _xrInput: {fileID: 1006}
 --- !u!1001 &30000
 PrefabInstance:
   m_ObjectHideFlags: 0

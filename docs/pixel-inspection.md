@@ -23,6 +23,8 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 
 `LearningSessionManager`는 구체 체험 Manager를 참조하지 않고 `ILearningExperience`로 단계·진행률·출구 허용 상태를 조회하고 변경 이벤트를 구독한다. 언로드 전에는 같은 인터페이스의 `EndSession`으로 정리를 요청한다. 공장의 기존 문 개방 조건과 학습 순서는 유지한다.
 
+두 체험의 UI 버튼은 공용 `XRPlayerRig`에 구성한 EventSystem·XRUIInputModule을 사용한다. `ScreenLabUIController`와 `CNNConvolutionLabManager`는 입력 환경을 생성하거나 해제하지 않으며, 버튼의 기존 On Click 연결로 각 체험의 요청을 처리한다. 체험 종료·언로드 시 공용 입력 환경은 유지된다. ScreenLab 단독 실행은 씬에 배치된 공용 리그를 사용하고, 자체 리그가 없는 ConvolutionLab의 XR 조작은 공장에 로드된 공용 리그를 사용한다.
+
 ## 첫 체험의 작업대와 시각 디자인
 
 기존 공장 테마와 세 구역의 역할을 유지하면서, 모서리를 다듬은 금속 몸체·겹친 얕은 테두리·어두운 표시 면·절제된 앰버 포인트로 구성한다. 공용 UI 원본이나 ROOM 2의 재질을 바꾸지 않고 `CNNConvolutionLab` 전용 프리팹·재질·메시를 사용한다. 조명 자체보다 판·문자·타일의 대비로 정보를 구분한다.

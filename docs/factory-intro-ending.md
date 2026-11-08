@@ -21,6 +21,8 @@
 
 FactoryIntroManager는 진행 단계와 Controller 호출 순서를 관리한다. PresentationController는 안내창과 버튼을, CinematicController는 기존 18초 연출과 효과음·진동을, EntryController는 문·경로·왼손 표시·입장 판정을 담당한다. 공통 FactoryIntroInputController는 기존 이름을 유지하며 오프닝·엔딩의 입력 잠금과 복원을 담당한다. A 입력과 UI 버튼은 로컬 OnContinueRequested 이벤트로 Manager에 요청하며 활성 기간에 대칭 구독·해제한다.
 
+UI 클릭은 공용 `XRPlayerRig`의 EventSystem·XRUIInputModule과 `XRPlayerInputController`가 연결한 오른손 Trigger를 사용한다. `FactoryIntroInputController.Bind()`는 공용 ray 준비를 요청한 뒤 이동·잡기 제한과 ray 표시를 설정하며, 별도 EventSystem 생성이나 UI Trigger 바인딩 교체를 하지 않는다. `Release()`도 연출 중 바꾼 이동·잡기·ray 상태만 복원하고 A 진행 입력을 해제한다. 오프닝에서 공장으로, 공장에서 엔딩으로 씬이 바뀌어도 UI 입력 환경은 공용 리그와 함께 유지된다.
+
 ## 오프닝 진행
 
 | 단계 | 안내 / 조작 |

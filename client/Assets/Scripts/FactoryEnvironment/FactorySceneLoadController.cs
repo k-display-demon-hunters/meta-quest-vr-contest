@@ -14,7 +14,7 @@ namespace FactoryEnvironment
         [FormerlySerializedAs("_navigationData")]
         [SerializeField] private FactoryLayoutData _layoutData;
         private readonly Dictionary<LearningStageId, Scene> _loadedScenes = new Dictionary<LearningStageId, Scene>();
-        private int _requestedIndex;
+        private FactoryLayoutData.Area _requestedArea;
         private bool _hasPendingArea;
         private bool _loadingSingle;
         private bool _loadFailed;
@@ -29,32 +29,29 @@ namespace FactoryEnvironment
         private void OnEnable() => _areaController.AreaChanged += HandleAreaChanged;
         private void OnDisable() => _areaController.AreaChanged -= HandleAreaChanged;
 
-        private void HandleAreaChanged(FactoryAreaId area)
+        private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            for (int i = 0; i < _layoutData.AreaOrder.Length; i++)
+            if (!_layoutData.TryGetAdjacentAreas(area, out _, out _)) { return; }
+            _requestedArea = area;
+            if (IsBusy)
             {
-                if (_layoutData.AreaOrder[i].Id != area) { continue; }
-                _requestedIndex = i;
-                if (IsBusy)
-                {
-                    _hasPendingArea = true;
-                    return;
-                }
-                IsBusy = true;
-                StateChanged?.Invoke();
-                StartCoroutine(UpdateScenes());
+                _hasPendingArea = true;
                 return;
             }
+            IsBusy = true;
+            StateChanged?.Invoke();
+            StartCoroutine(UpdateScenes());
         }
 
         private IEnumerator UpdateScenes()
         {
-            int index = _requestedIndex;
+            FactoryLayoutData.Area area = _requestedArea;
+            _layoutData.TryGetAdjacentAreas(area, out var previous, out var next);
             _hasPendingArea = false;
             _loadFailed = false;
             // Finish notifying area listeners before loading or unloading scenes.
             yield return null;
-            if (_layoutData.AreaOrder[index].Stage == LearningStageId.Exit)
+            if (area.Stage == LearningStageId.Exit)
             {
                 if (!_hasPendingArea)
                     yield return Load(LearningStageId.Exit, LoadSceneMode.Single);
@@ -62,9 +59,9 @@ namespace FactoryEnvironment
             else
             {
                 var required = new List<LearningStageId>();
-                for (int i = Math.Max(0, index - 1); i <= Math.Min(index + 1, _layoutData.AreaOrder.Length - 1); i++)
+                foreach (FactoryLayoutData.Area nearbyArea in new[] { previous, area, next })
                 {
-                    LearningStageId? stage = _layoutData.AreaOrder[i].Stage;
+                    LearningStageId? stage = nearbyArea?.Stage;
                     if (stage.HasValue && stage.Value != LearningStageId.None && stage.Value != LearningStageId.Exit
                         && !required.Contains(stage.Value))
                         required.Add(stage.Value);
@@ -101,7 +98,7 @@ namespace FactoryEnvironment
         {
             string sceneName = LearningStageCatalog.GetSceneName(stage);
             _loadFailed = false;
-            // sceneLoaded runs before Start, so subscribers can place and initialize content.
+            // Prepare content before Start and before notifying subscribers.
             void HandleLoaded(Scene scene, LoadSceneMode loadedMode)
             {
                 if (scene.name != sceneName) { return; }
@@ -113,6 +110,7 @@ namespace FactoryEnvironment
                     return;
                 }
                 _loadedScenes.Add(stage, scene);
+                PrepareContent(stage, scene);
                 ContentLoaded?.Invoke(stage, scene);
                 SceneManager.SetActiveScene(gameObject.scene);
             }
@@ -133,6 +131,36 @@ namespace FactoryEnvironment
             _loadingSingle = mode == LoadSceneMode.Single;
             yield return operation;
             yield return null;
+        }
+
+        private void PrepareContent(LearningStageId stage, Scene scene)
+        {
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (component is ILearningExperience experience && experience.StageId == stage)
+                    {
+                        foreach (GameObject other in scene.GetRootGameObjects())
+                            if (other != root) { other.SetActive(false); }
+                        PlaceContent(stage, root);
+                        return;
+                    }
+                }
+            }
+        }
+
+        private void PlaceContent(LearningStageId stage, GameObject content)
+        {
+            Transform anchor = _layoutData.GetStageSpace(stage).ContentAnchor;
+            content.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+            content.transform.localScale = anchor.lossyScale;
+            foreach (Light light in content.GetComponentsInChildren<Light>(true)) { light.enabled = false; }
+            foreach (Rigidbody body in content.GetComponentsInChildren<Rigidbody>(true))
+            {
+                body.position = body.transform.position;
+                body.rotation = body.transform.rotation;
+            }
         }
 
         private IEnumerator Unload(LearningStageId stage)

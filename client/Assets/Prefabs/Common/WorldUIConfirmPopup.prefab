@@ -18,11 +18,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2013, guid: a77aaf51b52449738343f861a881419a, type: 3}
       propertyPath: m_Text
-      value: "확인"
+      value: "실습을 다시 시작할까요?"
       objectReference: {fileID: 0}
     - target: {fileID: 2023, guid: a77aaf51b52449738343f861a881419a, type: 3}
       propertyPath: m_Text
-      value: "이 동작을 실행할까요?"
+      value: "다시 시작하면 이 실습에서 지금까지 선택한 값이 초기화돼요."
+      objectReference: {fileID: 0}
+    - target: {fileID: 2063, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_Text
+      value: "실습 설정"
+      objectReference: {fileID: 0}
+    - target: {fileID: 3003, guid: a77aaf51b52449738343f861a881419a, type: 3}
+      propertyPath: m_Text
+      value: "다시 시작"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

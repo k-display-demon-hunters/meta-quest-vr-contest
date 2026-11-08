@@ -1,4 +1,3 @@
-using Core;
 using System;
 using Learning;
 using System.Collections;
@@ -23,13 +22,11 @@ namespace CNNScreen
         public LearningStageId StageId => LearningStageId.ScreenLab;
         public float Progress => _learningComplete ? 1f : 0f;
         public bool CanExit => isActiveAndEnabled && _learningComplete;
-        public PixelPatchData SelectedPatch => _selectedPatch;
         public event Action<float> ProgressChanged;
         public event Action<bool> ExitAvailabilityChanged;
         public IEnumerator EndSession()
         {
             StopAllCoroutines();
-            _ui.DisableInput();
             yield break;
         }
         private void PublishState()
@@ -54,7 +51,6 @@ namespace CNNScreen
             _ui.DetailsRequested += ShowDetails;
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
-            _ui.EnableInput();
         }
         public void ShowDetails()
         {
@@ -128,7 +124,6 @@ namespace CNNScreen
             _ui.DetailsRequested -= ShowDetails;
             _ui.NextRequested -= NextStage;
             _ui.ResetRequested -= ResetLab;
-            _ui.DisableInput();
             PublishState();
         }
         private void OnDestroy() { _imageData?.Dispose(); }

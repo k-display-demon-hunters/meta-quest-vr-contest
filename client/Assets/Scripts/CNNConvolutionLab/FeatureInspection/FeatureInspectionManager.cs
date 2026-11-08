@@ -17,7 +17,6 @@ namespace CNNConvolution
         private bool _completed;
         private bool _transitioning;
 
-        public bool IsCompleted => _completed;
         public event Action Completed;
         public event Action ExitRequested;
 

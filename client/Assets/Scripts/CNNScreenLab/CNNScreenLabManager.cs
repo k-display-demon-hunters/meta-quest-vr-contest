@@ -1,4 +1,3 @@
-using Core;
 using System;
 using Learning;
 using System.Collections;
@@ -15,7 +14,6 @@ namespace CNNScreen
         [SerializeField] private ScreenLabUIController _ui;
         private PixelImageData _imageData;
         private PixelPatchData _selectedPatch;
-        private ConvolutionInputData _convolutionInput;
         private Vector2Int _patchOrigin;
         private int _pixelPage = -1;
         private int _rgbPage;
@@ -24,14 +22,11 @@ namespace CNNScreen
         public LearningStageId StageId => LearningStageId.ScreenLab;
         public float Progress => _learningComplete ? 1f : 0f;
         public bool CanExit => isActiveAndEnabled && _learningComplete;
-        public PixelPatchData SelectedPatch => _selectedPatch;
-        public ConvolutionInputData ConvolutionInput => _convolutionInput;
         public event Action<float> ProgressChanged;
         public event Action<bool> ExitAvailabilityChanged;
         public IEnumerator EndSession()
         {
             StopAllCoroutines();
-            _ui.DisableInput();
             yield break;
         }
         private void PublishState()
@@ -56,7 +51,6 @@ namespace CNNScreen
             _ui.DetailsRequested += ShowDetails;
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
-            _ui.EnableInput();
         }
         public void ShowDetails()
         {
@@ -64,7 +58,6 @@ namespace CNNScreen
                 || _revealStage.Phase != PixelObservationPhase.Inactive) { return; }
             _patchOrigin = _selection.SelectedPixel;
             _selectedPatch = _imageData.CapturePatch(_patchOrigin);
-            _convolutionInput = _imageData.CaptureConvolutionInput(_patchOrigin);
             _expanding = true;
             _selection.SuspendSelection();
             _ui.ShowMoving();
@@ -102,7 +95,6 @@ namespace CNNScreen
             _expanding = _learningComplete = false;
             _pixelPage = -1;
             _selectedPatch = null;
-            _convolutionInput = null;
             _revealStage.ResetStage();
             _board.RestorePresentation();
             _selection.ResetSelection();
@@ -132,7 +124,6 @@ namespace CNNScreen
             _ui.DetailsRequested -= ShowDetails;
             _ui.NextRequested -= NextStage;
             _ui.ResetRequested -= ResetLab;
-            _ui.DisableInput();
             PublishState();
         }
         private void OnDestroy() { _imageData?.Dispose(); }

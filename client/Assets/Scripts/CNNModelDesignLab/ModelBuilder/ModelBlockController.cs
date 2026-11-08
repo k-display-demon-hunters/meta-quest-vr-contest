@@ -13,9 +13,27 @@ namespace ModelDesignScene.ModelBuilder
     {
         [SerializeField] private XRGrabInteractable _grabInteractable;
         [SerializeField] private Text _label;
+        [SerializeField] private MeshFilter _surface;
+        [SerializeField] private MeshFilter[] _inputChannelSurfaces;
+        [SerializeField] private BoxCollider _collider;
+        [SerializeField] private Text _outputCaption;
+        private Mesh _outputMesh;
+        private Vector3Int _visualShape = new Vector3Int(-1, -1, -1);
+        private bool _visualSpatial;
+
+        private float FlowHeight => _visualSpatial
+            ? -0.08f + Mathf.Max(0.12f, _visualShape.x * 0.025f + 0.04f) * 0.5f : 0.27f;
+
+        internal Vector3 FlowStart => transform.TransformPoint(new Vector3(_collider.center.x - _collider.size.x * 0.5f - 0.015f, FlowHeight, 0.04f));
+        internal Vector3 FlowEnd => transform.TransformPoint(new Vector3(_collider.center.x + _collider.size.x * 0.5f + 0.015f, FlowHeight, 0.04f));
 
         private Rigidbody _rigidbody;
         private bool _interactionEnabled;
+        private int _inputChannels = LayerLimits.InputChannels;
+        private int _inputHeight = 8;
+        private int _inputWidth = 8;
+        private bool _hasInputShape;
+        private int _inputElements = 16;
 
         internal event Action<ModelBlockController> OnGrabbed;
         internal event Action<ModelBlockController, bool> OnReleased;
@@ -83,28 +101,89 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        internal void RefreshLabel()
+        internal void RefreshLabel(int? inputChannels = null, int inputHeight = 0, int inputWidth = 0,
+            int inputElements = 0)
         {
+            if (inputChannels.HasValue)
+            {
+                _inputChannels = inputChannels.Value;
+                _inputHeight = inputHeight;
+                _inputWidth = inputWidth;
+                _inputElements = inputElements;
+                _hasInputShape = true;
+            }
+            bool spatial = Layer.Type == LayerType.Input || Layer.Type == LayerType.Conv2D || Layer.Type == LayerType.MaxPooling2D;
+            int height = _inputHeight;
+            int width = _inputWidth;
+            int channels = _inputChannels;
+            int elements = 0;
+            string title;
             switch (Layer.Type)
             {
+                case LayerType.Input:
+                    height = LayerLimits.InputHeight;
+                    width = LayerLimits.InputWidth;
+                    channels = LayerLimits.InputChannels;
+                    title = "INPUT / RGB";
+                    break;
                 case LayerType.Conv2D:
-                    _label.text = $"CONV2D\n{Layer.Filters} filters / {Layer.Height} x {Layer.Width}\n{Layer.Activation}";
+                    height = Mathf.Max(0, (_hasInputShape ? height : LayerLimits.InputHeight) - Layer.Height + 1);
+                    width = Mathf.Max(0, (_hasInputShape ? width : LayerLimits.InputWidth) - Layer.Width + 1);
+                    channels = channels > 0 && height > 0 && width > 0 ? Layer.Filters : 0;
+                    title = $"CONV / {Layer.Height} x {Layer.Width} / {Layer.Activation}";
                     break;
                 case LayerType.MaxPooling2D:
-                    _label.text = $"MAX POOL\n{Layer.Height} x {Layer.Width}";
-                    break;
-                case LayerType.Dense:
-                    _label.text = $"DENSE\n{Layer.Units} units / {Layer.Activation}";
+                    height /= Layer.Height;
+                    width /= Layer.Width;
+                    channels = height > 0 && width > 0 ? channels : 0;
+                    title = $"MAX POOL / {Layer.Height} x {Layer.Width}";
                     break;
                 case LayerType.Flatten:
-                    _label.text = "FLATTEN\nImage to vector";
+                    elements = (_hasInputShape ? height * width : 16) * channels;
+                    title = "FLATTEN / same element count";
                     break;
-                case LayerType.Input:
-                    _label.text = "INPUT\n28 x 28 x 1";
+                case LayerType.Dense:
+                    elements = !_hasInputShape || _inputElements > 0 ? Layer.Units : 0;
+                    title = $"DENSE / {Layer.Activation}";
                     break;
-                case LayerType.Output:
-                    _label.text = "OUTPUT\n10 classes / Softmax";
+                default:
+                    elements = Layer.Units;
+                    title = "OUTPUT / Softmax";
                     break;
+            }
+            if (spatial && channels == 0)
+            {
+                height = width = 0;
+            }
+            _label.text = title + "\n" + (spatial ? $"{height} x {width} x {channels}" : $"{elements} elements")
+                + (!_hasInputShape && !IsFixed ? "\nExample" : "");
+            _outputCaption.text = spatial
+                ? (channels > 0 ? (Layer.Type == LayerType.Input ? "RGB / 3 channels shown" : $"{channels} channels / 1 shown") : "Spatial output unavailable")
+                : (elements > 0 ? VectorBlockMesh.VectorCaption(elements) : "Input unavailable");
+            Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, elements);
+            if (_visualShape == shape && _visualSpatial == spatial)
+            {
+                return;
+            }
+            _visualShape = shape;
+            _visualSpatial = spatial;
+            Mesh previousMesh = _outputMesh;
+            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial);
+            _surface.sharedMesh = _outputMesh;
+            _collider.center = _outputMesh.bounds.center;
+            _collider.size = _outputMesh.bounds.size + new Vector3(0.02f, 0.02f, 0.03f);
+            if (Layer.Type == LayerType.Input)
+            {
+                foreach (MeshFilter channelSurface in _inputChannelSurfaces)
+                {
+                    channelSurface.sharedMesh = _outputMesh;
+                }
+                _collider.center += new Vector3(0.04f, 0f, 0.12f);
+                _collider.size += new Vector3(0.08f, 0f, 0.24f);
+            }
+            if (previousMesh != null)
+            {
+                Destroy(previousMesh);
             }
         }
 
@@ -126,6 +205,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void OnDestroy()
         {
+            Destroy(_outputMesh);
             _grabInteractable.selectFilters.Remove(this);
             _grabInteractable.selectEntered.RemoveListener(HandleGrabbed);
             _grabInteractable.selectExited.RemoveListener(HandleReleased);

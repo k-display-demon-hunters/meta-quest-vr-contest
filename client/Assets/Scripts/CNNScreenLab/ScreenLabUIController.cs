@@ -1,4 +1,3 @@
-using UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,15 +8,12 @@ namespace CNNScreen
         [SerializeField] private Button _detailButton;
         [SerializeField] private Button _nextButton;
         [SerializeField] private Text _instruction;
-        private readonly PixelUIInputController _input = new PixelUIInputController();
         public event System.Action DetailsRequested;
         public event System.Action NextRequested;
         public event System.Action ResetRequested;
         public void RequestDetails() { DetailsRequested?.Invoke(); }
         public void RequestNext() { NextRequested?.Invoke(); }
         public void RequestReset() { ResetRequested?.Invoke(); }
-        public void EnableInput() { _input.Enable(transform.parent); }
-        public void DisableInput() { _input.Dispose(); }
         public void Initialize()
         {
             foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true)) { canvas.worldCamera = Camera.main; }

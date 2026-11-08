@@ -9,7 +9,7 @@ namespace ModelDesignScene.Model
         public const int MaxPoolMaxPoolSize = 28;
         public const int InputHeight = 28;
         public const int InputWidth = 28;
-        public const int InputChannels = 1;
-        public const int OutputClassCount = 10;
+        public const int InputChannels = 3;
+        public const int OutputClassCount = 4;
     }
 }

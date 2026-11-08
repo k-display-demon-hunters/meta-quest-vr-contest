@@ -1,13 +1,11 @@
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 using XR;
 
 namespace OpeningEnding
@@ -24,11 +22,6 @@ namespace OpeningEnding
         private XRInteractorLineVisual _lineVisual;
         private LineRenderer _line;
         private XRInputButtonReader _previousGripInput;
-        private XRInputButtonReader _previousUIPress;
-        private XRInputButtonReader _uiPress;
-        private GameObject _ownedEventSystem;
-        private XRUIInputModule _addedInputModule;
-        private bool _previousUIInteraction;
         private bool _moveWasEnabled;
         private bool _inputWasSuppressed;
         private bool _rayWasForcedOn;
@@ -136,7 +129,6 @@ namespace OpeningEnding
             }
             if (_moveProvider != null) _moveProvider.enabled = false;
             if (_rightRay != null) _rightRay.selectInput = _blockedGripInput;
-            BindUIInput();
         }
 
         public void SetUIVisible(bool visible)
@@ -165,8 +157,6 @@ namespace OpeningEnding
             {
                 return;
             }
-
-            ReleaseUIInput();
 
             if (_moveProvider != null)
             {
@@ -201,64 +191,6 @@ namespace OpeningEnding
             _line = null;
             _previousGripInput = null;
             IsBound = false;
-        }
-
-        private void BindUIInput()
-        {
-            if (EventSystem.current == null)
-            {
-                _ownedEventSystem = new GameObject("Factory Intro UI Input", typeof(EventSystem), typeof(XRUIInputModule));
-                _ownedEventSystem.transform.SetParent(transform, false);
-            }
-            else if (EventSystem.current.GetComponent<XRUIInputModule>() == null)
-            {
-                _addedInputModule = EventSystem.current.gameObject.AddComponent<XRUIInputModule>();
-            }
-
-            if (_rightRay == null)
-            {
-                Debug.LogError("[FactoryIntro] The common rig needs an active right-hand ray.", this);
-                return;
-            }
-
-            _previousUIPress = _rightRay.uiPressInput;
-            _previousUIInteraction = _rightRay.enableUIInteraction;
-            _uiPress = new XRInputButtonReader("Factory Intro UI", inputSourceMode: XRInputButtonReader.InputSourceMode.InputAction)
-            {
-                inputActionPerformed = new InputAction("Factory Intro Press", InputActionType.Button, "<XRController>{RightHand}/triggerPressed"),
-                inputActionValue = new InputAction("Factory Intro Value", InputActionType.Value, "<XRController>{RightHand}/trigger")
-            };
-            _rightRay.uiPressInput = _uiPress;
-            _rightRay.enableUIInteraction = true;
-        }
-
-        private void ReleaseUIInput()
-        {
-            if (_rightRay != null && _uiPress != null)
-            {
-                _rightRay.uiPressInput = _previousUIPress;
-                _rightRay.enableUIInteraction = _previousUIInteraction;
-            }
-            if (_uiPress != null)
-            {
-                _uiPress.DisableDirectActionIfModeUsed();
-                _uiPress.inputActionPerformed.Dispose();
-                _uiPress.inputActionValue.Dispose();
-                _uiPress = null;
-            }
-            _previousUIPress = null;
-            if (_ownedEventSystem != null)
-            {
-                _ownedEventSystem.SetActive(false);
-                Destroy(_ownedEventSystem);
-                _ownedEventSystem = null;
-            }
-            if (_addedInputModule != null)
-            {
-                _addedInputModule.enabled = false;
-                Destroy(_addedInputModule);
-                _addedInputModule = null;
-            }
         }
 
         private void OnDisable()

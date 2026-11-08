@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ModelDesignScene.Model;
 using ModelDesignScene.Execution.Engine;
 using UnityEngine;
 
@@ -10,7 +11,6 @@ namespace ModelDesignScene.Dataset
     {
         [SerializeField] private TextAsset _trainingDataset;
         [SerializeField] private TextAsset _testDataset;
-        [SerializeField] private Texture2D[] _sampleImages;
 
         private MnistDataset _dataset;
         private bool _initialized;
@@ -29,14 +29,28 @@ namespace ModelDesignScene.Dataset
             try
             {
                 MnistDataset dataset = MnistDataset.Load(_trainingDataset.bytes, _testDataset.bytes);
-                List<DatasetSample> samples = new List<DatasetSample>(_sampleImages.Length);
-                foreach (Texture2D image in _sampleImages)
+                List<DatasetSample> samples = new List<DatasetSample>();
+                foreach (string id in dataset.TestImageIds)
                 {
-                    if (!dataset.TryGetTestImage(image.name, out _, out int label))
+                    dataset.TryGetTestImage(id, out float[] pixels, out int label);
+                    Texture2D image = new Texture2D(LayerLimits.InputWidth, LayerLimits.InputHeight,
+                        TextureFormat.RGB24, false);
+                    image.name = id;
+                    image.filterMode = FilterMode.Point;
+                    image.wrapMode = TextureWrapMode.Clamp;
+                    Color[] colors = new Color[LayerLimits.InputWidth * LayerLimits.InputHeight];
+                    for (int y = 0; y < LayerLimits.InputHeight; y++)
                     {
-                        throw new InvalidDataException("내장 데이터에 해당 샘플이 없습니다: " + image.name);
+                        for (int x = 0; x < LayerLimits.InputWidth; x++)
+                        {
+                            int source = (y * LayerLimits.InputWidth + x) * LayerLimits.InputChannels;
+                            int destination = (LayerLimits.InputHeight - 1 - y) * LayerLimits.InputWidth + x;
+                            colors[destination] = new Color(pixels[source], pixels[source + 1], pixels[source + 2]);
+                        }
                     }
-                    samples.Add(new DatasetSample(image.name, image, label));
+                    image.SetPixels(colors);
+                    image.Apply(false, true);
+                    samples.Add(new DatasetSample(id, image, label));
                 }
                 _dataset = dataset;
                 Samples = samples.AsReadOnly();
@@ -44,6 +58,14 @@ namespace ModelDesignScene.Dataset
             catch (InvalidDataException exception)
             {
                 PreparationError = "MNIST 데이터를 준비하지 못했습니다. " + exception.Message;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (DatasetSample sample in Samples)
+            {
+                Destroy(sample.Image);
             }
         }
 

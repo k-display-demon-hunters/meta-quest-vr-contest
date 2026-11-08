@@ -6,19 +6,27 @@
 
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
-| [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
+| [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿·EventSystem을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
 | [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 입력을 시점 회전·정면 복원·레이 전환으로 바꾸고 Trigger를 uGUI 클릭에 연결한다. 씬 전환이나 `EnsureRayReady()` 호출 시 UI 모듈 등록이 끊겼으면 복원한다. Grip을 누른 동안 오른손 레이가 가리킨 대상을 잡도록 설정하며 물체의 이동은 XRI의 오른손 부착점을 따른다. 이야기 중 입력 제한과 입구 안내의 ray 유지도 반영하며 비활성화 시 변경한 레이 설정을 반환한다. |
 | [XREditorSimulator](../client/Assets/Scripts/Core/XR/XREditorSimulator.cs) | 에디터에서 가상 HMD·컨트롤러를 생성하고 키보드·마우스 액션을 XRI 시뮬레이터에 연결한다. 위치·회전과 버튼·스틱 입력을 가상 XR 기기 상태로 바꾸므로 공용 리그가 실제 컨트롤러와 같은 입력 경로로 읽는다. 컴포넌트의 활성·비활성·파괴에 맞춰 기기와 액션의 수명을 관리한다. |
 
 ### 리그 초기화와 수명
 
 1. `PersistentXRPlayerRig.Awake()`가 먼저 실행되어 기존 리그를 확인한다. 중복 인스턴스는 즉시 비활성화한 뒤 파괴한다.
-2. 유지할 리그는 부모에서 분리하고 `DontDestroyOnLoad`로 등록한다. `XRPlayerInputController`가 없으면 추가한다.
+2. 유지할 리그는 부모에서 분리하고 `DontDestroyOnLoad`로 등록한다. 프리팹의 활성 자식 `EventSystem`에 EventSystem과 XRUIInputModule이 미리 구성되어 있으며 리그와 함께 유지된다. `XRPlayerInputController`가 없으면 추가한다.
 3. `XRPlayerInputController.Awake()`는 `XROrigin`, Camera Offset, 시작 정면과 입력 액션을 준비한다. `EnsureRayReady()`는 오른손 `XRRayInteractor`와 카메라를 찾아 연결한다.
-4. 새 씬의 리그가 제거되어도 기존 카메라·추적·태블릿 상태는 유지된다. 리그 위치 변경은 각 씬의 진행 코드에서 처리한다.
-5. `sceneLoaded`와 `EnsureRayReady()`는 오른손 ray가 현재 UI 모듈에 등록되어 있는지 확인한다. 이전 씬의 EventSystem이 파괴되어 등록을 잃었으면 다시 연결한다. 공장 안내는 공용 EventSystem을 사용하며 `FactoryTutorial` 언로드 시 이 EventSystem은 유지한다.
+4. 새 씬의 중복 리그는 `PersistentXRPlayerRig.Awake()`에서 먼저 비활성화하므로 자식 EventSystem도 활성 입력 환경으로 등록되지 않는다. 기존 카메라·추적·태블릿·UI 입력 환경은 유지되며, 리그 위치 변경은 각 씬의 진행 코드에서 처리한다.
+5. `sceneLoaded`와 `EnsureRayReady()`는 오른손 ray의 UI 모듈 등록을 확인하고, 필요한 경우 인터랙터나 잡기 상태를 끊지 않고 다시 연결한다. 체험 씬을 언로드해도 공용 EventSystem과 XRUIInputModule은 제거되지 않는다.
 
 `SubsystemRegistration`에서 정적 리그 참조를 초기화하므로 도메인 재로드를 끈 에디터 실행에서도 이전 참조를 재사용하지 않는다.
+
+### 공용 UI 입력 환경
+
+UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInputModule은 프리팹에 미리 배치되어 있으며, 씬별 준비 함수나 패키지의 자동 생성에 의존해 구성하지 않는다. 리그의 초기 중복 제거는 실행 순서 -10000에서, EventSystem은 -1000에서 처리한다. `XRPlayerInputController.Start()`는 준비된 환경에 오른손 ray와 UI Trigger를 연결한다.
+
+픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `FactoryIntroInputController`는 공용 UI Trigger 바인딩을 사용하며, 연출용 이동·잡기 제한, ray 표시와 A 진행 입력을 관리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
+
+클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas의 TrackedDeviceGraphicRaycaster와 버튼 콜백 연결은 각 UI에 둔다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
 ### 추적과 이동
 
@@ -38,7 +46,7 @@
 
 `OnDisable()`은 씬 로드 이벤트 구독과 입력 액션을 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction을 해제한다.
 
-안내 버튼 입력 누락은 정적 검토에서 persistent ray가 파괴된 이전 씬의 UI 모듈을 참조하는 경로로 진단했다. 등록 복원 코드는 반영했으나 사용자 지시에 따라 Unity 실행·테스트·빌드·컴파일 없이 소스만 검토했으므로 실제 컨트롤러에서의 복구 여부는 실행 확인 전이다.
+공용 UI 입력 환경의 프리팹 배치와 씬별 중복 준비 제거는 소스·직렬화 참조·수명 경로를 정적으로 검토했다. Unity 실행·임포트·컴파일·Play·테스트·빌드는 수행하지 않았으며, 실제 씬 전환과 컨트롤러 입력 동작은 실행 확인 전이다.
 
 ## 태블릿 파일과 역할
 

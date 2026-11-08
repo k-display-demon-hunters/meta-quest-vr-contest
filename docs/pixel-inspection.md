@@ -4,37 +4,26 @@
 
 Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → FeatureMap → ModelDesign`이다. `ConvolutionLab` 하나 안에 아래 두 체험을 순서대로 둔다. ROOM 2의 `CNNFeatureMapLab`은 별도의 다음 학습 단계이며 이번 후속 데스크와 서로의 Manager·Controller를 참조하지 않는다.
 
-1. **필터가 지나간 자리**: 실제 선택을 포함한 5×5 RGB 입력, 3×3 필터 배치, 첫 R 아홉 칸 계산, G/B 자동 계산, 출력 위치 퀴즈, 아홉 위치 스캔, 결과 요약.
+1. **필터가 지나간 자리**: 0~3 값의 고정 5×5 RGB 입력, 3×3 필터 배치, 첫 R 아홉 칸 계산, G/B 자동 계산, 출력 위치 퀴즈, 아홉 위치 스캔, 결과 요약.
 2. **특징 판독 데스크**: 고정 6×6 비교 표본에서 A/B 특징맵 전환, 선택적인 표본 90° 회전과 복원, 체험 마치기.
 
 첫 체험의 요약 버튼은 `특징맵 비교하기`다. 후속 체험을 시작할 때 앞 체험의 UI, 필터 잡기, 출력칸 클릭, 이동 숫자를 정리한다. 같은 씬·같은 관람 방향에서 두 판을 가진 후속 데스크를 보여 준다. 첫 3×3 출력이 뒤의 4×4 맵으로 변하는 것이 아니며, 요약에서 **새 비교 표본**으로 넘어감을 안내한다.
 
 `CNNConvolutionLabManager`는 `ILearningExperience`를 유지한다. 첫 체험의 `Completed`는 파트 완료일 뿐 출구 허용 이벤트가 아니다. 후속 데스크의 A/B 비교가 끝나도 출구는 열리지 않으며, 관람객이 **체험 마치기**를 눌렀을 때만 `Progress=1`, `CanExit=true`와 완료 알림을 보낸다. 회전은 완료 조건에서 제외한다.
 
-진행률은 출력 기록 수에 따라 0~0.75, 첫 결과 확인 0.75, 후속 데스크 진입 0.8, 첫 B 비교 0.95, 최종 종료 1이다. 같은 실행 중 진행률은 감소시키지 않는다. 새 입력을 받거나 1-1을 다시 시작하면 현재 실행을 초기화하고, 세션의 누적 최대 기록은 기존 `LearningProgress` 정책으로 유지한다. 공장 문·태블릿 항목·동선의 기존 인터페이스를 그대로 사용한다.
+진행률은 출력 기록 수에 따라 0~0.75, 첫 결과 확인 0.75, 후속 데스크 진입 0.8, 첫 B 비교 0.95, 최종 종료 1이다. 같은 실행 중 진행률은 감소시키지 않는다. 1-1의 선택 변경이나 재시작은 1-2의 입력·진행 상태에 영향을 주지 않으며, 세션의 누적 최대 기록은 기존 `LearningProgress` 정책으로 유지한다. 공장 문·태블릿 항목·동선의 기존 인터페이스를 그대로 사용한다.
 
-## 1-1의 관찰과 실제 5×5 입력
+## 독립적인 관찰과 합성곱 입력
 
-`CNNScreenLab`은 사진 선택, 선택한 **3×3 원본 RGB 0~255** 관찰을 담당한다. `PixelImageFactory`는 기존 사진에서 128×72 축소·5×5 블러·32×18 샘플링 결과를 만든다. 기존 `PixelPatchData`의 9픽셀 계약과 관찰 UI는 유지한다.
+`CNNScreenLab`은 사진에서 선택한 3×3 원본 RGB 0~255 관찰을 담당한다. `PixelImageFactory`는 기존 사진에서 128×72 축소·5×5 블러·32×18 샘플링 결과를 만든다. `PixelImageData.CapturePatch`가 만든 `PixelPatchData`는 관찰 내부에서만 사용하며 `Scripts/CNNScreenLab/PixelPatchData.cs`에 둔다. 외부로 선택 데이터를 공개하거나 전달하지 않는다.
 
-`CNNScreenLabManager.ShowDetails`에서 같은 선택 좌표를 사용해 두 스냅샷을 만든다.
+`CNNConvolutionLab`은 `Scripts/CNNConvolutionLab/ConvolutionLesson/ConvolutionCalculation.cs`의 `CreateExample()`에 저장된 0~3 값의 고정 5×5 RGB 배열로 시작한다. 순차 입장, 태블릿 직접 이동, 단독 실행 모두 같은 예제를 사용한다. 1-1의 선택 여부나 완료 상태로 입력을 바꾸지 않는다. 계산 결과는 이 배열과 필터로 매번 계산한다.
 
-- `SelectedPatch`: 관찰에 쓰는 기존 3×3 `PixelPatchData`.
-- `ConvolutionInput`: 다음 계산 체험에 쓰는 새 5×5 `ConvolutionInputData`. 25개 `Color32`를 복사하여 위 행부터 왼쪽→오른쪽 순서로 저장한다. 읽기 전용 인덱서와 기존 3×3 영역의 `SelectedRow`, `SelectedColumn` 오프셋을 제공한다.
+`FactorySceneLoadController`는 인접 씬을 미리 로드한다. ScreenLab과 ConvolutionLab은 로드 후 각자의 `Start`에서 자체 초기화하며, 공장의 현재 구역이나 실제 입장 여부를 전달받지 않는다. ConvolutionLab은 고정 예제를 준비하고 필터 배치 입력을 기다린다. 공장 내 로드와 단독 실행은 같은 시작 경로를 사용한다. 로드된 상태에서는 구역 이동만으로 체험을 중단하거나 초기화하지 않는다.
 
-### 자르기 규칙
+`LearningSessionManager`는 구체 체험 Manager를 참조하지 않고 `ILearningExperience`로 단계·진행률·출구 허용 상태를 조회하고 변경 이벤트를 구독한다. 언로드 전에는 같은 인터페이스의 `EndSession`으로 정리를 요청한다. 공장의 기존 문 개방 조건과 학습 순서는 유지한다.
 
-가능하면 선택한 3×3의 **왼쪽 위를 5×5의 왼쪽 위**에 두어 첫 필터 위치에서 관람객이 고른 영역을 계산한다. 이미지의 오른쪽·아래 끝에서는 5×5 창 전체를 안쪽으로 옮겨 실제 이미지 안에 맞춘다. 픽셀을 복제하거나 0으로 패딩하지 않는다. 기존 선택 영역은 새 창 안에 반드시 포함된다.
-
-텍스처 좌표는 아래에서 위로 증가한다. 기존 선택의 왼쪽 아래가 `(x,y)`일 때 `left=Clamp(x,0,columns−5)`, `bottom=Clamp(y−2,0,rows−5)`, `top=bottom+4`이다. 새 배열의 `(row,column)`에는 원본 `(left+column,top−row)` 값을 담는다. 선택 영역의 새 오프셋은 `(top−(y+2), x−left)`다. 가장자리로 창을 옮겼을 때는 화면에 그 이유를 짧게 안내한다.
-
-### 입력 확정과 미리 로드
-
-`FactorySceneLoadController`는 기존대로 인접 씬을 미리 로드한다. `ContentLoaded`는 Unity `Start` 전에 발생한다. 세션은 그 시점에 `PrepareForSession()`으로 합성곱을 대기 상태로 놓는다. 아직 관찰을 마치지 않은 중간 선택은 전달하지 않는다.
-
-1-1의 `CanExit=true`가 된 뒤 `LearningSessionManager`가 확정된 25픽셀을 `SetInput`으로 전달한다. 실제 ConvolutionLab 구역에 들어가 `SetStageActive(true)`가 된 뒤 연습을 시작한다. 준비 순서가 반대여도 시작 조건은 같은 경계를 사용한다. 사용자가 1-1 안에서 다시 시작하면 기존 입력을 무효화한다. 다른 구역에 머무를 때 인접 1-1 씬이 새로 로드되는 사건으로 진행 중인 합성곱을 초기화하지 않는다.
-
-단독 씬 실행이나 이전 관찰 없이 태블릿으로 직접 들어온 경우에는 콘티의 **기본 예제**를 명시하여 사용한다. 실제 관찰 입력이 있는 정상 동선은 해당 입력을 계산한다. 변환은 `RoundToInt(component × 3 / 255)`이며 관찰용 원본은 바꾸지 않는다.
+두 체험의 UI 버튼은 공용 `XRPlayerRig`에 구성한 EventSystem·XRUIInputModule을 사용한다. `ScreenLabUIController`와 `CNNConvolutionLabManager`는 입력 환경을 생성하거나 해제하지 않으며, 버튼의 기존 On Click 연결로 각 체험의 요청을 처리한다. 체험 종료·언로드 시 공용 입력 환경은 유지된다. ScreenLab 단독 실행은 씬에 배치된 공용 리그를 사용하고, 자체 리그가 없는 ConvolutionLab의 XR 조작은 공장에 로드된 공용 리그를 사용한다.
 
 ## 첫 체험의 작업대와 시각 디자인
 
@@ -56,6 +45,10 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 
 입력 숫자는 타일 중앙, 겹친 필터의 가중치는 오른쪽 위에 둔다. 숫자는 원본을 유지하고 사본만 이동한다. `·`은 미기록 상태이며 유효한 0은 `0`으로 표시한다. 상태 카드도 `대기`, `진행 중`, `완료 · 합 0`을 구분한다. R/G/B는 글자와 빨강/초록/파랑을 함께 사용하며, 합산식에서도 채널 숫자의 색을 유지하고 연산 기호·최종합은 밝은 중성색으로 표시한다.
 
+RGB 입력은 작업대의 같은 위치에서 채널별로 전환하여 표시한다. 잡기 대상은 필터 손잡이이며, RGB 층·이미지 패치 잡기 컴포넌트나 별도의 3층 가중치·재구성 패치 오브젝트는 생성하지 않는다. 자동 배치 버튼은 필터 배치만 보조한다. `PixelCalculationUI.prefab`에는 숫자 키패드·숫자 답 제출 이벤트를 두지 않으며, 퀴즈 입력은 출력판의 칸 선택으로 받는다.
+
+안내 UI의 버튼은 결과 확인·필터 자동 배치·특징맵 비교에 사용한다. 버튼 연결은 `RequestNext`, `RequestSkip`, `RequestAdvance`이며, 모듈에 전달하는 이벤트는 `SkipRequested`, `AdvanceRequested`다. 계산식과 합계는 작업대의 식 판·합계 표시와 RGB 진행 카드에서 갱신한다. `LessonUIController`는 제목·안내·피드백·진행 카드·결과 요약을 표시하고, `ConvolutionCalculation`은 표시 문자열 없이 입력과 계산값을 제공한다.
+
 프리팹에는 기존 GUID와 기준점 연결을 유지한다. `_inputAnchor`, `_kernelHome`, `_kernelTarget`, `_resultAnchor`, `_sumAnchor`, `_equationAnchor`와 새 `_sumEquationAnchor`가 런타임 표시 위치를 정한다. 첫 목표는 **입력의 맨 왼쪽 위 3×3**이다. 필터 이동은 입력판 로컬 격자를 기준으로 하므로 공장의 회전과 무관하게 관람객 기준 오른쪽·아래 방향을 유지한다.
 
 ROOM 1-2의 공통 콘텐츠 루트는 균일 배율 1.5를 사용한다. 기존 배율 2의 75%로 두 작업대, 표시 UI와 잡기 대상에 함께 적용한다. 공장에서는 기준점 `(-28.55, -0.375, -2.0)`에 배치한다. 발 받침이 바닥 Y=0 바로 위에 오도록 높이를 맞추고, 남쪽 연구 데스크와 거리를 두도록 기준점을 북쪽으로 0.75m 옮겼다. 계산 메모는 높이를 줄여 바닥 위, 작업대 명판 아래에 배치한다. 필터의 배치 허용 반경은 목표 로컬 좌표로 계산하여 축소 비율을 따른다.
@@ -73,9 +66,9 @@ ROOM 1-2의 공통 콘텐츠 루트는 균일 배율 1.5를 사용한다. 기존
 3. **첫 R 합계**: 아홉 곱의 사본을 오른쪽 결과판 자체의 가운데로 모은다. 중앙 곱도 포함한다. 별도 합계 숫자가 나타난 뒤 바로 아래 작은 합계 표시로 내려간다. 원래 곱 결과는 보존한다. 이 모임·낙하 연출은 처음 한 번만 실행한다.
 4. **첫 G/B**: 필터를 고정하고 G→B로 자동 전환한다. 채널의 아홉 곱과 합을 짧게 보여준다. 합산식은 오른쪽 고정판에 바로 표시하고 모임 연출은 반복하지 않는다. 완료한 채널 합은 상단 카드에 남긴다.
 5. **첫 출력**: 오른쪽 제목을 `같은 위치의 곱`에서 `합성곱 출력 · 3×3`으로 바꾸고 중간 곱을 초기화한다. RGB 색을 유지한 합산식 뒤에 출력값을 필터 중앙에서 오른쪽 1행 1열로 보낸다.
-6. **위치 퀴즈**: 필터를 오른쪽 한 칸 옮기고 `이번 출력값은 어느 칸에 들어갈까요?`라고 묻는다. 기존 XR 레이로 출력칸을 직접 선택한다. 첫 출력은 유지하고 두 식 판의 글자는 비운다. 오답은 힌트와 재시도, 정답 1행 2열은 입력을 즉시 닫고 그 위치의 R→G→B 계산을 한 번 시작한다. 이전 B 숫자 키패드는 이 진행에서 사용하지 않는다.
+6. **위치 퀴즈**: 필터를 오른쪽 한 칸 옮기고 `이번 출력값은 어느 칸에 들어갈까요?`라고 묻는다. 기존 XR 레이로 출력칸을 직접 선택한다. 첫 출력은 유지하고 두 식 판의 글자는 비운다. 오답은 힌트와 재시도, 정답 1행 2열은 입력을 즉시 닫고 그 위치의 R→G→B 계산을 한 번 시작한다.
 7. **계속 이동**: 나머지 일곱 위치 모두에서 `한 칸 이동 → 정렬 → R → G → B → RGB 합 → 출력 기록`을 보여준다. 출력판으로 전환된 뒤 기존 출력값을 중간 곱으로 덮어쓰지 않는다.
-8. **요약**: 아홉 출력 뒤 `결과 확인`을 기다린다. 완성된 3×3 결과와 첫 위치 RGB 식을 표시하고 `특징맵 비교하기`로 이어진다. 실제 입력의 계산값을 표시하며 예제 숫자를 고정 출력하지 않는다.
+8. **요약**: 아홉 출력 뒤 `결과 확인`을 기다린다. 완성된 3×3 결과와 첫 위치 RGB 식을 표시하고 `특징맵 비교하기`로 이어진다. 고정 입력으로 계산한 값을 표시하며 출력값 자체를 하드코딩하지 않는다.
 
 출력 순서는 `(1,1)→(1,2)→(1,3)→(2,3)→(2,2)→(2,1)→(3,1)→(3,2)→(3,3)`이다. 배치·퀴즈·결과 확인·후속 진입은 관람객을 기다리고, 영상의 시간 때문에 강제로 넘기지 않는다.
 
@@ -99,7 +92,7 @@ R 입력             G 입력             B 입력
 0 0 1              15 13 12
 ```
 
-기본 예제의 첫 RGB 식은 `R 3 + G 6 + B 6 = 15`, 퀴즈 다음은 `R 6 + G 4 + B 3 = 13`이다. 실제 선택 이미지의 값은 이 예제와 달라질 수 있다.
+기본 예제의 첫 RGB 식은 `R 3 + G 6 + B 6 = 15`, 퀴즈 다음은 `R 6 + G 4 + B 3 = 13`이다.
 
 ## 후속 특징 판독 데스크
 
@@ -122,7 +115,7 @@ R 입력             G 입력             B 입력
 
 ### 표본·필터·표시값
 
-표본 왼쪽 세 열은 `RGB(223,109,81)`, 오른쪽 세 열은 `RGB(51,68,101)`이며 여섯 행에 반복한다. 원래 0~255 색을 0~1로 정규화해 3×3 창·stride 1·패딩 없음·편향 0으로 계산한다. 각 맵은 4×4다. 이 표본은 앞 체험의 실제 5×5 입력과 구분되는 고정 비교 표본이다.
+표본 왼쪽 세 열은 `RGB(223,109,81)`, 오른쪽 세 열은 `RGB(51,68,101)`이며 여섯 행에 반복한다. 원래 0~255 색을 0~1로 정규화해 3×3 창·stride 1·패딩 없음·편향 0으로 계산한다. 각 맵은 4×4다. 이 표본은 앞 체험의 고정 5×5 입력과 구분되는 고정 비교 표본이다.
 
 - **A**: 각 공간 위치의 채널 가중치는 R `+1/9`, G/B 각각 `−1/18`. 부호 있는 점수를 보존한다. 표시 강도는 `Clamp01(Max(0,score)×2.9)`이며 적색으로 나타낸다. 각 행의 점수는 약 `[+0.502,+0.291,+0.080,−0.131]`이다.
 - **B**: 밝기 `0.2126R+0.7152G+0.0722B`, 각 행의 열 가중치 `[-1,+1,0]`, 세 행의 평균. 부호 있는 점수를 보존하고 `Clamp01(Abs(score)×4.5)`로 중성 밝기를 표시한다. 세로 표본의 각 행은 세 번째 열만 약 `−0.253`, 나머지는 0이다. 일반적인 Sobel이나 `[-1,0,+1]`로 대체하지 않는다.
@@ -132,27 +125,56 @@ R 입력             G 입력             B 입력
 
 ## 구현 책임과 수명주기
 
+`client/Assets/Scripts/CNNConvolutionLab/`의 13개 소스는 씬 Manager 1개, 첫 체험 모듈 8개, 특징 판독 모듈 4개로 나눈다. 모든 소스의 namespace는 `CNNConvolution`으로 유지한다.
+
+```text
+CNNConvolutionLab/
+├── CNNConvolutionLabManager.cs
+├── ConvolutionLesson/
+│   ├── ConvolutionLessonManager.cs
+│   ├── ConvolutionCalculation.cs
+│   ├── LessonUIController.cs
+│   ├── RgbVolumeController.cs
+│   ├── KernelInteractionController.cs
+│   ├── CalculationLesson/
+│   │   ├── RedCalculationController.cs
+│   │   └── CalculationAnimationController.cs
+│   └── Quiz/
+│       └── ConvolutionQuizController.cs
+└── FeatureInspection/
+    ├── FeatureInspectionManager.cs
+    ├── FeatureInspectionCalculation.cs
+    ├── FeatureInspectionContent.cs
+    └── FeatureInspectionController.cs
+```
+
+`CalculationLesson`과 `Quiz`는 첫 체험의 하위 기능이다. 두 최상위 모듈은 서로의 입력·계산 결과를 전달하거나 내부 클래스를 참조하지 않는다. 씬 Manager가 각 모듈의 진입점인 `ConvolutionLessonManager`와 `FeatureInspectionManager`를 통해 시작·종료를 요청하고 이벤트를 받아 진행 순서를 조율한다. 폴더 구분은 책임과 소유 관계를 나타내며, 별도 asmdef나 컴파일 접근 제한은 두지 않는다.
+
+이동한 스크립트와 기존 `CalculationLesson`·`Quiz` 폴더의 `.meta`·GUID를 보존한다. 씬·프리팹의 스크립트 연결은 기존 GUID를 계속 사용하며, 에디터 구성 도구와 프리팹·재질 등은 각 에셋 종류의 기존 위치에 둔다. 아래 표에서 두 모듈의 경로는 위 스크립트 루트를 기준으로 한다.
+
 | 파일·모듈 | 책임 |
 | --- | --- |
-| `CNNScreenLabManager`, `PixelImageData` | 기존 3×3 관찰과 실제 5×5 스냅샷 생성 |
-| `Core/ConvolutionInputData` | 25픽셀과 기존 선택 영역 위치의 불변 데이터 |
-| `LearningSessionManager` | 관찰 완료 후 입력 전달, 현재 구역 활성 신호, 누적 진행 기록 |
+| `CNNScreenLabManager`, `PixelImageData` | 3×3 관찰용 스냅샷 생성 |
+| `CNNScreenLab/PixelPatchData` | 1-1 내부 관찰용 9픽셀 데이터 |
+| `LearningSessionManager` | 공용 `ILearningExperience`를 통한 상태 구독·종료와 누적 진행 기록 |
 | `CNNConvolutionLabManager` | 두 파트의 시작·순서·종료와 하나의 전체 완료 계약 |
-| `ConvolutionLessonManager` | 필터 배치→계산→위치 퀴즈→출력→요약 순서 |
-| `ConvolutionCalculation` | 입력·윈도·가중치·곱·채널 합·출력 계산 |
-| `CalculationLesson` | 첫 R의 아홉 개별 계산과 숫자 사본 이동 |
-| `Quiz/ConvolutionQuizController` | 출력 위치 정오답 판정과 대기 |
-| `RgbVolumeController`, `KernelInteractionController` | 입력·필터·결과 표시, 실제 위치의 사본 이동, Grip와 출력칸 입력 |
-| `LessonUIController` | 안내, RGB 카드, 메모, 고정 버튼, 결과 요약 표시 |
-| `FeatureInspectionManager` | A/B·회전·복원·로컬 완료 상태와 내부 동작 조율 |
-| `FeatureInspectionCalculation` | 고정 비교 표본과 부호 있는 필터 점수 계산 |
-| `FeatureInspectionContent` | 상태별 안내·라벨·버튼 데이터 |
-| `FeatureInspectionController` | 고정 프리팹의 표시·입력·표본 회전 |
+| `ConvolutionLesson/ConvolutionLessonManager` | 필터 배치→계산→위치 퀴즈→출력→요약 순서 |
+| `ConvolutionLesson/ConvolutionCalculation` | 입력·윈도·가중치·곱·채널 합·출력 계산 |
+| `ConvolutionLesson/CalculationLesson/RedCalculationController` | 첫 R의 아홉 개별 계산 순서와 채널 합 안내 |
+| `ConvolutionLesson/CalculationLesson/CalculationAnimationController` | 한 칸의 피연산자 사본 이동·곱셈식 표시·결과 기록 애니메이션 |
+| `ConvolutionLesson/Quiz/ConvolutionQuizController` | 출력 위치 정오답 판정과 대기 |
+| `ConvolutionLesson/RgbVolumeController` | 입력·필터·결과 표시, 사본 이동, 출력칸 입력과 내부 조작 객체 생성 |
+| `ConvolutionLesson/KernelInteractionController` | 필터 Grip·목표 위치 판정·자동 배치·배치 피드백 |
+| `ConvolutionLesson/LessonUIController` | 안내, RGB 카드, 메모, 고정 버튼, 결과 요약 표시 |
+| `FeatureInspection/FeatureInspectionManager` | A/B·회전·복원·로컬 완료 상태와 내부 동작 조율 |
+| `FeatureInspection/FeatureInspectionCalculation` | 고정 비교 표본과 부호 있는 필터 점수 계산 |
+| `FeatureInspection/FeatureInspectionContent` | 상태별 안내·라벨·버튼 데이터 |
+| `FeatureInspection/FeatureInspectionController` | 고정 프리팹의 표시·입력·표본 회전 |
 | `ConvolutionLabBuilder` | 저장된 세 전용 프리팹과 같은 참조를 사용하는 씬 구성 경로 |
 
 씬 Manager는 두 모듈의 진입점·이벤트만 사용한다. 후속 모듈은 ROOM 2 씬 전용 코드에 의존하지 않는다. 공용 UI 원본·ROOM 2 체험 순서·공장 전체 디자인은 이 변경에 포함되지 않는다.
 
-종료·구역 이탈·비활성화에서 코루틴, 숫자 사본, 퀴즈 입력, 필터 잡기와 강조를 정리한다. 첫 합계 중간에 중단해도 중앙 결과 글자의 숨김 상태를 복원한다. 다음 실행에서는 새 출력판과 카드 상태로 시작한다. 활성 기간의 C# 이벤트 구독·해제와 버튼 리스너는 대칭으로 관리한다.
+종료·컴포넌트 비활성화에서 코루틴, 숫자 사본, 퀴즈 입력, 필터 잡기와 강조를 정리한다. 첫 합계 중간에 중단해도 중앙 결과 글자의 숨김 상태를 복원한다. 다음 실행에서는 새 출력판과 카드 상태로 시작한다. 활성 기간의 C# 이벤트 구독·해제와 버튼 리스너는 대칭으로 관리한다.
 
 ## 확인 범위
 

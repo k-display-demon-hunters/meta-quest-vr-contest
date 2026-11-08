@@ -1,4 +1,3 @@
-using Core;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -25,50 +24,40 @@ namespace CNNConvolution
             _ui.AdvanceRequested += HandleContinue;
         }
 
-        public void BeginPractice(ConvolutionInputData input, bool example = false)
-        {
-            string inputNote = example ? "원래 RGB 값 0~255를 연습용 0~3으로 표시해요."
-                : input.WindowShifted ? "이미지 가장자리라 선택 영역을 포함하도록 5×5 창을 안쪽으로 옮겼어요."
-                : "선택한 3×3이 첫 필터 위치에 들어 있어요. 주변 실제 픽셀도 함께 계산해요.";
-            BeginCalculation(example ? ConvolutionCalculation.CreateExample() : new ConvolutionCalculation(input), example, inputNote);
-        }
-
         public void BeginPractice()
         {
-            BeginCalculation(ConvolutionCalculation.CreateExample(), true, "기본 예제의 값은 0~3이에요.");
+            BeginCalculation(ConvolutionCalculation.CreateExample());
         }
 
-        private void BeginCalculation(ConvolutionCalculation calculation, bool example, string inputNote)
+        private void BeginCalculation(ConvolutionCalculation calculation)
         {
             StopAllCoroutines();
             _quiz?.Cancel();
             _quiz = null;
             if (!_initialized)
             {
-                _ui.Initialize(_font);
+                _ui.Initialize();
                 _spatial.Initialize(_font);
                 _initialized = true;
             }
             _summaryReady = false;
             _running = true;
-            _ui.SetReturnAvailable(false);
             _ui.BeginCalculation();
             _spatial.gameObject.SetActive(true);
             _spatial.SetData(calculation);
             _spatial.PrepareSlidingPractice();
             ProgressChanged?.Invoke(0f);
-            StartCoroutine(RunLesson(calculation, example, inputNote));
+            StartCoroutine(RunLesson(calculation));
         }
 
-        private IEnumerator RunLesson(ConvolutionCalculation calculation, bool example, string inputNote)
+        private IEnumerator RunLesson(ConvolutionCalculation calculation)
         {
             _ui.Title = "필터가 지나간 자리";
             _ui.Explanation = "손잡이를 잡아 입력판 맨 왼쪽 위의 점선에 놓으세요.";
-            _ui.Guide = example ? "기본 예제 · 입력 5×5 · 필터 3×3"
-                : "선택 영역과 주변 실제 픽셀 · 5×5\nRGB 0~255 → 연습용 값 0~3";
-            _ui.Feedback = inputNote;
+            _ui.Guide = "고정 학습 예제 · 입력 5×5 · 필터 3×3";
+            _ui.Feedback = "계산을 익히기 위한 고정 예제예요. 각 채널의 값은 0~3이에요.";
             yield return _spatial.WaitForKernel();
-            _ui.ShowSkip(false, false);
+            _ui.ShowSkip(false);
             RedCalculationController firstChannel = new RedCalculationController(_spatial, _ui, calculation);
             yield return firstChannel.Run();
             yield return ShowCompactChannel(calculation, 1, true);
@@ -152,7 +141,7 @@ namespace CNNConvolution
 
         private void Update()
         {
-            if (_running) { _ui.ShowSkip(false, _spatial.WaitingForKernel); }
+            if (_running) { _ui.ShowSkip(_spatial.WaitingForKernel); }
         }
 
         private void HandleAssist()

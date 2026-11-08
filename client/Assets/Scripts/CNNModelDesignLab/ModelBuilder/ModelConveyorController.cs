@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ModelDesignScene.Model;
 using UnityEngine;
 
 namespace ModelDesignScene.ModelBuilder
@@ -23,6 +24,9 @@ namespace ModelDesignScene.ModelBuilder
 
         private readonly List<Renderer> _slotRenderers = new List<Renderer>();
         private readonly List<SlotSettingsController> _settingsControls = new List<SlotSettingsController>();
+        private readonly List<Vector3> _popupPositions = new List<Vector3>();
+        [SerializeField] private MeshFilter _flowSurface;
+        private Mesh _flowMesh;
         private ConveyorSlots _slots;
         private MaterialPropertyBlock _properties;
         private int _previewSlot = -1;
@@ -36,6 +40,7 @@ namespace ModelDesignScene.ModelBuilder
             _previewSlot = -1;
             _slotRenderers.Clear();
             _settingsControls.Clear();
+            _popupPositions.Clear();
             // Sibling order matches the saved block anchors; scene transforms remain editable.
             for (int index = 0; index < _blockAnchors.Length; index++)
             {
@@ -43,6 +48,7 @@ namespace ModelDesignScene.ModelBuilder
                 SlotSettingsController control = _settingsControlsRoot.GetChild(index).GetComponent<SlotSettingsController>();
                 control.Initialize(index);
                 _settingsControls.Add(control);
+                _popupPositions.Add(control.PopupAnchor.localPosition);
                 RefreshSlot(index);
             }
         }
@@ -108,12 +114,37 @@ namespace ModelDesignScene.ModelBuilder
             ModelBlockController block = _slots[index];
             _settingsControls[index].SetBlock(block);
             bool occupied = block != null;
+            bool hasGrid = occupied && (block.Layer.Type == LayerType.Conv2D
+                || block.Layer.Type == LayerType.MaxPooling2D || block.Layer.Type == LayerType.Flatten
+                || block.Layer.Type == LayerType.Dense);
+            _settingsControls[index].PopupAnchor.localPosition = _popupPositions[index]
+                + (hasGrid ? new Vector3(0f, 0.5f, 0f) : Vector3.zero);
             Color color = index == _previewSlot
                 ? (occupied ? _blockedColor : _candidateColor)
                 : (occupied ? _occupiedColor : _emptyColor);
             _slotRenderers[index].GetPropertyBlock(_properties);
             _properties.SetColor(BaseColor, color);
             _slotRenderers[index].SetPropertyBlock(_properties);
+        }
+
+        internal void RefreshConnections(List<Vector3> worldPoints)
+        {
+            for (int index = 0; index < worldPoints.Count; index++)
+            {
+                worldPoints[index] = _flowSurface.transform.InverseTransformPoint(worldPoints[index]);
+            }
+            Mesh previousMesh = _flowMesh;
+            _flowMesh = VectorBlockMesh.CreateConnections(worldPoints);
+            _flowSurface.sharedMesh = _flowMesh;
+            if (previousMesh != null)
+            {
+                Destroy(previousMesh);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            Destroy(_flowMesh);
         }
 
         private void OnDisable()

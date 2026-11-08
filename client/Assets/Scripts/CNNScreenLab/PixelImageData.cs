@@ -1,4 +1,3 @@
-using Core;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,24 +28,6 @@ namespace CNNScreen
                 patch[i] = Pixels[(origin.y + 2 - i / 3) * Columns + origin.x + i % 3];
             }
             return new PixelPatchData(patch);
-        }
-
-        public ConvolutionInputData CaptureConvolutionInput(Vector2Int selectedOrigin)
-        {
-            // Selection uses bottom-left texture coordinates. Extend to the right and
-            // down from its top-left, moving the whole crop inward at image edges.
-            int left = Mathf.Clamp(selectedOrigin.x, 0, Columns - ConvolutionInputData.Size);
-            int bottom = Mathf.Clamp(selectedOrigin.y - 2, 0, Rows - ConvolutionInputData.Size);
-            int top = bottom + ConvolutionInputData.Size - 1;
-            Color32[] pixels = new Color32[ConvolutionInputData.Size * ConvolutionInputData.Size];
-            for (int row = 0; row < ConvolutionInputData.Size; row++)
-            {
-                for (int column = 0; column < ConvolutionInputData.Size; column++)
-                {
-                    pixels[row * ConvolutionInputData.Size + column] = Pixels[(top - row) * Columns + left + column];
-                }
-            }
-            return new ConvolutionInputData(pixels, top - (selectedOrigin.y + 2), selectedOrigin.x - left);
         }
 
         public void Dispose()

@@ -334,7 +334,7 @@ RefreshPreparedEntrance는 제거했다. 셔터 개폐는 접근 이벤트를 �
 
 로더는 Stage와 Unity Scene을 저장한다. sceneLoaded에서 ILearningExperience가 있는 콘텐츠 루트를 찾고 다른 루트를 비활성화한 뒤 ContentAnchor의 위치·회전·배율을 적용한다. 콘텐츠 조명을 비활성화하고 Rigidbody 위치·회전을 동기화한 뒤 ContentLoaded(stage, scene)를 발행한다. 세션은 이 알림에서 ILearningExperience를 찾아 초기 데이터·진행률 구독을 연결한다. 이 작업은 Start 전에 끝난다. 로딩 처리가 끝나면 StateChanged로 IsBusy 변경을 알린다. 공장은 AreaChanged를 직접 구독해 현재 단계와 문·경로를 관리하고 접근·IsLoaded·퇴장 가능·양피지 조건을 조합한다. 체험 초기화로 진행 불가가 되어도 유지 범위 안 씬은 해제하지 않는다.
 
-Screen 구역 진입 시 Convolution을 미리 준비하므로 픽셀 선택이 아직 없을 수 있다. 세션은 Screen 관찰 완료 시 최종 SelectedPatch를 Convolution.SetInput에 전달한 뒤 공장에 진행 가능 상태를 알린다. Convolution.SetInput은 입력 참조만 저장한다. 이미 시작한 연습을 갱신하거나 재시작하지 않으므로 Start 이후 전달한 선택값은 실행 중인 연습에 반영되지 않는다.
+Screen 구역 진입 시 로더가 Convolution을 미리 로드한다. 각 체험은 Start에서 자체 초기화하고 내부 사용자 입력에 따라 진행하며, 공장의 구역 진입·이탈 상태를 전달받지 않는다. 세션은 구체 체험 Manager를 참조하지 않고 ILearningExperience로 상태 구독·진행 기록·종료 요청만 처리한다. 두 씬 사이에 픽셀 데이터를 전달하지 않으며, Convolution은 항상 자체 고정 5×5 RGB 예제를 사용한다. Screen의 선택 변경이나 재시작은 Convolution의 입력·진행 상태를 초기화하지 않는다. 기존 문 개방 조건과 학습 순서는 유지한다.
 
 ContentUnloading은 모든 구독자의 정리 코루틴을 기다린다. 세션은 구독 해제와 EndSession을 담당하고, FactoryPlayerController는 ContentUnloading을 직접 구독해 해당 씬의 잡은 물체를 해제한다. 두 구독자의 정리가 끝나면 로더가 씬을 언로드한다. FactoryPlayerController의 로더·구역 Controller 참조는 공장 씬에 연결한다. 후문 진입 시에는 FactoryPlayerController가 AreaChanged에서 Stage가 Exit인 Area를 받아 로드된 체험의 잡은 물체를 직접 해제한다. CurrentStage·StageChanged는 공장이 소유한다. 로더에는 StageEntryStarted·NextSceneReady·현재 단계 상태가 없다. 실패 시 LoadFailed를 발행하고 처리를 끝낸다. 실패 후 타이머나 재시도 코루틴은 없으며 새 AreaChanged만 다음 처리를 시작한다.
 

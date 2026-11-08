@@ -152,6 +152,7 @@ RectTransform:
   m_Children:
   - {fileID: 820000041}
   - {fileID: 820000021}
+  - {fileID: 830000021}
   m_Father: {fileID: 2024448783}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -245,8 +246,8 @@ Transform:
   m_GameObject: {fileID: 2024448781}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalPosition: {x: 0, y: -0.375, z: 0}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 185311924}
@@ -265,6 +266,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.CNNConvolutionLabManager
   _lesson: {fileID: 990000001}
+  _inspection: {fileID: 830000023}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -357,3 +359,38 @@ MonoBehaviour:
   _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
   _ui: {fileID: 820000023}
   _spatial: {fileID: 820000042}
+
+--- !u!1001 &830000020
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 185311924}
+    m_Modifications: []
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
+--- !u!1 &830000022 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1000, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
+  m_PrefabInstance: {fileID: 830000020}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &830000021 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1001, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
+  m_PrefabInstance: {fileID: 830000020}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &830000023 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1002, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
+  m_PrefabInstance: {fileID: 830000020}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 830000022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4f795f4cc154cad9d62788c79d923f7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.FeatureInspectionManager

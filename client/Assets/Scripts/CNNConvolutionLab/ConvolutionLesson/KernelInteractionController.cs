@@ -8,7 +8,7 @@ namespace CNNConvolution
 {
     internal sealed class KernelInteractionController : IDisposable
     {
-        private const float PlacementRadius = 0.3f;
+        private const float LocalPlacementRadius = 0.1f;
         private const float PlacementDuration = 0.18f;
         private const float ReturnDuration = 0.3f;
         private enum PlacementState { Hidden, Waiting, Hovered, Moving, Ready, Returning, Settling, Complete }
@@ -28,7 +28,8 @@ namespace CNNConvolution
         private bool _active;
         private bool _closing;
         public bool IsAligned { get; private set; }
-        private bool IsWithinTarget => Vector3.Distance(_view.Kernel.position, _target.position) <= PlacementRadius;
+        private bool IsWithinTarget => _target.InverseTransformPoint(_view.Kernel.position).sqrMagnitude
+            <= LocalPlacementRadius * LocalPlacementRadius;
         public KernelInteractionController(Transform root, RgbVolumeController.Geometry view, Transform home, Transform target, Text hint)
         {
             _root = root;
@@ -36,18 +37,14 @@ namespace CNNConvolution
             _home = home;
             _target = target;
             _hint = hint;
-            _kernelGrab = MakeGrab(view.Kernel, new Vector3(0.74f, 0.70f, 0.04f));
+            _kernelGrab = MakeGrab(view.Kernel, new Vector3(0.60f, 0.54f, 0.04f));
             _body = _kernelGrab.GetComponent<Rigidbody>();
             BoxCollider handle = view.Kernel.gameObject.AddComponent<BoxCollider>();
-            handle.center = new Vector3(0, -0.42f, 0);
-            handle.size = new Vector3(0.3f, 0.14f, 0.09f);
+            handle.center = new Vector3(0, 0.32f, 0);
+            handle.size = new Vector3(0.26f, 0.10f, 0.09f);
             _kernelGrab.colliders.Add(handle);
             _kernelGrab.selectEntered.AddListener(HandleKernelGrabbed);
             _kernelGrab.selectExited.AddListener(HandleKernelReleased);
-        }
-        public void PrepareKernel()
-        {
-            DisableKernel();
         }
         public void EnableKernel()
         {

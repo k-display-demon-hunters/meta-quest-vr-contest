@@ -1,50 +1,109 @@
 using Core;
-using UI;
 using System;
 using System.Collections;
 using Learning;
+using UI;
 using UnityEngine;
 
 namespace CNNConvolution
 {
+    // Owns the two consecutive parts of ROOM 1-2 and its single completion contract.
     public sealed class CNNConvolutionLabManager : MonoBehaviour, ILearningExperience
     {
+        private enum ExperiencePhase { Waiting, Convolution, Inspection, Finished }
         [SerializeField] private ConvolutionLessonManager _lesson;
-        private PixelPatchData _patch;
-        private bool _completed;
+        [SerializeField] private FeatureInspectionManager _inspection;
         private readonly PixelUIInputController _input = new PixelUIInputController();
+        private ExperiencePhase _phase;
+        private bool _started;
+        private bool _completed;
+
         public LearningStageId StageId => LearningStageId.ConvolutionLab;
         public float Progress { get; private set; }
         public bool CanExit => isActiveAndEnabled && _completed;
         public event Action<float> ProgressChanged;
         public event Action<bool> ExitAvailabilityChanged;
-        public void SetInput(PixelPatchData patch) { _patch = patch; }
+
         private void OnEnable()
         {
             _input.Enable(transform);
-            _lesson.ProgressChanged += HandleProgress;
-            _lesson.Completed += HandleCompleted;
+            _lesson.ProgressChanged += HandleConvolutionProgress;
+            _lesson.Completed += HandleConvolutionCompleted;
+            _lesson.ContinueRequested += HandleInspectionRequested;
+            _inspection.Completed += HandleComparisonCompleted;
+            _inspection.ExitRequested += HandleFinishRequested;
+            if (_started)
+            {
+                if (_phase == ExperiencePhase.Inspection || _phase == ExperiencePhase.Finished)
+                {
+                    _phase = ExperiencePhase.Inspection;
+                    _inspection.BeginInspection();
+                }
+                else { BeginWhenReady(); }
+            }
+            ExitAvailabilityChanged?.Invoke(CanExit);
         }
+
         private void Start()
         {
-            // Direct entry has an explicit practice example instead of an all-zero patch.
-            bool example = _patch == null;
-            if (example)
-            {
-                _patch = new PixelPatchData(new Color32[] {
-                    new Color32(85,170,255,255), new Color32(170,85,0,255), new Color32(255,170,85,255),
-                    new Color32(0,85,170,255), new Color32(170,255,85,255), new Color32(85,0,255,255),
-                    new Color32(255,85,170,255), new Color32(85,170,0,255), new Color32(170,85,255,255) });
-            }
-            _lesson.BeginPractice(_patch, example);
+            _started = true;
+            BeginWhenReady();
         }
-        private void HandleProgress(float value) { Progress = value; ProgressChanged?.Invoke(value); }
-        private void HandleCompleted() { _completed = true; ExitAvailabilityChanged?.Invoke(CanExit); }
-        public IEnumerator EndSession() { _lesson.StopPractice(); _input.Dispose(); yield break; }
+
+        private void BeginWhenReady()
+        {
+            if (!_started || _phase != ExperiencePhase.Waiting) { return; }
+            _phase = ExperiencePhase.Convolution;
+            _lesson.BeginPractice();
+        }
+
+        private void HandleConvolutionProgress(float value) { SetProgress(value * 0.75f); }
+        private void HandleConvolutionCompleted() { SetProgress(0.75f); }
+
+        private void HandleInspectionRequested()
+        {
+            if (_phase != ExperiencePhase.Convolution) { return; }
+            _lesson.StopPractice();
+            _phase = ExperiencePhase.Inspection;
+            _inspection.BeginInspection();
+            SetProgress(0.8f);
+        }
+
+        private void HandleComparisonCompleted() { SetProgress(0.95f); }
+
+        private void HandleFinishRequested()
+        {
+            if (_phase != ExperiencePhase.Inspection) { return; }
+            _phase = ExperiencePhase.Finished;
+            _completed = true;
+            SetProgress(1f);
+            ExitAvailabilityChanged?.Invoke(CanExit);
+        }
+
+        private void SetProgress(float progress)
+        {
+            Progress = Mathf.Max(Progress, progress);
+            ProgressChanged?.Invoke(Progress);
+        }
+
+        public IEnumerator EndSession()
+        {
+            _lesson.StopPractice();
+            _inspection.StopInspection();
+            _input.Dispose();
+            yield break;
+        }
+
         private void OnDisable()
         {
-            _lesson.ProgressChanged -= HandleProgress;
-            _lesson.Completed -= HandleCompleted;
+            _lesson.ProgressChanged -= HandleConvolutionProgress;
+            _lesson.Completed -= HandleConvolutionCompleted;
+            _lesson.ContinueRequested -= HandleInspectionRequested;
+            _inspection.Completed -= HandleComparisonCompleted;
+            _inspection.ExitRequested -= HandleFinishRequested;
+            _lesson.StopPractice();
+            _inspection.StopInspection();
+            if (_phase == ExperiencePhase.Convolution) { _phase = ExperiencePhase.Waiting; }
             _input.Dispose();
             ExitAvailabilityChanged?.Invoke(false);
         }

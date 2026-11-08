@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CNNConvolution;
-using CNNScreen;
 using FactoryEnvironment;
 using Parchment;
 using Tablet;
@@ -92,22 +90,11 @@ namespace Learning
             _experiences.Add(stage, subscription);
             experience.ProgressChanged += subscription.ProgressChanged;
             experience.ExitAvailabilityChanged += subscription.AvailabilityChanged;
-            if (stage == LearningStageId.ConvolutionLab) { UpdateConvolutionInput(); }
             HandleAvailabilityChanged(stage, experience.CanExit);
-        }
-
-        private void UpdateConvolutionInput()
-        {
-            if (!_experiences.TryGetValue(LearningStageId.ScreenLab, out ExperienceSubscription screen)
-                || !_experiences.TryGetValue(LearningStageId.ConvolutionLab, out ExperienceSubscription convolution)) { return; }
-            Core.PixelPatchData patch = ((CNNScreenLabManager)screen.Experience).SelectedPatch;
-            if (patch != null) { ((CNNConvolutionLabManager)convolution.Experience).SetInput(patch); }
         }
 
         private void HandleAvailabilityChanged(LearningStageId stage, bool available)
         {
-            // Preloading can precede pixel selection. Supply the final input before the factory opens the door.
-            if (stage == LearningStageId.ScreenLab && available) { UpdateConvolutionInput(); }
             StageAvailabilityChanged?.Invoke(stage, available);
             PublishState();
         }

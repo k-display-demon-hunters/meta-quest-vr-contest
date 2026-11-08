@@ -6,12 +6,12 @@
 | --- | --- | --- | --- | --- |
 | **WraithAttackWarning.wav** / 습격·경고 효과음 | client/Assets/Audio/OpeningEnding/WraithAttackWarning.wav; 오프닝 4.3초부터 경고·충전·타격·화면 고장 | Codex 보조로 Python math/random/wave를 사용해 사인파·잡음·엔벌로프를 직접 합성. seed 30102026, 9초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
 | **FactoryDoorOpen.wav** / 공장문 효과음 | client/Assets/Audio/OpeningEnding/FactoryDoorOpen.wav; 오프닝 문 열기 | Codex 보조로 Python math/random/wave의 저음·잡음·마찰·충격 엔벌로프를 직접 합성. seed 30102026, 3.2초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
-| **InputPixels.png** / 입력 이미지 | `client/Assets/Textures/CNNFeatureMapLab/InputPixels.png`; CNNFeatureMapInput의 InputMapController 및 기존 InputSurface 재질 | 기존 프로젝트 에셋. 원출처 URL·생성 도구·제작 방법·AI 보조 여부 미확인 | 제작자·권리자·라이선스 미확인 | 이미지 파일 수정 없음. Codex 보조로 이미지 참조를 Workspace Manager에서 입력 맵 컴포넌트로 이전 |
+| **InputPixels.png** / 입력 이미지 | 이전 경로: `client/Assets/Textures/CNNFeatureMapLab/InputPixels.png`; 2026-11-09 미사용 정리로 삭제, 현재 제출 대상 제외 | 기존 프로젝트 에셋. 원출처 URL·생성 도구·제작 방법·AI 보조 여부 미확인 | 제작자·권리자·라이선스 미확인 | Codex 보조로 이전 입력 맵·재질과 함께 삭제. 과거 출처 기록 보존 |
 | **OpeningBroadcast.png** / 오프닝 방송 정지 이미지 | `client/Assets/Textures/CNNScreenLab/OpeningBroadcast.png`; CNNScreenLab 원본 이미지·픽셀 및 RGB 계산 입력; FactoryEnding의 합성곱·특징 맵 예시용 16×9 밝기 샘플 원본 | 프로젝트의 `FactoryIntro/VillageDisplay` 셰이더를 Unity에서 뉴스 방송(_Channel=0), 재생 3초, 손상·간섭 0으로 렌더링. Codex 보조로 1024×576 PNG 추출 | 프로젝트 내부 절차적 방송 그래픽에서 제작. 외부 방송 영상·로고 사용 없음. 별도 공개 라이선스 지정 없음 | 원본 PNG 수정 없음. 픽셀 체험은 저해상도·블러 처리 후 동일 이미지에서 RGB 샘플링. 엔딩은 Codex 보조로 기존 PNG의 셀 중심 밝기를 추출해 코드의 수치 예시로 사용하며 파일을 복제하지 않음. 관찰은 원래 0~255, 계산 연습은 Codex 보조 코드로 0~3에 축소해 표시 |
 | **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 저장된 구성 검사·학습·예측 UI, FactoryEnding의 큰 버튼·주민 대화창 및 `Prefabs/OpeningEnding/Ending/EndingUpscalingProcess.prefab` 단계 제목·계산식, CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
 | **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1 유래)** | `client/Assets`의 `Meshes/Common/MetaQuestTouchPlus`, `Textures/Common/MetaQuestTouchPlus`, `Materials/Common/MetaQuestTouchPlus`; 공용 XRPlayerRig 컨트롤러 표시, 오프닝 입장 시 왼손 조이스틱 강조와 FactoryTutorial 확대 안내 | [Meta 공식 패키지](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 207.0.1에서 표시용 에셋만 분리. [공식 애니메이션 사용 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | 원본 LICENSE.md 표기: Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/). 원래 LICENSE.md·NOTICE.txt를 모델 폴더에 보존. 별도 공개 라이선스로 재허가하지 않음. 확인: 2026-10-27 | FBX·PNG·Animator Controller와 원본 `.meta`는 내용 수정 없이 보존. Codex 보조로 재질 3개의 SDK 셰이더 참조를 기존 URP로 변경하고 텍스처·색상·투명도 속성을 연결. 기존 Codex 보조 코드가 Unity XR 입력과 애니메이션·버튼 표식을 연결 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
-| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개, 공용 ParchmentReader·TabletUI 프리팹 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
+| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개, 공용 ParchmentReader·TabletUI 프리팹, 피처맵 복도의 한글 자막·라벨 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
 | **Lucide / Feather 기반 아이콘** / 아이콘 | 태블릿 UI | [Lucide 공식 저장소 및 라이선스](https://github.com/lucide-icons/lucide/blob/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE) | © 2026 Lucide Icons and Contributors, ISC. Feather 유래 도형: © 2013–present Cole Bemis, MIT | 선 도형을 간략화하고 아이콘 아틀라스로 변환 |
 | **Universal Animation Library — Standard** / 주민 동작 | FactoryIntro·FactoryEnding 마을 주민의 걷기·시청·대화·충격 반응·축하; 엔딩 감사 인사의 접근·대화·측면 이동 | [Quaternius 공식 배포 페이지](https://quaternius.itch.io/universal-animation-library), 무료 Standard 배포본 확인·다운로드: 2026-10-23 | 동봉 License/README의 제작자 표기: **Quaternius**. 공식 페이지에 애니메이터 **Gonzalo Furnier**의 제작 참여 표기. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): 수정·재배포·상업적 이용 허용 | 실제 관절 애니메이션을 Codex 보조로 기존 주민의 비율·관절에 맞게 변환하고 상태 전환을 혼합. 외부 캐릭터 메시·유료 Pro/Source 파일 사용 없음 |
 | **VillageOpening.wav** / 음원 | 18초 마을 오프닝의 배경·효과음 | 프로젝트 작업에서 Codex 보조로 Python 사인파·필터링한 난수·음량 곡선을 직접 합성 | 프로젝트용 직접 제작 음원. 별도 공개 라이선스는 지정하지 않음. 외부 녹음·음악 샘플 사용 없음 | 오프닝의 공격·화면 고장 시점에 맞춰 제작 |
@@ -52,13 +52,13 @@ Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculuss
 
 | 에셋·사용 위치 | 원출처·제작 방법 | 제작·권리 및 수정 |
 | --- | --- | --- |
-| `client/Assets/Textures/CNNFeatureMapLab/FilterComparisonInput.png` · 양피지 3의 RGB 분리 입력·필터 비교 | 사용자의 색 블록 배치 구상을 참고해 Codex 보조로 Python/Pillow에서 RGB 숫자 배열을 직접 작성한 6×6 PNG. 외부 사진이나 첨부 이미지의 픽셀을 복사하지 않음 | 프로젝트용 직접 합성 이미지. AI/Codex 보조 제작. 별도 공개 라이선스는 지정하지 않음. 픽셀 간격 없이 제작 |
+| 이전 경로: `client/Assets/Textures/CNNFeatureMapLab/FilterComparisonInput.png` · 양피지 3의 RGB 분리 입력·필터 비교. 2026-11-09 미사용 정리로 삭제, 현재 제출 대상 제외 | 사용자의 색 블록 배치 구상을 참고해 Codex 보조로 Python/Pillow에서 RGB 숫자 배열을 직접 작성한 6×6 PNG. 외부 사진이나 첨부 이미지의 픽셀을 복사하지 않음 | 프로젝트용 직접 합성 이미지. AI/Codex 보조 제작. 별도 공개 라이선스는 지정하지 않음. 픽셀 간격 없이 제작 |
 
 병합 전 양피지 4 수집물은 기존 `LearningParchment.png`와 기존 Pretendard 폰트를 재사용했다. 해당 출처·고지는 위 기록을 따른다. 현재 피처맵 내부의 중복 수집물은 제거했으며 공장 공용 양피지에서 기존 에셋을 계속 사용한다.
 
 ## 양피지 4 컬러 입력 (2026-10-30)
 
-`client/Assets/Textures/CNNFeatureMapLab/FeatureMapColorInput.png`는 위의 직접 제작 `FilterComparisonInput.png`를 Codex 보조로 Python/Pillow의 최근접 보간으로 8×8로 변환한 파생 입력이다. 외부 이미지 사용 없음. RGB 계산과 피쳐맵 표시용이며 별도 공개 라이선스는 지정하지 않았다. 계산 창은 기존 Noto Sans CJK KR 폰트와 프로젝트 도형을 사용한다.
+이전 경로 `client/Assets/Textures/CNNFeatureMapLab/FeatureMapColorInput.png`는 위의 직접 제작 `FilterComparisonInput.png`를 Codex 보조로 Python/Pillow의 최근접 보간으로 8×8로 변환한 파생 입력이었다. 외부 이미지 사용 없음. RGB 계산과 피쳐맵 표시용이며 별도 공개 라이선스는 지정하지 않았다. 2026-11-09 Codex 보조로 미사용 입력 텍스처를 삭제해 현재 제출 대상에서 제외했으며, 과거 출처 기록은 보존한다. 기존 계산 창이 재사용하던 Noto Sans CJK KR 폰트는 다른 기능에서도 사용하므로 유지한다.
 2026-10-30 폴더 통합: Codex 보조로 주민 동작 데이터를 위 OpeningEnding 경로로, 합성 효과음을 client/Assets/Audio/OpeningEnding/VillageOpening.wav로 이동했다. 미디어 내용과 기존 라이선스는 변경하지 않았다.
 # 오프닝 제목용 주아체 (2026-10-30)
 
@@ -84,6 +84,12 @@ Meta 확인 자료: [SDK 약관](https://developers.meta.com/vr/licenses/oculuss
 | KD HUNTERS 로고 | `client/Assets/Textures/Common/KDHuntersLogo.png`; XRPlayerRig의 Tablet Rear Logo | 사용자가 지정한 `C:/Users/andre/Downloads/KakaoTalk_261031_001735.png`. 원출처 URL 미확인 | 제작자·저작권자·라이선스 미확인. 파일 제공자를 권리자로 추정하지 않음 | 이미지 내용 수정 없음. Codex 보조로 공용 셰이더·재질의 곱셈 혼합을 적용하여 흰 배경이 본체 색을 유지하도록 표시 |
 
 미사용 정리(2026-11-01): GrayscalePhoto.png는 씬·코드 참조가 없어 삭제했다. 원출처·권리자·라이선스는 미확인이다. OpeningBroadcast.png는 내용과 GUID를 유지해 CNNScreenLab 텍스처 폴더로 이동했다.
+
+## 피처맵 복도
+
+- **JetBrains Mono Regular v2.304**. 피처맵 복도의 필터 가중치·출력 퍼센트 라벨에 사용한다. 공식 TTF를 수정 없이 사용했다. © 2020 The JetBrains Mono Project Authors. [원본 릴리스](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304), [동봉한 SIL OFL 1.1](../client/Assets/Fonts/JetBrainsMono/OFL.txt).
+- **16×16 컬러 숫자 입력·피처맵·출력 템플릿·격자·둥근 UI 텍스처**. `client/Assets/Textures/CNNFeatureMapLab/`의 Unity `.asset` 파일과 `FeatureMapCorridor.prefab`에서 사용한다. 숫자 패턴, 팔레트, 고정 시드와 더미 CNN 계산, 코드의 격자·라운드 사각형 수식으로 생성하던 결과를 2026-11-09 Codex 보조로 Unity 에디터에서 저장했다. 입력·맵은 실행 중 계산값에 따라 표시용 복사본을 갱신한다. 외부 이미지 파일 사용 없음. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
+- **복도 TMP 폰트 아틀라스**. `client/Assets/Fonts/CNNFeatureMapLab/Pretendard-Regular SDF.asset`, `JetBrainsMono-Regular SDF.asset`과 각 파일에 포함된 아틀라스에 사용한다. 기존 Pretendard Regular OTF 및 JetBrains Mono Regular TTF를 Unity TextMesh Pro의 `CreateFontAsset`으로 변환하고 Codex 보조로 저장했다. 원본 폰트 파일 수정 없음. 제작자·저작권자·SIL OFL 1.1 및 원출처는 위 Pretendard·JetBrains Mono 기록을 따르며, 기존 폰트 폴더의 라이선스 고지를 유지한다.
 
 ## ROOM 1-2 연속 체험 폰트 재사용 (2026-11-08)
 

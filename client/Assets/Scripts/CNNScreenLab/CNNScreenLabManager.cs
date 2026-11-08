@@ -27,7 +27,6 @@ namespace CNNScreen
         public IEnumerator EndSession()
         {
             StopAllCoroutines();
-            _ui.DisableInput();
             yield break;
         }
         private void PublishState()
@@ -52,7 +51,6 @@ namespace CNNScreen
             _ui.DetailsRequested += ShowDetails;
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
-            _ui.EnableInput();
         }
         public void ShowDetails()
         {
@@ -126,7 +124,6 @@ namespace CNNScreen
             _ui.DetailsRequested -= ShowDetails;
             _ui.NextRequested -= NextStage;
             _ui.ResetRequested -= ResetLab;
-            _ui.DisableInput();
             PublishState();
         }
         private void OnDestroy() { _imageData?.Dispose(); }

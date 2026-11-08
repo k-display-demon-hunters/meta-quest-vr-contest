@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using ModelDesignScene.Model;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace ModelDesignScene.ModelBuilder
 {
@@ -240,18 +239,14 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        private void HandleSettingsRequested(SlotSettingsController control, IXRActivateInteractor interactor)
+        private void HandleSettingsRequested(SlotSettingsController control)
         {
-            if (!_interactionEnabled || IsDragging || control.Block == null)
+            if (!_interactionEnabled || IsDragging)
             {
                 return;
             }
-            Collider hit = _manager.GetActivationHit(interactor);
-            if (hit != null && hit.GetComponentInParent<SlotSettingsController>() == control)
-            {
-                Transform anchor = control.PopupAnchor;
-                _manager.RequestSettings(control.Block.Layer, new Pose(anchor.position, anchor.rotation));
-            }
+            Transform anchor = control.PopupAnchor;
+            _manager.RequestSettings(control.Block.Layer, new Pose(anchor.position, anchor.rotation));
         }
 
         private void OnDestroy()

@@ -225,8 +225,7 @@ namespace XR
             {
                 return;
             }
-            // The rig survives scene loads, but the EventSystem it registered with may belong to the old scene.
-            // Reconnect UI without disabling the interactor or cancelling its held selection.
+            // Reconnect to the rig-owned UI module without disabling the interactor or cancelling its held selection.
             _rightRay.enableUIInteraction = false;
             _rightRay.enableUIInteraction = true;
         }

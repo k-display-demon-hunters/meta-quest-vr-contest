@@ -8,7 +8,6 @@ using ModelDesignScene.Execution.Engine;
 using ModelDesignScene.ControlPanel;
 using ModelDesignScene.Dataset;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 namespace ModelDesignScene
 {
@@ -19,7 +18,6 @@ namespace ModelDesignScene
         [SerializeField] private ModelExecutionManager _execution;
         [SerializeField] private ModelControlPanelManager _controlPanel;
         [SerializeField] private ModelDatasetManager _dataset;
-        [SerializeField] private ModelXRInputController _xrInput;
 
         private ModelDefinition _model;
         private IReadOnlyList<ValidationIssue> _validationIssues = System.Array.Empty<ValidationIssue>();
@@ -57,7 +55,6 @@ namespace ModelDesignScene
         private void OnEnable()
         {
             _modelUIIsDirty = true;
-            _xrInput.EnableInput();
             if (_initialized)
             {
                 _builder.BeginInteraction();
@@ -85,7 +82,7 @@ namespace ModelDesignScene
             _dataset.Initialize();
             _execution.Initialize(_dataset);
             _controlPanel.Initialize(_dataset);
-            _builder.Initialize(_model, GetActivationHit);
+            _builder.Initialize(_model);
             _builder.BeginInteraction();
             _initialized = true;
             HandleExecutionStateChanged();
@@ -97,11 +94,6 @@ namespace ModelDesignScene
             {
                 RefreshModelUI();
             }
-        }
-
-        private Collider GetActivationHit(IXRActivateInteractor interactor)
-        {
-            return _xrInput.GetActivationHit(interactor);
         }
 
         private void HandleBuilderChanged()
@@ -234,7 +226,6 @@ namespace ModelDesignScene
                 _controlPanel.ResetSessionUI();
             }
             _settings.Close();
-            _xrInput.DisableInput();
         }
 
         private void OnDestroy()

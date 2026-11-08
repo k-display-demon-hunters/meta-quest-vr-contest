@@ -62,7 +62,7 @@ namespace FactoryEnvironment
 #endif
             Rig.MatchOriginUpCameraForward(Vector3.up, entrance.forward);
             Rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
-            // Keep the UI input module in the factory scene when the guide scene is unloaded.
+            // Use the persistent rig's UI input module across content scene loads.
             Rig.GetComponent<XR.XRPlayerInputController>().EnsureRayReady();
         }
 

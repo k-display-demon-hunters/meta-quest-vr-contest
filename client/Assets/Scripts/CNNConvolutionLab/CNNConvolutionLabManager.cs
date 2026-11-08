@@ -2,7 +2,6 @@ using Core;
 using System;
 using System.Collections;
 using Learning;
-using UI;
 using UnityEngine;
 
 namespace CNNConvolution
@@ -13,7 +12,6 @@ namespace CNNConvolution
         private enum ExperiencePhase { Waiting, Convolution, Inspection, Finished }
         [SerializeField] private ConvolutionLessonManager _lesson;
         [SerializeField] private FeatureInspectionManager _inspection;
-        private readonly PixelUIInputController _input = new PixelUIInputController();
         private ExperiencePhase _phase;
         private bool _started;
         private bool _completed;
@@ -26,7 +24,6 @@ namespace CNNConvolution
 
         private void OnEnable()
         {
-            _input.Enable(transform);
             _lesson.ProgressChanged += HandleConvolutionProgress;
             _lesson.Completed += HandleConvolutionCompleted;
             _lesson.ContinueRequested += HandleInspectionRequested;
@@ -90,7 +87,6 @@ namespace CNNConvolution
         {
             _lesson.StopPractice();
             _inspection.StopInspection();
-            _input.Dispose();
             yield break;
         }
 
@@ -104,7 +100,6 @@ namespace CNNConvolution
             _lesson.StopPractice();
             _inspection.StopInspection();
             if (_phase == ExperiencePhase.Convolution) { _phase = ExperiencePhase.Waiting; }
-            _input.Dispose();
             ExitAvailabilityChanged?.Invoke(false);
         }
     }

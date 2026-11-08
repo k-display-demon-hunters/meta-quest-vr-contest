@@ -20,7 +20,7 @@ namespace CNNConvolution
             _calculation = calculation;
         }
 
-        public IEnumerator MultiplyAndRecord(int channel, int index)
+        public IEnumerator MultiplyAndRecord(int channel, int index, float playbackSpeed)
         {
             int product = _calculation.Product(channel, index);
             _spatial.BeginProductDisplay(channel, index);
@@ -31,9 +31,10 @@ namespace CNNConvolution
             _spatial.ShowOperandCopies(channel, index);
             Vector3 inputEnd = meeting + Vector3.left * 0.14f;
             Vector3 weightEnd = meeting + Vector3.right * 0.14f;
-            for (float time = 0; time < OperandTravel; time += Time.unscaledDeltaTime)
+            float operandDuration = OperandTravel / playbackSpeed;
+            for (float time = 0; time < operandDuration; time += Time.unscaledDeltaTime)
             {
-                float t = Mathf.SmoothStep(0, 1, time / OperandTravel);
+                float t = Mathf.SmoothStep(0, 1, time / operandDuration);
                 _spatial.MoveOperands(Vector3.Lerp(start, inputEnd, t), Vector3.Lerp(weightStart, weightEnd, t));
                 yield return null;
             }
@@ -42,7 +43,7 @@ namespace CNNConvolution
             yield return new WaitForSecondsRealtime(EquationHold);
             _spatial.MoveProduct(meeting);
             _spatial.ShowProductValue(index, product);
-            yield return Fly(meeting, _spatial.ResultCellPosition(index), ProductTravel);
+            yield return Fly(meeting, _spatial.ResultCellPosition(index), ProductTravel / playbackSpeed);
             _spatial.CommitProduct(index, product);
             _ui.Feedback = $"곱한 값 {product}을 같은 위치에 기록했어요.";
             yield return new WaitForSecondsRealtime(RecordHold);

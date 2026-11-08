@@ -11,6 +11,7 @@ namespace CNNConvolution
     // Geometry is in metres; the parent is the existing world-space UI canvas.
     public sealed class RgbVolumeController : MonoBehaviour
     {
+        private const float FilterSlideDuration = 0.45f / 1.5f;
         [SerializeField] private GameObject _workbenchVisuals;
         [SerializeField] private Transform _inputAnchor;
         [SerializeField] private Transform _kernelHome;
@@ -307,7 +308,7 @@ namespace CNNConvolution
             _view.SumLabel.text = "출력 " + _calculation.Output(_calculation.Row, _calculation.Column);
         }
 
-        public IEnumerator GatherFirstChannelSum()
+        public IEnumerator GatherFirstChannelSum(float playbackSpeed)
         {
             Vector3 centre = ResultCellPosition(4) + Vector3.back * 0.025f;
             Vector3[] starts = new Vector3[9];
@@ -320,9 +321,10 @@ namespace CNNConvolution
                 _view.SumCopies[index].gameObject.SetActive(true);
                 _view.Products[index].color = new Color(0.43f, 0.48f, 0.52f);
             }
-            for (float time = 0; time < 0.65f; time += Time.unscaledDeltaTime)
+            float gatherDuration = 0.65f / playbackSpeed;
+            for (float time = 0; time < gatherDuration; time += Time.unscaledDeltaTime)
             {
-                float t = Mathf.SmoothStep(0, 1, time / 0.65f);
+                float t = Mathf.SmoothStep(0, 1, time / gatherDuration);
                 for (int index = 0; index < 9; index++)
                 {
                     _view.SumCopies[index].localPosition = Vector3.Lerp(starts[index], centre, t);
@@ -337,7 +339,7 @@ namespace CNNConvolution
             _view.Flying.gameObject.SetActive(true);
             _view.Products[4].enabled = false;
             yield return new WaitForSecondsRealtime(0.45f);
-            yield return Fly(centre, AnswerPosition, 0.6f);
+            yield return Fly(centre, AnswerPosition, 0.6f / playbackSpeed);
             _view.Flying.gameObject.SetActive(false);
             _view.Products[4].enabled = true;
             foreach (Text product in _view.Products) { product.color = Color.white; }
@@ -363,9 +365,9 @@ namespace CNNConvolution
             EndPositionQuiz();
             Vector3 start = _view.Kernel.position;
             Vector3 target = _inputAnchor.TransformPoint(new Vector3((column - 1) * 0.19f, (1 - row) * 0.17f, -0.10f));
-            for (float time = 0; time < 0.45f; time += Time.unscaledDeltaTime)
+            for (float time = 0; time < FilterSlideDuration; time += Time.unscaledDeltaTime)
             {
-                _view.Kernel.position = Vector3.Lerp(start, target, Mathf.SmoothStep(0, 1, time / 0.45f));
+                _view.Kernel.position = Vector3.Lerp(start, target, Mathf.SmoothStep(0, 1, time / FilterSlideDuration));
                 yield return null;
             }
             _view.Kernel.SetPositionAndRotation(target, _inputAnchor.rotation);
@@ -832,8 +834,11 @@ namespace CNNConvolution
                 _view.Result.localPosition = new Vector3(0.45f, 0, 0.1f);
                 Frame(_view.Result, 0.64f, 0.57f, 0.08f, new Color(0.28f, 0.31f, 0.32f));
                 Tile(_view.Result, new Vector3(0, 0, 0.065f), new Vector3(0.60f, 0.53f, 0.035f), new Color(0.055f, 0.065f, 0.075f));
-                _view.ResultTitle = Caption(_view.Result, "같은 위치의 곱", new Vector3(0, 0.34f, 0), 0.95f);
-                _view.ResultTitle.fontSize = 42;
+                Transform resultTitlePlate = FormulaPlate("Result title plate", 0.82f);
+                resultTitlePlate.SetParent(_view.Result, false);
+                resultTitlePlate.localPosition = new Vector3(0, 0.38f, -0.04f);
+                _view.ResultTitle = Caption(resultTitlePlate, "같은 위치의 곱", new Vector3(0, 0, -0.027f), 0.76f);
+                _view.ResultTitle.fontSize = 48;
                 for (int i = 0; i < 9; i++)
                 {
                     Transform productTile = Tile(_view.Result, Cell(i), new Vector3(0.17f, 0.15f, 0.12f), new Color(0.16f, 0.18f, 0.22f));

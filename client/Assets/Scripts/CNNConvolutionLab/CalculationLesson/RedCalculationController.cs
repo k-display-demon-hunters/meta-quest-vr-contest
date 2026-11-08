@@ -6,6 +6,7 @@ namespace CNNConvolution
     // First R records all nine products before the single channel-sum animation.
     internal sealed class RedCalculationController
     {
+        private const float NumberPlaybackSpeed = 0.75f;
         private readonly RgbVolumeController _spatial;
         private readonly LessonUIController _ui;
         private readonly ConvolutionCalculation _calculation;
@@ -30,14 +31,14 @@ namespace CNNConvolution
                 _ui.Feedback = _calculation.Weight(channel, index) == 0
                     ? "0을 곱한 결과도 오른쪽 판에 기록해요."
                     : "1을 곱하면 입력값이 그대로 남아요.";
-                yield return _animation.MultiplyAndRecord(channel, index);
+                yield return _animation.MultiplyAndRecord(channel, index, NumberPlaybackSpeed);
             }
             _ui.Title = "R · 아홉 칸 계산 완료";
             _ui.Explanation = "아홉 곱을 오른쪽 판 가운데로 모아 더해요.";
             _ui.Guide = "아홉 칸의 곱을 모두 더하면 R의 합이에요.";
             _ui.Feedback = "";
             _spatial.ClearEquations();
-            yield return _spatial.GatherFirstChannelSum();
+            yield return _spatial.GatherFirstChannelSum(NumberPlaybackSpeed);
             _spatial.ShowChannelSum(channel, true);
             _ui.CompleteChannel(channel, _calculation.Sum(channel));
             yield return new WaitForSecondsRealtime(0.9f);

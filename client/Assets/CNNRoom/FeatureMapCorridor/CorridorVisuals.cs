@@ -224,8 +224,9 @@ namespace FeatureMapCorridor
 
         internal static void Click(Collider collider, Action<Vector3> clicked, bool trigger = true)
         {
-            collider.isTrigger = trigger;
+            // XRI's collider discovery skips triggers. Register the collider before enabling trigger mode.
             var interactable = collider.gameObject.AddComponent<XRSimpleInteractable>();
+            collider.isTrigger = trigger;
 
             interactable.activated.AddListener(args =>
             {

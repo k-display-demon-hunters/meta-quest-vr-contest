@@ -5,7 +5,7 @@ namespace FeatureMapCorridor
 {
     internal sealed class InputPanel
     {
-        private static readonly Vector3 ImagePosition = new Vector3(0,5.3f,-7.6f);
+        private static readonly Vector3 ImagePosition = new Vector3(0,3.1f,-7.6f);
         private readonly FeatureMapPanel[] _channels = new FeatureMapPanel[3];
         private readonly Vector3[] _starts = new Vector3[3];
         private readonly Vector3[] _ends = new Vector3[3];
@@ -20,10 +20,10 @@ namespace FeatureMapCorridor
         {
             Color frame = new Color32(30,58,72,255);
             for (int side = -1; side <= 1; side += 2)
-                visuals.Shape(root,"Gate pillar",new Vector3(side*1.15f,3.25f,ImagePosition.z),
-                    new Vector3(.12f,6.5f,.12f),frame);
-            visuals.Shape(root,"Gate lintel",new Vector3(0,6.45f,ImagePosition.z),new Vector3(2.42f,.12f,.12f),frame);
-            visuals.Label(root,CorridorDialogue.InputLabel,new Vector3(0,6.85f,ImagePosition.z),.26f,3,visuals.Theme.Ink);
+                visuals.Shape(root,"Gate pillar",new Vector3(side*1.15f,2.15f,ImagePosition.z),
+                    new Vector3(.12f,4.3f,.12f),frame);
+            visuals.Shape(root,"Gate lintel",new Vector3(0,4.25f,ImagePosition.z),new Vector3(2.42f,.12f,.12f),frame);
+            visuals.Label(root,CorridorDialogue.InputLabel,new Vector3(0,4.62f,ImagePosition.z),.26f,3,visuals.Theme.Ink);
             Picture = new FeatureMapPanel(visuals,root,ImagePosition,0,size,"","",index =>
             {
                 float now = Time.unscaledTime;
@@ -40,13 +40,19 @@ namespace FeatureMapCorridor
             for (int i = 0; i < 3; i++)
             {
                 int number = i+1;
-                _ends[i] = new Vector3((i-1)*2.25f,1.3f,-7.75f);
+                _ends[i] = new Vector3((i-1)*2.25f,1.05f,-7.75f);
                 _channels[i] = new FeatureMapPanel(visuals,root,ImagePosition,0,size,"","",null,16);
                 _channels[i].Root.gameObject.SetActive(false);
                 _channels[i].Frame(CorridorTheme.Rgb[i]);
                 _channels[i].Badge(CorridorDialogue.InputChannels[i],CorridorTheme.Rgb[i]);
-                visuals.Button(root,number.ToString(),new Vector3(1.67f,4.64f+i*.43f,-7.68f),
+                var button = visuals.Button(root,number.ToString(),new Vector3(1.67f,2.46f+i*.43f,-7.68f),
                     new Vector2(370,340),() => digit(number));
+                button.GetComponent<UnityEngine.UI.Image>().color = new Color32(20,53,63,255);
+                var label = button.GetComponentInChildren<UnityEngine.UI.Text>();
+                label.color = visuals.Theme.Ink;
+                label.resizeTextMaxSize = 112;
+                label.fontStyle = FontStyle.Bold;
+                button.ApplyPalette(Color.white,Color.white,new Color(.8f,.95f,.94f),Color.white,visuals.Theme.Cyan);
             }
         }
 

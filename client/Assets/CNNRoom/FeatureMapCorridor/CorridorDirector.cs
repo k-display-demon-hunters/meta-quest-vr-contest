@@ -111,6 +111,15 @@ namespace FeatureMapCorridor
             _standalone = gameObject.scene == UnityEngine.SceneManagement.SceneManager.GetActiveScene();
             if (_standalone)
             {
+#if UNITY_EDITOR
+                if (!UnityEngine.XR.XRSettings.isDeviceActive)
+                {
+                    var rig = FindFirstObjectByType<Unity.XR.CoreUtils.XROrigin>();
+                    float height = rig.Camera.transform.position.y - rig.Origin.transform.position.y;
+                    if (height < .5f)
+                        rig.CameraFloorOffsetObject.transform.localPosition += Vector3.up * (rig.CameraYOffset - height);
+                }
+#endif
                 RenderSettings.fog = true;
                 RenderSettings.fogMode = FogMode.Linear;
                 RenderSettings.fogStartDistance = 16;

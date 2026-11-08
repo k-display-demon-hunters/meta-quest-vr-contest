@@ -46,10 +46,6 @@ namespace CNNConvolution
             _kernelGrab.selectEntered.AddListener(HandleKernelGrabbed);
             _kernelGrab.selectExited.AddListener(HandleKernelReleased);
         }
-        public void PrepareKernel()
-        {
-            DisableKernel();
-        }
         public void EnableKernel()
         {
             ResetGrab(_kernelGrab, _home);

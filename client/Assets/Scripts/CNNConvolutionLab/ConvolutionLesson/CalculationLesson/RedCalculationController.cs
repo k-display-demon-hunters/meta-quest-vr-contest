@@ -27,7 +27,7 @@ namespace CNNConvolution
                 _ui.Title = $"R · {index / 3 + 1}행 {index % 3 + 1}열 · {index + 1} / 9";
                 _ui.Explanation = "현재 칸의 입력값과 같은 위치의 가중치를 곱해요.";
                 _ui.Guide = "원래 숫자는 제자리에 있고 사본만 이동해요.";
-                _ui.Feedback = _calculation.Weight(channel, index) == 0
+                _ui.Feedback = _calculation.Weight(index) == 0
                     ? "0을 곱한 결과도 오른쪽 판에 기록해요."
                     : "1을 곱하면 입력값이 그대로 남아요.";
                 yield return _animation.MultiplyAndRecord(channel, index);

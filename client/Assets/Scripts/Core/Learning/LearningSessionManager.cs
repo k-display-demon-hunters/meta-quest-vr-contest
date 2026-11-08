@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CNNConvolution;
-using CNNScreen;
 using FactoryEnvironment;
 using Parchment;
 using Tablet;
@@ -92,36 +90,11 @@ namespace Learning
             _experiences.Add(stage, subscription);
             experience.ProgressChanged += subscription.ProgressChanged;
             experience.ExitAvailabilityChanged += subscription.AvailabilityChanged;
-            if (stage == LearningStageId.ConvolutionLab)
-            {
-                CNNConvolutionLabManager convolution = (CNNConvolutionLabManager)experience;
-                convolution.PrepareForSession();
-                UpdateConvolutionInput();
-                convolution.SetStageActive(_factory.CurrentStage == LearningStageId.ConvolutionLab);
-            }
             HandleAvailabilityChanged(stage, experience.CanExit);
-        }
-
-        private void UpdateConvolutionInput()
-        {
-            if (!_experiences.TryGetValue(LearningStageId.ScreenLab, out ExperienceSubscription screen)
-                || !_experiences.TryGetValue(LearningStageId.ConvolutionLab, out ExperienceSubscription convolution)) { return; }
-            CNNScreenLabManager observation = (CNNScreenLabManager)screen.Experience;
-            if (observation.CanExit)
-            {
-                ((CNNConvolutionLabManager)convolution.Experience).SetInput(observation.ConvolutionInput);
-            }
         }
 
         private void HandleAvailabilityChanged(LearningStageId stage, bool available)
         {
-            // Preloading can precede pixel selection. Supply the final input before the factory opens the door.
-            if (stage == LearningStageId.ScreenLab && available) { UpdateConvolutionInput(); }
-            if (stage == LearningStageId.ScreenLab && !available && _factory.CurrentStage == LearningStageId.ScreenLab
-                && _experiences.TryGetValue(LearningStageId.ConvolutionLab, out ExperienceSubscription convolution))
-            {
-                ((CNNConvolutionLabManager)convolution.Experience).ClearInput();
-            }
             StageAvailabilityChanged?.Invoke(stage, available);
             PublishState();
         }
@@ -148,10 +121,6 @@ namespace Learning
 
         private void HandleStageChanged(LearningStageId stage)
         {
-            if (_experiences.TryGetValue(LearningStageId.ConvolutionLab, out ExperienceSubscription convolution))
-            {
-                ((CNNConvolutionLabManager)convolution.Experience).SetStageActive(stage == LearningStageId.ConvolutionLab);
-            }
             if (_experiences.TryGetValue(stage, out ExperienceSubscription subscription))
                 _progress.RecordProgress(stage, subscription.Experience.Progress);
             PublishState();

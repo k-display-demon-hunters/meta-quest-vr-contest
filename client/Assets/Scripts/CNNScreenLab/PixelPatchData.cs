@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Core
+namespace CNNScreen
 {
-    // Immutable snapshot, top row first, left to right. Alpha is not used in calculation.
+    // Immutable snapshot, top row first, left to right. Used only for RGB observation in this scene.
     public sealed class PixelPatchData
     {
         private readonly Color32[] _pixels;

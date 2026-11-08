@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fe00277bead4c68a4fa1e0e53c44c39, type: 3}
+  m_Name: CorridorTheme
+  m_EditorClassIdentifier:
+  Void:
+    serializedVersion: 2
+    rgba: 4279503623
+  SlabTop:
+    serializedVersion: 2
+    rgba: 4282000404
+  SlabSide:
+    serializedVersion: 2
+    rgba: 4279766792
+  Edge:
+    serializedVersion: 2
+    rgba: 4285029668
+  Cyan:
+    serializedVersion: 2
+    rgba: 4292469858
+  Amber:
+    serializedVersion: 2
+    rgba: 4283085567
+  Yellow:
+    serializedVersion: 2
+    rgba: 4283097599
+  Negative:
+    serializedVersion: 2
+    rgba: 4285233919
+  Ink:
+    serializedVersion: 2
+    rgba: 4294373094
+  Dim:
+    serializedVersion: 2
+    rgba: 4290290575
+  PanelSize: 1.9
+  Korean: {fileID: 12800000, guid: 021114b488884867ac97d95c9c3d1dee, type: 3}
+  Mono: {fileID: 12800000, guid: cdf090606d3045068835573b0389ce34, type: 3}
+  Unlit: {fileID: 4800000, guid: 650dd9526735d5b46b79224bc6e94025, type: 3}
+  Lit: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}

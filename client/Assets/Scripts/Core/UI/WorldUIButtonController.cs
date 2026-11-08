@@ -20,6 +20,7 @@ namespace UI
         [SerializeField] private Color _disabledTextColor = new Color(.55f, .62f, .65f);
         [SerializeField] private Color _outlineColor = new Color(.28f, .95f, .91f);
         [SerializeField, Min(0f)] private float _transitionSeconds = .08f;
+        private bool _outlineAtRest;
         private bool _hovered;
         private bool _pressed;
         private bool _wasInteractable;
@@ -42,6 +43,18 @@ namespace UI
         public void Show() => gameObject.SetActive(true);
         public void Hide() => gameObject.SetActive(false);
         public void SetText(string text) => _label.text = text;
+
+        internal void ApplyPalette(Color normal, Color hover, Color pressed, Color text, Color outline, bool outlineAtRest = false)
+        {
+            _normalColor = normal;
+            _hoverColor = hover;
+            _pressedColor = pressed;
+            _textColor = text;
+            _outlineColor = outline;
+            _outlineAtRest = outlineAtRest;
+            _outline.useGraphicAlpha = !outlineAtRest;
+            if (isActiveAndEnabled) { Refresh(true); }
+        }
 
         void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
         {
@@ -80,7 +93,7 @@ namespace UI
             _background.CrossFadeColor(background, duration, true, true);
             _label.CrossFadeColor(_wasInteractable ? _textColor : _disabledTextColor, duration, true, true);
             _outline.effectColor = _outlineColor;
-            _outline.enabled = _wasInteractable && (_hovered || _pressed);
+            _outline.enabled = _wasInteractable && (_outlineAtRest || _hovered || _pressed);
         }
 
         private void OnDisable()

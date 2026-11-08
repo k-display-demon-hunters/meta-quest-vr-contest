@@ -72,6 +72,10 @@ popup.Hide(); // 확인·취소 이벤트 없이 숨긴다.
 
 Unity 기본 API는 사용을 제한하지 않는다. GameObject.SetActive, Button.interactable, Button.onClick.AddListener/RemoveListener와 RectTransform 등의 표준 기능을 그대로 사용할 수 있다. 별도의 SetInteractable, IsOpen 같은 편의 API나 접근 차단 체계는 제공하지 않는다. 팝업에는 별도의 C# 응답 이벤트를 중복 제공하지 않고 private SerializeField UnityEvent를 사용한다.
 
+## 피처맵 복도 적용
+
+복도 자막은 공용 버튼 원본을 재사용한다. 이전·다음·확인 인스턴스는 내부 `ApplyPalette`로 각각 테두리, Cyan 채움, Amber 채움을 적용한다. 해당 인스턴스의 Canvas와 추적 레이캐스터를 켜고 자막 또는 완료 팝업 카드보다 높은 정렬 순서를 사용한다. 공용 프리팹의 기본 색과 공개 호출 방식은 그대로다.
+
 ## 확인 범위
 
 새 파일과 직렬화 참조를 정적으로 검토했다. Unity 실행·임포트·컴파일·Play·테스트·빌드는 수행하지 않았다. 실제 표시·폰트·ray 반응과 프리팹 임포트 결과는 실행 확인 전이다.

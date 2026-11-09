@@ -5,8 +5,10 @@ namespace FeatureMapCorridor
 {
     internal static class LessonContent
     {
-        internal const string StartHint = "입력 그림을 눌러 보세요";
-        internal const string StartBody = "입력 그림을 눌러 보세요.";
+        internal const string StartHint = "오른손 레이로 입력 그림을 선택하세요";
+        internal static string StartBody => UnityEngine.Application.isEditor && !UnityEngine.XR.XRSettings.isDeviceActive
+            ? "오른손 레이로 입력 그림을 가리킨 뒤 <b>T</b>를 누르세요.\n<color=#8FA3B8>에디터: Game 창에 포커스 · Shift 없이 T</color>"
+            : "오른손 레이로 입력 그림을 가리킨 뒤 <b>트리거</b>를 누르세요.";
         internal const string SwitchHint = "스위치를 눌러 꺼 보세요";
         internal const string SwitchBody = "이번엔 피처맵 하나를 꺼 볼게요. 뒤쪽 층과 출력이 어떻게 바뀔까요?";
         internal const string TourHeader = "[흰 테두리]";

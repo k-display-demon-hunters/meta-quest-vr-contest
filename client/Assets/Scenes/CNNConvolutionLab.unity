@@ -343,7 +343,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 72ab7e0925614ae6a69ea1da3c191bad, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.RgbVolumeController
+  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.WorkbenchBuilder
 --- !u!114 &990000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

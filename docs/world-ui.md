@@ -2,7 +2,7 @@
 
 ## 현재 범위
 
-공용 원본만 추가한 상태다. 기존 씬·프리팹·생성 도구에는 배치하거나 연결하지 않았다. 태블릿 등 화면 내부의 2D UI는 적용 대상이 아니다.
+ROOM 1-2의 합성곱 안내와 특징 판독 데스크는 `WorldUIButton` 원본의 중첩 인스턴스를 사용한다. 태블릿 등 화면 내부의 2D UI는 적용 대상이 아니다.
 
 | 파일 | 역할 |
 | --- | --- |
@@ -23,7 +23,7 @@ Button의 Transition은 None으로 유지한다. Controller가 시각 상태를 
 
 팝업 내부의 중첩 버튼은 프리팹 override로 로컬 배율을 1로 설정하고 자체 Canvas·raycaster를 비활성화하여 팝업의 Canvas·raycaster를 사용한다. 피드백과 클릭 컴포넌트는 그대로 상속한다. 별도로 일반 UI Canvas 안에 버튼을 넣을 경우에도 동일한 배율·Canvas 설정이 필요하다. 권장 기본 사용은 공간에 독립 배치하는 방식이다.
 
-EventSystem·XRUIInputModule·UI 입력이 활성화된 XR ray·MainCamera는 기존 씬의 입력 환경을 사용한다. 패키지 raycaster는 Canvas의 Event Camera가 비어 있으면 Camera.main을 사용하므로 기존 MainCamera를 수동으로 연결할 필요가 없다. 빈 씬에 XR 입력 환경까지 자동 생성하는 기능은 없다. Scene 뷰 편집 중의 마우스가 아닌 Play 상태의 XR ray 입력을 대상으로 한다. 이번 작업에서는 실제 씬에 배치하지 않았다.
+EventSystem·XRUIInputModule·UI 입력이 활성화된 XR ray·MainCamera는 기존 씬의 입력 환경을 사용한다. 패키지 raycaster는 Canvas의 Event Camera가 비어 있으면 Camera.main을 사용하므로 기존 MainCamera를 수동으로 연결할 필요가 없다. 빈 씬에 XR 입력 환경까지 자동 생성하는 기능은 없다. Scene 뷰 편집 중의 마우스가 아닌 Play 상태의 XR ray 입력을 대상으로 한다.
 
 ## 팝업 설정과 호출
 
@@ -43,7 +43,7 @@ Hide()는 응답 이벤트 없이 닫는다. 루트 활성 상태는 표준 game
 
 ## 에디터 편집과 Variant
 
-Play 전에 프리팹 인스턴스를 원하는 위치에 배치하고 Inspector에서 설정하는 사용 방식이다. 이번 작업 자체에서는 씬에 배치하지 않았다. 원본의 공통 속성 변경은 상속되며, Variant 또는 인스턴스에서 override한 속성은 해당 값을 유지한다. 공통 변경은 기본 원본에서, 재사용할 변형은 Variant에서, 특정 배치만의 문구·위치는 인스턴스에서 편집한다. 기존 기본 원본의 GUID는 유지한다.
+Play 전에 프리팹 인스턴스를 원하는 위치에 배치하고 Inspector에서 설정한다. 원본의 공통 속성 변경은 상속되며, Variant 또는 인스턴스에서 override한 속성은 해당 값을 유지한다. 공통 변경은 기본 원본에서, 재사용할 변형은 Variant에서, 특정 배치만의 문구·위치는 인스턴스에서 편집한다. 기존 기본 원본의 GUID는 유지한다.
 
 WorldUIPrimaryButton은 상태별 배경색만 override하며 버튼 구조·피드백 스크립트는 WorldUIButton에서 상속한다. WorldUIConfirmPopup은 제목·본문의 기본 문구와 보조 버튼 활성 상태만 override하며 팝업 구조·응답 처리는 WorldUIPopup에서 상속한다. 두 팝업의 내부 버튼은 동일한 WorldUIButton 원본을 계속 참조한다. 새 형태를 재사용하려면 Project 창에서 원본의 Create > Prefab Variant로 파생시키고 필요한 속성만 수정한다.
 
@@ -72,6 +72,14 @@ popup.Hide(); // 확인·취소 이벤트 없이 숨긴다.
 
 Unity 기본 API는 사용을 제한하지 않는다. GameObject.SetActive, Button.interactable, Button.onClick.AddListener/RemoveListener와 RectTransform 등의 표준 기능을 그대로 사용할 수 있다. 별도의 SetInteractable, IsOpen 같은 편의 API나 접근 차단 체계는 제공하지 않는다. 팝업에는 별도의 C# 응답 이벤트를 중복 제공하지 않고 private SerializeField UnityEvent를 사용한다.
 
+## 피처맵 복도 적용
+
+복도 자막은 공용 버튼 원본을 재사용한다. 이전·다음·확인 인스턴스는 내부 `ApplyPalette`로 각각 테두리, Cyan 채움, Amber 채움을 적용한다. 해당 인스턴스의 Canvas와 추적 레이캐스터를 켜고 자막 또는 완료 팝업 카드보다 높은 정렬 순서를 사용한다. 공용 프리팹의 기본 색과 공개 호출 방식은 그대로다.
+
+복도 UI 인스턴스는 `Prefabs/CNNFeatureMapLab/FeatureMapCorridor.prefab`에 미리 저장한다. 팔레트와 상시 테두리 설정도 직렬화되어 편집 상태를 유지하며, 실행 시 버튼·팝업을 새로 생성하지 않는다. 자막·팝업 내부 배치와 배율은 프리팹에서 편집하고, 카메라 추적과 표시 상태는 실행 중 갱신한다.
+
 ## 확인 범위
 
 새 파일과 직렬화 참조를 정적으로 검토했다. Unity 실행·임포트·컴파일·Play·테스트·빌드는 수행하지 않았다. 실제 표시·폰트·ray 반응과 프리팹 임포트 결과는 실행 확인 전이다.
+
+2026-11-09 복도 저장 전환에서는 사용자 허가로 Unity 컴파일과 복도 프리팹·씬 저장을 수행하고 편집 모드 표시를 확인했다. 이번 전환의 Play·ray 입력 테스트와 앱 빌드는 수행하지 않았다.

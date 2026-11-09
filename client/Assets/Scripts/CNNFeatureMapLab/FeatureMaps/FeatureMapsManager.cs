@@ -1,245 +1,254 @@
 using System;
-using CNNFeatureMaps.FeatureMaps.Interaction;
 using UnityEngine;
 
-namespace CNNFeatureMaps.FeatureMaps
+namespace FeatureMapCorridor
 {
-    public sealed class FeatureMapsManager : MonoBehaviour
+    [Serializable]
+    internal sealed class FeatureMapsManager
     {
-        [SerializeField] private InputMapController _inputMap;
-        [SerializeField] private MapComputationController _computation;
-        [SerializeField] private MapDisplayController _display;
+        [SerializeField] private CorridorRenderUtility _visuals;
+        [SerializeField] private FeatureMapDisplayController _display;
         [SerializeField] private InteractionManager _interaction;
-        private ConvolutionSimulation _data;
-        private readonly bool[,,] _visited = new bool[2, 8, 8];
-        private readonly Transform[,,] _firstCells = new Transform[2, 8, 8];
-        private LessonStep _step;
-        private int _channel;
-        private int _row = 3;
-        private int _column = 3;
-
-        public int EditCount { get; private set; }
-        public int NextSpreadLayer => _display.NextSpreadLayer;
-        public bool HasHeldTargets => _interaction.HasHeldTargets;
-        public bool IsScanning => _interaction.IsScanning;
-
-        public event System.Action OnHeldTargetsChanged;
-        public event Action<LessonStep, int, int, bool> OnStepApplied;
-        public event Action OnScanningChanged;
-        public event Action<int, int, float, float, int> OnPatchEvaluated;
-        public event Action<int, int, int> OnAffectedPixelSelected;
-        public event Action<int> OnInputEdited;
-
-        public void Initialize()
+        [SerializeField] private ReceptiveFieldTourController _tour;
+        [SerializeField] private FeatureMapRoundController _round;
+        private Camera _camera;
+        private bool _tourActive, _roundActive;
+        private bool _waitingForFilter, _filterPending;
+        internal event Action<int> InputSelected;
+        internal event Action<int> DigitSelected;
+        internal event Action<int, int, int> MapSelected;
+        internal event Action<int, int> SwitchSelected;
+        internal event Action<int> OutputSelected;
+        internal event Action<int> ZoneSelected;
+        internal event Action RoundChanged;
+        internal event Action<string> ButtonPressed;
+        internal int RoundLayer => _round.Layer;
+        internal int RoundMap => _round.Map;
+        internal int RoundIndex => _round.Index;
+        internal int RoundStage => _round.Stage;
+        internal bool RoundIsOutput => _round.IsOutput;
+        internal bool CanAdvanceRound => !_waitingForFilter && !_filterPending;
+        internal string HoverName => _interaction.HoverName;
+        internal string LastClick => _interaction.LastClick;
+        internal string HoveredCell => _display.HoveredCell();
+        internal Vector3 InputHint => _display.InputPosition+Vector3.up*1.1f;
+        internal Vector3 WaitingHint(int layer, int digit) => _display.WaitingPosition(layer, digit);
+        internal Vector3 SwitchHint(int layer, int map) => _display.SwitchPosition(layer, map);
+        internal void Initialize(FeatureMapSnapshot snapshot)
         {
+            _visuals.InitializeRuntime();
             _interaction.Initialize();
-            _display.Initialize(_interaction.HasHeldDescendant);
-            foreach (MapCell cell in _display.Cells)
+            _display.Bind(_visuals, _interaction, snapshot);
+            _tour.Bind(_visuals, _display, snapshot.Size);
+            _round.Bind(_visuals, _interaction, _display);
+        }
+
+        internal void Enable()
+        {
+            _display.InputSelected += OnInput;
+            _display.DigitSelected += OnDigit;
+            _display.MapSelected += OnMap;
+            _display.SwitchSelected += OnSwitch;
+            _display.OutputSelected += OnOutput;
+            _display.ButtonPressed += OnButton;
+            _interaction.ZoneSelected += OnZone;
+            _round.FilterPressed += OnFilter;
+            _display.Enable();
+            _round.EnableInput();
+        }
+
+        internal void Disable()
+        {
+            _interaction.SetActive(false);
+            _display.Disable();
+            _round.DisableInput();
+            _display.InputSelected -= OnInput;
+            _display.DigitSelected -= OnDigit;
+            _display.MapSelected -= OnMap;
+            _display.SwitchSelected -= OnSwitch;
+            _display.OutputSelected -= OnOutput;
+            _display.ButtonPressed -= OnButton;
+            _interaction.ZoneSelected -= OnZone;
+            _round.FilterPressed -= OnFilter;
+        }
+
+        private void OnInput(int index) => InputSelected?.Invoke(index);
+        private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
+        private void OnMap(int layer, int map, int index) => MapSelected?.Invoke(layer, map, index);
+        private void OnSwitch(int layer, int map) => SwitchSelected?.Invoke(layer, map);
+        private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
+        private void OnZone(int zone) => ZoneSelected?.Invoke(zone);
+        private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
+        private void OnFilter(bool expanded)
+        {
+            if (!_roundActive || _round.Stage != 0 || !expanded)
             {
-                if (cell.Layer == 0)
-                {
-                    _firstCells[cell.Channel, cell.Row, cell.Column] = cell.transform;
-                }
+                return;
+            }
+            _waitingForFilter = false;
+            _filterPending = true;
+            _round.Show(1, true);
+            RoundChanged?.Invoke();
+        }
+
+        internal void SetVisible(bool visible)
+        {
+            _interaction.SetActive(visible);
+            if (visible)
+            {
+                _camera = Camera.main;
+                _display.SetCamera(_camera);
             }
         }
 
-        private void OnEnable()
+        internal void Tick(float now, float delta)
         {
-            _interaction.OnHeldTargetsChanged += HandleHeldTargetsChanged;
-            _interaction.OnTargetHeld += ExtractTarget;
-            _interaction.OnTargetActivated += ActivateTarget;
-            _interaction.OnPosesReset += _display.ResetExtractedStates;
-            _interaction.OnFilterPositionChanged += ApplyPatch;
-            _interaction.OnScanningChanged += HandleScanningChanged;
-        }
-
-        public bool TryStart()
-        {
-            Color[,] input = _inputMap.ReadInput();
-            if (input == null)
+            _interaction.UpdateHover();
+            _display.Tick(now, delta);
+            _visuals.UpdateBillboards(_camera);
+            if (_tourActive)
             {
-                return false;
+                _tour.Tick(now);
             }
-            _data = new ConvolutionSimulation(input);
-            return true;
-        }
-
-        public void ShowStep(LessonStep step, int channel)
-        {
-            _step = step;
-            _channel = channel;
-            _interaction.StopScanning();
-            _data.SelectPixel(-1, -1);
-            _display.UpdateStepVisibility(step, channel);
-            _display.ApplyStepLayout(step == LessonStep.CompareFilters);
-            _display.UpdateLearningStates(step, channel, _row, _column, _visited);
-            _display.RefreshAppearance(_data, false);
-            bool isFilterStep = step == LessonStep.BuildFeatureMap || step == LessonStep.CompareFilters;
-            _interaction.SetFilterVisible(isFilterStep);
-            OnStepApplied?.Invoke(step, channel, NextSpreadLayer, IsScanning);
-            if (isFilterStep)
+            if (!_roundActive)
             {
-                ApplyPatch(_interaction.Row, _interaction.Column);
+                return;
+            }
+            _round.Tick(now);
+            if (_filterPending && now >= _round.ButtonReadyAt)
+            {
+                _filterPending = false;
+                RoundChanged?.Invoke();
             }
         }
 
-        private void ApplyPatch(int row, int column)
+        internal void ShowSnapshot(FeatureMapSnapshot snapshot) => _display.ShowSnapshot(snapshot);
+        internal void Highlight(int layer) => _display.HighlightLayer(layer);
+        internal void ShowSwitches(bool visible) => _display.ShowSwitches(visible);
+        internal void Celebrate(int layer) => _display.Celebrate(layer);
+        internal void ShowTour(int stage, int index)
         {
-            _row = row;
-            _column = column;
-            _visited[_channel, row, column] = true;
-            _data.SelectWindow(row, column);
-            _display.UpdateLearningStates(_step, _channel, row, column, _visited);
-            _display.RefreshAppearance(_data, false);
-            int count = 0;
-            for (int y = 0; y < ConvolutionSimulation.Size; y++)
+            _roundActive = false;
+            _tourActive = true;
+            _tour.Show(stage, index);
+        }
+
+        internal void FinishTour() => _tour.Finish();
+        internal void ClearTour()
+        {
+            _tourActive = false;
+            _tour.Clear();
+        }
+
+        internal void StartRound(RoundCalculationResult data)
+        {
+            ClearTour();
+            _roundActive = true;
+            _waitingForFilter = true;
+            _filterPending = false;
+            _display.DimLinks(true);
+            _round.Start(data);
+        }
+
+        internal void RestartRound(RoundCalculationResult data)
+        {
+            _roundActive = true;
+            _display.DimLinks(true);
+            int stage = _round.Stage;
+            _round.Start(data);
+            if (data.IsOutput && stage >= 7)
             {
-                for (int x = 0; x < ConvolutionSimulation.Size; x++)
-                {
-                    if (_visited[_channel, y, x])
-                    {
-                        count++;
-                    }
-                }
+                _display.StartMatch();
+                _display.FinishMatch();
             }
-            _interaction.SetConnectionTarget(_firstCells[_channel, row, column]);
-            OnPatchEvaluated?.Invoke(row, column, _data.ReadFirstLayerSum(_channel, row, column),
-                _data.ReadValue(0, _channel, row, column), count);
-        }
-
-        private void ActivateTarget(Transform target)
-        {
-            if (target.TryGetComponent(out MapCell cell) && cell.Layer < 0 && _data != null)
+            if (data.IsOutput && stage >= 8)
             {
-                SelectPixel(cell.Row, cell.Column);
+                _display.StartFill();
+                _display.FinishFill();
             }
-            if (_step == LessonStep.ExploreFeatureMaps && _data != null)
-            {
-                if (target.TryGetComponent(out MapCell selected) && selected.Layer >= 0)
-                {
-                    ShowMapCalculation(selected.Layer, selected.Channel, selected.Row, selected.Column);
-                }
-                else if (target.TryGetComponent(out MapPanel panel) && panel.Layer >= 0)
-                {
-                    ShowMapCalculation(panel.Layer, panel.Channel, 3, 3);
-                }
-            }
-            if (target.TryGetComponent(out MapLayer layer))
-            {
-                layer.ToggleSpread();
-            }
+            _waitingForFilter = stage == 0;
+            _filterPending = false;
+            _round.Show(stage);
+            _round.FoldFilters();
         }
 
-        private void ShowMapCalculation(int layer, int channel, int row, int column)
+        internal bool AdvanceRound() => _round.Advance();
+        internal bool PreviousRound()
         {
-            _data.SelectFeatureCell(layer, channel, row, column);
-            _display.RefreshAppearance(_data, true);
-            _computation.Show(_data, layer, channel, row, column);
-        }
-
-        public void CloseCalculation() { _computation.Close(); }
-
-        public float[,] CopyFirstLayerMap(int channel)
-        {
-            int size = ConvolutionSimulation.Size;
-            float[,] values = new float[size, size];
-            for (int row = 0; row < size; row++)
-            {
-                for (int column = 0; column < size; column++)
-                {
-                    values[row, column] = _data.ReadValue(0, channel, row, column);
-                }
-            }
-            return values;
-        }
-
-        private void ExtractTarget(Transform target)
-        {
-            if (target.TryGetComponent(out MapCell cell))
-            {
-                cell.Extract();
-            }
-            if (target.TryGetComponent(out MapPanel panel))
-            {
-                panel.Extract();
-                if (_step == LessonStep.ExploreFeatureMaps && panel.Layer >= 0)
-                {
-                    ShowMapCalculation(panel.Layer, panel.Channel, 3, 3);
-                }
-            }
-        }
-
-        public void SpreadNextLayer()
-        {
-            _display.SpreadNextLayer(_step == LessonStep.CompareFilters);
-        }
-
-        public void ToggleScanning()
-        {
-            _interaction.ToggleScanning();
-        }
-
-        public bool ScaleSelectedTarget(float multiplier)
-        {
-            return _interaction.ScaleSelectedTarget(multiplier);
-        }
-
-        public bool TryRestore()
-        {
-            Color[,] input = _inputMap.ReadInput();
-            if (input == null)
+            if (!_round.Previous())
             {
                 return false;
             }
-            _computation.Close();
-            _data.RestoreInput(input);
-            Array.Clear(_visited, 0, _visited.Length);
-            EditCount = 0;
-            _display.ResetLayout();
-            _interaction.ResetPoses();
+            _waitingForFilter = _round.Stage == 0;
+            _filterPending = false;
             return true;
         }
 
-        private void SelectPixel(int row, int column)
+        internal void ReplayLastStep()
         {
-            switch (_step)
+            if (_round.IsOutput)
             {
-                case LessonStep.BuildFeatureMap:
-                case LessonStep.CompareFilters:
-                    _interaction.SelectFilterPosition(row, column);
-                    break;
-                case LessonStep.ExploreFeatureMaps:
-                case LessonStep.TraceReceptiveField:
-                    _computation.Close();
-                    _data.SelectPixel(row, column);
-                    _display.RefreshAppearance(_data, true);
-                    OnAffectedPixelSelected?.Invoke(row, column, _data.CountAffectedPositions(0));
-                    break;
-                case LessonStep.EditInput:
-                    _data.ToggleInput(row, column);
-                    _data.SelectPixel(row, column);
-                    EditCount++;
-                    _display.RefreshAppearance(_data, false);
-                    OnInputEdited?.Invoke(EditCount);
-                    break;
+                _display.StartMatch();
+                _display.FinishMatch();
+                _display.StartFill();
             }
+            _waitingForFilter = false;
+            _filterPending = false;
+            _round.Show(_round.LastStage);
         }
 
-        private void HandleScanningChanged()
+        internal void CompleteOutputForRecap()
         {
-            OnScanningChanged?.Invoke();
+            _display.StartMatch();
+            _display.FinishMatch();
+            _display.StartFill();
+            _display.FinishFill();
+            _display.Fly();
         }
 
-        private void HandleHeldTargetsChanged() => OnHeldTargetsChanged?.Invoke();
-
-        private void OnDisable()
+        internal void CloseRound()
         {
-            _interaction.OnHeldTargetsChanged -= HandleHeldTargetsChanged;
-            _interaction.OnTargetHeld -= ExtractTarget;
-            _interaction.OnTargetActivated -= ActivateTarget;
-            _interaction.OnPosesReset -= _display.ResetExtractedStates;
-            _interaction.OnFilterPositionChanged -= ApplyPatch;
-            _interaction.OnScanningChanged -= HandleScanningChanged;
+            _roundActive = false;
+            _round.Close();
+            _display.DimLinks(false);
+        }
+
+        internal System.Collections.Generic.IReadOnlyList<RecapInfo> Recap(bool mandatory)
+        {
+            if (_round.IsOutput)
+            {
+                _display.CompleteOutput();
+            }
+            var data = _round.Data;
+            var recaps = new System.Collections.Generic.List<RecapInfo>();
+            if (data.IsOutput)
+            {
+                Vector3 destination = _round.Destination;
+                recaps.Add(new RecapInfo(new Vector3(destination.x, 4.5f, destination.z-.7f), 4, 0, data.Digit, data.Count));
+            }
+            else
+            for (int i = 0;i<_display.MapCount(data.Layer);i++)
+            if (mandatory || i == data.Map)
+            {
+                recaps.Add(new RecapInfo(_display.Map(data.Layer, i).Position+Vector3.up*1.6f, data.Layer, i, data.Digit, data.Count));
+            }
+            CloseRound();
+            return recaps.AsReadOnly();
+        }
+
+        internal LessonContext DescribeRound(bool mandatory)
+        {
+            return new LessonContext
+            {
+                Layer = _round.Layer, Map = _round.Map, Stage = _round.Stage, MapCount = _round.IsOutput ? 0 : _display.MapCount(_round.Layer), Mandatory = mandatory, WaitingForFilter = _waitingForFilter, FilterPending = _filterPending, HintPosition = _round.FilterPosition+Vector3.up*.8f, Calculation = _round.Data, Winner = _display.Winner, WinnerPercent = _display.WinnerPercent
+            };
+        }
+
+        internal void Dispose()
+        {
+            _display.Dispose();
+            _round.Dispose();
+            _tour.Dispose();
         }
     }
 }

@@ -26,7 +26,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `CinematicMovementController`는 연출 중 이동·잡기와 레이 표시를 제어한다. `CinematicInputController`는 트리거를 2초간 눌러 건너뛰는 입력을 처리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
 
-클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas의 TrackedDeviceGraphicRaycaster와 버튼 콜백 연결은 각 UI에 둔다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
+클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
 ### 추적과 이동
 
@@ -111,28 +111,17 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.
 
-## Touch Plus 컨트롤러 에셋과 SDK 제거 (2026-10-27)
+## Quest 3S Touch Plus 표시
 
-`com.meta.xr.sdk.core` 207.0.1, 그 의존성으로 추가된 XR Hands 1.7.3, Meta scoped registry를 패키지 설정에서 제거했다. 기존 OpenXR 1.16.1, XR Plug-in Management 4.5.3, XRI 3.3.2와 입력·리그 구성은 유지한다. 컨트롤러 표시는 SDK 실행 코드가 아니라 기존 `TouchPlusHandController`의 Unity XR 입력과 Unity Animator로 구동한다.
+공용 `XRPlayerRig`의 `PersistentXRPlayerRig.CreateControllerVisual()`은 Meta XR Core 207.0.1의 `OVRControllerPrefab`을 참조한다. 양손 grip pose 아래의 손 모델과 FactoryTutorial 안내 패널의 확대 모델에 같은 패키지 프리팹을 사용한다. `OVRControllerHelper`가 좌우 컨트롤러의 표시와 조이스틱·버튼·트리거·그립 애니메이션을 갱신한다.
 
-공식 207.0.1에서 Touch Plus 표시용 런타임 에셋 12개를 분리했다. 위치는 다음과 같다(`client/Assets` 기준).
+생성한 Touch Plus 모델의 본체 재질은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat`을 공유 참조한다. 공식 프리팹의 `MetaQuestTouchPlusLeft_Material` / `MetaQuestTouchPlusRight_Material` 슬롯만 교체하며 배터리 재질은 유지한다. 이 `.mat`들은 `Meta/Lit` 셰이더와 SDK 텍스처 GUID를 사용한다. 프리팹에 포함된 재질 FBX의 이전 `Assets/Oculus/VR/Textures` 경로에 의존하지 않는다. 모델·Animator·애니메이션 클립과 SDK 패키지 원본은 수정하지 않는다.
 
-| 위치 | 보존 파일 |
-| --- | --- |
-| `Meshes/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlus_Left.fbx`, `MetaQuestTouchPlus_Right.fbx`. 버튼·Grip·Trigger·스틱 애니메이션은 FBX 안에 포함된다. |
-| `Meshes/Common/MetaQuestTouchPlus/Animation` | `MetaQuestTouchPlusLeftAnimation.controller`, `MetaQuestTouchPlusRightAnimation.controller` |
-| `Textures/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlus_Left_BaseColor_AO_AlphaRoughness.png`, `MetaQuestTouchPlus_Right_BaseColor_AO_AlphaRoughness.png`, `MetaQuestTouchPlus_Metallic.png`, `MetaQuestTouchPlus_Normals.png`, `batteryIndicatorTexture32.png` |
-| `Materials/Common/MetaQuestTouchPlus` | `MetaQuestTouchPlusMATphong_left.mat`, `MetaQuestTouchPlusMATphong_right.mat`, `batteryIndicator_mat.mat` |
+중복 제거를 통과한 공용 리그가 `Meta XR Runtime` 자식을 활성화한다. 이 자식의 `OVRManager`가 Meta 입력의 수명을 관리한다. OpenXR/XRI는 손 추적·이동·잡기·UI 입력을 처리한다. 공용 생성 메서드는 공식 `OVRControllerHelper`를 반환하며, 예전 기본 도형 컨트롤러와 이를 숨기던 코드는 제거했다. `Scripts/FactoryTutorial/TouchPlusHandController`는 튜토리얼의 확대 모델에만 추가한다. 튜토리얼의 `SetCue()` 호출을 받아 Touch Plus 모델에 표시를 붙이고 기존 Unity XR 입력으로 수행 여부를 확인한다. 오프닝은 이 컴포넌트를 참조하지 않으며 기존 별도 손 안내 표식을 사용한다. 에디터에서 XR 장치가 없을 때는 정적인 Touch Plus 모델을 표시한다.
 
-FBX·PNG·Animator Controller와 기존 `.meta` 내용은 원본 그대로 유지했다. GUID와 importer 설정을 보존해 리그의 모델·Animator 참조 및 모델 내부 애니메이션 연결을 유지한다. 배터리 표시 재질·텍스처는 SDK의 Touch Pro 폴더에 있지만 Touch Plus 모델이 참조하므로 함께 보존했다.
+과거 SDK 제거 시 분리했던 표시용 에셋 12개는 패키지 원본으로 전환하고, 이전 추출본과 라이선스 사본 폴더는 삭제했다. 현재 사용하는 SDK 패키지에 포함된 원본 라이선스·고지는 유지한다. 이번 전환은 소스·직렬화 참조를 검토했으며, Quest 3S에서 재질·왼손 애니메이션·튜토리얼 강조·Reality 진입 및 복귀의 실행 확인이 남아 있다.
 
-재질 3개는 SDK 셰이더 의존성을 제거하기 위해 본체의 `MetaLit`을 기존 URP/Lit으로, 배터리의 `TransparentTexture`를 URP/Unlit으로 연결하고 텍스처·색상·투명도 속성을 추가했다. 기존 `TouchPlusHandController`의 런타임 재질 생성과 버튼 표식·입력 연결은 유지한다. SDK 스크립트·에디터 도구·네이티브 플러그인·셰이더 파일은 포함하지 않는다.
-
-원래 `LICENSE.md`와 `NOTICE.txt`는 모델 폴더에 원문으로 보존한다. 출처·수정 여부는 [ASSET_CREDITS.md](ASSET_CREDITS.md)에 기록했다.
-
-이번 SDK 제거 작업에서는 파일·참조의 정적 검토만 수행했다. Unity 실행·에셋 임포트·컴파일·Play·테스트·APK 빌드는 실행하지 않았다. 아래 2026-10-26 검증 기록은 SDK가 설치되어 있던 당시 결과이며, SDK 제거 후 동작을 확인한 결과가 아니다.
-
-원본 왼손 Animator의 클립 fileID 18개는 FBX `.meta`의 `internalIDToNameTable`과 일치하지 않는다. 공식 207.0.1 원본에도 있는 상태이므로 모델·Controller·importer를 임의 수정하지 않았다. Unity 재임포트 시 실제 클립 참조가 해결되는지와 왼손 버튼 애니메이션은 실행 확인이 필요하다.
+과거 정적 검토에서 공식 207.0.1 왼손 Animator의 클립 fileID 18개가 FBX의 `internalIDToNameTable`과 일치하지 않았다. 실제 임포트 시 참조가 해결되는지는 실행 확인 항목에 포함한다.
 
 ## 과거 기록: Touch Plus 모델 패키지 설치 (2026-10-26)
 

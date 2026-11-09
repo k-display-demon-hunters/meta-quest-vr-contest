@@ -27,6 +27,9 @@ EditorBuildSettings:
     path: Assets/Scenes/CNNConvolutionLab.unity
     guid: ea82023bec2445599d9f3531ecfe6502
   - enabled: 1
+    path: Assets/Scenes/CNNRealityLab.unity
+    guid: ec26634c203449d9a3659869e746c8a5
+  - enabled: 1
     path: Assets/Scenes/CNNArchiveEnding.unity
     guid: 75968f625e2c8c64cb5e76d5192385c1
   m_configObjects:

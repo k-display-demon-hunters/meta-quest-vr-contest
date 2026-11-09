@@ -26,7 +26,7 @@ namespace CNNConvolution.Editor
             root.transform.localScale = Vector3.one * 1.5f;
             CNNConvolutionLabManager manager = root.AddComponent<CNNConvolutionLabManager>();
             GameObject content = new GameObject("Floating pixel values", typeof(RectTransform),
-                typeof(Canvas), typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
+                typeof(Canvas), typeof(TrackedDeviceGraphicRaycaster));
             RectTransform rect = (RectTransform)content.transform;
             rect.SetParent(root.transform, false);
             rect.localPosition = new Vector3(0, 1.7f, 1.25f);
@@ -40,15 +40,7 @@ namespace CNNConvolution.Editor
             GameObject blocks = (GameObject)PrefabUtility.InstantiatePrefab(
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/ConvolutionWorkbench.prefab"), content.transform);
             WorkbenchBuilder spatial = blocks.GetComponent<WorkbenchBuilder>();
-            GameObject inspectionObject = (GameObject)PrefabUtility.InstantiatePrefab(
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/FeatureInspectionDesk.prefab"), content.transform);
-            FeatureInspectionManager inspection = inspectionObject.GetComponent<FeatureInspectionManager>();
-            ConvolutionLessonManager lesson = root.AddComponent<ConvolutionLessonManager>();
-            SerializedObject managerFields = new SerializedObject(manager);
-            managerFields.FindProperty("_lesson").objectReferenceValue = lesson;
-            managerFields.FindProperty("_inspection").objectReferenceValue = inspection;
-            managerFields.ApplyModifiedPropertiesWithoutUndo();
-            SerializedObject fields = new SerializedObject(lesson);
+            SerializedObject fields = new SerializedObject(manager);
             fields.FindProperty("_ui").objectReferenceValue = ui;
             fields.FindProperty("_spatial").objectReferenceValue = spatial;
             fields.FindProperty("_font").objectReferenceValue =

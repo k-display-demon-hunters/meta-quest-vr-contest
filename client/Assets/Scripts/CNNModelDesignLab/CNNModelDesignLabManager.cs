@@ -21,6 +21,21 @@ namespace ModelDesignScene
 
         [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
 
+        private ModelRealitySessionController _reality;
+        public RealityLab.CNNRealityLabManager Reality => _reality.Reality;
+        public System.Threading.Tasks.Task EnterRealityAsync()
+        {
+            if (!_execution.HasTrainedModel || _execution.IsBusy || _builder.IsDragging)
+                throw new System.InvalidOperationException("Finish training and release the block before entering Reality.");
+            return _reality.EnterAsync(this, Camera.main);
+        }
+        public System.Threading.Tasks.Task ExitRealityAsync() => _reality.ExitAsync();
+        public System.Threading.Tasks.Task<InferenceResult> InferRealityAsync(float[] input, string requestId)
+            {
+            if (!_reality.IsOpen || !requestId.StartsWith("reality:", System.StringComparison.Ordinal))
+                throw new System.InvalidOperationException("Use an input captured by the active Reality session.");
+            return _execution.InferExternalAsync(input, requestId);
+        }
         private ModelDefinition _model;
         private IReadOnlyList<ValidationIssue> _validationIssues = System.Array.Empty<ValidationIssue>();
         private bool _hasValidationResult;
@@ -52,6 +67,7 @@ namespace ModelDesignScene
         private void Awake()
         {
             _model = new ModelDefinition();
+            _reality = gameObject.AddComponent<ModelRealitySessionController>();
         }
 
         private void OnEnable()
@@ -169,7 +185,11 @@ namespace ModelDesignScene
             SetProgress(progress.Epochs > 0 ? 0.95f * progress.Epoch / progress.Epochs : 0f);
         }
         private void HandleTrainingCancelled() => _controlPanel.ShowCancelled();
-        private void HandleInferenceCompleted(InferenceResult result) => _controlPanel.ShowInference(result);
+        private void HandleInferenceCompleted(InferenceResult result)
+        {
+            if (!result.ImageId.StartsWith("reality:", System.StringComparison.Ordinal))
+                _controlPanel.ShowInference(result);
+        }
         private void HandleExecutionError(string message) => _controlPanel.ShowError(message);
 
         private void HandleTrainingCompleted(TrainingResult result)

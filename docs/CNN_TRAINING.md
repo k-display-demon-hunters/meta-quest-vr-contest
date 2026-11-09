@@ -162,3 +162,7 @@ Input(28×28×1)
 현재 경로, 10 epoch 설정, 슬롯 기반 모델·검증, Dataset/Execution/ControlPanel의 책임과 공장 완료 조건은 소스와 씬 참조를 기준으로 정리했다. 위 PC 측정과 현재 Quest 실행 성능은 별개다. 현재 씬 전체의 VR 입력·취소·재진입 및 Quest 3S 시간·메모리·프레임은 이 문서 갱신에서 실행 확인하지 않았다.
 
 이번 공통 완료 이벤트와 Core 학습 세션 연결 변경은 소스로 검토했으며 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다. 이전 실행 기록은 이번 변경의 검증 결과가 아니다.
+
+## Reality 외부 이미지 연결
+
+ModelExecutionManager.InferExternalAsync는 정규화된 RGB float 배열과 reality: 요청 ID를 기존 학습 엔진에 전달한다. CNNModelDesignLabManager는 EnterRealityAsync/ExitRealityAsync 및 InferRealityAsync를 제공한다. ModelRealitySessionController가 CNNRealityLab을 Additive로 로드하고 기존 카메라를 연결한다. 모델은 이동하거나 복제하지 않는다. 기존 내부 샘플 UI는 reality: 결과를 표시하지 않는다. 공장 경유 실행은 지원하지 않으며 UI 버튼 연결도 추가하지 않았다. 상세 계약과 제한은 [CNNRealityLab](cnn-reality-lab.md)을 따른다. 컴파일·실행 검증은 수행하지 않았다.

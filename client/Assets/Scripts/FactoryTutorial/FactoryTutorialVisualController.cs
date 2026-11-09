@@ -38,8 +38,12 @@ namespace FactoryTutorial
             rightRoot.localScale = Vector3.one * 2.8f;
             if (rig != null)
             {
-                _left = rig.CreateControllerVisual(leftRoot, true);
-                _right = rig.CreateControllerVisual(rightRoot, false);
+                OVRControllerHelper leftVisual = rig.CreateControllerVisual(leftRoot, true);
+                _left = leftVisual.gameObject.AddComponent<TouchPlusHandController>();
+                _left.Initialize(true, leftVisual.m_modelMetaTouchPlusLeftController.transform);
+                OVRControllerHelper rightVisual = rig.CreateControllerVisual(rightRoot, false);
+                _right = rightVisual.gameObject.AddComponent<TouchPlusHandController>();
+                _right.Initialize(false, rightVisual.m_modelMetaTouchPlusRightController.transform);
             }
             GameObject tablet = new GameObject("Tablet tutorial graphic", typeof(RectTransform), typeof(Canvas));
             _tablet = tablet;

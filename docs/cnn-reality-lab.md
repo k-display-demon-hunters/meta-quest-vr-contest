@@ -1,12 +1,12 @@
 # CNNRealityLab 패스스루
 
-독립 씬 `client/Assets/Scenes/CNNRealityLab.unity`에 기존 XRPlayerRig 프리팹 인스턴스와 OVRManager·OVRPassthroughLayer를 배치한다. 태블릿, 컨트롤러, 레이, 입력은 원본 프리팹을 그대로 사용한다. 공장과 ModelDesignLab은 로드하지 않는다. 빌드 씬 목록에 CNNRealityLab을 추가했으며 시작 씬은 유지한다.
+독립 씬 `client/Assets/Scenes/CNNRealityLab.unity`에 공용 OVRManager가 포함된 XRPlayerRig 프리팹 인스턴스와 OVRPassthroughLayer를 배치한다. 태블릿, 컨트롤러, 레이, 입력은 원본 프리팹을 그대로 사용한다. 공장과 ModelDesignLab은 로드하지 않는다. 빌드 씬 목록에 CNNRealityLab을 추가했으며 시작 씬은 유지한다.
 
 RealityPassthroughController는 연결된 카메라의 배경을 투명하게 만들고 HDR·후처리를 중지한다. 종료 시 이전 상태를 복원한다. 패스스루는 Underlay로 배치한다. 태블릿과 컨트롤러의 표시·입력은 비활성화하지 않는다. MRUK 카메라 접근·촬영·전처리·기존 모델 추론 및 Additive 진입·복귀 진입점을 추가했다. UI 버튼 연결과 방 스캔은 제공하지 않는다.
 
-Meta Core와 MRUK 207.0.1을 공식 scoped registry로 선언했다. 실제 패키지 다운로드·설치·Unity 임포트는 하지 않았고 packages-lock.json은 이전 해석 결과로 유지했다. 이후 허가된 Package Manager 실행에서 잠금 파일 갱신이 필요하다.
+Meta Core와 MRUK 207.0.1을 공식 scoped registry에 선언한다. 공용 리그의 공식 컨트롤러 표시와 Reality의 패스스루가 같은 Meta Core 패키지를 사용한다.
 
-Android 빌드 후처리 소스는 생성된 unityLibrary manifest에 optional com.oculus.feature.PASSTHROUGH를 추가한다. horizonos.permission.HEADSET_CAMERA 권한 선언도 추가하며 런타임 요청은 Reality 씬의 OVRManager가 담당한다. 이 후처리는 작성만 했으며 실행하지 않았다.
+Android 빌드 후처리 소스는 생성된 unityLibrary manifest에 optional com.oculus.feature.PASSTHROUGH를 추가한다. horizonos.permission.HEADSET_CAMERA 권한 선언도 추가하며 Reality 진입 시 RealityPassthroughController가 SDK를 통해 권한을 요청하고 공용 OVRManager의 패스스루를 활성화한다. 종료 시 이전 설정을 복원한다. 이 후처리는 작성만 했으며 실행하지 않았다.
 
 ## UI 구성
 
@@ -43,4 +43,4 @@ RecognizeAsync(input)는 같은 요청 ID로 ModelDesign의 외부 추론 진입
 
 RealityPresentationController는 출발 씬의 Renderer.forceRenderingOff, Canvas.enabled, Light.enabled를 저장·변경하고 복귀 시 복원한다. 모델 루트나 계산 컴포넌트를 비활성화하지 않는다. 제작 오브젝트의 Collider·물리·입력은 유지되므로 숨겨진 물체와의 레이 간섭은 아직 해결되지 않았다. MR 중 새로 생성된 시각 객체에는 초기 숨김 목록이 적용되지 않는다.
 
-카메라 API 근거: [Meta 공식 PCA 문서](https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/)의 PassthroughCameraAccess.GetTexture, IsPlaying, WorldToViewportPoint. 패키지를 설치하지 않아 선언된 207.0.1과의 실제 컴파일·권한·영상 방향·색상·프레임 동작은 검증하지 않았다. 카메라 읽기는 동기 GPU readback이므로 실기기 지연도 미측정이다.
+카메라에는 PassthroughCameraAccess.GetTexture, IsPlaying, WorldToViewportPoint를 사용한다. 이번 공용 리그 전환 이후 컴파일·권한·영상 방향·색상·프레임 동작은 실행 확인 전이다. 카메라 읽기는 동기 GPU readback이며 실기기 지연은 미측정이다. [Meta 공식 PCA 문서](https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/)

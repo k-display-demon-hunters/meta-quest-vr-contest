@@ -12,6 +12,8 @@ namespace RealityLab
         private Color _background;
         private bool _postProcessing;
         private bool _hdr;
+        private OVRManager _metaManager;
+        private bool _passthroughWasEnabled;
 
         public void Initialize(Camera camera)
         {
@@ -21,6 +23,13 @@ namespace RealityLab
 
         private void OnEnable()
         {
+            if (UnityEngine.XR.XRSettings.isDeviceActive)
+            {
+                _metaManager = OVRManager.instance;
+                _passthroughWasEnabled = _metaManager.isInsightPassthroughEnabled;
+                _metaManager.isInsightPassthroughEnabled = true;
+                OVRPermissionsRequester.Request(new[] { OVRPermissionsRequester.Permission.PassthroughCameraAccess });
+            }
             _clearFlags = _camera.clearFlags;
             _background = _camera.backgroundColor;
             _postProcessing = _cameraData.renderPostProcessing;
@@ -33,6 +42,11 @@ namespace RealityLab
 
         private void OnDisable()
         {
+            if (_metaManager != null)
+            {
+                _metaManager.isInsightPassthroughEnabled = _passthroughWasEnabled;
+                _metaManager = null;
+            }
             // The rig may already have been destroyed when the application closes.
             if (_camera != null)
             {

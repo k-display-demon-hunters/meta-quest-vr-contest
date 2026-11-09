@@ -41,7 +41,7 @@ namespace Learning
             LearningStageId.ConvolutionLab => "CNNConvolutionLab",
             LearningStageId.FeatureMap => "CNNFeatureMapLab",
             LearningStageId.ModelDesign => "CNNModelDesignLab",
-            LearningStageId.Exit => "FactoryEnding",
+            LearningStageId.Exit => "CNNArchiveEnding",
             _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown learning stage.")
         };
 

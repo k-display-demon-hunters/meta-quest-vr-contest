@@ -30,9 +30,9 @@ namespace XR.Editor
 {
     public static class XRProjectSetup
     {
-        private const string StartupScenePath = "Assets/Scenes/FactoryIntro.unity";
+        private const string StartupScenePath = "Assets/Scenes/CNNArchiveOpening.unity";
         private const string RigPath = "Assets/Prefabs/XR/XRPlayerRig.prefab";
-        private const string StartupSceneScheduledKey = "XR.FactoryIntroStartupSceneScheduled";
+        private const string StartupSceneScheduledKey = "XR.CNNArchiveOpeningStartupSceneScheduled";
 
         [InitializeOnLoadMethod]
         private static void ScheduleStartupScene()
@@ -236,7 +236,7 @@ namespace XR.Editor
             }
             if (!File.Exists(StartupScenePath))
             {
-                throw new BuildFailedException("FactoryIntro scene is missing.");
+                throw new BuildFailedException("CNNArchiveOpening scene is missing.");
             }
             List<OpenXRFeature.ValidationRule> issues = new List<OpenXRFeature.ValidationRule>();
             OpenXRProjectValidation.GetCurrentValidationIssues(issues, BuildTargetGroup.Android);

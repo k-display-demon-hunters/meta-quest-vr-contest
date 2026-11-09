@@ -4,17 +4,17 @@
 
 | 에셋명 / 종류 | 사용처 | 출처 또는 생성 방법 | 저작권·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| **WraithAttackWarning.wav** / 습격·경고 효과음 | client/Assets/Audio/OpeningEnding/WraithAttackWarning.wav; 오프닝 4.3초부터 경고·충전·타격·화면 고장 | Codex 보조로 Python math/random/wave를 사용해 사인파·잡음·엔벌로프를 직접 합성. seed 30102026, 9초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
-| **FactoryDoorOpen.wav** / 공장문 효과음 | client/Assets/Audio/OpeningEnding/FactoryDoorOpen.wav; 오프닝 문 열기 | Codex 보조로 Python math/random/wave의 저음·잡음·마찰·충격 엔벌로프를 직접 합성. seed 30102026, 3.2초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
+| **WraithAttackWarning.wav** / 습격·경고 효과음 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 client/Assets/Audio/OpeningEnding/WraithAttackWarning.wav; 오프닝 4.3초부터 경고·충전·타격·화면 고장 | Codex 보조로 Python math/random/wave를 사용해 사인파·잡음·엔벌로프를 직접 합성. seed 30102026, 9초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
+| **FactoryDoorOpen.wav** / 공장문 효과음 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 client/Assets/Audio/OpeningEnding/FactoryDoorOpen.wav; 오프닝 문 열기 | Codex 보조로 Python math/random/wave의 저음·잡음·마찰·충격 엔벌로프를 직접 합성. seed 30102026, 3.2초, 스테레오 32kHz/16-bit PCM. 외부 녹음·샘플 없음 | 프로젝트 내부 제작. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성, 정규화 피크 0.63 |
 | **InputPixels.png** / 입력 이미지 | 이전 경로: `client/Assets/Textures/CNNFeatureMapLab/InputPixels.png`; 2026-11-09 미사용 정리로 삭제, 현재 제출 대상 제외 | 기존 프로젝트 에셋. 원출처 URL·생성 도구·제작 방법·AI 보조 여부 미확인 | 제작자·권리자·라이선스 미확인 | Codex 보조로 이전 입력 맵·재질과 함께 삭제. 과거 출처 기록 보존 |
-| **OpeningBroadcast.png** / 오프닝 방송 정지 이미지 | `client/Assets/Textures/CNNScreenLab/OpeningBroadcast.png`; CNNScreenLab 원본 이미지·픽셀 및 RGB 계산 입력; FactoryEnding의 합성곱·특징 맵 예시용 16×9 밝기 샘플 원본 | 프로젝트의 `FactoryIntro/VillageDisplay` 셰이더를 Unity에서 뉴스 방송(_Channel=0), 재생 3초, 손상·간섭 0으로 렌더링. Codex 보조로 1024×576 PNG 추출 | 프로젝트 내부 절차적 방송 그래픽에서 제작. 외부 방송 영상·로고 사용 없음. 별도 공개 라이선스 지정 없음 | 원본 PNG 수정 없음. 픽셀 체험은 저해상도·블러 처리 후 동일 이미지에서 RGB 샘플링. 엔딩은 Codex 보조로 기존 PNG의 셀 중심 밝기를 추출해 코드의 수치 예시로 사용하며 파일을 복제하지 않음. 관찰은 원래 0~255, 계산 연습은 Codex 보조 코드로 0~3에 축소해 표시 |
-| **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 저장된 구성 검사·학습·예측 UI, FactoryEnding의 큰 버튼·주민 대화창 및 `Prefabs/OpeningEnding/Ending/EndingUpscalingProcess.prefab` 단계 제목·계산식, CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
-| **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1)** | 공용 XRPlayerRig, 오프닝 입장 안내, FactoryTutorial 확대 안내 | [Meta XR Core 207.0.1](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 `OVRControllerPrefab` 직접 참조. [공식 애니메이션 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/) | 패키지 원본 수정 없음. Codex 보조로 프리팹 연결 및 프로젝트의 버튼 강조를 적용함 |
+| **OpeningBroadcast.png** / 오프닝 방송 정지 이미지 | `client/Assets/Textures/CNNScreenLab/OpeningBroadcast.png`; CNNScreenLab 원본 이미지·픽셀 및 RGB 계산 입력 | 프로젝트의 `FactoryIntro/VillageDisplay` 셰이더를 Unity에서 뉴스 방송(_Channel=0), 재생 3초, 손상·간섭 0으로 렌더링. Codex 보조로 1024×576 PNG 추출 | 프로젝트 내부 절차적 방송 그래픽에서 제작. 외부 방송 영상·로고 사용 없음. 별도 공개 라이선스 지정 없음 | 원본 PNG 수정 없음. 픽셀 체험은 저해상도·블러 처리 후 동일 이미지에서 RGB 샘플링. 관찰은 원래 0~255, 계산 연습은 Codex 보조 코드로 0~3에 축소해 표시 |
+| **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 저장된 구성 검사·학습·예측 UI, CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
+| **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1)** | 공용 XRPlayerRig, FactoryTutorial 확대 안내 | [Meta XR Core 207.0.1](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 `OVRControllerPrefab` 직접 참조. [공식 애니메이션 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/) | 패키지 원본 수정 없음. Codex 보조로 프리팹 연결 및 프로젝트의 버튼 강조를 적용함 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
 | **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 5개, 공용 ParchmentReader·TabletUI 프리팹, CNNRealityLab의 선택 안내·인식 패널·사용 안내 팝업, 피처맵 복도의 한글 자막·라벨 | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
 | **Lucide / Feather 기반 아이콘** / 아이콘 | 태블릿 UI | [Lucide 공식 저장소 및 라이선스](https://github.com/lucide-icons/lucide/blob/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE) | © 2026 Lucide Icons and Contributors, ISC. Feather 유래 도형: © 2013–present Cole Bemis, MIT | 선 도형을 간략화하고 아이콘 아틀라스로 변환 |
-| **Universal Animation Library — Standard** / 주민 동작 | FactoryIntro·FactoryEnding 마을 주민의 걷기·시청·대화·충격 반응·축하; 엔딩 감사 인사의 접근·대화·측면 이동 | [Quaternius 공식 배포 페이지](https://quaternius.itch.io/universal-animation-library), 무료 Standard 배포본 확인·다운로드: 2026-10-23 | 동봉 License/README의 제작자 표기: **Quaternius**. 공식 페이지에 애니메이터 **Gonzalo Furnier**의 제작 참여 표기. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): 수정·재배포·상업적 이용 허용 | 실제 관절 애니메이션을 Codex 보조로 기존 주민의 비율·관절에 맞게 변환하고 상태 전환을 혼합. 외부 캐릭터 메시·유료 Pro/Source 파일 사용 없음 |
-| **VillageOpening.wav** / 음원 | 18초 마을 오프닝의 배경·효과음 | 프로젝트 작업에서 Codex 보조로 Python 사인파·필터링한 난수·음량 곡선을 직접 합성 | 프로젝트용 직접 제작 음원. 별도 공개 라이선스는 지정하지 않음. 외부 녹음·음악 샘플 사용 없음 | 오프닝의 공격·화면 고장 시점에 맞춰 제작 |
+| **Universal Animation Library — Standard** / 주민 동작 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 FactoryIntro·FactoryEnding 마을 주민의 걷기·시청·대화·충격 반응·축하; 엔딩 감사 인사의 접근·대화·측면 이동 | [Quaternius 공식 배포 페이지](https://quaternius.itch.io/universal-animation-library), 무료 Standard 배포본 확인·다운로드: 2026-10-23 | 동봉 License/README의 제작자 표기: **Quaternius**. 공식 페이지에 애니메이터 **Gonzalo Furnier**의 제작 참여 표기. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): 수정·재배포·상업적 이용 허용 | 실제 관절 애니메이션을 Codex 보조로 기존 주민의 비율·관절에 맞게 변환하고 상태 전환을 혼합. 외부 캐릭터 메시·유료 Pro/Source 파일 사용 없음 |
+| **VillageOpening.wav** / 음원 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 18초 마을 오프닝의 배경·효과음 | 프로젝트 작업에서 Codex 보조로 Python 사인파·필터링한 난수·음량 곡선을 직접 합성 | 프로젝트용 직접 제작 음원. 별도 공개 라이선스는 지정하지 않음. 외부 녹음·음악 샘플 사용 없음 | 오프닝의 공격·화면 고장 시점에 맞춰 제작 |
 | **LearningParchment.png** / 생성 이미지 | FactoryEnvironment의 양피지 수집물 5개와 공장·태블릿 공용 ParchmentReader 프리팹 배경 | 사용자가 선택한 폐공장 홀로그램 양피지 시안을 ChatGPT 이미지 생성 도구로 글자 없는 투명 스프라이트로 편집 | 프로젝트용 생성 이미지. 외부 이미지 사용 없음. 제출 시 AI 생성물 고지 요건 확인 | 기존 종이 이미지를 교체하고 Unity 텍스트를 별도 겹침. Codex 보조로 기존 이미지의 양끝·중앙을 런타임 표시 조각으로 나눠 말린 형태와 펼침 연출에 재사용하며 원본 PNG 수정·복제 없음 |
 | **ColorPhoto.png** / 생성 이미지 | 과거 시안용 이미지. 현재 씬·코드 참조가 없어 2026-11-01 프로젝트에서 삭제; 제출 사용 목록에서 제외 | 파일 내 생성 메타데이터에 **ChatGPT / gpt-image** 표기 | 생성 계정·원프롬프트·권리자·재배포 조건 미확인 | 이미지 내용 수정 없이 미사용 파일 삭제 |
 | **MNIST 숫자 이미지·정답** / 데이터 및 표시 이미지 | 기존 `Textures/CNNModelDesignLab/mnist-test-*.png` (보존, 현재 모델 제작 콘솔에서 미사용). 이전 흑백 런타임 데이터는 아래 컬러 데이터로 교체 | [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [Keras 공식 배포·권리 표기](https://keras.io/api/datasets/mnist/), [Keras 공식 로더](https://github.com/keras-team/keras/blob/v3.15.1/keras/src/datasets/mnist.py); 배포 URL: [mnist.npz](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz). 확인: 2026-10-24 | Keras 공식 문서 표기: **Yann LeCun, Corinna Cortes**, 원본 NIST 데이터의 파생 데이터. [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). 이 프로젝트의 MNIST 부분집합 데이터도 같은 조건으로 제공 | Codex 보조로 원본 training에서 숫자별 첫 50장(500장), test에서 숫자별 첫 20장(200장)을 추출하고 원본 인덱스·정답·픽셀을 `.bytes`로 포장. 생성·합성 이미지 아님. 픽셀 수정 없음. 기존 표시 PNG는 원본 test에서 숫자별 첫 이미지이며 이번 작업에서 변경 없음 |
@@ -22,7 +22,7 @@
 
 공용 리그와 안내는 Meta XR Core SDK의 공식 프리팹을 직접 참조합니다. Codex 보조로 생성 인스턴스의 Touch Plus 본체 재질을 같은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat` 공유 참조로 연결했습니다. 모델·텍스처·재질·애니메이션 패키지 원본 수정이나 복제는 없습니다. 이전 추출본과 그 라이선스 사본 폴더는 삭제했습니다. 현재 사용하는 SDK 패키지의 `LICENSE.md`와 `NOTICE.txt` 원본은 유지합니다.
 
-Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking_Loop`, `Walk_Loop`, `Hit_Chest`, `Hit_Head`, `Crouch_Idle_Loop`, `Dance_Loop`입니다. 무료판에 전용 놀람 동작이 없어 충격·웅크림 동작을 조합했습니다. 관절 곡선을 변환한 런타임 데이터는 `client/Assets/Meshes/OpeningEnding/QuaterniusVillageMotion.asset`에 두며, 제출용 사본·ZIP·별도 라이선스 보관 폴더는 만들지 않습니다.
+Universal Animation Library에서 사용한 동작은 `Idle_Loop`, `Idle_Talking_Loop`, `Walk_Loop`, `Hit_Chest`, `Hit_Head`, `Crouch_Idle_Loop`, `Dance_Loop`입니다. 무료판에 전용 놀람 동작이 없어 충격·웅크림 동작을 조합했습니다. 관절 곡선을 변환한 런타임 데이터의 이전 경로는 `client/Assets/Meshes/OpeningEnding/QuaterniusVillageMotion.asset`이며 기존 연출과 함께 삭제했습니다.
 
 폰트와 아이콘의 원래 저작권·라이선스 고지는 유지합니다. 생성 도구의 표기는 저작권자를 뜻하지 않으며, 생성 이미지의 메타데이터만으로 권리 귀속이나 재배포 허가를 확인한 것은 아닙니다.
 
@@ -61,14 +61,14 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 2026-10-30 폴더 통합: Codex 보조로 주민 동작 데이터를 위 OpeningEnding 경로로, 합성 효과음을 client/Assets/Audio/OpeningEnding/VillageOpening.wav로 이동했다. 미디어 내용과 기존 라이선스는 변경하지 않았다.
 # 오프닝 제목용 주아체 (2026-10-30)
 
-- 에셋: Jua-Regular.ttf. 사용 위치: `client/Assets/Fonts/Jua/`, FactoryIntro 제목과 GAME START, VillageOpening 프리팹의 CNN FACTORY 간판.
+- 에셋: Jua-Regular.ttf. 기존 연출과 함께 삭제되어 제출 대상에서 제외. 이전 사용 위치: `client/Assets/Fonts/Jua/`, FactoryIntro 제목과 GAME START, VillageOpening 프리팹의 CNN FACTORY 간판.
 - 원출처: https://github.com/google/fonts/tree/main/ofl/jua
 - 저작권 표기: Copyright 2018 The Jua Project Authors.
-- 라이선스: SIL Open Font License 1.1. 원본 폰트 수정 없음. 앱 포함 배포에 필요한 원본 `OFL.txt`를 폰트와 함께 보존한다.
+- 라이선스: SIL Open Font License 1.1. 원본 폰트 수정 없음. 원래 배포본에는 `OFL.txt`가 포함되었다.
 
 ## 시작 화면 음악 — Cipher
 
-- 에셋: `client/Assets/Audio/OpeningEnding/Cipher.mp3` (원본 파일명 Cipher2.mp3, ISRC USUAN1100844).
+- 에셋: `client/Assets/Audio/OpeningEnding/Cipher.mp3` (원본 파일명 Cipher2.mp3, ISRC USUAN1100844). 기존 연출과 함께 삭제되어 제출 대상에서 제외.
 - 제작자·저작권자: Kevin MacLeod. 공식 출처: https://incompetech.com/music/royalty-free/music.html 및 https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cipher2.mp3
 - 공식 카탈로그의 Attribution Code에서 CC BY 4.0 확인: https://creativecommons.org/licenses/by/4.0/
 - 사용: 오프닝 타이틀 반복 재생. 원본 파일 편집 없음. 런타임에서 볼륨 조절 및 1.5초 크로스페이드 적용. 시작 화면의 음악 크레딧 표시는 제거했다.
@@ -90,9 +90,25 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 - **16×16 컬러 숫자 입력·피처맵·출력 템플릿·격자·둥근 UI 텍스처**. `client/Assets/Textures/CNNFeatureMapLab/`의 Unity `.asset` 파일과 `FeatureMapCorridor.prefab`에서 사용한다. 숫자 패턴, 팔레트, 고정 시드와 더미 CNN 계산, 코드의 격자·라운드 사각형 수식으로 생성하던 결과를 2026-11-09 Codex 보조로 Unity 에디터에서 저장했다. 입력·맵은 실행 중 계산값에 따라 표시용 복사본을 갱신한다. 외부 이미지 파일 사용 없음. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
 - **복도 TMP 폰트 아틀라스**. `client/Assets/Fonts/CNNFeatureMapLab/Pretendard-Regular SDF.asset`, `JetBrainsMono-Regular SDF.asset`과 각 파일에 포함된 아틀라스에 사용한다. 기존 Pretendard Regular OTF 및 JetBrains Mono Regular TTF를 Unity TextMesh Pro의 `CreateFontAsset`으로 변환하고 Codex 보조로 저장했다. 원본 폰트 파일 수정 없음. 제작자·저작권자·SIL OFL 1.1 및 원출처는 위 Pretendard·JetBrains Mono 기록을 따르며, 기존 폰트 폴더의 라이선스 고지를 유지한다.
 
+- **CNNFeatureMapLab 검증 영상·스크린샷 (2026-11-09)**. Codex 작업 폴더의 `outputs/featuremap/CNNFeatureMap-clear.mp4` 및 같은 폴더의 검증 PNG. 기존 프로젝트의 실제 Unity Play 화면을 Codex 보조 임시 검증기로 렌더링하고 Unity MediaEncoder로 무음 MP4를 기록했다. 생성형 영상이나 외부 실사 영상이 아니며 게임 런타임 에셋으로 추가하지 않았다. 원본 에셋·폰트의 출처와 라이선스는 이 문서의 해당 기록을 따름. 녹화물의 법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
+
 ## ROOM 1-2 연속 체험 폰트 재사용 (2026-11-08)
 
 - 에셋: 기존 `client/Assets/Fonts/NotoSansCJKkr-Regular.otf`.
 - 사용 위치: `ConvolutionWorkbench`의 5×5 입력·3×3 결과와 두 계산판, `PixelCalculationUI`의 고정 3×3 요약, 합성곱 체험의 공용 `WorldUIButton` 인스턴스 라벨.
 - 원출처·권리자·라이선스: 위 **Noto Sans CJK KR Regular 2.004** 기록의 공식 배포본과 © 2014–2021 Adobe, SIL OFL 1.1을 그대로 따른다. 기존 폰트 파일과 배포 라이선스 고지를 보존한다.
 - 수정: 폰트 원본 수정·복제 없음. Codex AI 보조로 씬 전용 프리팹의 글자 배치·크기·색과 참조를 추가·수정했다.
+
+## CNN 다큐멘터리 신규 씬 (2026-11-09)
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리·수정 |
+| --- | --- | --- | --- |
+| PostOffice1989.png | `Textures/OpeningEnding`, CNNArchiveOpening 기록판 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 사람 없는 1989년 한국 우체국, 눈높이 1.6m 정면 다큐멘터리 사진, 오래된 목재 창구·우편 선반·CRT·형광등·테라조, 자연광과 실사 질감. | AI 생성 재구성, 실제 기록사진 아님. 생성 도구를 권리자로 단정하지 않음; 권리자 미확인, 별도 공개 라이선스 지정 없음. 생성 PNG 원본 저장, Unity 셰이더로 흑백/밝기/그레인 표시. |
+| EverydayVisionAtlas.png | `Textures/OpeningEnding`, 8개 엔딩 기록판 및 사진 소품 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
+| ArchiveMaterials.png | `Textures/OpeningEnding`, 우체국 목재·바닥·벽·봉투 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 2×2 정사영 재질 아틀라스, 낡은 꿀색 참나무·회색 베이지 테라조·상아색 회벽·크림색 종이, 균일 조명, 글자 없음. | AI 생성 재질. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 그대로, 재질별 UV 선택·색 곱셈. |
+| ArchiveCrowd.mp3 | `Audio/OpeningEnding`, 앞왼쪽·뒤오른쪽·후면의 군중 공간 음향 | [Indoor adult murmur, large group.wav](https://freesound.org/people/SpliceSound/sounds/260123/), 공개 HQ MP3 미리듣기 파일. 라이선스 원문 확인: 2026-11-09. | **SpliceSound**, **CC0 1.0**. 원본 파일 내용 변경 없음. Unity에서 위치별 재생 시작 시점·음량·필터 조절. 한국어/1989년 우체국 실녹음이라고 주장하지 않음. |
+| ArchivePrinter.mp3 | `Audio/OpeningEnding`, 오른쪽 책상 프린터 | [old dot-matrix printer](https://freesound.org/people/viertelnachvier/sounds/181420/), Epson LX-400 실제 녹음의 공개 HQ MP3. 라이선스 원문 확인: 2026-11-09. | **viertelnachvier**, **CC0 1.0**. 원본 파일 수정 없음; 장면에서는 일부 구간만 재생. |
+| ArchiveType/Stamp/Ring/CRT/Machine/Footsteps/Beep/Hit/BigHit/Rewind.wav | `Audio/OpeningEnding`, 오프닝·엔딩 3D 효과음 | Codex 보조 Node.js PCM 합성. 사인파·필터 없는 제한 난수·지수 감쇠·충격 반복을 조합, 44.1kHz mono PCM16. 외부 녹음·음악 샘플 사용 없음. | 프로젝트용 합성 효과음, 별도 공개 라이선스 지정 없음. 실제 피아노·현악·사람 발소리 녹음이 아닌 합성 근사음. |
+| Pretendard SemiBold / Nanum Pen Script | 신규 씬 자막·표지·숫자 라벨 | 프로젝트에 있는 원본 폰트 재사용; 위 기존 폰트 출처 및 동봉 OFL 유지. | 원본 변경 없음. |
+
+EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 직원 대사·내레이션·라디오 가요·배경 음악 슬롯은 비어 있으며 외부 음원을 임의로 대신 넣지 않았다.

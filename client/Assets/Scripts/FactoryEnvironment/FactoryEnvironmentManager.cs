@@ -46,7 +46,7 @@ namespace FactoryEnvironment
             _areaController.AreaChanged += HandleAreaChanged;
             _sceneLoader.StateChanged += HandleLoadingStateChanged;
             _sceneLoader.LoadFailed += HandleLoadFailed;
-            SceneManager.SetActiveScene(gameObject.scene);
+
         }
 
         private void OnDisable()
@@ -60,6 +60,8 @@ namespace FactoryEnvironment
 
         private void Start()
         {
+            // OnEnable runs before an asynchronously loaded scene becomes available.
+            SceneManager.SetActiveScene(gameObject.scene);
             _routeGuide.SetDestination(LearningStageId.Tutorial);
         }
 

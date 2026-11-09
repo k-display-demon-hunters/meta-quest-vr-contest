@@ -26,7 +26,7 @@ namespace CNNConvolution.Editor
             root.transform.localScale = Vector3.one * 1.5f;
             CNNConvolutionLabManager manager = root.AddComponent<CNNConvolutionLabManager>();
             GameObject content = new GameObject("Floating pixel values", typeof(RectTransform),
-                typeof(Canvas), typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
+                typeof(Canvas), typeof(TrackedDeviceGraphicRaycaster));
             RectTransform rect = (RectTransform)content.transform;
             rect.SetParent(root.transform, false);
             rect.localPosition = new Vector3(0, 1.7f, 1.25f);

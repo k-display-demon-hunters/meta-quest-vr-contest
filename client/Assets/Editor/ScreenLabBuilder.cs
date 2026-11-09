@@ -168,7 +168,7 @@ namespace CNNScreen.Editor
 
         private static Canvas Canvas(Transform parent, string name, Vector3 position, Vector2 size, float scale, Camera camera)
         {
-            GameObject root = new GameObject(name, typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(TrackedDeviceGraphicRaycaster));
+            GameObject root = new GameObject(name, typeof(RectTransform), typeof(Canvas), typeof(TrackedDeviceGraphicRaycaster));
             root.transform.SetParent(parent, false);
             root.transform.localPosition = position;
             root.transform.localScale = Vector3.one * scale;

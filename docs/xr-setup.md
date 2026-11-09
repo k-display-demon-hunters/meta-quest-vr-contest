@@ -26,7 +26,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `FactoryIntroInputController`는 공용 UI Trigger 바인딩을 사용하며, 연출용 이동·잡기 제한, ray 표시와 A 진행 입력을 관리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
 
-클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas의 TrackedDeviceGraphicRaycaster와 버튼 콜백 연결은 각 UI에 둔다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
+클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
 ### 추적과 이동
 

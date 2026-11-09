@@ -29,7 +29,6 @@ namespace CNNConvolution
             Image target = hitSurface.AddComponent<Image>();
             target.color = Color.clear;
             target.raycastTarget = false;
-            hitSurface.AddComponent<GraphicRaycaster>();
             hitSurface.AddComponent<TrackedDeviceGraphicRaycaster>();
             Button button = hitSurface.AddComponent<Button>();
             button.targetGraphic = target;

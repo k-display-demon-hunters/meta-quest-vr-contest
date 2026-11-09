@@ -9,17 +9,11 @@ EditorBuildSettings:
     path: Assets/Scenes/CNNArchiveOpening.unity
     guid: 59a2833a9b4d08c4bb58251b8e2a7004
   - enabled: 1
-    path: Assets/Scenes/FactoryIntro.unity
-    guid: eb44f2aad8f090540aabad80b5c3917d
-  - enabled: 1
     path: Assets/Scenes/CNNModelDesignLab.unity
     guid: c8dfb16a8d054f039d83c7299b17adce
   - enabled: 1
     path: Assets/Scenes/CNNScreenLab.unity
     guid: 97e877042bfd83746bf8a1d0cb32f2b0
-  - enabled: 1
-    path: Assets/Scenes/FactoryEnding.unity
-    guid: 0384c41fc802f354ead1c1ef35031308
   - enabled: 1
     path: Assets/Scenes/FactoryEnvironment.unity
     guid: ce1adfd336e24bd4b1c865f0bfe8efa7

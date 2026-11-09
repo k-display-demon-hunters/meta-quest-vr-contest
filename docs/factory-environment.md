@@ -2,7 +2,7 @@
 
 [FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 정문 앞마당, 튜토리얼실, 세 체험실, 연결 복도와 후문 하역 공간으로 구성한다. 중앙 복도를 공유하던 이전 구조를 순차적으로 통과하는 방 구조로 교체했다. 공장을 직접 실행하면 정문 앞에서 시작한다.
 
-공장 공간과 문·양피지 입장 조건은 FactoryEnvironmentManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 기존 FactoryIntro·FactoryEnding 씬과 연출 에셋은 유지한다. 후문 구역 진입 시 FactoryEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
+공장 공간과 문·양피지 입장 조건은 FactoryEnvironmentManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
 
 ## 배치
 
@@ -228,7 +228,7 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 4. AreaChanged를 받은 로더가 _areaOrder의 바로 이전·현재·다음 Stage 씬을 준비한다. sceneLoaded에서 로더가 콘텐츠를 배치한 뒤 ContentLoaded(stage, scene)를 발행하여 세션이 Start 전에 초기 데이터와 이벤트 구독을 적용한다.
 5. CanOpenShutter(id)는 현재 진행 방향 대신 StageSpace의 입출구 ID 관계로 해당 문에 연결된 체험을 확인한다. 로딩 중에는 새 개방을 보류하며 연결된 학습 씬이 로드되어야 한다. 최초 통행 허가는 출구라면 해당 체험의 퇴장 가능 상태, 입구라면 LearningStageCatalog.Stages의 이전 체험 퇴장 가능 상태와 해당 입장 양피지를 확인한다. 튜토리얼은 이전 체험·양피지 없이 로딩 완료로 허용하고, 후문은 마지막 체험의 퇴장 가능 상태를 확인하며 엔딩 씬의 사전 로드를 요구하지 않는다. 공유 아치 문은 Screen 출구와 Convolution 입구 조건을 함께 확인한다.
 6. 로딩 종료·체험 상태 변경·양피지 수집·구역 변경 시 EnvironmentManager가 ShuttersManager.RefreshConditions를 호출한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 멀리 있는 문은 닫힘 상태를 요청한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
-7. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 FactoryEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
+7. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.
 
@@ -324,7 +324,7 @@ FactoryAreaController는 Start에서 공용 XROrigin의 카메라 Transform을 �
 | FeatureMapRoomToModelDesignRoom | CNNFeatureMapLab + CNNModelDesignLab |
 | ModelDesignRoom | CNNModelDesignLab |
 | ModelDesignRoomToRearCourt | CNNModelDesignLab 유지. 엔딩은 후문 구역 진입까지 로드하지 않음 |
-| RearCourt | FactoryEnding을 Single로 로드 |
+| RearCourt | CNNArchiveEnding을 Single로 로드 |
 
 _areaOrder에는 위 표 순서대로 방과 연결 통로를 등록한다. 통로 5개의 Stage는 직렬화 값 None이며 프로퍼티로는 null을 반환한다. 앞마당·Outside·휴게실·InspectionRoom은 순서 배열에서 제외한다. 튜토리얼이 다시 로드되면 안내와 입력 제어도 다시 시작한다. 첫 통로에서 튜토리얼을 활성화한다. 엔딩은 인접 Stage일 때 미리 로드하지 않으며 RearCourt 진입 시 Single로 전환해 공장·학습 씬을 종료한다.
 

@@ -10,7 +10,7 @@ namespace Cinematic
 {
     public sealed class CinematicInputController : MonoBehaviour
     {
-        [SerializeField] private FactoryIntroInputController _movementGate;
+        [SerializeField] private CinematicMovementController _movementGate;
         private readonly Dictionary<GameObject, bool> _visualStates = new Dictionary<GameObject, bool>();
         private InputAction _trigger;
         private float _held;

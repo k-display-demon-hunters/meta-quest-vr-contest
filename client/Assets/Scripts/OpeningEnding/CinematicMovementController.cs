@@ -1,6 +1,5 @@
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
@@ -11,10 +10,10 @@ using XR;
 namespace OpeningEnding
 {
     [DisallowMultipleComponent]
-    public sealed class FactoryIntroInputController : MonoBehaviour
+    public sealed class CinematicMovementController : MonoBehaviour
     {
         private readonly XRInputButtonReader _blockedGripInput = new XRInputButtonReader(
-            "Factory Intro Grip Lock", inputSourceMode: XRInputButtonReader.InputSourceMode.Unused);
+            "Cinematic Grip Lock", inputSourceMode: XRInputButtonReader.InputSourceMode.Unused);
 
         private ContinuousMoveProvider _moveProvider;
         private XRPlayerInputController _playerInput;
@@ -30,38 +29,8 @@ namespace OpeningEnding
         private bool _lineWasEnabled;
         private bool _hasPendingUIVisibility;
         private bool _uiVisible;
-        private InputAction _continueAction;
 
-        public event System.Action OnContinueRequested;
-
-        public bool IsBound { get; private set; }
-
-        private void Update()
-        {
-            if (_continueAction != null && _continueAction.WasPressedThisFrame())
-                OnContinueRequested?.Invoke();
-        }
-
-        public void EnableContinueInput(bool enabled)
-        {
-            if (enabled)
-            {
-                if (_continueAction == null)
-                    _continueAction = new InputAction("Opening continue", InputActionType.Button,
-                        "<XRController>{RightHand}/primaryButton");
-                _continueAction.Enable();
-            }
-            else
-            {
-                _continueAction?.Disable();
-            }
-        }
-
-        public void SetWalkingEnabled(bool enabled)
-        {
-            _moveProvider.enabled = enabled;
-            _playerInput.TutorialInputSuppressed = !enabled;
-        }
+        private bool IsBound { get; set; }
 
         private void LateUpdate()
         {
@@ -82,7 +51,7 @@ namespace OpeningEnding
             Release();
             if (rig == null)
             {
-                Debug.LogError("[FactoryIntro] An XR rig is required to control story input.", this);
+                Debug.LogError("[Cinematic] An XR rig is required to control story input.", this);
                 return;
             }
 
@@ -151,7 +120,6 @@ namespace OpeningEnding
 
         public void Release()
         {
-            EnableContinueInput(false);
             _hasPendingUIVisibility = false;
             if (!IsBound)
             {
@@ -196,11 +164,6 @@ namespace OpeningEnding
         private void OnDisable()
         {
             Release();
-        }
-
-        private void OnDestroy()
-        {
-            _continueAction?.Dispose();
         }
     }
 }

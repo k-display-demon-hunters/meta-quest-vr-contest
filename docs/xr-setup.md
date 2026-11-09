@@ -24,7 +24,7 @@
 
 UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInputModule은 프리팹에 미리 배치되어 있으며, 씬별 준비 함수나 패키지의 자동 생성에 의존해 구성하지 않는다. 리그의 초기 중복 제거는 실행 순서 -10000에서, EventSystem은 -1000에서 처리한다. `XRPlayerInputController.Start()`는 준비된 환경에 오른손 ray와 UI Trigger를 연결한다.
 
-픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `FactoryIntroInputController`는 공용 UI Trigger 바인딩을 사용하며, 연출용 이동·잡기 제한, ray 표시와 A 진행 입력을 관리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
+픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `CinematicMovementController`는 연출 중 이동·잡기와 레이 표시를 제어한다. `CinematicInputController`는 트리거를 2초간 눌러 건너뛰는 입력을 처리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
 
 클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas의 TrackedDeviceGraphicRaycaster와 버튼 콜백 연결은 각 UI에 둔다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
@@ -42,7 +42,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 - `XRGrabInteractable`은 XRI의 오른손 레이와 부착점으로 잡는다. 잡은 물체는 잡기 시작한 거리에서 오른손의 위치·방향 변화를 따라 이동한다.
 - 레이 계산과 선 표시 모두 오른손을 기준으로 유지한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
 - 레이 비활성화는 선 표시와 인터랙터를 함께 끄므로 현재 선택도 해제된다.
-- `TutorialInputSuppressed`는 공통 시점·레이 전환 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 왼손 Grip은 앱을 종료하지 않으며, 태블릿 설정의 앱 종료 확인창에서 종료한다. 사용 흐름은 [오프닝·엔딩 구현](factory-intro-ending.md)에 있다.
+- `TutorialInputSuppressed`는 공통 시점·레이 전환 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 왼손 Grip은 앱을 종료하지 않으며, 태블릿 설정의 앱 종료 확인창에서 종료한다. 사용 흐름은 [오프닝·엔딩 구현](cnn-documentary-cinematics.md)에 있다.
 
 `OnDisable()`은 씬 로드 이벤트 구독과 입력 액션을 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction을 해제한다.
 
@@ -104,9 +104,9 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 | 파일·메서드 | 역할 |
 | --- | --- |
 | [XRProjectSetup.ConfigureProject](../client/Assets/Editor/XRProjectSetup.cs) | Android·Standalone OpenXR 로더, 컨트롤러 프로필, Android 실행·렌더링 설정을 구성한다. 메뉴는 `Tools > XR > Configure Project`다. |
-| `XRProjectSetup.ScheduleStartupScene` / `OpenStartupScene` | 에디터 세션에서 한 번, 저장 경로·변경사항·루트 오브젝트가 없는 빈 씬이면 `FactoryIntro`를 연다. |
+| `XRProjectSetup.ScheduleStartupScene` / `OpenStartupScene` | 에디터 세션에서 한 번, 저장 경로·변경사항·루트 오브젝트가 없는 빈 씬이면 `CNNArchiveOpening`를 연다. |
 | `XRProjectSetup.AddLeftStickMovement` | 기존 리그 프리팹에 이동 컴포넌트를 구성한다. `ContinuousMoveProvider`가 있으면 기존 구성을 사용한다. |
-| `XRProjectSetup.ValidateProject` / `ValidateRig` | OpenXR 설정, 시작 씬 `FactoryIntro`의 존재 여부, 카메라·리그·태블릿·레이 참조를 검사한다. |
+| `XRProjectSetup.ValidateProject` / `ValidateRig` | OpenXR 설정, 시작 씬 `CNNArchiveOpening`의 존재 여부, 카메라·리그·태블릿·레이 참조를 검사한다. |
 | [QuestSetup.Configure](../client/Assets/Editor/QuestSetup.cs) | `Tools > CNN > Configure Quest VR`를 `XRProjectSetup.ConfigureProject()`에 연결한다. |
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.

@@ -39187,7 +39187,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 799d89f4320248d49542f4fdd17b7b8c, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.FactoryIntroInputController
+  m_EditorClassIdentifier: Assembly-CSharp::OpeningEnding.CinematicMovementController
 --- !u!114 &1381000247
 MonoBehaviour:
   m_ObjectHideFlags: 0

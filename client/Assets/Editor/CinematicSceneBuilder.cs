@@ -15,8 +15,8 @@ namespace CinematicEditor
 {
     public static class CinematicSceneBuilder
     {
-        private const string DataPath = "Assets/Data/Common/CinematicText.asset";
-        private const string ResultPath = "Assets/Data/Common/CinematicModelResult.asset";
+        private const string DataPath = "Assets/Data/OpeningEnding/CinematicText.asset";
+        private const string ResultPath = "Assets/Data/OpeningEnding/CinematicModelResult.asset";
         private static Font _font;
         private static Material _wood, _paper, _metal, _wall, _dark, _cyan, _amber, _green, _tile;
         private static CinematicText _content;
@@ -25,7 +25,7 @@ namespace CinematicEditor
         public static void Create()
         {
             _font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard/Pretendard-SemiBold.otf");
-            foreach (string path in new[] { "Assets/Data/Common", "Assets/Materials/Common", "Assets/Meshes/Common" })
+            foreach (string path in new[] { "Assets/Data/OpeningEnding", "Assets/Materials/OpeningEnding", "Assets/Meshes/OpeningEnding" })
             { Directory.CreateDirectory(path); }
             AssetDatabase.Refresh();
             _wood = Material("ArchiveOak", new Color(.23f,.125f,.064f));
@@ -66,8 +66,8 @@ namespace CinematicEditor
                 Line(15,16.6f,"그리고 오늘,"),
                 Line(16.8f,18,"{A:당신이 만든 눈.}"),
                 Line(18.2f,20,"그 시선의 끝에,\n당신의 CNN이 있다.") };
-            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Common/PostOffice1989.png");
-            Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNArchiveEnding/EverydayVisionAtlas.png");
+            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice1989.png");
+            Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/EverydayVisionAtlas.png");
             _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_1989_hall", Still=post, Source="OpenAI image_gen · 1989년 우체국 분위기 재구성 · 실제 기록사진 아님" };
             _content.Montage = new CinematicText.ArchiveClip[8];
             for (int i=0;i<8;i++)
@@ -79,13 +79,13 @@ namespace CinematicEditor
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
             _content.Rewind=Audio("Rewind"); _content.Ring=Audio("Ring"); _content.Stamp=Audio("Stamp");
             _content.Machine=Audio("Machine"); _content.Footsteps=Audio("Footsteps"); _content.CRT=Audio("CRT"); _content.Beep=Audio("Beep");
-            _content.Crowd=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Common/ArchiveCrowd.mp3");
-            _content.Printer=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Common/ArchivePrinter.mp3");
+            _content.Crowd=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/ArchiveCrowd.mp3");
+            _content.Printer=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/ArchivePrinter.mp3");
             _content.Credits="CNN 공장 · 체험 완료\n차세대디스플레이 경진대회\n\n숫자 하나가, 세상을 보는 눈이 되기까지";
             _content.AudioCredits="공간 이미지 · OpenAI 이미지 생성 / 역사적 분위기 재구성\n군중 · SpliceSound / 프린터 · viertelnachvier (Freesound, CC0)\n효과음 · Codex 보조 합성 / 서체 · Pretendard (OFL)";
             EditorUtility.SetDirty(_content);
         }
-        private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Common/Archive"+name+".wav");
+        private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Archive"+name+".wav");
 
         private static void Build(bool ending, CinematicModelResult result)
         {
@@ -109,7 +109,7 @@ namespace CinematicEditor
             CinematicSequenceManager sequence=system.gameObject.AddComponent<CinematicSequenceManager>();
             CinematicPresentationManager presentation=system.gameObject.AddComponent<CinematicPresentationManager>();
             CinematicInputController input=system.gameObject.AddComponent<CinematicInputController>();
-            FactoryIntroInputController gate=system.gameObject.AddComponent<FactoryIntroInputController>();
+            CinematicMovementController gate=system.gameObject.AddComponent<CinematicMovementController>();
             CinematicWorldController world=system.gameObject.AddComponent<CinematicWorldController>();
             CinematicAudioController audio=system.gameObject.AddComponent<CinematicAudioController>();
             CinematicTypeController type=system.gameObject.AddComponent<CinematicTypeController>();
@@ -123,8 +123,8 @@ namespace CinematicEditor
             CombineRoom(room);
             Assign(world,"_room",room);
             Transform portal=Primitive("Archive surface",stage,new Vector3(0,1.85f,3),new Vector3(1.6f,1.067f,1),_dark,PrimitiveType.Quad);
-            Material film=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Common/ArchiveFilm.mat");
-            if (film==null) { film=new Material(Shader.Find("CNN/ArchivePhoto")); AssetDatabase.CreateAsset(film,"Assets/Materials/Common/ArchiveFilm.mat"); }
+            Material film=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveFilm.mat");
+            if (film==null) { film=new Material(Shader.Find("CNN/ArchivePhoto")); AssetDatabase.CreateAsset(film,"Assets/Materials/OpeningEnding/ArchiveFilm.mat"); }
             portal.GetComponent<Renderer>().sharedMaterial=film;
             VideoPlayer video=system.gameObject.AddComponent<VideoPlayer>();
             video.playOnAwake=false; video.renderMode=VideoRenderMode.RenderTexture; video.audioOutputMode=VideoAudioOutputMode.None; video.waitForFirstFrame=true;
@@ -287,7 +287,7 @@ namespace CinematicEditor
             {
                 int index=(era+(side<0?7:1))%8;
                 CinematicText.ArchiveClip clip=_content.Montage[index];
-                string path="Assets/Materials/Common/ArchiveMontage"+index+".mat";
+                string path="Assets/Materials/OpeningEnding/ArchiveMontage"+index+".mat";
                 Material m=AssetDatabase.LoadAssetAtPath<Material>(path);
                 if(m==null){m=new Material(Shader.Find("CNN/ArchivePhoto"));AssetDatabase.CreateAsset(m,path);}
                 m.mainTexture=clip.Still;m.mainTextureScale=clip.UV.size;m.mainTextureOffset=clip.UV.position;m.SetFloat("_Brightness",.3f);
@@ -300,7 +300,7 @@ namespace CinematicEditor
                 for(int i=0;i<24;i++)
                 {
                     Transform card=Box("Photo paper",root,new Vector3((i%6-2.5f)*.28f,.6f+(i/6)*.2f,.5f),new Vector3(.24f,.16f,.005f),_paper);
-                    Material photo=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Common/ArchiveMontage"+(i%8)+".mat");
+                    Material photo=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveMontage"+(i%8)+".mat");
                     if(photo!=null){Primitive("Photograph",root,card.localPosition+new Vector3(0,0,-.006f),new Vector3(.22f,.14f,1),photo,PrimitiveType.Quad);}
                 }
             }
@@ -329,7 +329,7 @@ namespace CinematicEditor
             {
                 Mesh mesh=new Mesh {name="PostOffice_"+pair.Key.name,indexFormat=UnityEngine.Rendering.IndexFormat.UInt32};
                 mesh.CombineMeshes(pair.Value.ToArray());mesh.RecalculateBounds();
-                string path="Assets/Meshes/Common/"+mesh.name+".asset";
+                string path="Assets/Meshes/OpeningEnding/"+mesh.name+".asset";
                 Mesh saved=AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 if(saved==null){AssetDatabase.CreateAsset(mesh,path);saved=mesh;}
                 else {EditorUtility.CopySerialized(mesh,saved);UnityEngine.Object.DestroyImmediate(mesh);}
@@ -390,7 +390,7 @@ namespace CinematicEditor
         }
         private static Material Material(string name,Color color,bool unlit=false)
         {
-            string path="Assets/Materials/Common/"+name+".mat";
+            string path="Assets/Materials/OpeningEnding/"+name+".mat";
             Material material=AssetDatabase.LoadAssetAtPath<Material>(path);
             if(material==null){material=new Material(Shader.Find(unlit?"Universal Render Pipeline/Unlit":"Universal Render Pipeline/Lit"));AssetDatabase.CreateAsset(material,path);}
             material.color=color;material.enableInstancing=true;if(material.HasProperty("_Smoothness")){material.SetFloat("_Smoothness",.18f);}
@@ -398,7 +398,7 @@ namespace CinematicEditor
             int tile=System.Array.IndexOf(textured,name);
             if(tile>=0)
             {
-                material.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Common/ArchiveMaterials.png"));
+                material.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/ArchiveMaterials.png"));
                 material.SetTextureScale("_BaseMap",new Vector2(.495f,.495f));
                 material.SetTextureOffset("_BaseMap",new Vector2((tile%2)*.5f+.0025f,tile<2?.5025f:.0025f));
                 material.color=tile==0?new Color(.72f,.65f,.53f):new Color(.73f,.72f,.66f);

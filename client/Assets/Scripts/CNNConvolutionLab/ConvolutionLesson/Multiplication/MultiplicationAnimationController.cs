@@ -3,32 +3,26 @@ using UnityEngine;
 
 namespace CNNConvolution
 {
-    internal sealed class CalculationAnimationController
+    internal sealed class MultiplicationAnimationController
     {
         private const float PairHold = 0.18f;
         private const float OperandTravel = 0.35f;
         private const float EquationHold = 0.65f;
         private const float ProductTravel = 0.35f;
-        private const float RecordHold = 0.15f;
         private readonly RgbVolumeController _spatial;
-        private readonly LessonUIController _ui;
-        private readonly ConvolutionCalculation _calculation;
-        public CalculationAnimationController(RgbVolumeController spatial, LessonUIController ui, ConvolutionCalculation calculation)
+        public MultiplicationAnimationController(RgbVolumeController spatial)
         {
             _spatial = spatial;
-            _ui = ui;
-            _calculation = calculation;
         }
 
-        public IEnumerator MultiplyAndRecord(int channel, int index, float playbackSpeed)
+        public IEnumerator MultiplyAndRecord(int channel, int index, int inputIndex, int input, int weight, int product, float playbackSpeed)
         {
-            int product = _calculation.Product(channel, index);
-            _spatial.BeginProductDisplay(channel, index);
+            _spatial.BeginProductDisplay(channel, inputIndex, index);
             yield return new WaitForSecondsRealtime(PairHold);
-            Vector3 start = _spatial.InputCellPosition(channel, index);
+            Vector3 start = _spatial.InputCellPosition(channel, inputIndex);
             Vector3 weightStart = _spatial.KernelCellPosition(index);
             Vector3 meeting = _spatial.EquationPosition;
-            _spatial.ShowOperandCopies(channel, index);
+            _spatial.ShowOperandCopies(channel, inputIndex, index, input, weight);
             Vector3 inputEnd = meeting + Vector3.left * 0.14f;
             Vector3 weightEnd = meeting + Vector3.right * 0.14f;
             float operandDuration = OperandTravel / playbackSpeed;
@@ -39,14 +33,12 @@ namespace CNNConvolution
                 yield return null;
             }
             _spatial.MoveOperands(inputEnd, weightEnd);
-            _spatial.ShowProductEquation(channel, index);
+            _spatial.ShowProductEquation(channel, input, weight, product);
             yield return new WaitForSecondsRealtime(EquationHold);
             _spatial.MoveProduct(meeting);
             _spatial.ShowProductValue(index, product);
             yield return Fly(meeting, _spatial.ResultCellPosition(index), ProductTravel / playbackSpeed);
             _spatial.CommitProduct(index, product);
-            _ui.Feedback = $"곱한 값 {product}을 같은 위치에 기록했어요.";
-            yield return new WaitForSecondsRealtime(RecordHold);
         }
 
         private IEnumerator Fly(Vector3 start, Vector3 end, float duration)

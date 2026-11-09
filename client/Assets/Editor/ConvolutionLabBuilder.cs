@@ -39,7 +39,7 @@ namespace CNNConvolution.Editor
             LessonUIController ui = uiObject.GetComponent<LessonUIController>();
             GameObject blocks = (GameObject)PrefabUtility.InstantiatePrefab(
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/ConvolutionWorkbench.prefab"), content.transform);
-            RgbVolumeController spatial = blocks.GetComponent<RgbVolumeController>();
+            WorkbenchBuilder spatial = blocks.GetComponent<WorkbenchBuilder>();
             GameObject inspectionObject = (GameObject)PrefabUtility.InstantiatePrefab(
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CNNConvolutionLab/FeatureInspectionDesk.prefab"), content.transform);
             FeatureInspectionManager inspection = inspectionObject.GetComponent<FeatureInspectionManager>();

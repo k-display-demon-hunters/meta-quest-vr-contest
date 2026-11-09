@@ -6,15 +6,17 @@ namespace CNNConvolution
     // The output-grid controller sends a location; this lesson-owned object judges it.
     internal sealed class ConvolutionQuizController
     {
-        private readonly RgbVolumeController _spatial;
+        private readonly OutputSelectionController _selection;
+        private readonly EquationDisplayController _equations;
         private readonly LessonUIController _ui;
         private int _expectedIndex;
         private bool _answered;
         public bool Waiting { get; private set; }
 
-        public ConvolutionQuizController(RgbVolumeController spatial, LessonUIController ui)
+        public ConvolutionQuizController(ResultGridController result, EquationDisplayController equations, LessonUIController ui)
         {
-            _spatial = spatial;
+            _selection = new OutputSelectionController(result);
+            _equations = equations;
             _ui = ui;
         }
 
@@ -25,11 +27,11 @@ namespace CNNConvolution
             _ui.Explanation = "<b>이번 출력값은 어느 칸에 들어갈까요?</b>\n오른쪽 3×3 출력판에서 한 칸을 골라 주세요.";
             _ui.Guide = "힌트 · 필터가 오른쪽으로 한 칸 움직였어요.";
             _ui.Feedback = "칸을 레이로 가리키고 눌러 답을 선택하세요.";
-            _spatial.ClearEquations();
+            _equations.Clear();
             _answered = false;
             Waiting = true;
-            _spatial.OutputSelected += SubmitAnswer;
-            _spatial.BeginPositionQuiz();
+            _selection.Selected += SubmitAnswer;
+            _selection.SetEnabled(true);
             yield return new WaitUntil(() => _answered);
             _ui.Title = "<color=#93EDB6>정답</color>  ·  1행 2열이에요";
             _ui.Explanation = "이제 이 위치의 R · G · B를 계산해요.";
@@ -48,14 +50,14 @@ namespace CNNConvolution
             }
             _answered = true;
             Waiting = false;
-            _spatial.EndPositionQuiz();
+            _selection.SetEnabled(false);
         }
 
         public void Cancel()
         {
             Waiting = false;
-            _spatial.OutputSelected -= SubmitAnswer;
-            _spatial.EndPositionQuiz();
+            _selection.Selected -= SubmitAnswer;
+            _selection.SetEnabled(false);
         }
     }
 }

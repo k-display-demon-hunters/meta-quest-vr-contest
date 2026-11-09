@@ -6,16 +6,15 @@ namespace CNNConvolution
 {
     internal sealed class ResultSummaryController
     {
-        private readonly RgbVolumeController _spatial;
         private readonly LessonUIController _ui;
         private bool _confirmed;
         private bool _ready;
 
         public event Action ContinueRequested;
+        public event Action Confirmed;
 
-        public ResultSummaryController(RgbVolumeController spatial, LessonUIController ui)
+        public ResultSummaryController(LessonUIController ui)
         {
-            _spatial = spatial;
             _ui = ui;
         }
 
@@ -33,8 +32,7 @@ namespace CNNConvolution
             yield return new WaitUntil(() => _confirmed);
             _ui.NextRequested -= HandleConfirm;
             _ui.HideNext();
-            _spatial.ReleaseInteractions();
-            _spatial.gameObject.SetActive(false);
+            Confirmed?.Invoke();
             _ui.ShowOutputSummary(outputs, firstSums);
             _ready = true;
         }

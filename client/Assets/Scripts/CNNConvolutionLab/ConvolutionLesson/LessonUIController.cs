@@ -78,13 +78,13 @@ namespace CNNConvolution
                 if (_completedChannelSums[channel].HasValue)
                 {
                     _channelProgress[channel].text = $"{name} 완료 · 합 {_completedChannelSums[channel].Value}";
-                    _channelProgress[channel].color = RgbVolumeController.ChannelColor(channel);
+                    _channelProgress[channel].color = WorkbenchColors.Channel(channel);
                     _channelProgressBackgrounds[channel].color = new Color(0.08f, 0.12f, 0.14f);
                 }
                 else if (channel == _activeChannel)
                 {
                     _channelProgress[channel].text = name + " · 진행 중";
-                    _channelProgress[channel].color = RgbVolumeController.ChannelColor(channel);
+                    _channelProgress[channel].color = WorkbenchColors.Channel(channel);
                     _channelProgressBackgrounds[channel].color = new Color(0.22f, 0.29f, 0.33f);
                 }
                 else

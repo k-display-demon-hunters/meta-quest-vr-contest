@@ -8,8 +8,12 @@ namespace CNNConvolution
     public sealed class ConvolutionLessonManager : MonoBehaviour
     {
         [SerializeField] private LessonUIController _ui;
-        [SerializeField] private RgbVolumeController _spatial;
+        [SerializeField] private WorkbenchBuilder _spatial;
         [SerializeField] private Font _font;
+        private InputGridController _input;
+        private WorkbenchKernelController _kernel;
+        private ResultGridController _result;
+        private EquationDisplayController _equations;
         private bool _initialized;
         private ConvolutionCalculation _calculation;
         private KernelInteractionController _placement;
@@ -26,18 +30,13 @@ namespace CNNConvolution
 
         private void Awake()
         {
-            _placement = new KernelInteractionController(_spatial, _ui);
-            _multiplication = new MultiplicationController(_spatial, _ui);
-            _channelSum = new ChannelSumController(_spatial, _ui);
-            _outputRecording = new OutputRecordingController(_spatial, _ui);
-            _windowMovement = new WindowMovementController(_spatial, _ui);
-            _quiz = new ConvolutionQuizController(_spatial, _ui);
-            _summary = new ResultSummaryController(_spatial, _ui);
+            _summary = new ResultSummaryController(_ui);
         }
 
         private void OnEnable()
         {
             _summary.ContinueRequested += HandleContinue;
+            _summary.Confirmed += HideWorkbench;
         }
 
         public void BeginPractice()
@@ -46,14 +45,17 @@ namespace CNNConvolution
             if (!_initialized)
             {
                 _ui.Initialize();
-                _spatial.Initialize(_font);
+                InitializeWorkbench();
                 _initialized = true;
             }
             _calculation = ConvolutionCalculation.CreateExample();
             _ui.BeginCalculation();
             _spatial.gameObject.SetActive(true);
-            _spatial.SetData(_calculation);
-            _spatial.PrepareSlidingPractice();
+            _spatial.Show();
+            _input.Prepare(_calculation);
+            _kernel.SetWeights(_calculation);
+            _result.BeginProducts();
+            _equations.Clear();
             ProgressChanged?.Invoke(0f);
             StartCoroutine(RunLesson());
         }
@@ -64,13 +66,40 @@ namespace CNNConvolution
             StopAllCoroutines();
             if (_initialized)
             {
-                _placement.Cancel();
-                _quiz.Cancel();
                 _summary.Cancel();
-                _spatial.ReleaseInteractions();
+                ReleaseWorkbench();
             }
             _ui.gameObject.SetActive(false);
             _spatial.gameObject.SetActive(false);
+        }
+
+        private void InitializeWorkbench()
+        {
+            var workbench = _spatial.Build(_font);
+            _input = workbench.Input;
+            _kernel = workbench.Kernel;
+            _result = workbench.Result;
+            _equations = workbench.Equations;
+            _placement = new KernelInteractionController(workbench.Factory, _kernel, _spatial.PlacementTarget, _spatial.PlacementHint, _ui);
+            _multiplication = new MultiplicationController(workbench.Factory, _input, _kernel, _result, _equations, workbench.Number, _ui);
+            _channelSum = new ChannelSumController(workbench.Factory, _input, _result, _equations, workbench.Number, _ui);
+            _outputRecording = new OutputRecordingController(_kernel, _result, _equations, workbench.Number, _ui);
+            _windowMovement = new WindowMovementController(_input, _kernel, _equations, _ui);
+            _quiz = new ConvolutionQuizController(_result, _equations, _ui);
+        }
+
+        private void HideWorkbench()
+        {
+            ReleaseWorkbench();
+            _spatial.gameObject.SetActive(false);
+        }
+
+        private void ReleaseWorkbench()
+        {
+            _placement.Cancel();
+            _quiz.Cancel();
+            _multiplication.Cancel();
+            _channelSum.Cancel();
         }
 
         private IEnumerator RunLesson()
@@ -133,6 +162,7 @@ namespace CNNConvolution
         private void OnDisable()
         {
             _summary.ContinueRequested -= HandleContinue;
+            _summary.Confirmed -= HideWorkbench;
             StopPractice();
         }
     }

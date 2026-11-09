@@ -10,7 +10,8 @@ namespace CNNConvolution
         private const float PlacementDuration = 0.18f;
         private const float ReturnDuration = 0.3f;
         private enum PlacementState { Hidden, Waiting, Hovered, Moving, Ready, Returning, Settling, Complete }
-        private readonly RgbVolumeController _spatial;
+        private readonly WorkbenchKernelController _kernel;
+        private readonly KernelPlacementDisplayController _display;
         private readonly LessonUIController _ui;
         private PlacementState _state = PlacementState.Hidden;
         private Pose _motionStart;
@@ -20,25 +21,27 @@ namespace CNNConvolution
         private bool _aligned;
         private bool _active;
 
-        private bool IsWithinTarget => _spatial.IsKernelWithinTarget(LocalPlacementRadius);
+        private bool IsWithinTarget => _kernel.IsWithinTarget(LocalPlacementRadius);
 
-        public KernelInteractionController(RgbVolumeController spatial, LessonUIController ui)
+        public KernelInteractionController(WorkbenchPrimitiveFactory factory, WorkbenchKernelController kernel, Transform target,
+            UnityEngine.UI.Text hint, LessonUIController ui)
         {
-            _spatial = spatial;
+            _kernel = kernel;
+            _display = new KernelPlacementDisplayController(factory, kernel, target, hint);
             _ui = ui;
         }
 
         public IEnumerator Run()
         {
-            _spatial.KernelGrabbed += HandleKernelGrabbed;
-            _spatial.KernelReleased += HandleKernelReleased;
+            _kernel.Grabbed += HandleKernelGrabbed;
+            _kernel.Released += HandleKernelReleased;
             _ui.SkipRequested += HandleAssist;
-            _spatial.RestoreKernelParent();
-            _spatial.SetKernelPose(_spatial.KernelHomePose);
+            _kernel.RestoreParent();
+            _kernel.SetPose(_kernel.HomePose);
             _active = true;
             _aligned = false;
             _moving = false;
-            _spatial.SetKernelGrabEnabled(true);
+            _kernel.SetGrabEnabled(true);
             ShowState(PlacementState.Waiting);
             _ui.Title = "필터가 지나간 자리";
             _ui.Explanation = "손잡이를 잡아 입력판 맨 왼쪽 위의 점선에 놓으세요.";
@@ -51,11 +54,11 @@ namespace CNNConvolution
                 yield return null;
             }
             _active = false;
-            _spatial.SetKernelGrabEnabled(false);
+            _kernel.SetGrabEnabled(false);
             _ui.ShowSkip(false);
             yield return new WaitForSecondsRealtime(0.45f);
             Cancel();
-            _spatial.HideKernelTitle();
+            _kernel.SetTitleVisible(false);
         }
 
         public void Cancel()
@@ -64,19 +67,19 @@ namespace CNNConvolution
             _moving = false;
             _aligned = false;
             _state = PlacementState.Hidden;
-            _spatial.KernelGrabbed -= HandleKernelGrabbed;
-            _spatial.KernelReleased -= HandleKernelReleased;
+            _kernel.Grabbed -= HandleKernelGrabbed;
+            _kernel.Released -= HandleKernelReleased;
             _ui.SkipRequested -= HandleAssist;
-            _spatial.CancelKernelGrab();
-            _spatial.SetKernelGrabEnabled(false);
-            _spatial.HideKernelPlacement();
+            _kernel.CancelGrab();
+            _kernel.SetGrabEnabled(false);
+            _display.HidePlacement();
             _ui.ShowSkip(false);
         }
 
         private void HandleAssist()
         {
             if (!_active || _aligned || (_moving && _movingToTarget)) { return; }
-            _spatial.CancelKernelGrab();
+            _kernel.CancelGrab();
             BeginMotion(true);
         }
 
@@ -99,17 +102,17 @@ namespace CNNConvolution
                 _motionTime += deltaTime;
                 float duration = _movingToTarget ? PlacementDuration : ReturnDuration;
                 float t = Mathf.SmoothStep(0, 1, Mathf.Clamp01(_motionTime / duration));
-                Pose target = _movingToTarget ? _spatial.KernelTargetPose : _spatial.KernelHomePose;
-                _spatial.SetKernelPose(new Pose(
+                Pose target = _movingToTarget ? _kernel.TargetPose : _kernel.HomePose;
+                _kernel.SetPose(new Pose(
                     Vector3.Lerp(_motionStart.position, target.position, t),
                     Quaternion.Slerp(_motionStart.rotation, target.rotation, t)));
                 if (_motionTime >= duration)
                 {
                     _aligned = _movingToTarget;
-                    _spatial.RestoreKernelParent();
-                    _spatial.SetKernelPose(target);
+                    _kernel.RestoreParent();
+                    _kernel.SetPose(target);
                     _moving = false;
-                    if (!_aligned) { _spatial.SetKernelGrabEnabled(true); }
+                    if (!_aligned) { _kernel.SetGrabEnabled(true); }
                 }
             }
             RefreshState();
@@ -117,12 +120,12 @@ namespace CNNConvolution
 
         private void BeginMotion(bool toTarget)
         {
-            _spatial.RestoreKernelParent();
-            _motionStart = _spatial.KernelPose;
+            _kernel.RestoreParent();
+            _motionStart = _kernel.Pose;
             _moving = true;
             _movingToTarget = toTarget;
             _motionTime = 0;
-            _spatial.SetKernelGrabEnabled(false);
+            _kernel.SetGrabEnabled(false);
             RefreshState();
         }
 
@@ -130,8 +133,8 @@ namespace CNNConvolution
         {
             if (_aligned) { ShowState(PlacementState.Complete); }
             else if (_moving) { ShowState(_movingToTarget ? PlacementState.Settling : PlacementState.Returning); }
-            else if (_spatial.IsKernelSelected) { ShowState(IsWithinTarget ? PlacementState.Ready : PlacementState.Moving); }
-            else { ShowState(_spatial.IsKernelHovered ? PlacementState.Hovered : PlacementState.Waiting); }
+            else if (_kernel.IsSelected) { ShowState(IsWithinTarget ? PlacementState.Ready : PlacementState.Moving); }
+            else { ShowState(_kernel.IsHovered ? PlacementState.Hovered : PlacementState.Waiting); }
         }
 
         private void ShowState(PlacementState state)
@@ -151,7 +154,7 @@ namespace CNNConvolution
                 default: return;
             }
             bool ready = state == PlacementState.Ready || state == PlacementState.Settling || state == PlacementState.Complete;
-            _spatial.ShowKernelPlacement(message, ready, state == PlacementState.Complete,
+            _display.ShowPlacement(message, ready, state == PlacementState.Complete,
                 state == PlacementState.Waiting || state == PlacementState.Hovered,
                 state == PlacementState.Hovered || state == PlacementState.Ready);
         }

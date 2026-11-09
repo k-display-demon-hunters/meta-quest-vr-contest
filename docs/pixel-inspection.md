@@ -127,7 +127,7 @@ R 입력             G 입력             B 입력
 
 ## 구현 책임과 수명주기
 
-`client/Assets/Scripts/CNNConvolutionLab/`의 24개 소스는 씬 Manager 1개, 첫 체험 모듈 19개, 특징 판독 모듈 4개로 나눈다. 모든 소스의 namespace는 `CNNConvolution`으로 유지한다.
+`client/Assets/Scripts/CNNConvolutionLab/`의 35개 소스는 씬 Manager 1개, 첫 체험 모듈 30개, 특징 판독 모듈 4개로 나눈다. 모든 소스의 namespace는 `CNNConvolution`으로 유지한다.
 
 ```text
 CNNConvolutionLab/
@@ -136,18 +136,30 @@ CNNConvolutionLab/
 │   ├── ConvolutionLessonManager.cs
 │   ├── ConvolutionCalculation.cs
 │   ├── LessonUIController.cs
-│   ├── RgbVolumeController.cs
-│   ├── WorkbenchKernelController.cs
+│   ├── Workbench/
+│   │   ├── InputGridController.cs
+│   │   ├── WorkbenchKernelController.cs
+│   │   ├── ResultGridController.cs
+│   │   ├── EquationDisplayController.cs
+│   │   ├── FlyingNumberController.cs
+│   │   ├── SideNumberController.cs
+│   │   ├── WorkbenchColors.cs
+│   │   └── Construction/
+│   │       ├── WorkbenchBuilder.cs
+│   │       └── WorkbenchPrimitiveFactory.cs
 │   ├── KernelPlacement/
-│   │   └── KernelInteractionController.cs
+│   │   ├── KernelInteractionController.cs
+│   │   └── KernelPlacementDisplayController.cs
 │   ├── Multiplication/
 │   │   ├── MultiplicationController.cs
 │   │   ├── MultiplicationAnimationController.cs
-│   │   └── MultiplicationContent.cs
+│   │   ├── MultiplicationContent.cs
+│   │   └── MultiplicationDisplayController.cs
 │   ├── ChannelSum/
 │   │   ├── ChannelSumController.cs
 │   │   ├── ChannelSumAnimationController.cs
-│   │   └── ChannelSumContent.cs
+│   │   ├── ChannelSumContent.cs
+│   │   └── ChannelSumDisplayController.cs
 │   ├── OutputRecording/
 │   │   ├── OutputRecordingController.cs
 │   │   ├── OutputRecordingAnimationController.cs
@@ -156,7 +168,8 @@ CNNConvolutionLab/
 │   │   ├── WindowMovementController.cs
 │   │   └── WindowMovementContent.cs
 │   ├── Quiz/
-│   │   └── ConvolutionQuizController.cs
+│   │   ├── ConvolutionQuizController.cs
+│   │   └── OutputSelectionController.cs
 │   └── ResultSummary/
 │       └── ResultSummaryController.cs
 └── FeatureInspection/
@@ -170,7 +183,7 @@ CNNConvolutionLab/
 
 두 최상위 모듈은 서로의 입력·계산 결과를 전달하거나 내부 클래스를 참조하지 않는다. 씬 Manager가 `ConvolutionLessonManager`와 `FeatureInspectionManager`를 통해 시작·종료를 요청하고 이벤트를 받아 진행 순서를 조율한다. 폴더 구분은 책임과 소유 관계를 나타내며, 별도 asmdef나 새로운 접근 제한 체계는 추가하지 않는다.
 
-`KernelInteractionController.cs`와 해당 `.meta`를 `KernelPlacement/`로 함께 이동하고 GUID를 보존했다. 곱셈 Controller·AnimationController와 기능 폴더는 `.meta` GUID를 보존하여 이동했다. 중간 CalculationLesson 폴더와 전용 Manager는 제거하고 순서 조율은 ConvolutionLessonManager에 통합했다. 나머지 기존 스크립트의 경로·GUID는 유지한다. 씬·프리팹의 직렬화 필드와 버튼 콜백 이름은 유지하며, 에디터 구성 도구와 프리팹·재질 등은 각 에셋 종류의 기존 위치에 둔다. 아래 표에서 두 모듈의 경로는 위 스크립트 루트를 기준으로 한다.
+`KernelInteractionController.cs`와 해당 `.meta`를 `KernelPlacement/`로 함께 이동하고 GUID를 보존했다. 곱셈 Controller·AnimationController와 기능 폴더는 `.meta` GUID를 보존하여 이동했다. 이전 작업대 스크립트의 GUID와 직렬화 필드는 WorkbenchBuilder에 이어서 사용한다. 중간 CalculationLesson 폴더와 전용 Manager는 제거하고 순서 조율은 ConvolutionLessonManager에 통합했다. 나머지 기존 스크립트의 경로·GUID는 유지한다. 씬·프리팹의 직렬화 필드와 버튼 콜백 이름은 유지하며, 에디터 구성 도구와 프리팹·재질 등은 각 에셋 종류의 기존 위치에 둔다. 아래 표에서 두 모듈의 경로는 위 스크립트 루트를 기준으로 한다.
 
 | 파일·모듈 | 책임 |
 | --- | --- |
@@ -194,8 +207,19 @@ CNNConvolutionLab/
 | `ConvolutionLesson/WindowMovement/WindowMovementContent` | 이동 안내 문구 |
 | `ConvolutionLesson/Quiz/ConvolutionQuizController` | 퀴즈 진입점. 전달받은 정답 인덱스로 판정·재시도·입력 종료 처리 |
 | `ConvolutionLesson/ResultSummary/ResultSummaryController` | 요약 진입점. 결과 확인 대기·작업대 숨김·요약 표시·후속 진행 요청 |
-| `ConvolutionLesson/RgbVolumeController` | 공유 작업대 진입점. 입력·필터·결과 표시, 사본 이동, 출력칸 입력과 내부 조작 객체 생성 |
-| `ConvolutionLesson/WorkbenchKernelController` | 작업대 내부 XR 컴포넌트 생성·잡기 이벤트·물리 위치·배치 피드백 표시·잡기 해제 |
+| `ConvolutionLesson/Workbench/InputGridController` | RGB 입력 셀 생성·값·채널 표시, 입력 셀과 필터 목표 위치 |
+| `ConvolutionLesson/Workbench/WorkbenchKernelController` | 필터 본체·가중치, XR 잡기·놓기, 위치와 잡기 해제 |
+| `ConvolutionLesson/Workbench/ResultGridController` | 공유 3×3 셀의 값·표시·강조와 곱셈 결과판·출력판 전환 |
+| `ConvolutionLesson/Workbench/EquationDisplayController` | 곱셈식·합산식·합계판 표시와 위치 조회 |
+| `ConvolutionLesson/Workbench/FlyingNumberController` | 이동 숫자의 값·색·크기·위치·가시성 |
+| `ConvolutionLesson/Workbench/SideNumberController` | 입력·결과 셀의 측면 숫자 동기화와 가시성 |
+| `ConvolutionLesson/Workbench/WorkbenchColors` | RGB 채널색과 계산 강조색 |
+| `ConvolutionLesson/Workbench/Construction/WorkbenchBuilder` | 프리팹 기준점으로 공유 오브젝트 최초 생성, 측면 숫자 갱신, 런타임 자원 해제 |
+| `ConvolutionLesson/Workbench/Construction/WorkbenchPrimitiveFactory` | 타일·라벨·프레임 생성, 공용 좌표 변환과 런타임 재질 |
+| `ConvolutionLesson/KernelPlacement/KernelPlacementDisplayController` | 목표 윤곽·체크·잡기 화살표·힌트 표시 |
+| `ConvolutionLesson/Multiplication/MultiplicationDisplayController` | 가중치 사본, 입력·가중치 강조, 연결선, 곱셈 표시 조합 |
+| `ConvolutionLesson/ChannelSum/ChannelSumDisplayController` | 아홉 합산 사본과 원래 결과 숫자의 표시·복원 |
+| `ConvolutionLesson/Quiz/OutputSelectionController` | 출력 셀 선택 영역·버튼·레이 입력과 셀 인덱스 전달 |
 | `ConvolutionLesson/LessonUIController` | 공유 안내 UI 표시, RGB 카드, 메모, 고정 버튼과 결과 요약 표시·클릭 이벤트 |
 | `FeatureInspection/FeatureInspectionManager` | A/B·회전·복원·로컬 완료 상태와 내부 동작 조율 |
 | `FeatureInspection/FeatureInspectionCalculation` | 고정 비교 표본과 부호 있는 필터 점수 계산 |
@@ -207,9 +231,11 @@ CNNConvolutionLab/
 
 현재 위치는 `ConvolutionLessonManager`가 선택한다. `ConvolutionCalculation.ForWindow`는 같은 고정 입력을 공유하는 새 읽기 전용 계산 객체를 반환한다. 기존 객체의 위치를 바꾸지 않으며 입력 배열도 외부로 공개하지 않는다. 필터 이동 연출이 끝난 뒤 Manager가 새 계산 객체를 선택해 계산 기능에 전달한다. 공유 작업대는 현재 계산 객체를 보관하지 않으며 초기 격자 설정 외에는 전달받은 값만 표시한다. 계산 기능은 해당 객체를 읽고, 퀴즈는 정답 인덱스만 받으며, 요약은 새로 계산한 출력 배열과 첫 RGB 합 배열만 받는다. 단계마다 계산 객체를 수정하거나 다음 단계를 호출하지 않는다.
 
-공유 작업대와 안내 UI는 `ConvolutionLesson/` 루트에 둔다. 단계는 이들의 메서드·값·로컬 이벤트를 사용하며 내부 Text·Renderer·XR 컴포넌트를 전달받지 않는다. 작업대는 단계 진입점을 참조하지 않으며, 내부 `WorkbenchKernelController`가 실제 XR 객체와 표시를 다룬다. 작업대의 런타임 격자·문자 생성은 유지한다. 숫자 연출의 코루틴은 기능별 AnimationController에, 필터 이동은 WindowMovementController에 둔다. 작업대는 위치 조회와 즉시 표시 메서드를 제공한다.
+공유 작업대는 `ConvolutionLesson/Workbench/`에 둔다. `ConvolutionLessonManager`가 첫 실행에서 WorkbenchBuilder로 공유 컴포넌트를 만들고 각 기능에 필요한 컴포넌트만 연결한다. 의존 방향은 `ConvolutionLessonManager → 기능 Controller → 기능 내부 표시·입력 → 공유 작업대 컴포넌트`다. 공유 작업대는 기능의 진입점이나 진행 순서를 참조하지 않는다.
 
-`ConvolutionLessonManager`는 `Awake`에서 일곱 기능 객체를 만들고 `OnEnable`/`OnDisable`에서 요약의 후속 진행 이벤트를 연결·해제한다. 배치·퀴즈·요약의 입력 구독은 각 단계의 실행 구간에만 유지한다. 배치와 퀴즈는 코루틴 반환으로 완료를 알리고, 요약은 결과 확인 후 반환하여 파트 완료를 알린 뒤 후속 버튼의 `ContinueRequested`를 기다린다. `RequestNext`는 클릭만 알리며 결과 확인 대기 상태는 요약 단계가 소유한다.
+결과판은 곱셈 결과와 합성곱 출력을 같은 3×3 셀에 표시한다. 퀴즈의 OutputSelectionController는 초기 생성 시 기존 셀 Canvas에 버튼과 XR Raycaster를 연결해 선택 위치를 유지한다. 퀴즈 내부에서만 선택 입력을 켜고 끄며, 필터 이동은 퀴즈를 조작하지 않는다. 곱셈과 합산의 전용 사본은 각각의 표시 Controller가 생성·관리한다. 이동 숫자 하나는 곱셈·합산·출력 기록에서 공유한다.
+
+`ConvolutionLessonManager`는 `Awake`에서 요약 기능을 만들고 첫 체험 시작 때 나머지 기능을 연결한다. `OnEnable`/`OnDisable`에서 요약의 후속 진행 이벤트를 연결·해제한다. 배치·퀴즈·요약의 입력 구독은 각 단계의 실행 구간에만 유지한다. 배치와 퀴즈는 코루틴 반환으로 완료를 알리고, 요약의 결과 확인 이벤트를 받은 Manager가 작업대를 정리하고 숨긴다. 요약은 표시를 갱신한 뒤 반환하여 파트 완료를 알리고 후속 버튼의 `ContinueRequested`를 기다린다. `RequestNext`는 클릭만 알리며 결과 확인 대기 상태는 요약 단계가 소유한다.
 
 종료·컴포넌트 비활성화에서는 Manager가 먼저 소유 코루틴을 중단하고 단계의 `Cancel`로 입력 구독을 해제한 뒤 공유 작업대의 숫자 사본, 퀴즈 입력, 필터 잡기와 강조를 정리한다. 자동 배치·비활성화·폐기에 의한 잡기 취소는 작업대가 사용자 손 놓기 이벤트로 전달하지 않으므로 별도 복귀 동작을 시작하지 않는다. 첫 합계 중간에 중단해도 중앙 결과 글자의 숨김 상태를 복원한다. 재시작은 새 계산 객체와 출력판·카드 상태로 시작한다. 작업대 내부 XR 리스너는 생성부터 폐기까지 유지하고 폐기 시 해제한다.
 
@@ -229,10 +255,12 @@ CNNConvolutionLab/
 
 ### 합성곱 수업의 기능별 변경 위치
 
-의존 방향은 `ConvolutionLessonManager → 기능 Controller → 해당 Content·AnimationController`다. Controller는 공유 UI·작업대에 표시를 요청하며 AnimationController는 작업대만 참조한다. Content는 Unity 컴포넌트를 참조하지 않는다. 기능 간 직접 참조와 상위 Manager 역참조는 없다. 단순한 필터 이동은 별도 AnimationController 없이 WindowMovementController에서 처리한다.
+의존 방향은 `ConvolutionLessonManager → 기능 Controller → 해당 Content·AnimationController`다. Controller는 공유 UI·작업대에 표시를 요청하며 AnimationController는 기능 내부 표시 담당 또는 필요한 공유 작업대 컴포넌트를 참조한다. Content는 Unity 컴포넌트를 참조하지 않는다. 기능 간 직접 참조와 상위 Manager 역참조는 없다. 단순한 필터 이동은 별도 AnimationController 없이 WindowMovementController에서 처리한다.
 
 문구·수식 변경은 해당 Content, 이동 경로·시간 변경은 해당 AnimationController, 기능 내부 진행은 해당 Controller, 기능 사이 순서는 ConvolutionLessonManager에서 수정한다. 현재 위치·전체 진행률·퀴즈 시점은 ConvolutionLessonManager가 소유한다. 기존 코루틴 소유자와 중단 후 공유 작업대 정리 순서는 유지한다.
 
 2026-11-09 계산 기능 분리: 기존 첫 R 상세 계산, 첫 G/B 곱 표시, 이후 RGB 요약, 출력 순서와 대기 시간, GUID·호출 관계를 코드로 대조했다. Unity 실행·컴파일·빌드·테스트는 수행하지 않았다.
 
 중간 계층 제거: 네 계산 기능 폴더를 ConvolutionLesson 바로 아래로 이동하고 전체 실행 순서를 ConvolutionLessonManager에 모았다. 기능 내부의 연출·문구·계산값·대기 시간과 중단 정리 방식은 유지한다.
+
+작업대 분리 후 코드·프리팹·씬의 스크립트 참조와 기능별 의존 관계를 정적으로 대조했다. 런타임 생성 방식, 기준점, 기존 버튼 콜백과 수업 순서를 유지한다.

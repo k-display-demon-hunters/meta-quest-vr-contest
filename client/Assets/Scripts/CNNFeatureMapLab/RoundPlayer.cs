@@ -296,6 +296,17 @@ namespace FeatureMapCorridor
                     hints.AddRecap(_maps[Layer-1][i].Position+Vector3.up*1.6f,names,CorridorDialogue.MapId(Layer,i),colors);
         }
 
+        internal void FoldFilters() => _filter.SetExpanded(false,true);
+
+        internal void FinishStage()
+        {
+            if (Stage == 2) { Scan(IsOutput ? 3.5f : 10f); }
+            if (Stage == 5) { Merge(1.9f); }
+            if (Stage == 6) { _output.FinishMatch(); }
+            if (Stage == 7) { _output.FinishFill(); }
+            if (Stage == 8) { _output.Complete(); }
+        }
+
         internal void Close()
         {
             _filter.Hide();

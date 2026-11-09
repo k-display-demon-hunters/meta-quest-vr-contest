@@ -163,6 +163,8 @@ namespace FeatureMapCorridor
 
         internal void Clear()
         {
+            // Drop old triangle indices before the next tour starts with zero vertices.
+            _mesh.Clear();
             _running = false;
             _accumulated.enabled = false;
             _input.ClearHighlight();

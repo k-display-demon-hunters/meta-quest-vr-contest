@@ -55,7 +55,7 @@ namespace FeatureMapCorridor
             {
                 _foldedPositions[i] = _card[i].localPosition;
                 _templates[i].Bind(visuals);
-                visuals.Listen(_cardHits[i], _ => Press());
+                visuals.Listen(_cardHits[i], _ => Expand(), _ => SetExpanded(false,false));
             }
             Hide();
         }
@@ -152,6 +152,13 @@ namespace FeatureMapCorridor
             _pressed = float.NegativeInfinity;
             _connected = true;
             SetExpanded(false,true);
+        }
+
+        private void Expand()
+        {
+            if (_expanded) { return; }
+            SetExpanded(true,false);
+            ExpansionChanged?.Invoke(true);
         }
 
         private void Press()

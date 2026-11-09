@@ -29,6 +29,8 @@ namespace FeatureMapCorridor
 
         [SerializeField] private CorridorTheme _theme;
         internal CorridorTheme Theme => _theme;
+        internal TMP_FontAsset DebugFont => _korean;
+        internal CorridorPointer Pointer { get; set; }
 
         private readonly List<Action> _subscribe = new List<Action>();
         private readonly List<Action> _unsubscribe = new List<Action>();
@@ -46,21 +48,19 @@ namespace FeatureMapCorridor
             _unsubscribe.Clear();
         }
 
-        internal void Listen(Collider collider, Action<Vector3> clicked)
+        internal void Listen(Collider collider, Action<Vector3> clicked,
+            Action<Vector3> doubleClicked = null, Action<Vector3?> hovered = null)
         {
-            XRSimpleInteractable interactable = collider.GetComponent<XRSimpleInteractable>();
-            UnityEngine.Events.UnityAction<UnityEngine.XR.Interaction.Toolkit.ActivateEventArgs> listener = args =>
-            {
-                if (args.interactorObject is XRRayInteractor ray && ray.TryGetCurrent3DRaycastHit(out RaycastHit hit)
-                    && hit.collider == collider) { clicked(hit.point); }
-            };
-            _subscribe.Add(() => interactable.activated.AddListener(listener));
-            _unsubscribe.Add(() => interactable.activated.RemoveListener(listener));
+            Pointer.Register(collider, clicked, doubleClicked, hovered);
         }
 
         internal void Listen(Button button, Action clicked)
         {
-            UnityEngine.Events.UnityAction listener = () => clicked();
+            UnityEngine.Events.UnityAction listener = () =>
+            {
+                Pointer.ButtonPressed(button.GetComponentInChildren<Text>(true).text);
+                clicked();
+            };
             _subscribe.Add(() => button.onClick.AddListener(listener));
             _unsubscribe.Add(() => button.onClick.RemoveListener(listener));
         }
@@ -284,6 +284,7 @@ namespace FeatureMapCorridor
             rect.localScale = Vector3.one * (nested ? 1 : .001f);
             rect.sizeDelta = size;
             if (nested) { EnableNestedButton(button,1); }
+            button.AddComponent<CorridorMouseRaycaster>().ignoreReversedGraphics = false;
             var controller = button.GetComponent<WorldUIButtonController>();
             var text = button.GetComponentInChildren<Text>();
             text.font = Theme.Korean;
@@ -316,6 +317,7 @@ namespace FeatureMapCorridor
 #if UNITY_EDITOR
         internal static void Click(Collider collider, Action<Vector3> clicked, bool trigger = true)
         {
+            collider.gameObject.layer = LayerMask.NameToLayer("CorridorInteractable");
             // XRI's collider discovery skips triggers. Register the collider before enabling trigger mode.
             var interactable = collider.gameObject.AddComponent<XRSimpleInteractable>();
             interactable.colliders.Add(collider);

@@ -69,6 +69,11 @@ namespace FeatureMapCorridor
         private bool _previousPostProcessing;
         private bool _standalone;
         private Camera _camera;
+        private CorridorPointer _pointer;
+        [SerializeField] private bool _showDebug;
+        private int _navigationFrame = -1;
+        private Phase _loggedPhase;
+        private int _loggedStage = -1;
 
         public LearningStageId StageId => LearningStageId.FeatureMap;
         public float Progress { get; private set; }
@@ -81,6 +86,8 @@ namespace FeatureMapCorridor
             _provider.Initialize();
             _model = _provider.Model;
             _visuals.InitializeRuntime();
+            _pointer = new CorridorPointer(_root);
+            _visuals.Pointer = _pointer;
             _input.Bind(_visuals, InputSelected, DigitSelected);
             _maps = new FeatureMapPanel[_layers.Length][];
             for (int l = 0; l < _layers.Length; l++)
@@ -101,7 +108,7 @@ namespace FeatureMapCorridor
             _round.Bind(_visuals, _model, _input, _maps, _output);
             _subtitle.Bind(_visuals, Previous, Next);
             _hints.Bind(_visuals);
-            _completion.Bind();
+            _completion.Bind(_visuals);
             _door.Bind(_visuals);
             Recalculate();
             ShowStart();
@@ -209,9 +216,20 @@ namespace FeatureMapCorridor
                     _renderCamera.renderPostProcessing = true;
                     if (_standalone) { _camera.backgroundColor = _theme.Void; }
                 }
-                else { RestoreCamera(); }
+                else { RestoreCamera(); _pointer.Suspend(); }
             }
             if (!_roomVisible) { return; }
+            _pointer.Tick(_camera);
+            int debugStage = _phase == Phase.Tour ? _tourStage : _round.Stage;
+            if (_loggedPhase != _phase || _loggedStage != debugStage)
+            {
+                CorridorPointer.Log($"State: {_phase}, step {debugStage}");
+                _loggedPhase = _phase;
+                _loggedStage = debugStage;
+            }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _pointer.DebugHUD(_showDebug, $"{_phase} / {debugStage} {HoveredCell()}", _camera, _visuals.DebugFont);
+#endif
             float now = Time.unscaledTime;
             float delta = Time.unscaledDeltaTime;
             _input.Tick(now);
@@ -252,19 +270,21 @@ namespace FeatureMapCorridor
 
         private void DigitSelected(int digit)
         {
-            if (_digit == digit || CanExit) { return; }
+            if (_digit == digit) { return; }
             _digit = digit;
-            if (_phase == Phase.Round || _phase == Phase.Recap)
-            {
-                _round.Close();
-                _links.Dimmed = false;
-                _waitingForFilter = false;
-                _filterButtonPending = false;
-                if (_mandatoryRound) { AwaitRound(); }
-                else { RestoreOptional(); }
-            }
+            bool inRound = _phase == Phase.Round;
+            int stage = _round.Stage;
+            if (inRound || _phase == Phase.Recap) { _round.Close(); }
             Recalculate();
-            if (_phase == Phase.AwaitRound) { AwaitRound(); }
+            if (inRound)
+            {
+                _round.Start(_round.Layer,_round.Map,_digit,_round.Index,_values,_forward);
+                if (_round.IsOutput && stage >= 7) { _output.StartMatch(); _output.FinishMatch(); }
+                if (_round.IsOutput && stage >= 8) { _output.StartFill(true); _output.FinishFill(); }
+                ShowRoundStage(stage);
+                _round.FoldFilters();
+            }
+            else if (_phase == Phase.AwaitRound) { AwaitRound(); }
         }
 
         private void ToggleZone(int zone) => Highlight(_builder.HighlightedZone == zone ? -1 : zone);
@@ -325,9 +345,8 @@ namespace FeatureMapCorridor
         private void MapSelected(int layer, int map, int index)
         {
             if (_phase == Phase.Round || _phase == Phase.Recap || CanExit) { return; }
-            if (map == 0)
+            if (_phase == Phase.AwaitRound && layer == _mandatoryLayer && map == 0)
             {
-                if (_phase != Phase.AwaitRound || layer != _mandatoryLayer) { return; }
                 BeginRound(layer,map,index,true);
                 return;
             }
@@ -355,8 +374,8 @@ namespace FeatureMapCorridor
 
         private void FilterChanged(bool expanded)
         {
-            if (_phase != Phase.Round || _round.Stage > 1) { return; }
-            _waitingForFilter = !expanded;
+            if (_phase != Phase.Round || _round.Stage != 0 || !expanded) { return; }
+            _waitingForFilter = false;
             _filterButtonPending = expanded;
             _round.Show(expanded ? 1 : 0,true);
             RenderRound();
@@ -467,6 +486,8 @@ namespace FeatureMapCorridor
 
         private void Next()
         {
+            if (_navigationFrame == Time.frameCount) { return; }
+            _navigationFrame = Time.frameCount;
             switch (_phase)
             {
                 case Phase.Tour:
@@ -476,6 +497,7 @@ namespace FeatureMapCorridor
                     break;
                 case Phase.Round:
                     if (_waitingForFilter || _filterButtonPending) { return; }
+                    _round.FinishStage();
                     if (_round.Stage == _round.LastStage) { ShowRecap(); }
                     else { ShowRoundStage(_round.IsOutput && _round.Stage == 3 ? 5 : _round.Stage+1); }
                     break;
@@ -491,6 +513,8 @@ namespace FeatureMapCorridor
 
         private void Previous()
         {
+            if (_navigationFrame == Time.frameCount) { return; }
+            _navigationFrame = Time.frameCount;
             switch (_phase)
             {
                 case Phase.Tour:
@@ -567,6 +591,26 @@ namespace FeatureMapCorridor
             }
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private string HoveredCell()
+        {
+            string cell = _input.Picture.HoverCell;
+            foreach (var layer in _maps)
+                foreach (var panel in layer) if (panel.HoverCell.Length > 0) { cell = panel.HoverCell; }
+            for (int i = 0; i < 3; i++)
+                if (_input.Channel(i).HoverCell.Length > 0) { cell = _input.Channel(i).HoverCell; }
+            return cell;
+        }
+
+        private void OnGUI()
+        {
+            if (!_showDebug || !_roomVisible || _pointer == null) { return; }
+            string cell = HoveredCell();
+            GUI.Box(new Rect(12,12,520,125),$"[Corridor] {_phase} / {(_phase == Phase.Tour ? _tourStage : _round.Stage)}\n" +
+                $"Hover: {_pointer.HoverName} {cell}\nClick: {_pointer.LastClick}\nUI: {_pointer.LastButton}");
+        }
+#endif
+
         public IEnumerator EndSession() { yield break; }
         private void RestoreCamera()
         {
@@ -580,6 +624,7 @@ namespace FeatureMapCorridor
             if (!Application.isPlaying) { return; }
             _builder.ZonePressed -= ToggleZone;
             _round.FilterPressed -= FilterChanged;
+            _pointer.Suspend();
             _visuals.DisableInput();
             _round.DisableInput();
             RestoreCamera();
@@ -590,6 +635,7 @@ namespace FeatureMapCorridor
         private void OnDestroy()
         {
             if (!Application.isPlaying) { return; }
+            _pointer.Dispose();
             _visuals.Dispose();
         }
     }

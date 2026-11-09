@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3373892815106050277}
   - component: {fileID: 2220427531188033633}
   - component: {fileID: 8671591047747204434}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 1-1 : \uC22B\uC790 \uCE78 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -419,7 +419,7 @@ GameObject:
   - component: {fileID: 3900974294202054402}
   - component: {fileID: 2731907346738548995}
   - component: {fileID: 6915106630315866060}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4739,6 +4739,7 @@ GameObject:
   - component: {fileID: 1076247247840550411}
   - component: {fileID: 6035514146894388103}
   - component: {fileID: 7541540505911645050}
+  - component: {fileID: 8800000000000000004}
   m_Layer: 5
   m_Name: WorldUIButton(Clone)
   m_TagString: Untagged
@@ -4923,9 +4924,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -5453,7 +5454,7 @@ GameObject:
   - component: {fileID: 8083834990914361504}
   - component: {fileID: 7730880774385487925}
   - component: {fileID: 4246837980742714497}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9912,7 +9913,7 @@ GameObject:
   - component: {fileID: 792088025739950855}
   - component: {fileID: 5203818395695833660}
   - component: {fileID: 9074082468398008468}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 3-2 : \uAE34 \uAC00\uB85C \uC120"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -12571,7 +12572,7 @@ GameObject:
   - component: {fileID: 3380440609849594392}
   - component: {fileID: 2508732960531092150}
   - component: {fileID: 1704937749301351462}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Walk surface
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14248,7 +14249,7 @@ GameObject:
   - component: {fileID: 5713805771089417843}
   - component: {fileID: 4964310728664990670}
   - component: {fileID: 6000128232251869123}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Card face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -17489,7 +17490,7 @@ GameObject:
   - component: {fileID: 5783517785646569364}
   - component: {fileID: 8474151217849246970}
   - component: {fileID: 3541360135939748672}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Glass tank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22226,7 +22227,7 @@ GameObject:
   - component: {fileID: 5496881004082229922}
   - component: {fileID: 5390065816026489348}
   - component: {fileID: 4809645172621630682}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Walk surface
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22778,6 +22779,7 @@ GameObject:
   - component: {fileID: 6702882489947885681}
   - component: {fileID: 3865043610966315803}
   - component: {fileID: 5123315899458758688}
+  - component: {fileID: 8800000000000000005}
   m_Layer: 5
   m_Name: WorldUIButton(Clone)
   m_TagString: Untagged
@@ -22962,9 +22964,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -24073,7 +24075,7 @@ GameObject:
   - component: {fileID: 524364084082750804}
   - component: {fileID: 523449821891733551}
   - component: {fileID: 4881075391937580547}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Walk surface
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -25920,6 +25922,7 @@ GameObject:
   - component: {fileID: 9187384442061884306}
   - component: {fileID: 465663713207723771}
   - component: {fileID: 7844252672299119660}
+  - component: {fileID: 8800000000000000006}
   m_Layer: 5
   m_Name: WorldUIButton(Clone)
   m_TagString: Untagged
@@ -26104,9 +26107,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -26433,6 +26436,7 @@ GameObject:
   - component: {fileID: 3471650491023042181}
   - component: {fileID: 1983052966645816899}
   - component: {fileID: 4718446505655453116}
+  - component: {fileID: 8800000000000000007}
   m_Layer: 5
   m_Name: Primary Button
   m_TagString: Untagged
@@ -26617,9 +26621,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -28646,7 +28650,7 @@ GameObject:
   - component: {fileID: 6918954631132898880}
   - component: {fileID: 4836693112948931178}
   - component: {fileID: 7831513266018582113}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 3-4 : \uC120 \uB05D \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -30476,6 +30480,7 @@ GameObject:
   - component: {fileID: 2584512570431688764}
   - component: {fileID: 354717704266154348}
   - component: {fileID: 3863508194192546692}
+  - component: {fileID: 8800000000000000008}
   m_Layer: 0
   m_Name: Corridor subtitles
   m_TagString: Untagged
@@ -37942,7 +37947,7 @@ GameObject:
   - component: {fileID: 1465409072877113884}
   - component: {fileID: 8394984611466423837}
   - component: {fileID: 2940536213440593004}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -39197,7 +39202,7 @@ GameObject:
   - component: {fileID: 8671318298172844468}
   - component: {fileID: 145684170379699454}
   - component: {fileID: 7298665081177896556}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45387,7 +45392,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2143991021779259648}
-  m_Layer: 0
+  - component: {fileID: 8800000000000000001}
+  m_Layer: 8
   m_Name: "Input channel \uC785\uB825 R"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48095,7 +48101,7 @@ GameObject:
   - component: {fileID: 8320122104505202672}
   - component: {fileID: 1504466229176429280}
   - component: {fileID: 3821945359916134824}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Card face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -48868,7 +48874,7 @@ GameObject:
   - component: {fileID: 8576580500889514008}
   - component: {fileID: 7564809196736196720}
   - component: {fileID: 2577673372744308566}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Card face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -52749,7 +52755,7 @@ GameObject:
   - component: {fileID: 7670977839476589795}
   - component: {fileID: 2403218946713267620}
   - component: {fileID: 8655993029457990263}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Glass tank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -55239,7 +55245,7 @@ GameObject:
   - component: {fileID: 1399056289394191590}
   - component: {fileID: 1822092072749212484}
   - component: {fileID: 6376369429360858883}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 3-3 : \uAE34 \uC138\uB85C \uC120"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -57155,7 +57161,7 @@ GameObject:
   - component: {fileID: 1698186797594914046}
   - component: {fileID: 2237457433261770724}
   - component: {fileID: 5436056639543809530}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 3-1 : \uAEBE\uC778 \uACF3 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60175,7 +60181,7 @@ GameObject:
   - component: {fileID: 2319635371151038692}
   - component: {fileID: 6173766324260494147}
   - component: {fileID: 2542646534645793720}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -61450,7 +61456,7 @@ GameObject:
   - component: {fileID: 840255553975242387}
   - component: {fileID: 7678780855105157573}
   - component: {fileID: 4181829509076966604}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 2-1 : \uC138\uB85C \uC120 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -62965,7 +62971,7 @@ GameObject:
   - component: {fileID: 2169219894779527102}
   - component: {fileID: 5588410180143541094}
   - component: {fileID: 8359129700168806365}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 2-2 : \uAC00\uB85C \uC120 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -64354,7 +64360,7 @@ GameObject:
   - component: {fileID: 8641596035039542183}
   - component: {fileID: 4870771680913468138}
   - component: {fileID: 1296295193363473799}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 2-3 : \uC22B\uC790 \uB369\uC5B4\uB9AC"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -64670,7 +64676,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4680923251273992020}
-  m_Layer: 0
+  - component: {fileID: 8800000000000000002}
+  m_Layer: 8
   m_Name: "Input channel \uC785\uB825 G"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -66586,7 +66593,7 @@ GameObject:
   - component: {fileID: 1924393917244445845}
   - component: {fileID: 8760377279939996580}
   - component: {fileID: 81515953243805022}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67081,7 +67088,7 @@ GameObject:
   - component: {fileID: 7975172763863239904}
   - component: {fileID: 5973003162516066145}
   - component: {fileID: 7110002140434827967}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Walk surface
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77066,7 +77073,7 @@ GameObject:
   - component: {fileID: 7377518780365561446}
   - component: {fileID: 200245528293589857}
   - component: {fileID: 5361765295166600037}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Glass tank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77871,7 +77878,7 @@ GameObject:
   - component: {fileID: 1095972799327761920}
   - component: {fileID: 2294917820762709308}
   - component: {fileID: 8447069193806096380}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 3-5 : \uC0AC\uC120 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -82224,7 +82231,7 @@ GameObject:
   - component: {fileID: 2887709388799596143}
   - component: {fileID: 6181933797817927527}
   - component: {fileID: 1903578249593566681}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -86660,6 +86667,7 @@ GameObject:
   - component: {fileID: 4011076343438037854}
   - component: {fileID: 7802634389393819892}
   - component: {fileID: 8284795500800294590}
+  - component: {fileID: 8800000000000000009}
   m_Layer: 5
   m_Name: WorldUIPopup(Clone)
   m_TagString: Untagged
@@ -86765,9 +86773,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -87157,7 +87165,7 @@ GameObject:
   - component: {fileID: 3589004548155067503}
   - component: {fileID: 6333500260136343100}
   - component: {fileID: 7091889750123947057}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Input image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -88058,7 +88066,7 @@ GameObject:
   - component: {fileID: 1311439186919814823}
   - component: {fileID: 5876099525512354723}
   - component: {fileID: 4102484484978732691}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Card face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -89053,9 +89061,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -89252,7 +89260,7 @@ GameObject:
   - component: {fileID: 5674407414177656772}
   - component: {fileID: 1898976232840959593}
   - component: {fileID: 2392461592739768329}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -90223,6 +90231,7 @@ GameObject:
   - component: {fileID: 2646766130133272044}
   - component: {fileID: 4033169864823923034}
   - component: {fileID: 7672952274512227254}
+  - component: {fileID: 8800000000000000010}
   m_Layer: 5
   m_Name: WorldUIButton(Clone)
   m_TagString: Untagged
@@ -90407,9 +90416,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -98465,6 +98474,7 @@ GameObject:
   - component: {fileID: 3723370762066256299}
   - component: {fileID: 1881148143077369560}
   - component: {fileID: 2734760478632405638}
+  - component: {fileID: 8800000000000000011}
   m_Layer: 5
   m_Name: WorldUIButton(Clone)
   m_TagString: Untagged
@@ -98649,9 +98659,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
+  m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
-  m_CheckFor3DOcclusion: 1
+  m_CheckFor3DOcclusion: 0
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -98665,7 +98675,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5182376334034887335}
-  m_Layer: 0
+  - component: {fileID: 8800000000000000003}
+  m_Layer: 8
   m_Name: "Input channel \uC785\uB825 B"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99894,7 +99905,7 @@ GameObject:
   - component: {fileID: 1893213509526397561}
   - component: {fileID: 3432846694835171326}
   - component: {fileID: 3186041280413315391}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Walk surface
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -102617,7 +102628,7 @@ MonoBehaviour:
       _size: 16
       _width: 1.9
       _root: {fileID: 2143991021779259648}
-      _hit: {fileID: 0}
+      _hit: {fileID: 8800000000000000001}
       _switchHit: {fileID: 0}
     - _frame: {fileID: 2471276764791309380}
       _surface: {fileID: 6153803763230723008}
@@ -102638,7 +102649,7 @@ MonoBehaviour:
       _size: 16
       _width: 1.9
       _root: {fileID: 4680923251273992020}
-      _hit: {fileID: 0}
+      _hit: {fileID: 8800000000000000002}
       _switchHit: {fileID: 0}
     - _frame: {fileID: 6593718389418783968}
       _surface: {fileID: 8549122269659867541}
@@ -102659,7 +102670,7 @@ MonoBehaviour:
       _size: 16
       _width: 1.9
       _root: {fileID: 5182376334034887335}
-      _hit: {fileID: 0}
+      _hit: {fileID: 8800000000000000003}
       _switchHit: {fileID: 0}
     _picture:
       _frame: {fileID: 5017739484886965239}
@@ -105982,7 +105993,7 @@ GameObject:
   - component: {fileID: 1819050486865314500}
   - component: {fileID: 6529327636093437807}
   - component: {fileID: 5631913441700177292}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -107785,7 +107796,7 @@ GameObject:
   - component: {fileID: 257354965793755097}
   - component: {fileID: 5647290768595500499}
   - component: {fileID: 2021649046681844807}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: "\uD53C\uCC98\uB9F5 1-2 : \uBC30\uACBD \uCE78 \uCC3E\uAE30"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -109781,7 +109792,7 @@ GameObject:
   - component: {fileID: 8336235478628211700}
   - component: {fileID: 3501119115018338303}
   - component: {fileID: 9164434238484960072}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Map switch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -111056,7 +111067,7 @@ GameObject:
   - component: {fileID: 4815012790369520710}
   - component: {fileID: 233750532475954061}
   - component: {fileID: 4516877877673952720}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Card face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -114386,3 +114397,178 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1001, guid: 02cd6c57b29d4502a40f1da4bb8bc24f, type: 3}
   m_PrefabInstance: {fileID: 5243360726185164635}
   m_PrefabAsset: {fileID: 0}
+--- !u!65 &8800000000000000001
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3515565469276877940}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.9, y: 1.9, z: 0.06}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!65 &8800000000000000002
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5119063746062913298}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.9, y: 1.9, z: 0.06}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!65 &8800000000000000003
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7893975744404202900}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.9, y: 1.9, z: 0.06}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8800000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409291802442401021}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1936384036992334335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2095519532307764663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2110047190609571149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2381672986715570647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6969878871499565351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7185686481038671803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &8800000000000000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7879397244777783664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497eca9a094845f8b28fc189afc76b57, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_IgnoreReversedGraphics: 0
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295

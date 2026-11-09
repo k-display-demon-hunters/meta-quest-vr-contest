@@ -26,6 +26,9 @@ namespace FeatureMapCorridor
         [SerializeField] private float _switchTravel = .72f;
         [SerializeField] private int _size;
         [SerializeField] private float _width;
+        private Transform _hoverBorder;
+        private Renderer[] _hoverBars;
+        internal string HoverCell { get; private set; } = "";
         private Color _defaultFrame = new Color32(30,58,72,255);
         [SerializeField] private Transform _root;
         internal Transform Root => _root;
@@ -36,13 +39,25 @@ namespace FeatureMapCorridor
         [SerializeField] private BoxCollider _hit;
         [SerializeField] private BoxCollider _switchHit;
 
-        internal void Bind(CorridorVisuals visuals, Action<int> clicked = null)
+        internal void Bind(CorridorVisuals visuals, Action<int> clicked = null, Action doubleClicked = null)
         {
             _visuals = visuals;
             _texture = visuals.Own(UnityEngine.Object.Instantiate(_texture));
             _pixels = new Color32[_texture.width * _texture.height];
             visuals.Texture(_surface, _texture);
-            if (clicked != null) { visuals.Listen(_hit, point => clicked(CellAt(point))); }
+            if (clicked != null)
+            {
+                _hoverBorder = visuals.Own(UnityEngine.Object.Instantiate(_border.gameObject, Root)).transform;
+                _hoverBorder.name = "Pointer cell outline";
+                _hoverBars = _hoverBorder.GetComponentsInChildren<Renderer>(true);
+                _hoverBorder.gameObject.SetActive(false);
+                visuals.Listen(_hit, point =>
+                {
+                    int cell = CellAt(point);
+                    CorridorPointer.Log($"Cell {_root.name}: ({cell % _size},{cell / _size})");
+                    clicked(cell);
+                }, doubleClicked == null ? (Action<Vector3>)null : _ => doubleClicked(), Hover);
+            }
         }
 
         internal void BindSwitch(Action toggle)
@@ -91,6 +106,24 @@ namespace FeatureMapCorridor
                 visuals.Label(Root,source,new Vector3(0,_width*.5f+.18f,0),.126f,_width+2,new Color32(127,147,168,255));
         }
 #endif
+
+        private void Hover(Vector3? point)
+        {
+            _hoverBorder.gameObject.SetActive(point.HasValue);
+            if (!point.HasValue) { HoverCell = ""; return; }
+            int cell = CellAt(point.Value);
+            HoverCell = $"({cell % _size},{cell / _size})";
+            _hoverBorder.localPosition = CellPosition(cell) + Vector3.back * .008f;
+            float width = _width / _size;
+            for (int i = 0; i < 4; i++)
+            {
+                _hoverBars[i].transform.localPosition = i < 2 ? new Vector3(0,(i-.5f)*width,0)
+                    : new Vector3((i-2.5f)*width,0,0);
+                _hoverBars[i].transform.localScale = i < 2 ? new Vector3(width,.012f,.012f)
+                    : new Vector3(.012f,width,.012f);
+                _visuals.Paint(_hoverBars[i],Color.white);
+            }
+        }
 
         private int CellAt(Vector3 world)
         {

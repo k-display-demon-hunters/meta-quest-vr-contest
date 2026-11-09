@@ -23,23 +23,12 @@ namespace FeatureMapCorridor
 
         internal void Bind(CorridorVisuals visuals, Action<int> pixel, Action<int> digit)
         {
-            Picture.Bind(visuals, index =>
-            {
-                float now = Time.unscaledTime;
-                if (now - _pressed <= .4f)
-                {
-                    _pressed = float.NegativeInfinity;
-                    SetExpanded(false);
-                    return;
-                }
-                _pressed = now;
-                SetExpanded(true);
-                pixel(index);
-            });
+            Action<int> select = index => { SetExpanded(true); pixel(index); };
+            Picture.Bind(visuals, select, () => SetExpanded(false));
             for (int i = 0; i < 3; i++)
             {
                 int number = i + 1;
-                _channels[i].Bind(visuals);
+                _channels[i].Bind(visuals, select, () => SetExpanded(false));
                 _ends[i] = _expandedAnchors[i].localPosition;
                 visuals.Listen(_digitButtons[i].GetComponent<UnityEngine.UI.Button>(), () => digit(number));
             }
@@ -75,7 +64,7 @@ namespace FeatureMapCorridor
                 int number = i+1;
                 _ends[i] = new Vector3((i-1)*2.25f,1.05f,-7.75f);
                 _expandedAnchors[i] = CorridorVisuals.Group(root, "RGB expanded " + number, _ends[i]);
-                _channels[i] = new FeatureMapPanel(visuals,root,ImagePosition,0,size,"","",null,16);
+                _channels[i] = new FeatureMapPanel(visuals,root,ImagePosition,0,size,"","",pixel,16);
                 _channels[i].Root.name = "Input channel " + CorridorDialogue.InputChannels[i];
                 _channels[i].Root.gameObject.SetActive(false);
                 _channels[i].Frame(CorridorTheme.Rgb[i]);

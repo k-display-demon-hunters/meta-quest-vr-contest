@@ -13,8 +13,10 @@ namespace FeatureMapCorridor
         private Vector3 _displayScale;
 
 
-        internal void Bind()
+        internal void Bind(CorridorVisuals visuals)
         {
+            foreach (Button button in _popup.GetComponentsInChildren<Button>(true))
+                visuals.Listen(button, () => { }); // The common popup owns confirmation/close; record the event once.
             _displayScale = _popup.transform.localScale;
             _popup.Hide();
         }

@@ -112,3 +112,31 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 | Pretendard SemiBold / Nanum Pen Script | 신규 씬 자막·표지·숫자 라벨 | 프로젝트에 있는 원본 폰트 재사용; 위 기존 폰트 출처 및 동봉 OFL 유지. | 원본 변경 없음. |
 
 EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 직원 대사·내레이션·라디오 가요·배경 음악 슬롯은 비어 있으며 외부 음원을 임의로 대신 넣지 않았다.
+
+## 공장 환경 표면 텍스처 (2026-11-09)
+
+아래 PNG는 `client/Assets/Textures/FactoryEnvironment/`에 있으며 `FactoryEnvironment` 씬의 표시 재질에서 사용한다. 첨부 이미지는 재질과 조명 참고용으로만 사용했다.
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `FormedConcrete_*`, `SealedConcreteFloor_*` | 벽과 실내 바닥 | Codex AI 보조, Python과 NumPy로 거푸집 줄눈·타이홀·기공과 바닥 줄눈·마모를 합성해 반복 가능한 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `FactoryPowderCoat_*`, `BrushedAlloy_*` | 사물함·도장 설비, 철제 설비·셔터 | Codex AI 보조, Python과 NumPy로 도장 박리·긁힘과 금속 연마 결·산화 얼룩을 합성해 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `LabWorktop_*`, `CorrugatedCarton_*`, `AgedPaperFibre_*` | 연구 데스크 상판, 상자, 연구 서류 | Codex AI 보조, Python과 NumPy로 작업대 입자·골판지 골·종이 섬유와 얼룩을 합성해 알베도·노멀 제작. 상판·골판지에는 금속성/매끄러움 맵 포함 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `WeatheredConcrete_*`, `OxidizedSteel_*`, `DarkIndustrialRubber_*` | 외부 및 휴게실 콘크리트, 셔터 이음쇠와 철제 부품, 분석 장비 호스 | 기존 프로젝트 파일. 원출처 미확인 | 제작자·저작권자·라이선스 미확인 | PNG 원본 유지. 재질·UV·표시 메시에서 재사용 |
+
+후속 연구복 수정에서 `AgedPaperFibre_Normal.png`를 청색 연구복의 섬유 표면에도 재사용했다. PNG 원본을 유지하고 Codex AI 보조로 재질의 반복 크기와 노멀 강도를 조정했다. 출처·권리자·라이선스는 위 신규 합성 기록을 따른다.
+
+튜토리얼 작업화 전용 `TutorialBootRubber` 재질은 기존 `DarkIndustrialRubber` 노멀 맵을 재사용한다. Codex AI 보조로 재질의 색과 노멀 강도를 조정했다. 원본 이미지·출처·권리자·라이선스는 위 기존 파일 기록을 따른다.
+
+## 공장 연구 기록과 배경 장비 화면 (2026-11-09)
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `FactoryResearchPages.png` | `Textures/FactoryEnvironment/`; 공장 바닥·책상 문서와 게시물의 인쇄면 | Codex AI 보조로 Python·NumPy·Pillow와 고정 난수 시드로 RGB, 합성곱, ReLU, 풀링, 모델 형태의 계산 예시·도표·개별 문서 번호를 조판. 프로젝트 체험 문서를 참고했으며 실제 사용자 학습 기록은 사용하지 않음 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `FactoryDiagnosticDisplays.png` | `Textures/FactoryEnvironment/`; 공장 배경 모니터·계측 화면 | Codex AI 보조로 Python·NumPy·Pillow에서 5×5 입력과 대각선 3×3 필터의 valid 합성곱을 계산하고 표·그래프로 조판. 정적 설명용 표본임을 화면에 명시 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+
+두 이미지의 한글·영문 조판에 기존 `Fonts/NotoSansCJKkr-Regular.otf`를 재사용했다. 폰트 원본은 수정·복제하지 않았으며 원출처·권리자·SIL OFL 1.1은 위 **Noto Sans CJK KR Regular 2.004** 기록을 따른다. 기존 배포 라이선스 고지를 유지한다. 사용자 첨부 참고 이미지 자체는 런타임 에셋으로 복제하지 않았다.
+
+## 공장 조명 베이크
+
+`client/Assets/Textures/FactoryEnvironment/`의 `Lightmap-*_comp_*`와 `ReflectionProbe-*.exr`는 공장 씬의 고정 표면 조명, 그림자와 방별 반사에 사용한다. Codex AI 보조로 씬의 광원과 메시를 설정하고 Unity Progressive CPU Lightmapper와 반사 프로브로 다시 생성했다. 베이크 과정에서 외부 미디어를 추가하지 않았다. 제작자·법적 권리자는 미확인이며 별도 공개 라이선스를 지정하지 않았다.

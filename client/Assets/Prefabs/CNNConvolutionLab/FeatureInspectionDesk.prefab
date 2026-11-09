@@ -9018,14 +9018,6 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
-    - target: {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -9062,7 +9054,9 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: -10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
+    - {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9190,14 +9184,6 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
-    - target: {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -9234,7 +9220,9 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: -10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
+    - {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9514,14 +9502,6 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
-    - target: {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -9558,7 +9538,9 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: -10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
+    - {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -9686,14 +9668,6 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
-    - target: {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -9730,7 +9704,9 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: -10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1008, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
+    - {fileID: 1007, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

@@ -3,10 +3,15 @@ namespace CNNConvolution
     public sealed class ConvolutionCalculation
     {
         private readonly int[,] _inputs;
-        public int Row { get; private set; }
-        public int Column { get; private set; }
+        public int Row { get; }
+        public int Column { get; }
 
-        private ConvolutionCalculation(int[,] inputs) { _inputs = inputs; }
+        private ConvolutionCalculation(int[,] inputs, int row = 0, int column = 0)
+        {
+            _inputs = inputs;
+            Row = row;
+            Column = column;
+        }
 
         public static ConvolutionCalculation CreateExample()
         {
@@ -17,10 +22,10 @@ namespace CNNConvolution
             });
         }
 
-        public void SetWindow(int row, int column)
+        // Windows share the fixed input, but cannot change one another's position.
+        public ConvolutionCalculation ForWindow(int row, int column)
         {
-            Row = row;
-            Column = column;
+            return new ConvolutionCalculation(_inputs, row, column);
         }
 
         public int GridInput(int channel, int index) => _inputs[channel, index];

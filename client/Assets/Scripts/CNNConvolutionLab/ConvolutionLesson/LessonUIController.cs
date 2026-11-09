@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,7 +20,7 @@ namespace CNNConvolution
         // Display history only; the lesson and quiz decide when a channel is complete.
         private readonly int?[] _completedChannelSums = new int?[3];
         private int _activeChannel = -1;
-        private bool _advance;
+        public event Action NextRequested;
         public event Action SkipRequested;
         public event Action AdvanceRequested;
         public string Title { set => _title.text = value; }
@@ -32,14 +31,14 @@ namespace CNNConvolution
         {
             foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true)) { canvas.worldCamera = Camera.main; }
         }
-        public void RequestNext() { _advance = true; }
+        public void RequestNext() { NextRequested?.Invoke(); }
         public void RequestSkip() { SkipRequested?.Invoke(); }
         public void RequestAdvance() { AdvanceRequested?.Invoke(); }
         public void ShowSkip(bool pendingKernel)
         {
             // Quiz answers are never bypassed: this assistance only finishes a physical action.
+            // The fixed label is already saved in PixelCalculationUI.prefab.
             _skip.gameObject.SetActive(pendingKernel);
-            _skip.GetComponentInChildren<Text>().text = "필터 자동 배치";
         }
         public void BeginCalculation()
         {
@@ -112,13 +111,14 @@ namespace CNNConvolution
             _summaryFormula.text = $"<color=#FF666B>R {firstSums[0]}</color> + <color=#69EDA6>G {firstSums[1]}</color> + <color=#61ADFF>B {firstSums[2]}</color> = {outputs[0]}";
             _nextObservation.GetComponentInChildren<Text>().text = "특징맵 비교하기";
         }
-        public IEnumerator WaitForNext(string label)
+        public void ShowNext(string label)
         {
-            _advance = false;
             _next.interactable = true;
             _next.gameObject.SetActive(true);
             _next.GetComponentInChildren<Text>().text = label;
-            yield return new WaitUntil(() => _advance);
+        }
+        public void HideNext()
+        {
             _next.gameObject.SetActive(false);
         }
     }

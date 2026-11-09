@@ -23,7 +23,7 @@ namespace CNNConvolution
         [SerializeField] private Text _placementHint;
         private GeometryBuilder _builder;
         private Geometry _view;
-        private KernelInteractionController _interaction;
+        private WorkbenchKernelController _kernel;
         private int _channel;
         private ConvolutionCalculation _calculation;
         private bool _outputMode;
@@ -33,8 +33,21 @@ namespace CNNConvolution
         private static readonly Color CalculationAccent = new Color(1f, 0.86f, 0.57f);
         private static readonly Color PendingValueColor = new Color(0.46f, 0.53f, 0.57f);
 
-        public bool IsAligned => _interaction != null && _interaction.IsAligned;
-        public bool WaitingForKernel { get; private set; }
+        public bool IsKernelSelected => _kernel.IsSelected;
+        public bool IsKernelHovered => _kernel.IsHovered;
+        public Pose KernelPose => new Pose(_view.Kernel.position, _view.Kernel.rotation);
+        public Pose KernelHomePose => new Pose(_kernelHome.position, _kernelHome.rotation);
+        public Pose KernelTargetPose => new Pose(_kernelTarget.position, _kernelTarget.rotation);
+        public event Action KernelGrabbed
+        {
+            add { _kernel.Grabbed += value; }
+            remove { _kernel.Grabbed -= value; }
+        }
+        public event Action KernelReleased
+        {
+            add { _kernel.Released += value; }
+            remove { _kernel.Released -= value; }
+        }
         internal Vector3 InputCellPosition(int channel, int index) => transform.InverseTransformPoint(_view.Values[channel, _calculation.InputIndex(index)].transform.position);
         internal Vector3 KernelCellPosition(int index) => transform.InverseTransformPoint(_view.Weights[index].transform.position);
         internal Vector3 ResultCellPosition(int index) => transform.InverseTransformPoint(_view.Products[index].transform.position);
@@ -130,7 +143,6 @@ namespace CNNConvolution
         public void PrepareSlidingPractice()
         {
             ReleaseInteractions();
-            _calculation.SetWindow(0, 0);
             _outputMode = false;
             _workbenchVisuals.SetActive(true);
             _view.Result.gameObject.SetActive(true);
@@ -148,7 +160,6 @@ namespace CNNConvolution
             ClearEquations();
             ShowSlidingChannel(0, true);
             _view.DropTarget.SetPositionAndRotation(_kernelTarget.position, _kernelTarget.rotation);
-            _interaction.EnableKernel();
         }
 
         public void ClearEquations()
@@ -270,7 +281,6 @@ namespace CNNConvolution
                 yield return null;
             }
             _view.Kernel.SetPositionAndRotation(target, _inputAnchor.rotation);
-            _calculation.SetWindow(row, column);
         }
 
         public IEnumerator RecordWindowOutput()
@@ -327,7 +337,7 @@ namespace CNNConvolution
             _view.EquationPlate.SetPositionAndRotation(_equationAnchor.position, _equationAnchor.rotation);
             _view.SumEquationPlate.SetPositionAndRotation(_sumEquationAnchor.position, _sumEquationAnchor.rotation);
             _view.DropTarget.SetPositionAndRotation(_kernelTarget.position, _kernelTarget.rotation);
-            _interaction = new KernelInteractionController(transform, _view, _kernelHome, _kernelTarget, _placementHint);
+            _kernel = new WorkbenchKernelController(transform, _view, _placementHint);
             for (int index = 0; index < 9; index++)
             {
                 int selected = index;
@@ -351,24 +361,27 @@ namespace CNNConvolution
             }
         }
 
-        public IEnumerator WaitForKernel()
+        // Cache the window chosen by the lesson; presentation never changes calculation state.
+        public void SetWindow(ConvolutionCalculation calculation)
         {
-            WaitingForKernel = true;
-            while (!IsAligned)
-            {
-                _interaction.UpdatePlacement(Time.unscaledDeltaTime);
-                yield return null;
-            }
-            _interaction.LockAlignedKernel();
-            WaitingForKernel = false;
-            yield return new WaitForSecondsRealtime(0.45f);
-            _interaction.HidePlacementFeedback();
-            _view.KernelTitle.gameObject.SetActive(false);
+            _calculation = calculation;
         }
 
-        public void AlignKernel()
+        public bool IsKernelWithinTarget(float localRadius)
         {
-            _interaction.AlignKernel();
+            return _kernelTarget.InverseTransformPoint(_view.Kernel.position).sqrMagnitude <= localRadius * localRadius;
+        }
+
+        public void RestoreKernelParent() { _kernel.RestoreParent(); }
+        public void SetKernelPose(Pose pose) { _kernel.SetPose(pose); }
+        public void SetKernelGrabEnabled(bool enabled) { _kernel.SetGrabEnabled(enabled); }
+        public void CancelKernelGrab() { _kernel.CancelGrab(); }
+        public void HideKernelPlacement() { _kernel.HidePlacement(); }
+        public void HideKernelTitle() { _view.KernelTitle.gameObject.SetActive(false); }
+
+        public void ShowKernelPlacement(string message, bool ready, bool completed, bool showGrip, bool emphasize)
+        {
+            _kernel.ShowPlacement(message, ready, completed, showGrip, emphasize);
         }
 
         public void ShowProducts(int channel, int count)
@@ -390,7 +403,6 @@ namespace CNNConvolution
 
         public void ReleaseInteractions()
         {
-            WaitingForKernel = false;
             if (_view != null)
             {
                 EndPositionQuiz();
@@ -399,7 +411,7 @@ namespace CNNConvolution
                 _view.DropTarget.gameObject.SetActive(false);
                 _view.Products[4].enabled = true;
             }
-            _interaction?.DisableKernel();
+            _kernel?.ReleaseInteractions();
         }
 
         private void LateUpdate()
@@ -426,7 +438,7 @@ namespace CNNConvolution
 
         private void OnDestroy()
         {
-            _interaction?.Dispose();
+            _kernel?.Dispose();
             _builder?.Dispose();
         }
         private sealed class GeometryBuilder : IDisposable

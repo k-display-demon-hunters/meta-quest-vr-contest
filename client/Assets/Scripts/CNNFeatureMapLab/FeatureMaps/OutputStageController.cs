@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace FeatureMapCorridor
 {
@@ -49,7 +50,7 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform _staging;
         [SerializeField] private Transform[] _tankAnchors = new Transform[3];
         [SerializeField] private Transform[] _answerAnchors = new Transform[3];
-        [SerializeField] private Collider[] _tankHits = new Collider[3];
+        [SerializeField] private XRSimpleInteractable[] _tankHits = new XRSimpleInteractable[3];
         private Vector3[] _liquidPosition = new Vector3[3];
         private Vector3[] _liquidScale = new Vector3[3];
         private Vector3[] _columnPosition = new Vector3[3];
@@ -65,8 +66,8 @@ namespace FeatureMapCorridor
             {
                 int digit = i + 1;
                 Vector3 scale = _tankHits[i].transform.localScale;
-                Collider hit = _tankHits[i];
-                interaction.Register(hit, _ => chosen(digit), null, point => hit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
+                XRSimpleInteractable hit = _tankHits[i];
+                interaction.Bind(hit, _ => chosen(digit), null, point => hit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
                 _liquidPosition[i] = _liquid[i].localPosition;
                 _liquidScale[i] = _liquid[i].localScale;
                 _columnPosition[i] = _columns[i].localPosition;

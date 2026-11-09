@@ -31,7 +31,7 @@ namespace FeatureMapCorridor
                     }
                 }
                 percentages[best]++;
-                awarded | = 1 << best;
+                awarded |= 1 << best;
             }
         }
     }

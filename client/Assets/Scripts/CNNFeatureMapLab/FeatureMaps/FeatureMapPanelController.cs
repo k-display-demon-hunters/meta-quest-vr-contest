@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.UI;
 
 namespace FeatureMapCorridor
@@ -41,8 +42,8 @@ namespace FeatureMapCorridor
         internal Vector3 Position => Root.localPosition;
         internal float Width => _width;
         internal Texture2D Texture => _texture;
-        [SerializeField] private BoxCollider _hit;
-        [SerializeField] private BoxCollider _switchHit;
+        [SerializeField] private XRSimpleInteractable _hit;
+        [SerializeField] private XRSimpleInteractable _switchHit;
         internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction = null, Action<int> clicked = null, Action doubleClicked = null)
         {
             _visuals = visuals;
@@ -55,7 +56,7 @@ namespace FeatureMapCorridor
                 _hoverBorder.name = "Pointer cell outline";
                 _hoverBars = _hoverBorder.GetComponentsInChildren<Renderer>(true);
                 _hoverBorder.gameObject.SetActive(false);
-                interaction.Register(_hit, point =>
+                interaction.Bind(_hit, point =>
                 {
                     int cell = CellAt(point);
                     LogCell(_root.name, cell % _size, cell / _size);
@@ -74,7 +75,7 @@ namespace FeatureMapCorridor
         {
             _knobOn = _knob.localPosition;
             Vector3 scale = _switchHit.transform.localScale;
-            interaction.Register(_switchHit, _ => toggle(), null, point => _switchHit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
+            interaction.Bind(_switchHit, _ => toggle(), null, point => _switchHit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
         }
 
         internal void Dispose()

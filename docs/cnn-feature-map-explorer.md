@@ -14,7 +14,7 @@
 
 ## 진행
 
-에디터에서 HMD가 없으면 Game 뷰의 마우스 왼쪽 클릭으로 그림·맵·필터·UI 버튼을 선택한다. 기존 가상 오른손 레이와 Shift 없는 T 입력도 유지한다. 마우스를 움직이면 화면 포인터, T를 누르면 오른손 레이로 선택 경로가 바뀐다. Quest에서는 기존 오른손 트리거를 사용한다. 다음 버튼이 숨겨져 있으면 말풍선이 가리키는 그림·필터·스위치를 조작한다. 이동은 기존 스틱/WASD 설정 그대로다.
+에디터에서는 공용 XR 시뮬레이터의 가상 오른손 레이로 대상을 가리킨 뒤 Shift 없이 T를 누른다. Quest에서는 오른손 레이와 Trigger를 사용한다. 다음 버튼이 숨겨져 있으면 말풍선이 가리키는 그림·필터·스위치를 조작한다.
 
 1. 입력 숫자 1·2·3을 바꿔 보거나 입력 칸을 눌러 RGB를 펼친다. 같은 입력판을 0.4초 안에 두 번 누르면 모인다. 입력 칸을 누르면 흰 테두리 투어가 시작된다.
 2. 흰 테두리 투어는 선택 칸 → 3×3 → 5×5 → 7×7 순으로 이어진다. 가장자리에서는 실제 맵에 포함된 칸만 그린다.
@@ -38,8 +38,14 @@
 
 계산 진입점은 기존 CnnModelProvider 컴포넌트를 대체하며 동일한 GUID와 `_modelInstance` 참조를 유지한다. 나머지 세 모듈 Manager와 표시 Controller는 기존과 같이 씬 진입점 내부에 직렬화된 일반 C# 객체다. 별도 Update를 갖는 컴포넌트로 일괄 변환하지 않았다.
 
-씬 Manager의 Awake가 계산 → 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 입력·레이·후처리를 복원하고, OnDestroy는 생성한 텍스처·강조 메시·호버선·디버그 표시를 정리한다.
+씬 Manager의 Awake가 계산 → 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하며 후처리를 복원하고, OnDestroy는 생성한 텍스처·강조 메시·호버선·디버그 표시를 정리한다.
 
+### 외부 연결과 체험 내부 공간
+
+- 외부 학습 세션과의 계약은 `CNNFeatureMapLabManager`의 기존 `ILearningExperience`다. CNNFeatureMapLab 런타임 코드는 FactoryEnvironment의 Manager, 복도 위치, 방·바닥 구역 데이터를 직접 참조하거나 조회하지 않는다. 카메라와 입력은 기존 공용 XR 리그와 XRI를 사용한다.
+- `Environment/`는 이 체험이 소유한 복도·바닥·문·카메라 효과다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
+- `FeatureMaps/Interaction/ZoneSelectionController`는 체험 프리팹의 바닥 5개 영역 선택을 구역 번호로 전달한다. `InteractionManager → FeatureMapsManager → CNNFeatureMapLabManager`의 이벤트 경로를 거쳐, 씬 Manager가 Environment의 바닥 강조와 FeatureMaps의 표시 강조를 연결한다. 강조 상태의 소유자는 `CorridorEnvironmentManager`이며, 구역 선택 자체가 학습 단계를 변경하지 않는다.
+- 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
 ### 계산과 전달 데이터
 
 - `Execution/ICnnModel.cs`와 `DummyCnnModel.cs`는 현재 모델 계산을 유지한다. `ConvolutionMath`는 3×3 기여도를 계산하고 `RoundCalculation`은 채널별 중간 결과·템플릿 기여도를 준비한다.
@@ -57,12 +63,10 @@
 
 ### 입력 연결
 
-- `FeatureMaps/Interaction/InteractionManager`는 FeatureMaps의 하위 진입점이다. `FeatureMapPointerController`가 기존 XRI 오른손 activateInput과 레이 원점, HMD 없는 에디터의 마우스 입력을 하나의 3D 선택 경로로 처리한다. 별도 InputAction·EventSystem·SDK는 추가하지 않는다.
-- `ZoneSelectionController`가 바닥 구역의 선택 요청을 전달한다. 실제 바닥 표시·빛은 Environment의 `CorridorFloorController`가 담당한다. 다른 모듈의 내부 Collider를 씬 Manager에 전달하지 않는다.
-- 기존 `CorridorInteractable` 레이어의 Collider 37개를 사용한다. 입력/RGB 4개, 맵 10개, 스위치 10개, 필터 5개, 출력 3개, 구역 5개다. 배치·크기·레이어는 유지한다.
-- UI 우선 판정, trigger down 프레임당 한 번 전달, 같은 대상의 0.4초 더블클릭 접기를 유지한다. 패널의 로컬 hit point → 16×16 셀 변환과 학습용 강조선과 별개의 호버선을 유지한다.
-- UI는 기존 XRUIInputModule과 TrackedDeviceGraphicRaycaster를 사용한다. `Presentation/CorridorMouseRaycaster`는 HMD 없는 에디터의 일반 포인터만 받는다. 각 모듈은 복도 진입 시 자기 Canvas의 Event Camera를 연결한다.
-- 오른손 레이·표시 거리 30m, hover 색·1.04배 확대, 클릭 햅틱 0.3/0.05초와 복도 이탈 시 복원을 유지한다. 확대 표시는 대상 Controller가 담당하며 오브젝트 이름으로 종류를 판별하지 않는다.
+- 상호작용 대상은 기존 Core XR 리그의 오른손 레이와 XRI의 활성화·호버 이벤트를 사용한다. 레이 거리·색상·햅틱은 공용 설정을 따른다. UI는 기존 XRUIInputModule과 TrackedDeviceGraphicRaycaster를 사용한다.
+- InteractionManager는 복도 안에서만 클릭용 XRSimpleInteractable을 활성화한다. 입력/RGB 4개, 맵 10개, 스위치 10개, 필터 5개, 출력 3개, 구역 5개가 기존 Collider에 연결된다. Trigger로 선택하고 Grip으로 집는 동작은 차단한다.
+- XRI가 계산한 현재 충돌 위치를 패널의 16×16 셀로 변환한다. UI가 더 가까울 때는 뒤쪽 3D 대상을 선택하지 않는다. 호버 중인 패널의 셀 강조와 스위치·필터·출력 통의 호버 확대를 유지한다.
+- 같은 대상을 0.4초 안에 연속으로 선택하면 입력판의 RGB나 필터 카드를 접는다. ZoneSelectionController는 바닥 선택을 구역 번호로 전달하고 바닥 빛은 Environment가 표시한다.
 - 숫자 변경은 계산 모듈에서 재계산한다. 라운드 중에는 기존 단계를 유지하며 필터를 접는다. 완료 후에도 숫자를 바꿀 수 있다. 필터 접기 자체는 진행 단계를 바꾸지 않는다. 선택 라운드 종료 시 원래 상태로 돌아간다.
 - 버튼 구독은 해당 Controller가 소유하는 `CorridorButtonBindings`로 연결·해제한다. 완료 팝업의 확인·닫기는 기존 WorldUIPopupController가 담당한다.
 
@@ -86,6 +90,9 @@
 
 2026-11-09: 소스와 Unity YAML의 정적 확인만 수행했다. 기존 스크립트 GUID 22개를 보존했고, FeatureMapCorridor의 오브젝트 3,748개와 Transform/RectTransform 배치를 유지했다. 변경된 직렬화 내용은 씬 진입점 컴포넌트의 모듈별 참조 배치다. 씬 인스턴스에는 이전 필드 경로 override가 없어 별도 변경하지 않았다. 사용자 지시에 따라 테스트·빌드·컴파일·Unity 실행을 수행하지 않았다. 아래 과거 결과는 리팩토링 이후의 실행 보증이 아니다.
 
+### 공용 XRI 입력 전환
+
+전용 FeatureMapPointerController와 CorridorMouseRaycaster를 제거하고, 기존 공용 오른손 레이의 XRI 호버·활성화 이벤트를 연결했다. 프리팹의 입력 대상 37개는 XRSimpleInteractable을 참조한다. 기존 34개 컴포넌트를 유지하고 RGB 대상 3개에 컴포넌트를 추가했으며, 전용 마우스 컴포넌트 8개를 제거했다. 기존 Transform·RectTransform·Collider 배치와 유지되는 에셋 GUID는 보존한다. 복도 안팎 판정과 바닥 구역 선택·강조는 유지한다. 소스·직렬화 참조만 정적으로 확인했으며 테스트·빌드·컴파일·Unity 실행은 수행하지 않았다.
 ## 리팩토링 이전 입력 수정의 진단·검증 기록
 
 ### 진단과 확인 범위

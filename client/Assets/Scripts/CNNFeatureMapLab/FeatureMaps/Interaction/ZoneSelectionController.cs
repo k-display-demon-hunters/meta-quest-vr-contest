@@ -1,19 +1,19 @@
 using System;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace FeatureMapCorridor
 {
     [Serializable]
     internal sealed class ZoneSelectionController
     {
-        [SerializeField] private Collider[] _zoneHits;
-        internal event Action<int> Selected;
-        internal void Bind(InteractionManager interaction)
+        [SerializeField] private XRSimpleInteractable[] _zoneHits;
+
+        internal void Bind(Action<XRSimpleInteractable, int> bind)
         {
-            for (int i = 0;i<_zoneHits.Length;i++)
+            for (int zone = 0; zone < _zoneHits.Length; zone++)
             {
-                int zone = i;
-                interaction.Register(_zoneHits[i], _ => Selected?.Invoke(zone));
+                bind(_zoneHits[zone], zone);
             }
         }
     }

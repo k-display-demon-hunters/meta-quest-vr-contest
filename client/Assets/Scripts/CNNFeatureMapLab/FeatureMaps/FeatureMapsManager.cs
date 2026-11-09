@@ -53,14 +53,13 @@ namespace FeatureMapCorridor
             _display.ButtonPressed += OnButton;
             _interaction.ZoneSelected += OnZone;
             _round.FilterPressed += OnFilter;
-            _interaction.Enable();
             _display.Enable();
             _round.EnableInput();
         }
 
         internal void Disable()
         {
-            _interaction.Disable();
+            _interaction.SetActive(false);
             _display.Disable();
             _round.DisableInput();
             _display.InputSelected -= OnInput;
@@ -94,20 +93,17 @@ namespace FeatureMapCorridor
 
         internal void SetVisible(bool visible)
         {
+            _interaction.SetActive(visible);
             if (visible)
             {
                 _camera = Camera.main;
                 _display.SetCamera(_camera);
             }
-            else
-            {
-                _interaction.Suspend();
-            }
         }
 
         internal void Tick(float now, float delta)
         {
-            _interaction.Tick(_camera);
+            _interaction.UpdateHover();
             _display.Tick(now, delta);
             _visuals.UpdateBillboards(_camera);
             if (_tourActive)
@@ -250,7 +246,6 @@ namespace FeatureMapCorridor
 
         internal void Dispose()
         {
-            _interaction.Dispose();
             _display.Dispose();
             _round.Dispose();
             _tour.Dispose();

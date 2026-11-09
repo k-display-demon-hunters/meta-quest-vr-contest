@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace FeatureMapCorridor
 {
@@ -39,7 +40,7 @@ namespace FeatureMapCorridor
         : (weight < 0 ? "−" : "+")+Mathf.Abs(weight).ToString("0.00", CultureInfo.InvariantCulture);
         internal Color32 WeightColor(float weight) => Mathf.Abs(weight) < .005f ? new Color32(107, 122, 138, 255)
         : weight > 0 ? _visuals.Theme.Cyan : _visuals.Theme.Negative;
-        [SerializeField] private Collider[] _cardHits = new Collider[Capacity];
+        [SerializeField] private XRSimpleInteractable[] _cardHits = new XRSimpleInteractable[Capacity];
         [SerializeField] private float _spreadSpacing = .95f;
         private Vector3[] _foldedPositions = new Vector3[Capacity];
         internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction)
@@ -51,7 +52,7 @@ namespace FeatureMapCorridor
                 _templates[i].Bind(visuals);
                 int card = i;
                 Vector3 scale = _card[i].localScale;
-                interaction.Register(_cardHits[i], _ => Expand(), _ => SetExpanded(false, false), point => _card[card].localScale = scale*(point.HasValue ? 1.04f : 1f));
+                interaction.Bind(_cardHits[i], _ => Expand(), _ => SetExpanded(false, false), point => _card[card].localScale = scale*(point.HasValue ? 1.04f : 1f));
             }
             Hide();
         }

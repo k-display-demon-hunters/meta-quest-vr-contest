@@ -15,14 +15,14 @@ namespace CNNConvolution
         [SerializeField] private Text _summaryFormula;
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
-        [SerializeField] private Button _next, _skip, _nextObservation;
+        [SerializeField] private Button _next, _skip, _finish;
         [SerializeField] private GameObject _notebook;
         // Display history only; the lesson and quiz decide when a channel is complete.
         private readonly int?[] _completedChannelSums = new int?[3];
         private int _activeChannel = -1;
         public event Action NextRequested;
         public event Action SkipRequested;
-        public event Action AdvanceRequested;
+        public event Action FinishRequested;
         public string Title { set => _title.text = value; }
         public string Explanation { set => _explanation.text = value; }
         public string Feedback { set => _feedback.text = value; }
@@ -33,7 +33,7 @@ namespace CNNConvolution
         }
         public void RequestNext() { NextRequested?.Invoke(); }
         public void RequestSkip() { SkipRequested?.Invoke(); }
-        public void RequestAdvance() { AdvanceRequested?.Invoke(); }
+        public void RequestFinish() { FinishRequested?.Invoke(); }
         public void ShowSkip(bool pendingKernel)
         {
             // Quiz answers are never bypassed: this assistance only finishes a physical action.
@@ -99,17 +99,20 @@ namespace CNNConvolution
         {
             _exerciseRoot.SetActive(false);
             _observationUi.SetActive(true);
-            _nextObservation.interactable = true;
-            _nextObservation.gameObject.SetActive(true);
+            _finish.interactable = true;
+            _finish.gameObject.SetActive(true);
             _summary.text = "<size=48><b>필터가 지나간 자리</b></size>\n"
                 + "입력판 위를 이동하며 출력값 9개를 만들었어요.\n"
-                + "다음은 새로운 6×6 표본으로 필터를 비교해요.";
+                + "체험 마치기를 누르면 다음 체험으로 이동할 수 있어요.";
             for (int index = 0; index < outputs.Length; index++)
             {
                 _summaryOutputs[index].text = outputs[index].ToString();
             }
             _summaryFormula.text = $"<color=#FF666B>R {firstSums[0]}</color> + <color=#69EDA6>G {firstSums[1]}</color> + <color=#61ADFF>B {firstSums[2]}</color> = {outputs[0]}";
-            _nextObservation.GetComponentInChildren<Text>().text = "특징맵 비교하기";
+        }
+        public void DisableFinish()
+        {
+            _finish.interactable = false;
         }
         public void ShowNext(string label)
         {

@@ -1,42 +1,53 @@
 using Core;
+using Learning;
 using System;
 using System.Collections;
-using Learning;
 using UnityEngine;
 
 namespace CNNConvolution
 {
-    // Owns the two consecutive parts of ROOM 1-2 and its single completion contract.
+    // Owns stage order and the current calculation window; stages never reference each other.
     public sealed class CNNConvolutionLabManager : MonoBehaviour, ILearningExperience
     {
-        private enum ExperiencePhase { Waiting, Convolution, Inspection, Finished }
-        [SerializeField] private ConvolutionLessonManager _lesson;
-        [SerializeField] private FeatureInspectionManager _inspection;
-        private ExperiencePhase _phase;
+        [SerializeField] private LessonUIController _ui;
+        [SerializeField] private WorkbenchBuilder _spatial;
+        [SerializeField] private Font _font;
+        private InputGridController _input;
+        private WorkbenchKernelController _kernel;
+        private ResultGridController _result;
+        private EquationDisplayController _equations;
+        private bool _initialized;
+        private ConvolutionCalculation _calculation;
+        private KernelInteractionController _placement;
+        private MultiplicationController _multiplication;
+        private ChannelSumController _channelSum;
+        private OutputRecordingController _outputRecording;
+        private WindowMovementController _windowMovement;
+        private ConvolutionQuizController _quiz;
+        private ResultSummaryController _summary;
+
+        private const float CalculationProgressLimit = 0.95f;
         private bool _started;
         private bool _completed;
 
         public LearningStageId StageId => LearningStageId.ConvolutionLab;
         public float Progress { get; private set; }
         public bool CanExit => isActiveAndEnabled && _completed;
-        public event Action<float> ProgressChanged;
         public event Action<bool> ExitAvailabilityChanged;
+        public event Action<float> ProgressChanged;
+
+        private void Awake()
+        {
+            _summary = new ResultSummaryController(_ui);
+        }
 
         private void OnEnable()
         {
-            _lesson.ProgressChanged += HandleConvolutionProgress;
-            _lesson.Completed += HandleConvolutionCompleted;
-            _lesson.ContinueRequested += HandleInspectionRequested;
-            _inspection.Completed += HandleComparisonCompleted;
-            _inspection.ExitRequested += HandleFinishRequested;
-            if (_started)
+            _summary.FinishRequested += FinishPractice;
+            _summary.Confirmed += HideWorkbench;
+            if (_started && !_completed)
             {
-                if (_phase == ExperiencePhase.Inspection || _phase == ExperiencePhase.Finished)
-                {
-                    _phase = ExperiencePhase.Inspection;
-                    _inspection.BeginInspection();
-                }
-                else { BeginWhenReady(); }
+                BeginPractice();
             }
             ExitAvailabilityChanged?.Invoke(CanExit);
         }
@@ -44,62 +55,144 @@ namespace CNNConvolution
         private void Start()
         {
             _started = true;
-            BeginWhenReady();
+            BeginPractice();
         }
 
-        private void BeginWhenReady()
+        private void BeginPractice()
         {
-            if (!_started || _phase != ExperiencePhase.Waiting) { return; }
-            _phase = ExperiencePhase.Convolution;
-            _lesson.BeginPractice();
+            if (!_initialized)
+            {
+                _ui.Initialize();
+                InitializeWorkbench();
+                _initialized = true;
+            }
+            _calculation = ConvolutionCalculation.CreateExample();
+            _ui.BeginCalculation();
+            _spatial.gameObject.SetActive(true);
+            _spatial.Show();
+            _input.Prepare(_calculation);
+            _kernel.SetWeights(_calculation);
+            _result.BeginProducts();
+            _equations.Clear();
+            StartCoroutine(RunLesson());
         }
 
-        private void HandleConvolutionProgress(float value) { SetProgress(value * 0.75f); }
-        private void HandleConvolutionCompleted() { SetProgress(0.75f); }
-
-        private void HandleInspectionRequested()
+        public IEnumerator EndSession()
         {
-            if (_phase != ExperiencePhase.Convolution) { return; }
-            _lesson.StopPractice();
-            _phase = ExperiencePhase.Inspection;
-            _inspection.BeginInspection();
-            SetProgress(0.8f);
+            StopPractice();
+            yield break;
         }
 
-        private void HandleComparisonCompleted() { SetProgress(0.95f); }
-
-        private void HandleFinishRequested()
+        private void StopPractice()
         {
-            if (_phase != ExperiencePhase.Inspection) { return; }
-            _phase = ExperiencePhase.Finished;
+            // Stop the owner coroutine before closing stage inputs or restoring the shared view.
+            StopAllCoroutines();
+            if (_initialized)
+            {
+                _summary.Cancel();
+                ReleaseWorkbench();
+            }
+            _ui.gameObject.SetActive(false);
+            _spatial.gameObject.SetActive(false);
+        }
+
+        private void InitializeWorkbench()
+        {
+            var workbench = _spatial.Build(_font);
+            _input = workbench.Input;
+            _kernel = workbench.Kernel;
+            _result = workbench.Result;
+            _equations = workbench.Equations;
+            _placement = new KernelInteractionController(workbench.Factory, _kernel, _spatial.PlacementTarget, _spatial.PlacementHint, _ui);
+            _multiplication = new MultiplicationController(workbench.Factory, _input, _kernel, _result, _equations, workbench.Number, _ui);
+            _channelSum = new ChannelSumController(workbench.Factory, _input, _result, _equations, workbench.Number, _ui);
+            _outputRecording = new OutputRecordingController(_kernel, _result, _equations, workbench.Number, _ui);
+            _windowMovement = new WindowMovementController(_input, _kernel, _equations, _ui);
+            _quiz = new ConvolutionQuizController(_result, _equations, _ui);
+        }
+
+        private void HideWorkbench()
+        {
+            ReleaseWorkbench();
+            _spatial.gameObject.SetActive(false);
+        }
+
+        private void ReleaseWorkbench()
+        {
+            _placement.Cancel();
+            _quiz.Cancel();
+            _multiplication.Cancel();
+            _channelSum.Cancel();
+        }
+
+        private IEnumerator RunLesson()
+        {
+            yield return _placement.Run();
+            yield return RunFirstWindow();
+            SetProgress(1f / 9f * CalculationProgressLimit);
+
+            yield return MoveToWindow(0, 1, false);
+            yield return _quiz.Run(_calculation.Row * 3 + _calculation.Column);
+            yield return RunWindow();
+            SetProgress(2f / 9f * CalculationProgressLimit);
+
+            int[] remainingPositions = { 2, 5, 4, 3, 6, 7, 8 };
+            for (int step = 0; step < remainingPositions.Length; step++)
+            {
+                int index = remainingPositions[step];
+                yield return MoveToWindow(index / 3, index % 3, true);
+                yield return RunWindow();
+                SetProgress((step + 3f) / 9f * CalculationProgressLimit);
+            }
+
+            yield return _summary.Run(_calculation.Outputs(), new[]
+            {
+                _calculation.Sum(0, 0, 0), _calculation.Sum(1, 0, 0), _calculation.Sum(2, 0, 0)
+            });
+        }
+
+        private IEnumerator RunFirstWindow()
+        {
+            yield return _multiplication.Run(_calculation, 0);
+            yield return _channelSum.RunDetailed(_calculation, 0);
+            yield return _channelSum.RunCompact(_calculation, 1, true);
+            yield return _channelSum.RunCompact(_calculation, 2, true);
+            yield return _outputRecording.Run(_calculation, true);
+        }
+
+        private IEnumerator RunWindow()
+        {
+            for (int channel = 0; channel < 3; channel++)
+            {
+                yield return _channelSum.RunCompact(_calculation, channel, false);
+            }
+            yield return _outputRecording.Run(_calculation, false);
+        }
+
+        private IEnumerator MoveToWindow(int row, int column, bool showGuidance)
+        {
+            yield return _windowMovement.Run(row, column, showGuidance);
+            _calculation = _calculation.ForWindow(row, column);
+        }
+
+        private void FinishPractice()
+        {
             _completed = true;
             SetProgress(1f);
             ExitAvailabilityChanged?.Invoke(CanExit);
         }
 
-        private void SetProgress(float progress)
+        private void SetProgress(float value)
         {
-            Progress = Mathf.Max(Progress, progress);
+            Progress = Mathf.Max(Progress, value);
             ProgressChanged?.Invoke(Progress);
-        }
-
-        public IEnumerator EndSession()
-        {
-            _lesson.StopPractice();
-            _inspection.StopInspection();
-            yield break;
         }
 
         private void OnDisable()
         {
-            _lesson.ProgressChanged -= HandleConvolutionProgress;
-            _lesson.Completed -= HandleConvolutionCompleted;
-            _lesson.ContinueRequested -= HandleInspectionRequested;
-            _inspection.Completed -= HandleComparisonCompleted;
-            _inspection.ExitRequested -= HandleFinishRequested;
-            _lesson.StopPractice();
-            _inspection.StopInspection();
-            if (_phase == ExperiencePhase.Convolution) { _phase = ExperiencePhase.Waiting; }
+            _summary.FinishRequested -= FinishPractice;
+            _summary.Confirmed -= HideWorkbench;
+            StopPractice();
             ExitAvailabilityChanged?.Invoke(false);
         }
     }

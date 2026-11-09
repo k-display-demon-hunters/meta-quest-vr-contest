@@ -129,7 +129,7 @@ MonoBehaviour:
   - {fileID: 300203}
   _next: {fileID: 100041}
   _skip: {fileID: 100050}
-  _nextObservation: {fileID: 100104}
+  _finish: {fileID: 100104}
   _notebook: {fileID: 100021}
   _summaryOutputs:
   - {fileID: 700033}
@@ -1419,7 +1419,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1013, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_Text
-      value: "특징맵 비교하기"
+      value: "체험 마치기"
       objectReference: {fileID: 0}
     - target: {fileID: 1013, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_FontData.m_Font
@@ -1463,7 +1463,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: RequestAdvance
+      value: RequestFinish
       objectReference: {fileID: 0}
     - target: {fileID: 1004, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode

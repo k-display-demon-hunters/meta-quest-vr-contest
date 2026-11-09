@@ -1,6 +1,6 @@
 # CNN실 #8 피처맵 복도
 
-[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)의 학습 진입점은 `CorridorRoot`의 `CorridorDirector`다. 기존 XR 리그와 공장 학습 세션을 사용한다. 공장에서는 Room 02의 기존 앵커와 출입구 사이에 들어오도록 복도를 0.53배로 배치한다. 단독 씬의 복도 좌표는 1:1이다.
+[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)의 학습 진입점은 `CorridorRoot`의 `CNNFeatureMapLabManager`다. 기존 XR 리그와 공장 학습 세션을 사용한다. 공장에서는 Room 02의 기존 앵커와 출입구 사이에 들어오도록 복도를 0.53배로 배치한다. 단독 씬의 복도 좌표는 1:1이다.
 
 ## 편집 모드의 배치
 
@@ -10,11 +10,11 @@
 - 입력 그림은 `Input image`, RGB 펼침 위치는 `RGB expanded 1~3`, 출력 통은 `Output 1~3`, 정답 도착 위치는 각 통의 `Answer destination`, 비교 연출 기준점은 `Evidence staging`, 문은 `Corridor door`에서 편집한다. 맵·입력판 크기는 패널 루트의 Scale로 조절한다.
 - 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 문은 저장된 닫힘 위치에서 움직인다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다. 필터·강조선·계산 결과판은 학습 단계에 따라 이동·표시되므로 편집 시의 위치가 고정 표시 위치를 뜻하지는 않는다.
 - RGB 채널, 필터 카드, 계산 연출, 완료 팝업 등 단계별 오브젝트는 프리팹에 존재하지만 초기에는 비활성 상태일 수 있다. Hierarchy에서 선택해 편집하고 초기 표시 상태를 유지한다.
-- `Editor/CorridorPrefabBuilder.cs`의 `Tools > CNN > Save Feature Map Corridor Prefab`은 최초 변환용이다. 기존 프리팹이 있으면 재생성하지 않으며, 이후 배치는 저장된 프리팹을 직접 편집한다.
+- `Editor/CorridorPrefabBuilder.cs`는 저장된 배치를 프리팹으로 저장하는 도구다. 기존 프리팹이 있으면 메뉴에서 재생성하지 않는다. 저장할 때 필요한 임시 표시 에셋의 영속화는 `CorridorLayoutBuilder`가 담당한다. 런타임의 최초 배치 생성 코드와 `BuildLayoutForEditor`는 제거했다.
 
 ## 진행
 
-에디터에서 단독으로 실행할 때는 Game 뷰에 포커스를 준다. 오른손 레이로 앞쪽 숫자 그림의 칸을 가리키고 Shift 없이 T를 누른다. 화면 아래에 다음 버튼이 뜨면 그 버튼에 레이를 옮기고 T를 누른다. 다음 버튼이 숨겨진 상태에서는 안내 말풍선이 가리키는 그림·맵·필터·스위치를 먼저 조작한다. 에디터 단독 실행은 눈높이에서 시작하며, 입력 그림은 시작 위치의 5m 레이 범위에 들어오도록 배치했다.
+에디터에서는 공용 XR 시뮬레이터의 가상 오른손 레이로 대상을 가리킨 뒤 Shift 없이 T를 누른다. Quest에서는 오른손 레이와 Trigger를 사용한다. 다음 버튼이 숨겨져 있으면 말풍선이 가리키는 그림·필터·스위치를 조작한다.
 
 1. 입력 숫자 1·2·3을 바꿔 보거나 입력 칸을 눌러 RGB를 펼친다. 같은 입력판을 0.4초 안에 두 번 누르면 모인다. 입력 칸을 누르면 흰 테두리 투어가 시작된다.
 2. 흰 테두리 투어는 선택 칸 → 3×3 → 5×5 → 7×7 순으로 이어진다. 가장자리에서는 실제 맵에 포함된 칸만 그린다.
@@ -24,21 +24,114 @@
 
 애니메이션은 그 단계 안에서만 끝난다. 다음 단계는 다음 버튼이나 명세에 지정된 직접 입력으로 들어간다. 이전 버튼은 앞 단계의 연출을 다시 시작한다. 공용 공간 버튼과 팝업은 [공용 공간 UI](world-ui.md)를 사용한다.
 
-## 모델 교체
+## 모듈과 상태 소유권
 
-`CnnModelProvider`의 Model Instance 슬롯에는 복도 안에 미리 배치한 [DummyCnnModel.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/DummyCnnModel.prefab) 인스턴스의 모델 컴포넌트가 연결돼 있다. 실행 시 모델 오브젝트를 새로 생성하지 않는다. 모델을 교체할 때는 `ICnnModel`을 구현한 컴포넌트를 복도에 배치해 이 슬롯에 연결한다. 저장된 배치는 입력 세 채널, 은닉층 2·3·5장, 출력 숫자 1·2·3 및 16×16 맵을 기준으로 한다. 크기·채널 구성을 변경할 때는 저장된 패널·텍스처·참조도 함께 맞춰야 한다.
+런타임 루트는 `client/Assets/Scripts/CNNFeatureMapLab/`이며 네임스페이스는 기존 `FeatureMapCorridor`를 유지한다. 씬 Manager는 아래 네 진입점과 데이터 계약만 사용한다. 모듈 간 요청은 씬 Manager가 연결하고, 내부 입력·연출은 해당 모듈 안에서 연결한다.
 
-더미 모델의 각 층은 3×3 합성곱, stride 1, zero padding, bias와 ReLU를 사용한다. 꺼진 맵은 pre를 유지하고 act만 0으로 전달한다. 출력은 마지막 층의 정규화된 맵과 숫자별 템플릿을 내적으로 비교한다. softmax 확률은 최대 나머지 방식으로 정수화한다. 모델 교체 시 더미 필터에 대한 설명은 `CorridorDialogue`의 맵별 설명 테이블에서 함께 교체한다.
+| 파일·모듈 | 현재 책임 |
+| --- | --- |
+| `CNNFeatureMapLabManager.cs` | 전체 학습 단계, 필수·선택 라운드 순서와 복귀 위치, 진행률·출구 조건, 모듈 이벤트 연결 |
+| `Execution/FeatureMapExecutionManager.cs` | 기존 모델 컴포넌트 연결, 선택 숫자와 꺼진 맵 목록, 입력·순전파 결과 및 계산 수명 |
+| `FeatureMaps/FeatureMapsManager.cs` | 탐색·투어·라운드 활성 모드, 필터 입력 대기, 내부 표시·입력 기능 연결 |
+| `LessonUI/LessonUIManager.cs` | 전달받은 상황에 따른 학습 문구 선택, 자막·힌트·팝업·디버그 표시, 이전·다음 요청 |
+| `Environment/CorridorEnvironmentManager.cs` | 복도 가시 상태, 바닥·구역·문·카메라 효과 연결 |
 
-## 파일 위치
+계산 진입점은 기존 CnnModelProvider 컴포넌트를 대체하며 동일한 GUID와 `_modelInstance` 참조를 유지한다. 나머지 세 모듈 Manager와 표시 Controller는 기존과 같이 씬 진입점 내부에 직렬화된 일반 C# 객체다. 별도 Update를 갖는 컴포넌트로 일괄 변환하지 않았다.
 
-- 복도 코드는 `client/Assets/Scripts/CNNFeatureMapLab/`에 있다. `CorridorDirector`가 상태를, `RoundPlayer`와 `ReceptiveFieldTour`가 연출을, `CorridorDialogue`가 화면 문구를 관리한다. 스크립트의 `.meta`와 GUID는 이동 전과 동일하다.
-- [CorridorTheme.asset](../client/Assets/Settings/CorridorTheme.asset)에서 폰트, 셀 패널 크기, 색과 머티리얼용 셰이더를 바꿀 수 있다.
-- `FeatureMapCorridor.prefab`에는 각 표시 클래스의 직렬화 참조와 모든 복도 오브젝트가 저장돼 있다. `CorridorDirector.Awake`는 이 참조에 계산·입력을 연결하고, 활성 기간의 입력 구독은 `OnEnable`/`OnDisable`에서 연결·해제한다. 런타임은 텍스처 픽셀, 강조 메시, 문구·색·활성 상태와 연출을 갱신한다. 변경하는 텍스처·메시는 인스턴스별 복사본을 사용해 저장 원본을 보존한다.
-- 복도 전용 재질·텍스처·강조 메시는 각각 `Materials/CNNFeatureMapLab/`, `Textures/CNNFeatureMapLab/`, `Meshes/CNNFeatureMapLab/`에, TMP 폰트·아틀라스는 `Fonts/CNNFeatureMapLab/`에 있다. 후처리 프로파일은 `Settings/CorridorPostProcessing.asset`이다. 버튼·팝업은 기존 Common 원본을 사용해 배치했다.
-- 이전 필터 비교·8×8 피처맵·별도 활성화 함수의 미사용 코드·에셋은 제거된 상태다. 새 복도 표시용 에셋은 이전 에셋을 복원한 것이 아니라 현재 복도 생성 결과를 저장한 것이다.
+씬 Manager의 Awake가 계산 → 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하며 후처리를 복원하고, OnDestroy는 생성한 텍스처·강조 메시·호버선·디버그 표시를 정리한다.
 
-## 실행 확인
+### 외부 연결과 체험 내부 공간
+
+- 외부 학습 세션과의 계약은 `CNNFeatureMapLabManager`의 기존 `ILearningExperience`다. CNNFeatureMapLab 런타임 코드는 FactoryEnvironment의 Manager, 복도 위치, 방·바닥 구역 데이터를 직접 참조하거나 조회하지 않는다. 카메라와 입력은 기존 공용 XR 리그와 XRI를 사용한다.
+- `Environment/`는 이 체험이 소유한 복도·바닥·문·카메라 효과다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
+- `FeatureMaps/Interaction/ZoneSelectionController`는 체험 프리팹의 바닥 5개 영역 선택을 구역 번호로 전달한다. `InteractionManager → FeatureMapsManager → CNNFeatureMapLabManager`의 이벤트 경로를 거쳐, 씬 Manager가 Environment의 바닥 강조와 FeatureMaps의 표시 강조를 연결한다. 강조 상태의 소유자는 `CorridorEnvironmentManager`이며, 구역 선택 자체가 학습 단계를 변경하지 않는다.
+- 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
+### 계산과 전달 데이터
+
+- `Execution/ICnnModel.cs`와 `DummyCnnModel.cs`는 현재 모델 계산을 유지한다. `ConvolutionMath`는 3×3 기여도를 계산하고 `RoundCalculation`은 채널별 중간 결과·템플릿 기여도를 준비한다.
+- `Contracts/FeatureMapSnapshot.cs`는 입력·맵·활성 상태·표시 스케일·출력 점수와 확률을 제공한다. `RoundCalculationResult.cs`는 해당 라운드의 커널·템플릿·중간 결과·비교값을 제공한다. 배열은 외부에서 변경하지 못하는 읽기 전용 조회로 전달한다.
+- `MapId`는 맵 식별 값이다. 기존 ICnnModel의 문자열 키 형식과 수학적 계산은 유지한다. `LessonContext`와 `RecapInfo`는 UI에 필요한 상황·수치·위치를 전달한다.
+- 표시 모듈은 ICnnModel을 직접 조회하지 않으며, 모델 객체나 내부 계산 배열을 공개 API로 전달하지 않는다.
+
+### 피처맵 표시와 연출
+
+- `FeatureMapDisplayController`는 기본 입력판·맵·출력의 표시 변경과 복원을 소유한다. 투어와 라운드가 기본 패널을 바꿀 때 이 경로를 사용한다.
+- `InputPanelController`, `FeatureMapPanelController`, `MapLinksController`, `OutputStageController`는 각 표시·입력을 담당한다. 입력판과 중간 결과판·템플릿은 같은 패널 타입의 서로 다른 인스턴스다.
+- `ReceptiveFieldTourController`는 수용 영역 강조 메시를 관리한다. 메시를 다시 구성하기 전에 이전 삼각형 인덱스를 제거하는 동작을 유지한다.
+- `Round/FeatureMapRoundController`는 라운드 내부 단계·재생 시간을 소유하고, `FilterStackController`와 `RoundResultsController`가 카드·훑기·합치기 표시를 처리한다. 라운드 코드가 안내 UI를 직접 조작하지 않는다.
+- 다음 단계는 사용자 입력으로만 진행한다. 현재 단계의 연출을 먼저 완료하고 다음으로 이동하며, 이전 버튼은 해당 단계를 다시 재생한다.
+
+### 입력 연결
+
+- 상호작용 대상은 기존 Core XR 리그의 오른손 레이와 XRI의 활성화·호버 이벤트를 사용한다. 레이 거리·색상·햅틱은 공용 설정을 따른다. UI는 기존 XRUIInputModule과 TrackedDeviceGraphicRaycaster를 사용한다.
+- InteractionManager는 복도 안에서만 클릭용 XRSimpleInteractable을 활성화한다. 입력/RGB 4개, 맵 10개, 스위치 10개, 필터 5개, 출력 3개, 구역 5개가 기존 Collider에 연결된다. Trigger로 선택하고 Grip으로 집는 동작은 차단한다.
+- XRI가 계산한 현재 충돌 위치를 패널의 16×16 셀로 변환한다. UI가 더 가까울 때는 뒤쪽 3D 대상을 선택하지 않는다. 호버 중인 패널의 셀 강조와 스위치·필터·출력 통의 호버 확대를 유지한다.
+- 같은 대상을 0.4초 안에 연속으로 선택하면 입력판의 RGB나 필터 카드를 접는다. ZoneSelectionController는 바닥 선택을 구역 번호로 전달하고 바닥 빛은 Environment가 표시한다.
+- 숫자 변경은 계산 모듈에서 재계산한다. 라운드 중에는 기존 단계를 유지하며 필터를 접는다. 완료 후에도 숫자를 바꿀 수 있다. 필터 접기 자체는 진행 단계를 바꾸지 않는다. 선택 라운드 종료 시 원래 상태로 돌아간다.
+- 버튼 구독은 해당 Controller가 소유하는 `CorridorButtonBindings`로 연결·해제한다. 완료 팝업의 확인·닫기는 기존 WorldUIPopupController가 담당한다.
+
+### 안내 UI·환경·표시 보조
+
+- `LessonContent`는 학습 설명 데이터, `LessonUIManager`는 상황에 맞는 설명 선택, SubtitlePanel/HintBubbles/CompletionPopup Controller는 실제 표시를 담당한다.
+- `LessonUI/CorridorDebugController`는 에디터·Development Build의 왼손 위 HUD와 화면 진단을 담당한다. Inspector의 `Lesson UI > Debug > Show Debug`에서 켠다. 씬·라운드 상태 및 포인터·셀·클릭·UI 정보를 값으로 전달받으며 릴리스에서는 진단 표시를 제외한다.
+- `CorridorCameraController`는 단독 씬 설정, 복도 안팎 판정, 후처리 적용·복원을 담당한다. `CorridorDoorController`는 완료 요청을 받아 문을 연다.
+- `Presentation/CorridorRenderUtility`는 색·텍스처·빌보드·인스턴싱 표시 보조만 담당한다. 입력이나 런타임 자원 수명을 소유하지 않는다. 각 모듈은 자기 표시 객체의 빌보드 목록을 갖는다.
+- `CorridorTheme`는 기존 Settings/CorridorTheme.asset을 사용한다. 동적 표시 이름은 `FeatureMapLabels`, 정수 퍼센트 배분은 `PercentageFormatter`가 담당한다. 고정 문구·기본 배치는 기존 프리팹에 남아 있다.
+
+## 모델 교체와 에셋
+
+`FeatureMapExecutionManager`의 Model Instance 슬롯은 복도 안에 미리 배치된 `DummyCnnModel.prefab` 인스턴스의 모델 컴포넌트를 참조한다. 모델을 런타임에 새로 생성하지 않는다. 교체 모델은 ICnnModel을 구현하며 현재 배치는 RGB 3채널, 은닉층 2·3·5장, 출력 1·2·3, 16×16 맵을 기준으로 한다. 구성을 변경할 때는 저장된 패널·참조도 함께 맞춰야 한다.
+
+더미 모델의 3×3 합성곱, stride 1, zero padding, bias, ReLU와 템플릿 비교·softmax는 유지한다. 꺼진 맵의 pre는 유지하고 act만 0으로 전달한다. 모델 변경 시 LessonContent의 맵별 설명도 함께 맞춘다.
+
+씬은 `Scenes/CNNFeatureMapLab.unity`, 프리팹은 `Prefabs/CNNFeatureMapLab/`에 유지한다. 재질·텍스처·메시는 각 종류의 CNNFeatureMapLab 폴더, 폰트는 Fonts/CNNFeatureMapLab, 후처리는 Settings/CorridorPostProcessing.asset을 그대로 사용한다. 원본을 재생성하거나 복제 보관하지 않았다.
+
+## 이번 리팩토링의 확인 범위
+
+2026-11-09: 소스와 Unity YAML의 정적 확인만 수행했다. 기존 스크립트 GUID 22개를 보존했고, FeatureMapCorridor의 오브젝트 3,748개와 Transform/RectTransform 배치를 유지했다. 변경된 직렬화 내용은 씬 진입점 컴포넌트의 모듈별 참조 배치다. 씬 인스턴스에는 이전 필드 경로 override가 없어 별도 변경하지 않았다. 사용자 지시에 따라 테스트·빌드·컴파일·Unity 실행을 수행하지 않았다. 아래 과거 결과는 리팩토링 이후의 실행 보증이 아니다.
+
+### 공용 XRI 입력 전환
+
+전용 FeatureMapPointerController와 CorridorMouseRaycaster를 제거하고, 기존 공용 오른손 레이의 XRI 호버·활성화 이벤트를 연결했다. 프리팹의 입력 대상 37개는 XRSimpleInteractable을 참조한다. 기존 34개 컴포넌트를 유지하고 RGB 대상 3개에 컴포넌트를 추가했으며, 전용 마우스 컴포넌트 8개를 제거했다. 기존 Transform·RectTransform·Collider 배치와 유지되는 에셋 GUID는 보존한다. 복도 안팎 판정과 바닥 구역 선택·강조는 유지한다. 소스·직렬화 참조만 정적으로 확인했으며 테스트·빌드·컴파일·Unity 실행은 수행하지 않았다.
+## 리팩토링 이전 입력 수정의 진단·검증 기록
+
+### 진단과 확인 범위
+
+| 항목 | 파일에서 확인한 내용 |
+| --- | --- |
+| SDK | manifest: XRI 3.3.2 / OpenXR 1.16.1. Meta/Oculus 전용 UI로 교체할 근거 없음. |
+| 이동/트리거 | XRPlayerInputController와 XRPlayerRig는 스틱 이동, XREditorSimulator는 WASD 이동과 T 트리거를 분리한다. 트리거 이동 차단 플래그는 불필요하여 공용 이동을 수정하지 않음. |
+| EventSystem | 공용 XRPlayerRig에 EventSystem 1개와 XRUIInputModule 1개. 단독 씬은 해당 리그 인스턴스를 참조하며 추가 EventSystem은 없음. |
+| UI | 기존 TrackedDeviceGraphicRaycaster는 마우스용이 아니고, 숫자/중첩 버튼에는 3D occlusion이 켜져 있었음. Camera 필드는 비어 있었으나 XRI는 Camera.main fallback을 지원하므로 그 자체를 불통 원인으로 단정하지 않음. CanvasGroup은 저장된 복도에 없음. |
+| 3D | 기존 XRSimpleInteractable.activated는 XRI hover/등록/거리 판정에 의존했고 기본 레이는 5m. RGB 판 3개는 Collider와 클릭 구독이 모두 없었음. OnMouseDown·마우스 전용 물리 클릭 코드는 사용하지 않았음. |
+| 좌표 | 기존 BoxCollider + InverseTransformPoint 방식으로 textureCoord 오류에는 해당하지 않음. |
+| 초기화/Console | 저장된 모델 참조와 Play 초기화를 확인함. 전체 입력 불통의 단일 원인을 단정하지 않았으며 실행에서 발견한 투어 메시 오류는 수정 후 재검증함. |
+| 진행 | 시작은 입력 선택 대기. 다음/이전/숫자는 코드 구독 존재. RGB 미연결, 필터 접기 시 0단계로 복귀, 숫자 변경 시 라운드 이탈, 의무 맵 중 다른 층 선택 무시를 수정함. |
+
+프리팹 파일 ID/컴포넌트 참조 점검에서 누락·중복이 없고 기존 Transform/RectTransform 블록 변경은 0개다. git diff --check를 확인했다. 이 결과는 소스·직렬화 정적 확인이며 컴파일/Play 통과를 뜻하지 않는다. 수동으로 레이어를 만들거나 버튼을 다시 연결할 필요는 없다.
+
+2026-11-09 사용자 허가 후 Unity 6000.3.24f1의 D3D11 배치 Play 모드에서 가상 XR 트리거와 가상 마우스 경로를 각각 처음부터 끝까지 실행했다. 진행 메서드나 Button.onClick을 검증기에서 직접 호출하지 않았다. Input System의 기기 상태 이벤트 → 기존 XRI/uGUI → 실제 복도 콜백 경로를 사용했다. OS 마우스 커서·창 포커스는 조작하지 않았다.
+
+| 실행 항목 | 가상 XR 트리거 | 가상 마우스 |
+| --- | --- | --- |
+| 시작 위치 입력판 선택 → RGB 펼침·투어 시작 | 통과 | 통과 |
+| 입력판 두 번 누르기, RGB 채널 칸 선택 | 통과 | 통과 |
+| 좌상단 (0,0), 우하단 (15,15) | 통과 | 통과 |
+| 투어 다음/이전 및 의무 라운드 진입 | 통과 | 통과 |
+| 필터 펼침·두 번 눌러 접기·다시 펼침, 단계 유지 | 통과 | 통과 |
+| 훑기 중 숫자 1→2 변경, 재계산 및 단계 유지 | 통과 | 통과 |
+| 필수 1-1 / 2-1 / 3-1 및 출력 2 라운드 | 통과 | 통과 |
+| 선택 2-2 라운드 후 원래 의무 안내 복귀 | 통과 | 통과 |
+| 스위치 끄기→다음→켜기→완료 | 통과 | 통과 |
+| 완료 확인으로 팝업 닫힘·진행률 1·출구 사용 가능·문 애니메이션 완료 | 통과 | 통과 |
+| 완료 후 숫자 3 변경 및 빈 공간 입력 시 리그 위치 유지 | 통과 | 통과 |
+
+첫 XR 실행에서는 전체 진행이 완료됐으나 투어 재시작에서 Mesh.vertices 오류가 기록됐다. ReceptiveFieldTour.Clear에서 이전 삼각형 인덱스를 제거한 뒤 새 정점 배열을 설정하도록 수정했다. 수정 후 두 입력 경로 모두 전체 진행에서 런타임 오류 없이 PASS ALL을 확인했다.
+
+검증기는 이동 구간의 리그 위치와 시점을 설정해 대상에 접근했다. 실제 WASD/스틱을 이용한 복도 보행, Quest 물리 컨트롤러·햅틱, 기기 렌더링/성능, APK 빌드는 이 검증에 포함하지 않았다. 가상 마우스 경로에서는 화면 밖 대상을 바라보도록 가상 HMD를 회전했다. 임시 Editor 검증 스크립트와 .meta는 검증 후 삭제했다. 삭제 후 최종 컴파일도 종료 코드 0으로 완료했으며 실제 기능 코드에 검증기는 포함되지 않는다. 아래는 이전 작업의 별도 기록이다.
+
+
+## 이전 프리팹 저장 전환의 실행 기록
 
 2026-11-09 편집용 저장 전환: 사용자 허가 범위에서 Unity 스크립트를 컴파일하고 프리팹·씬·표시 에셋을 저장했다. Play하지 않은 Scene 뷰에서 복도 표시를 확인했다. 이번 전환의 Play 테스트·앱 빌드는 수행하지 않았다.
 

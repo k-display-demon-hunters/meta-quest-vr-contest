@@ -129,7 +129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 185311924}
   - component: {fileID: 185311927}
-  - component: {fileID: 185311926}
   - component: {fileID: 185311925}
   m_Layer: 0
   m_Name: Floating pixel values
@@ -152,7 +151,6 @@ RectTransform:
   m_Children:
   - {fileID: 820000041}
   - {fileID: 820000021}
-  - {fileID: 830000021}
   m_Father: {fileID: 2024448783}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -179,23 +177,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RaycastTriggerInteraction: 1
---- !u!114 &185311926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 185311923}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!223 &185311927
 Canvas:
   m_ObjectHideFlags: 0
@@ -229,7 +210,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2024448783}
   - component: {fileID: 2024448782}
-  - component: {fileID: 990000001}
   m_Layer: 0
   m_Name: CNN Convolution Lab
   m_TagString: Untagged
@@ -265,8 +245,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48dda6ef379e497a834553e6ca908f4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.CNNConvolutionLabManager
-  _lesson: {fileID: 990000001}
-  _inspection: {fileID: 830000023}
+  _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
+  _ui: {fileID: 820000023}
+  _spatial: {fileID: 820000042}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -344,53 +325,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72ab7e0925614ae6a69ea1da3c191bad, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.WorkbenchBuilder
---- !u!114 &990000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2024448781}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0374b2b699a47a690d5ef91cf414e5e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.ConvolutionLessonManager
-  _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
-  _ui: {fileID: 820000023}
-  _spatial: {fileID: 820000042}
-
---- !u!1001 &830000020
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 185311924}
-    m_Modifications: []
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
---- !u!1 &830000022 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1000, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
-  m_PrefabInstance: {fileID: 830000020}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &830000021 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1001, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
-  m_PrefabInstance: {fileID: 830000020}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &830000023 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1002, guid: 9a5272b80b344914be56ec4a42a19296, type: 3}
-  m_PrefabInstance: {fileID: 830000020}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 830000022}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4f795f4cc154cad9d62788c79d923f7, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.FeatureInspectionManager

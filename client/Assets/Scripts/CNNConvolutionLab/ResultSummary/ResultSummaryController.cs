@@ -10,7 +10,7 @@ namespace CNNConvolution
         private bool _confirmed;
         private bool _ready;
 
-        public event Action ContinueRequested;
+        public event Action FinishRequested;
         public event Action Confirmed;
 
         public ResultSummaryController(LessonUIController ui)
@@ -23,7 +23,7 @@ namespace CNNConvolution
             _confirmed = false;
             _ready = false;
             _ui.NextRequested += HandleConfirm;
-            _ui.AdvanceRequested += HandleContinue;
+            _ui.FinishRequested += HandleFinish;
             _ui.Title = "아홉 위치의 계산이 끝났어요";
             _ui.Explanation = "입력판 위를 이동하며 출력값 9개를 만들었어요.";
             _ui.Guide = "입력 5×5 → 필터 3×3 → 출력 3×3";
@@ -42,7 +42,7 @@ namespace CNNConvolution
             _confirmed = false;
             _ready = false;
             _ui.NextRequested -= HandleConfirm;
-            _ui.AdvanceRequested -= HandleContinue;
+            _ui.FinishRequested -= HandleFinish;
             _ui.HideNext();
         }
 
@@ -51,11 +51,12 @@ namespace CNNConvolution
             _confirmed = true;
         }
 
-        private void HandleContinue()
+        private void HandleFinish()
         {
             if (!_ready) { return; }
             _ready = false;
-            ContinueRequested?.Invoke();
+            _ui.DisableFinish();
+            FinishRequested?.Invoke();
         }
     }
 }

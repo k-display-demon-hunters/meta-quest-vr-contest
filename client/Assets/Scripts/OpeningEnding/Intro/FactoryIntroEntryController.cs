@@ -1,7 +1,6 @@
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using XR;
 
 namespace OpeningEnding.Intro
 {
@@ -15,7 +14,6 @@ namespace OpeningEnding.Intro
         [SerializeField] private Transform _handCue;
         private Transform _camera;
         private Transform _leftHand;
-        private TouchPlusHandController _leftController;
         private Vector3 _leftClosed;
         private Vector3 _rightClosed;
         private bool _entryActive;
@@ -63,9 +61,6 @@ namespace OpeningEnding.Intro
             _entryActive = true;
             _route.SetActive(true);
             _handCue.gameObject.SetActive(true);
-            // PersistentXRPlayerRig has initialized its hand visuals by this stage.
-            _leftController = _leftHand.GetComponentInChildren<TouchPlusHandController>();
-            _leftController.SetCue(5);
         }
 
         private void Update()
@@ -85,7 +80,6 @@ namespace OpeningEnding.Intro
             _entryActive = false;
             _route.SetActive(false);
             _handCue.gameObject.SetActive(false);
-            _leftController.SetCue(-1);
         }
 
         private void OnDisable()

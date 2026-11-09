@@ -105,3 +105,7 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 ## 확인 범위
 
 이 문서는 현재 소스·씬·프리팹의 참조와 동작 경로를 읽어 갱신했다. 이번 문서 갱신에서는 Unity 실행·컴파일·빌드·테스트를 수행하지 않았다. 이전 실행 측정은 [CNN 학습 문서의 과거 검증 기록](CNN_TRAINING.md#과거-검증-기록)에 별도로 남기며 현재 코드의 검증 결과로 간주하지 않는다.
+
+## Reality 외부 이미지 연결
+
+ModelExecutionManager.InferExternalAsync는 정규화된 RGB float 배열과 reality: 요청 ID를 기존 학습 엔진에 전달한다. CNNModelDesignLabManager는 EnterRealityAsync/ExitRealityAsync 및 InferRealityAsync를 제공한다. ModelRealitySessionController가 CNNRealityLab을 Additive로 로드하고 기존 카메라를 연결한다. 모델은 이동하거나 복제하지 않는다. 기존 내부 샘플 UI는 reality: 결과를 표시하지 않는다. 공장 경유 실행은 지원하지 않으며 UI 버튼 연결도 추가하지 않았다. 상세 계약과 제한은 [CNNRealityLab](cnn-reality-lab.md)을 따른다. 컴파일·실행 검증은 수행하지 않았다.

@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/CNNArchiveOpening.unity
+    guid: 59a2833a9b4d08c4bb58251b8e2a7004
+  - enabled: 1
     path: Assets/Scenes/FactoryIntro.unity
     guid: eb44f2aad8f090540aabad80b5c3917d
   - enabled: 1
@@ -29,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CNNConvolutionLab.unity
     guid: ea82023bec2445599d9f3531ecfe6502
+  - enabled: 1
+    path: Assets/Scenes/CNNArchiveEnding.unity
+    guid: 75968f625e2c8c64cb5e76d5192385c1
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 0b8482a2cde0537478b7f3e34b8f56fe, type: 2}

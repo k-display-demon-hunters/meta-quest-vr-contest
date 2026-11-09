@@ -821,6 +821,7 @@ MonoBehaviour:
   _execution: {fileID: 61004}
   _controlPanel: {fileID: 50003}
   _dataset: {fileID: 61005}
+  _cinematicResult: {fileID: 11400000, guid: 94c5e542fc41204449d556dac80949c1, type: 2}
 --- !u!1001 &30000
 PrefabInstance:
   m_ObjectHideFlags: 0

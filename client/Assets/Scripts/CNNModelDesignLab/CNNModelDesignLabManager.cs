@@ -19,6 +19,8 @@ namespace ModelDesignScene
         [SerializeField] private ModelControlPanelManager _controlPanel;
         [SerializeField] private ModelDatasetManager _dataset;
 
+        [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
+
         private ModelDefinition _model;
         private IReadOnlyList<ValidationIssue> _validationIssues = System.Array.Empty<ValidationIssue>();
         private bool _hasValidationResult;
@@ -174,7 +176,21 @@ namespace ModelDesignScene
         {
             _controlPanel.ShowCompleted(result);
             _trainingCompleted = result != null;
-            if (_trainingCompleted) { SetProgress(1f); }
+            if (_trainingCompleted)
+            {
+                SetProgress(1f);
+                List<string> layers = new List<string> { "INPUT" };
+                foreach (LayerDefinition layer in _model.Layers)
+                {
+                    if (layer == null) { continue; }
+                    string label = layer.Type.ToString();
+                    if (layer.Type == LayerType.Conv2D) { label += "\n" + layer.Filters + " × " + layer.Height + "×" + layer.Width; }
+                    if (layer.Type == LayerType.Dense) { label += "\n" + layer.Units; }
+                    layers.Add(label);
+                }
+                layers.Add("OUTPUT");
+                _cinematicResult.Record(layers);
+            }
             PublishProgressionState();
         }
 

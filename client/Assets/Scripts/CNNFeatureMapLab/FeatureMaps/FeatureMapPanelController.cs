@@ -1,3 +1,6 @@
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using System.Collections.Generic;
 using System;
 using TMPro;
@@ -8,7 +11,7 @@ using UnityEngine.UI;
 namespace FeatureMapCorridor
 {
     [System.Serializable]
-    internal sealed class FeatureMapPanelController
+    internal sealed class FeatureMapPanelController : IXRSelectFilter
     {
         private CorridorRenderUtility _visuals;
         [SerializeField] private Renderer _frame;
@@ -27,16 +30,75 @@ namespace FeatureMapCorridor
         internal float Width => _width;
         internal Texture2D Texture => _texture;
         [SerializeField] private XRSimpleInteractable _hit;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction = null, Action clicked = null)
+        internal void Bind(CorridorRenderUtility visuals, Action clicked = null)
         {
             _visuals = visuals;
             _texture = UnityEngine.Object.Instantiate(_texture);
             _pixels = new Color32[_texture.width * _texture.height];
             visuals.Texture(_surface, _texture);
-            if (clicked != null)
+            _clicked = clicked;
+        }
+
+        private Action _clicked;
+
+        private bool _inputActive;
+        private XRSimpleInteractable _hoveredTarget;
+        internal event Action<string> InputClicked;
+        internal string HoverName => _hoveredTarget == null ? null : _hoveredTarget.name;
+        public bool canProcess => true;
+        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable) => false;
+
+        internal void SetInputActive(bool active)
+        {
+            if (_inputActive == active) return;
+            _inputActive = active;
+            if (active)
             {
-                interaction.Bind(_hit, _ => clicked());
+                _hit.selectFilters.Add(this);
+                _hit.activated.AddListener(HandleActivated);
+                _hit.hoverEntered.AddListener(HandleHoverEntered);
+                _hit.hoverExited.AddListener(HandleHoverExited);
+                _hit.enabled = true;
             }
+            else
+            {
+                _hit.activated.RemoveListener(HandleActivated);
+                _hit.hoverEntered.RemoveListener(HandleHoverEntered);
+                _hit.hoverExited.RemoveListener(HandleHoverExited);
+                _hit.enabled = false;
+                _hit.selectFilters.Remove(this);
+            }
+            if (!active)
+            {
+                _hoveredTarget = null;
+            }
+        }
+
+        private void HandleHoverEntered(HoverEnterEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            _hoveredTarget = target;
+        }
+
+        private void HandleHoverExited(HoverExitEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            if (_hoveredTarget == target) _hoveredTarget = null;
+        }
+
+        private void HandleActivated(ActivateEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right || ray.hasSelection) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            if (!ray.TryGetCurrentRaycast(out var hit, out _, out _, out _, out bool uiClosest) ||
+                uiClosest || !hit.HasValue || !target.colliders.Contains(hit.Value.collider)) return;
+            InputClicked?.Invoke(target.name);
+            _clicked();
         }
 
         internal void SetGridSize(int size) => _size = size;

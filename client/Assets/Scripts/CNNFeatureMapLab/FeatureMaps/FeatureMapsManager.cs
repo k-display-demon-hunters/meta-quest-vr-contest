@@ -8,7 +8,6 @@ namespace FeatureMapCorridor
     {
         [SerializeField] private CorridorRenderUtility _visuals;
         [SerializeField] private FeatureMapDisplayController _display;
-        [SerializeField] private InteractionManager _interaction;
         [SerializeField] private PoolingRoundController _pooling;
         [SerializeField] private FeatureMapRoundController _round;
         private Camera _camera;
@@ -17,7 +16,6 @@ namespace FeatureMapCorridor
         internal event Action<int> DigitSelected;
         internal event Action<int, int> MapSelected;
         internal event Action<int> OutputSelected;
-        internal event Action<int> ZoneSelected;
         internal event Action RoundChanged;
         internal event Action<string> ButtonPressed;
         internal int RoundLayer => _round.Layer;
@@ -25,16 +23,16 @@ namespace FeatureMapCorridor
         internal int RoundStage => _round.Stage;
         internal bool RoundIsOutput => _round.IsOutput;
         internal bool CanAdvanceRound => !_waitingForFilter && !_filterPending;
-        internal string HoverName => _interaction.HoverName;
-        internal string LastClick => _interaction.LastClick;
+        internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
+        internal string LastClick { get; private set; } = "—";
+        private void OnInputClicked(string name) => LastClick = name;
         internal Vector3 WaitingHint(int layer, int map, int digit) => _display.WaitingPosition(layer, map, digit);
         internal void Initialize(FeatureMapSnapshot snapshot)
         {
             _visuals.InitializeRuntime();
-            _interaction.Initialize();
-            _display.Bind(_visuals, _interaction, snapshot);
+            _display.Bind(_visuals, snapshot);
             _pooling.Bind(_visuals, _display);
-            _round.Bind(_visuals, _interaction, _display);
+            _round.Bind(_visuals, _display);
         }
 
         internal void Enable()
@@ -43,29 +41,30 @@ namespace FeatureMapCorridor
             _display.MapSelected += OnMap;
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
-            _interaction.ZoneSelected += OnZone;
             _round.FilterPressed += OnFilter;
             _display.Enable();
             _round.EnableInput();
+            _display.InputClicked += OnInputClicked;
+            _round.InputClicked += OnInputClicked;
         }
 
         internal void Disable()
         {
-            _interaction.SetActive(false);
+            SetInputActive(false);
             _display.Disable();
             _round.DisableInput();
+            _display.InputClicked -= OnInputClicked;
+            _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
             _display.MapSelected -= OnMap;
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
-            _interaction.ZoneSelected -= OnZone;
             _round.FilterPressed -= OnFilter;
         }
 
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
         private void OnMap(int layer, int map) => MapSelected?.Invoke(layer, map);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
-        private void OnZone(int zone) => ZoneSelected?.Invoke(zone);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
         private void OnFilter(bool expanded)
         {
@@ -79,9 +78,15 @@ namespace FeatureMapCorridor
             RoundChanged?.Invoke();
         }
 
+        private void SetInputActive(bool active)
+        {
+            _display.SetInputActive(active);
+            _round.SetInputActive(active);
+        }
+
         internal void SetVisible(bool visible)
         {
-            _interaction.SetActive(visible);
+            SetInputActive(visible);
             if (visible)
             {
                 _camera = Camera.main;
@@ -91,7 +96,6 @@ namespace FeatureMapCorridor
 
         internal void Tick(float now)
         {
-            _interaction.UpdateHover();
             _display.Tick(now);
             _visuals.UpdateBillboards(_camera);
             if (!_roundActive)

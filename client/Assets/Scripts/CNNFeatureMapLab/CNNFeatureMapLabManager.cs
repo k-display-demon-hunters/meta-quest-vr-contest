@@ -11,33 +11,26 @@ namespace FeatureMapCorridor
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
         [SerializeField] private CorridorEnvironmentManager _environment;
-        private LessonPhase _phase;
+        private readonly LessonState _state = new LessonState();
+        private FeatureMapSnapshot _snapshot;
         private static readonly MapId[] RequiredRounds =
         {
             new MapId(1, 0), new MapId(1, 1), new MapId(2, 0),
             new MapId(3, 0), new MapId(3, 1), new MapId(4, 0)
         };
-        private int _requiredRound;
-        private bool _mandatoryRound;
-        private int _poolingStage;
-        private int _poolingChannel;
         private PoolingCalculationResult _poolingCalculation;
-        private MapId RequiredRound => RequiredRounds[_requiredRound];
+        private MapId RequiredRound => RequiredRounds[_state.RequiredRoundIndex];
         private int _navigationFrame = -1;
         public LearningStageId StageId => LearningStageId.FeatureMap;
-        public float Progress
-        {
-            get;
-            private set;
-        }
+        public float Progress => _state.Progress;
 
-        public bool CanExit => _phase == LessonPhase.Complete;
+        public bool CanExit => _state.Phase == LessonPhase.Complete;
         public event Action<float> ProgressChanged;
         public event Action<bool> ExitAvailabilityChanged;
         private void Awake()
         {
-            _executionData.Initialize();
-            _featureMaps.Initialize(_executionData.Snapshot);
+            _snapshot = _executionData.GetSnapshot(_state.Digit);
+            _featureMaps.Initialize(_snapshot);
             _lessonUI.Initialize();
             _environment.Initialize();
             AwaitRound();
@@ -49,7 +42,6 @@ namespace FeatureMapCorridor
             _featureMaps.DigitSelected += DigitSelected;
             _featureMaps.MapSelected += MapSelected;
             _featureMaps.OutputSelected += TinSelected;
-            _featureMaps.ZoneSelected += ToggleZone;
             _featureMaps.RoundChanged += RenderRound;
             _featureMaps.ButtonPressed += _lessonUI.RecordButton;
             _lessonUI.PreviousRequested += Previous;
@@ -65,7 +57,7 @@ namespace FeatureMapCorridor
         {
             float now = Time.unscaledTime;
             float delta = Time.unscaledDeltaTime;
-            _environment.Tick(now, delta);
+            _environment.Tick(now);
             if (!_environment.Visible)
             {
                 return;
@@ -73,7 +65,7 @@ namespace FeatureMapCorridor
             _featureMaps.Tick(now);
             _lessonUI.Tick(now, delta);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            _lessonUI.ShowDebug(_phase+" / "+(_phase == LessonPhase.Pooling ? _poolingStage : _featureMaps.RoundStage), _featureMaps.HoverName, "", _featureMaps.LastClick);
+            _lessonUI.ShowDebug(_state.Phase+" / "+(_state.Phase == LessonPhase.Pooling ? _state.PoolingStage : _featureMaps.RoundStage), _featureMaps.HoverName, "", _featureMaps.LastClick);
 #endif
         }
 
@@ -85,34 +77,34 @@ namespace FeatureMapCorridor
 
         private void DigitSelected(int digit)
         {
-            if (_executionData.Digit == digit)
+            if (_state.Digit == digit)
             {
                 return;
             }
-            bool inRound = _phase == LessonPhase.Round;
-            if (inRound || _phase == LessonPhase.Recap)
+            bool inRound = _state.Phase == LessonPhase.Round;
+            if (inRound || _state.Phase == LessonPhase.Recap)
             {
                 _featureMaps.CloseRound();
             }
-            _executionData.SelectDigit(digit);
-            _featureMaps.ShowSnapshot(_executionData.Snapshot);
+            _state.Digit = digit;
+            _snapshot = _executionData.GetSnapshot(_state.Digit);
+            _featureMaps.ShowSnapshot(_snapshot);
             if (inRound)
             {
-                _featureMaps.RestartRound(_executionData.GetRound(_featureMaps.RoundLayer, _featureMaps.RoundMap));
+                _featureMaps.RestartRound(_executionData.GetRound(_state.Digit, _featureMaps.RoundLayer, _featureMaps.RoundMap));
                 RenderRound();
             }
-            else if (_phase == LessonPhase.Pooling)
+            else if (_state.Phase == LessonPhase.Pooling)
             {
-                _poolingCalculation = _executionData.GetPooling(_poolingChannel);
+                _poolingCalculation = _executionData.GetPooling(_state.Digit, _state.PoolingChannel);
                 ShowPooling();
             }
-            else if (_phase == LessonPhase.AwaitRound)
+            else if (_state.Phase == LessonPhase.AwaitRound)
             {
                 AwaitRound();
             }
         }
 
-        private void ToggleZone(int zone) => Highlight(_environment.HighlightedZone == zone ? -1 : zone);
         private void Highlight(int zone)
         {
             _environment.Highlight(zone);
@@ -123,7 +115,7 @@ namespace FeatureMapCorridor
         {
             if (value > Progress)
             {
-                Progress = value;
+                _state.Progress = value;
                 ProgressChanged?.Invoke(value);
             }
         }
@@ -136,46 +128,46 @@ namespace FeatureMapCorridor
                 BeginPooling(0, 0);
                 return;
             }
-            _phase = LessonPhase.AwaitRound;
+            _state.Phase = LessonPhase.AwaitRound;
             RenderLesson();
         }
 
         private void BeginPooling(int channel, int stage)
         {
-            _phase = LessonPhase.Pooling;
-            _poolingChannel = channel;
-            _poolingStage = stage;
-            _poolingCalculation = _executionData.GetPooling(channel);
+            _state.Phase = LessonPhase.Pooling;
+            _state.PoolingChannel = channel;
+            _state.PoolingStage = stage;
+            _poolingCalculation = _executionData.GetPooling(_state.Digit, channel);
             ShowPooling();
         }
 
         private void ShowPooling()
         {
-            _featureMaps.ShowPooling(_executionData.Snapshot, _poolingChannel, _poolingCalculation, _poolingStage);
+            _featureMaps.ShowPooling(_snapshot, _state.PoolingChannel, _poolingCalculation, _state.PoolingStage);
             RenderLesson();
         }
 
         private void MapSelected(int layer, int map)
         {
-            if (_phase == LessonPhase.Pooling)
+            if (_state.Phase == LessonPhase.Pooling)
             {
-                if (layer == 2 && map != _poolingChannel)
+                if (layer == 2 && map != _state.PoolingChannel)
                 {
-                    BeginPooling(map, _poolingStage);
+                    BeginPooling(map, _state.PoolingStage);
                 }
                 return;
             }
-            if (layer == 2 || _phase == LessonPhase.Round || _phase == LessonPhase.Recap || CanExit)
+            if (layer == 2 || _state.Phase == LessonPhase.Round || _state.Phase == LessonPhase.Recap || CanExit)
             {
                 return;
             }
-            bool required = _phase == LessonPhase.AwaitRound && layer == RequiredRound.Layer && map == RequiredRound.Map;
+            bool required = _state.Phase == LessonPhase.AwaitRound && layer == RequiredRound.Layer && map == RequiredRound.Map;
             BeginRound(layer, map, required);
         }
 
         private void TinSelected(int digit)
         {
-            if (_phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4 && digit == _executionData.Digit)
+            if (_state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4 && digit == _state.Digit)
             {
                 BeginRound(4, 0, true);
             }
@@ -183,16 +175,16 @@ namespace FeatureMapCorridor
 
         private void BeginRound(int layer, int map, bool mandatory)
         {
-            _phase = LessonPhase.Round;
-            _mandatoryRound = mandatory;
+            _state.Phase = LessonPhase.Round;
+            _state.MandatoryRound = mandatory;
             Highlight(layer);
-            _featureMaps.StartRound(_executionData.GetRound(layer, map));
+            _featureMaps.StartRound(_executionData.GetRound(_state.Digit, layer, map));
             RenderLesson();
         }
 
         private void RenderRound()
         {
-            if (_phase == LessonPhase.Round)
+            if (_state.Phase == LessonPhase.Round)
             {
                 RenderLesson();
             }
@@ -200,20 +192,20 @@ namespace FeatureMapCorridor
 
         private void ShowRecap()
         {
-            _phase = LessonPhase.Recap;
+            _state.Phase = LessonPhase.Recap;
             _lessonUI.AddRecaps(_featureMaps.Recap());
-            if (_mandatoryRound && !_featureMaps.RoundIsOutput)
+            if (_state.MandatoryRound && !_featureMaps.RoundIsOutput)
             {
                 CompleteRequiredRound();
             }
             RenderLesson();
         }
 
-        private void CompleteRequiredRound() => SetProgress((_requiredRound + 1f) / RequiredRounds.Length);
+        private void CompleteRequiredRound() => SetProgress((_state.RequiredRoundIndex + 1f) / RequiredRounds.Length);
 
         private void ShowPreviousRequiredRound()
         {
-            _requiredRound--;
+            _state.RequiredRoundIndex--;
             MapId round = RequiredRound;
             if (round.Layer == 2)
             {
@@ -227,9 +219,8 @@ namespace FeatureMapCorridor
 
         private void Finish()
         {
-            _phase = LessonPhase.Complete;
+            _state.Phase = LessonPhase.Complete;
             Highlight(-1);
-            _environment.OpenDoor();
             RenderLesson();
             _lessonUI.OpenCompletion();
             SetProgress(1);
@@ -243,18 +234,18 @@ namespace FeatureMapCorridor
                 return;
             }
             _navigationFrame = Time.frameCount;
-            switch (_phase)
+            switch (_state.Phase)
             {
                 case LessonPhase.Pooling:
-                if (_poolingStage < 3)
+                if (_state.PoolingStage < 3)
                 {
-                    _poolingStage++;
+                    _state.PoolingStage++;
                     ShowPooling();
                     break;
                 }
                 CompleteRequiredRound();
-                _featureMaps.ClosePooling(_executionData.Snapshot);
-                _requiredRound++;
+                _featureMaps.ClosePooling(_snapshot);
+                _state.RequiredRoundIndex++;
                 AwaitRound();
                 break;
                 case LessonPhase.Round:
@@ -272,7 +263,7 @@ namespace FeatureMapCorridor
                 }
                 break;
                 case LessonPhase.Recap:
-                if (!_mandatoryRound)
+                if (!_state.MandatoryRound)
                 {
                     AwaitRound();
                 }
@@ -282,7 +273,7 @@ namespace FeatureMapCorridor
                 }
                 else
                 {
-                    _requiredRound++;
+                    _state.RequiredRoundIndex++;
                     AwaitRound();
                 }
                 break;
@@ -296,22 +287,22 @@ namespace FeatureMapCorridor
                 return;
             }
             _navigationFrame = Time.frameCount;
-            switch (_phase)
+            switch (_state.Phase)
             {
                 case LessonPhase.Pooling:
-                if (_poolingStage > 0)
+                if (_state.PoolingStage > 0)
                 {
-                    _poolingStage--;
+                    _state.PoolingStage--;
                     ShowPooling();
                 }
                 else
                 {
-                    _featureMaps.ClosePooling(_executionData.Snapshot);
+                    _featureMaps.ClosePooling(_snapshot);
                     ShowPreviousRequiredRound();
                 }
                 break;
                 case LessonPhase.AwaitRound:
-                if (_requiredRound > 0)
+                if (_state.RequiredRoundIndex > 0)
                 {
                     ShowPreviousRequiredRound();
                 }
@@ -324,7 +315,7 @@ namespace FeatureMapCorridor
                 else
                 {
                     _featureMaps.CloseRound();
-                    if (_mandatoryRound)
+                    if (_state.MandatoryRound)
                     {
                         AwaitRound();
                     }
@@ -335,7 +326,7 @@ namespace FeatureMapCorridor
                 }
                 break;
                 case LessonPhase.Recap:
-                BeginRound(_featureMaps.RoundLayer, _featureMaps.RoundMap, _mandatoryRound);
+                BeginRound(_featureMaps.RoundLayer, _featureMaps.RoundMap, _state.MandatoryRound);
                 _featureMaps.ReplayLastStep();
                 RenderLesson();
                 break;
@@ -344,26 +335,22 @@ namespace FeatureMapCorridor
 
         private void RenderLesson()
         {
-            LessonContext context = (_phase == LessonPhase.Round || _phase == LessonPhase.Recap)
-            ? _featureMaps.DescribeRound(_mandatoryRound) : new LessonContext();
-            context.Phase = _phase;
-            context.Digit = _executionData.Digit;
-            if (_phase == LessonPhase.Pooling)
+            LessonContext context = (_state.Phase == LessonPhase.Round || _state.Phase == LessonPhase.Recap)
+            ? _featureMaps.DescribeRound(_state.MandatoryRound) : new LessonContext();
+            context.Phase = _state.Phase;
+            context.Digit = _state.Digit;
+            if (_state.Phase == LessonPhase.Pooling)
             {
-                context.Stage = _poolingStage;
-                context.Map = _poolingChannel;
+                context.Stage = _state.PoolingStage;
+                context.Map = _state.PoolingChannel;
                 context.Pooling = _poolingCalculation;
             }
-            if (_phase == LessonPhase.AwaitRound)
+            if (_state.Phase == LessonPhase.AwaitRound)
             {
                 context.Layer = RequiredRound.Layer;
                 context.Map = RequiredRound.Map;
-                context.CanGoBack = _requiredRound > 0;
-                context.HintPosition = _featureMaps.WaitingHint(context.Layer, context.Map, _executionData.Digit);
-            }
-            if (_phase == LessonPhase.Complete)
-            {
-                context.HintPosition = _environment.ExitHint;
+                context.CanGoBack = _state.RequiredRoundIndex > 0;
+                context.HintPosition = _featureMaps.WaitingHint(context.Layer, context.Map, _state.Digit);
             }
             _lessonUI.Show(context);
         }
@@ -383,7 +370,6 @@ namespace FeatureMapCorridor
             _featureMaps.DigitSelected -= DigitSelected;
             _featureMaps.MapSelected -= MapSelected;
             _featureMaps.OutputSelected -= TinSelected;
-            _featureMaps.ZoneSelected -= ToggleZone;
             _featureMaps.RoundChanged -= RenderRound;
             _featureMaps.ButtonPressed -= _lessonUI.RecordButton;
             _lessonUI.PreviousRequested -= Previous;

@@ -6,20 +6,16 @@ namespace FeatureMapCorridor
     {
         internal const string FilterHint = "필터를 눌러 펼쳐 보세요";
         internal const string OutputDone = "출력까지 모두 계산했어요!";
-        internal const string DoorOpenHint = "문이 열렸어요";
-        internal const string CompleteBody = "모든 체험을 마쳤어요. 복도 끝의 문이 열렸어요.";
         internal const string InputLabel = "입력 · 16×16";
         internal const string Filter = "필터";
         internal const string OutputLabel = "출력 · 100%를 점수대로 나눠 담아요";
         internal const string FullTank = "100%";
         internal const string Score = "점수";
-        internal const string DoorClosed = "닫힘 · 체험을 마치면 열려요";
         internal const string Previous = "◀ 이전";
         internal const string Next = "다음 ▶";
         internal const string Understood = "알겠어요";
         internal const string Confirm = "확인";
         internal const string Complete = "체험 완료";
-        internal const string CompleteTitle = "문이 열렸어요";
         internal const string Arrow = "안내";
         private static readonly string[] RoundNames =
         {

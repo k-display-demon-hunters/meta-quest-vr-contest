@@ -19,9 +19,25 @@ namespace FeatureMapCorridor
         internal event Action<int, int> MapSelected;
         internal event Action<int> OutputSelected;
         internal event Action<string> ButtonPressed;
+        internal event Action<string> InputClicked;
+        internal string HoverName
+        {
+            get
+            {
+                foreach (var layer in _maps) foreach (var panel in layer)
+                    if (panel.HoverName != null) return panel.HoverName;
+                return _output.HoverName;
+            }
+        }
+        internal void SetInputActive(bool active)
+        {
+            foreach (var layer in _maps) foreach (var panel in layer) panel.SetInputActive(active);
+            _output.SetInputActive(active);
+        }
+        private void OnInputClicked(string name) => InputClicked?.Invoke(name);
         internal int Winner => _output.Winner;
         internal int WinnerPercent => _output.WinnerPercent;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, FeatureMapSnapshot snapshot)
+        internal void Bind(CorridorRenderUtility visuals, FeatureMapSnapshot snapshot)
         {
             _visuals = visuals;
             _input.Bind(visuals, digit => DigitSelected?.Invoke(digit));
@@ -33,11 +49,11 @@ namespace FeatureMapCorridor
                 for (int m = 0;m<_maps[l].Length;m++)
                 {
                     int map = m;
-                    _maps[l][m].Bind(visuals, interaction, () => MapSelected?.Invoke(layer, map));
+                    _maps[l][m].Bind(visuals, () => MapSelected?.Invoke(layer, map));
                     _maps[l][m].SetGridSize(snapshot.Size(layer));
                 }
             }
-            _output.Bind(visuals, interaction, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
+            _output.Bind(visuals, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
             ShowSnapshot(snapshot);
         }
 
@@ -45,12 +61,16 @@ namespace FeatureMapCorridor
         {
             _input.ButtonPressed += OnButton;
             _input.Enable();
+            foreach (var layer in _maps) foreach (var panel in layer) panel.InputClicked += OnInputClicked;
+            _output.InputClicked += OnInputClicked;
         }
 
         internal void Disable()
         {
             _input.ButtonPressed -= OnButton;
             _input.Disable();
+            foreach (var layer in _maps) foreach (var panel in layer) panel.InputClicked -= OnInputClicked;
+            _output.InputClicked -= OnInputClicked;
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);

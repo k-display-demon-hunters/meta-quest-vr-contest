@@ -2,7 +2,6 @@ namespace FeatureMapCorridor
 {
     internal static class FeatureMapLabels
     {
-        internal const string DoorOpen = "열림 · 다음 방으로";
         internal const string InputR = "입력 R";
         internal const string InputG = "입력 G";
         internal const string InputB = "입력 B";

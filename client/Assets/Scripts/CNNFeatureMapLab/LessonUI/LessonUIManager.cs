@@ -12,6 +12,7 @@ namespace FeatureMapCorridor
         [SerializeField] private CompletionPopupController _completion;
         [SerializeField] private CorridorDebugController _debug;
         private Camera _camera;
+        private bool _completed;
         internal event Action PreviousRequested;
         internal event Action NextRequested;
         internal void Initialize()
@@ -46,7 +47,7 @@ namespace FeatureMapCorridor
 
         internal void SetVisible(bool visible)
         {
-            _subtitle.SetVisible(visible);
+            _subtitle.SetVisible(visible && !_completed);
             if (visible)
             {
                 _camera = Camera.main;
@@ -71,6 +72,7 @@ namespace FeatureMapCorridor
         internal void Show(LessonContext context)
         {
             _hints.Hide();
+            _completed = context.Phase == LessonPhase.Complete;
             switch (context.Phase)
             {
                 case LessonPhase.Pooling:
@@ -94,8 +96,7 @@ namespace FeatureMapCorridor
                     context.Layer == 4 ? LessonContent.Complete : LessonContent.Next);
                 break;
                 case LessonPhase.Complete:
-                _subtitle.Show("", LessonContent.CompleteBody, false, null);
-                _hints.Show(LessonContent.DoorOpenHint, context.HintPosition);
+                _subtitle.SetVisible(false);
                 break;
             }
         }

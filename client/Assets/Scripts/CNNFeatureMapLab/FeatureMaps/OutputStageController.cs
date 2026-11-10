@@ -1,3 +1,6 @@
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using System;
 using TMPro;
 using UnityEngine;
@@ -6,7 +9,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 namespace FeatureMapCorridor
 {
     [System.Serializable]
-    internal sealed class OutputStageController
+    internal sealed class OutputStageController : IXRSelectFilter
     {
         private CorridorRenderUtility _visuals;
         [SerializeField] private Transform[] _liquid = new Transform[3];
@@ -57,17 +60,15 @@ namespace FeatureMapCorridor
         private Vector3[] _columnScale = new Vector3[3];
         private Vector3 _tankPosition;
         private Vector3 _tankScale;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, InputPanelController input, FeatureMapPanelController[] last, Action<int> chosen)
+        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, Action<int> chosen)
         {
             _visuals = visuals;
             _input = input;
             _last = last;
+            _chosen = chosen;
             for (int i = 0; i < 3; i++)
             {
-                int digit = i + 1;
-                Vector3 scale = _tankHits[i].transform.localScale;
-                XRSimpleInteractable hit = _tankHits[i];
-                interaction.Bind(hit, _ => chosen(digit), null, point => hit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
+                _inputScales[i] = _tankHits[i].transform.localScale;
                 _liquidPosition[i] = _liquid[i].localPosition;
                 _liquidScale[i] = _liquid[i].localScale;
                 _columnPosition[i] = _columns[i].localPosition;
@@ -93,6 +94,78 @@ namespace FeatureMapCorridor
                 _evidencePlates[i].gameObject.SetActive(false);
             }
             Reset();
+        }
+
+        private Action<int> _chosen;
+        private Vector3[] _inputScales = new Vector3[3];
+
+        private bool _inputActive;
+        private XRSimpleInteractable _hoveredTarget;
+        internal event Action<string> InputClicked;
+        internal string HoverName => _hoveredTarget == null ? null : _hoveredTarget.name;
+        public bool canProcess => true;
+        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable) => false;
+
+        internal void SetInputActive(bool active)
+        {
+            if (_inputActive == active) return;
+            _inputActive = active;
+            foreach (var target in _tankHits)
+            {
+                if (active)
+                {
+                    target.selectFilters.Add(this);
+                    target.activated.AddListener(HandleActivated);
+                    target.hoverEntered.AddListener(HandleHoverEntered);
+                    target.hoverExited.AddListener(HandleHoverExited);
+                    target.enabled = true;
+                }
+                else
+                {
+                    target.activated.RemoveListener(HandleActivated);
+                    target.hoverEntered.RemoveListener(HandleHoverEntered);
+                    target.hoverExited.RemoveListener(HandleHoverExited);
+                    target.enabled = false;
+                    target.selectFilters.Remove(this);
+                }
+            }
+            if (!active)
+            {
+                for (int i = 0; i < _tankHits.Length; i++)
+                    _tankHits[i].transform.localScale = _inputScales[i];
+                _hoveredTarget = null;
+            }
+        }
+
+        private void HandleHoverEntered(HoverEnterEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            _hoveredTarget = target;
+            int index = Array.IndexOf(_tankHits, target);
+            _tankHits[index].transform.localScale = _inputScales[index] * 1.04f;
+        }
+
+        private void HandleHoverExited(HoverExitEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            int index = Array.IndexOf(_tankHits, target);
+            _tankHits[index].transform.localScale = _inputScales[index];
+            if (_hoveredTarget == target) _hoveredTarget = null;
+        }
+
+        private void HandleActivated(ActivateEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right || ray.hasSelection) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            if (!ray.TryGetCurrentRaycast(out var hit, out _, out _, out _, out bool uiClosest) ||
+                uiClosest || !hit.HasValue || !target.colliders.Contains(hit.Value.collider)) return;
+            InputClicked?.Invoke(target.name);
+            _chosen(Array.IndexOf(_tankHits, target) + 1);
         }
 
         private OutputStageController()

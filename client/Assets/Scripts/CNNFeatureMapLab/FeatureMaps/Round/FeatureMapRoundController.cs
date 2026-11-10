@@ -33,15 +33,27 @@ namespace FeatureMapCorridor
         }
 
         internal event Action<bool> FilterPressed;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, FeatureMapDisplayController display)
+        internal void Bind(CorridorRenderUtility visuals, FeatureMapDisplayController display)
         {
             _display = display;
-            _filter.Bind(visuals, interaction);
+            _filter.Bind(visuals);
             _results.Bind(visuals, _filter);
         }
 
-        internal void EnableInput() => _filter.ExpansionChanged += OnFilter;
-        internal void DisableInput() => _filter.ExpansionChanged -= OnFilter;
+        internal string HoverName => _filter.HoverName;
+        internal event Action<string> InputClicked;
+        internal void SetInputActive(bool active) => _filter.SetInputActive(active);
+        private void OnInputClicked(string name) => InputClicked?.Invoke(name);
+        internal void EnableInput()
+        {
+            _filter.ExpansionChanged += OnFilter;
+            _filter.InputClicked += OnInputClicked;
+        }
+        internal void DisableInput()
+        {
+            _filter.ExpansionChanged -= OnFilter;
+            _filter.InputClicked -= OnInputClicked;
+        }
         private void OnFilter(bool expanded) => FilterPressed?.Invoke(expanded);
         internal void Start(RoundCalculationResult data)
         {

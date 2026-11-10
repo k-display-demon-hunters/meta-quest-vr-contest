@@ -1,0 +1,14 @@
+namespace FeatureMapCorridor
+{
+    // Owned and updated by CNNFeatureMapLabManager. Controllers receive display data only.
+    internal sealed class LessonState
+    {
+        internal LessonPhase Phase { get; set; } = LessonPhase.AwaitRound;
+        internal int Digit { get; set; } = 2;
+        internal int RequiredRoundIndex { get; set; }
+        internal bool MandatoryRound { get; set; }
+        internal int PoolingStage { get; set; }
+        internal int PoolingChannel { get; set; }
+        internal float Progress { get; set; }
+    }
+}

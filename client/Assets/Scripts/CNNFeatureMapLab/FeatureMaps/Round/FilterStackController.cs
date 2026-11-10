@@ -1,3 +1,6 @@
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using System;
 using TMPro;
 using UnityEngine;
@@ -6,7 +9,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 namespace FeatureMapCorridor
 {
     [System.Serializable]
-    internal sealed class FilterStackController
+    internal sealed class FilterStackController : IXRSelectFilter
     {
         private const int Capacity = 5;
         private CorridorRenderUtility _visuals;
@@ -16,7 +19,7 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform[] _weights = new Transform[Capacity];
         [SerializeField] private TMP_Text[] _badges = new TMP_Text[Capacity];
         [SerializeField] private FeatureMapPanelController[] _templates = new FeatureMapPanelController[Capacity];
-        [SerializeField] private LineRenderer[] _links = new LineRenderer[Capacity];
+        [SerializeField] private LineRenderer[] _links = new LineRenderer[4];
         [SerializeField] private LineRenderer _resultLink;
         [SerializeField] private TMP_Text _cover;
         [SerializeField] private TMP_Text _title;
@@ -37,18 +40,95 @@ namespace FeatureMapCorridor
         [SerializeField] private XRSimpleInteractable[] _cardHits = new XRSimpleInteractable[Capacity];
         [SerializeField] private float _spreadSpacing = .95f;
         private Vector3[] _foldedPositions = new Vector3[Capacity];
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction)
+        internal void Bind(CorridorRenderUtility visuals)
         {
             _visuals = visuals;
             for (int i = 0; i < Capacity; i++)
             {
                 _foldedPositions[i] = _card[i].localPosition;
                 _templates[i].Bind(visuals);
-                int card = i;
-                Vector3 scale = _card[i].localScale;
-                interaction.Bind(_cardHits[i], _ => Expand(), _ => SetExpanded(false, false), point => _card[card].localScale = scale*(point.HasValue ? 1.04f : 1f));
+                _inputScales[i] = _card[i].localScale;
             }
             Hide();
+        }
+
+        private Vector3[] _inputScales = new Vector3[Capacity];
+        private XRSimpleInteractable _lastTarget;
+        private float _lastClickTime;
+
+        private bool _inputActive;
+        private XRSimpleInteractable _hoveredTarget;
+        internal event Action<string> InputClicked;
+        internal string HoverName => _hoveredTarget == null ? null : _hoveredTarget.name;
+        public bool canProcess => true;
+        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable) => false;
+
+        internal void SetInputActive(bool active)
+        {
+            if (_inputActive == active) return;
+            _inputActive = active;
+            foreach (var target in _cardHits)
+            {
+                if (active)
+                {
+                    target.selectFilters.Add(this);
+                    target.activated.AddListener(HandleActivated);
+                    target.hoverEntered.AddListener(HandleHoverEntered);
+                    target.hoverExited.AddListener(HandleHoverExited);
+                    target.enabled = true;
+                }
+                else
+                {
+                    target.activated.RemoveListener(HandleActivated);
+                    target.hoverEntered.RemoveListener(HandleHoverEntered);
+                    target.hoverExited.RemoveListener(HandleHoverExited);
+                    target.enabled = false;
+                    target.selectFilters.Remove(this);
+                }
+            }
+            if (!active)
+            {
+                for (int i = 0; i < _cardHits.Length; i++)
+                    _card[i].localScale = _inputScales[i];
+                _hoveredTarget = null;
+                _lastTarget = null;
+            }
+        }
+
+        private void HandleHoverEntered(HoverEnterEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            _hoveredTarget = target;
+            int index = Array.IndexOf(_cardHits, target);
+            _card[index].localScale = _inputScales[index] * 1.04f;
+        }
+
+        private void HandleHoverExited(HoverExitEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            int index = Array.IndexOf(_cardHits, target);
+            _card[index].localScale = _inputScales[index];
+            if (_hoveredTarget == target) _hoveredTarget = null;
+        }
+
+        private void HandleActivated(ActivateEventArgs args)
+        {
+            if (!(args.interactorObject is XRRayInteractor ray) ||
+                ray.handedness != InteractorHandedness.Right || ray.hasSelection) return;
+            var target = (XRSimpleInteractable)args.interactableObject;
+            if (!ray.TryGetCurrentRaycast(out var hit, out _, out _, out _, out bool uiClosest) ||
+                uiClosest || !hit.HasValue || !target.colliders.Contains(hit.Value.collider)) return;
+            InputClicked?.Invoke(target.name);
+            float now = Time.unscaledTime;
+            bool twice = target == _lastTarget && now - _lastClickTime <= .4f;
+            _lastTarget = twice ? null : target;
+            _lastClickTime = now;
+            if (twice) SetExpanded(false, false);
+            else Expand();
         }
 
         internal void Dispose()
@@ -134,7 +214,7 @@ namespace FeatureMapCorridor
         private Vector3 Spread(int i) => Vector3.right*(i-(_count-1)*.5f)*_spreadSpacing;
         private void SetLinks(bool enabled)
         {
-            for (int i = 0; i < Capacity; i++)
+            for (int i = 0; i < _links.Length; i++)
             {
                 _links[i].enabled = enabled && i < _count;
             }

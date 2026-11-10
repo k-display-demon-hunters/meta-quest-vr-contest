@@ -3516,7 +3516,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "숫자별 출력 점수 · 모델 전체의 정확도가 아닙니다"
+  m_Text: "숫자별 예측 확률(Softmax) · 전체 정확도가 아닙니다"
 --- !u!1 &30420
 GameObject:
   m_ObjectHideFlags: 0

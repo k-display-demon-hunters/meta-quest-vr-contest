@@ -6,11 +6,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 
 namespace FactoryEnvironment
 {
     public sealed class FactoryPlayerController : MonoBehaviour
     {
+        private const float FloorDescentSpeed = 3f;
+
         [Serializable]
         private sealed class StageArrival
         {
@@ -22,6 +25,7 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         [SerializeField] private StageArrival[] _stageArrivals;
         private FactoryLayoutData _layoutData;
+        private XRBodyTransformer _bodyTransformer;
         private XRBaseInteractor[] _interactors;
 
         public XROrigin Rig { get; private set; }
@@ -30,6 +34,7 @@ namespace FactoryEnvironment
         {
             _layoutData = GetComponent<FactoryLayoutData>();
             Rig = FindFirstObjectByType<XROrigin>();
+            _bodyTransformer = Rig.GetComponent<XRBodyTransformer>();
             _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
         }
 
@@ -64,6 +69,17 @@ namespace FactoryEnvironment
             Rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
             // Use the persistent rig's UI input module across content scene loads.
             Rig.GetComponent<XR.XRPlayerInputController>().EnsureRayReady();
+        }
+
+        private void Update()
+        {
+            FactoryAreaId area = _areaController.CurrentArea.Id;
+            if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom)
+            {
+                // Follow the lower treads even when the shared rig has no thumbstick input.
+                Vector3 descent = Vector3.down * (FloorDescentSpeed * Time.deltaTime);
+                _bodyTransformer.constrainedBodyManipulator.MoveBody(descent);
+            }
         }
 
         public void MoveToStage(LearningStageId stage)

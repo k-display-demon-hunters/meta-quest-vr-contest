@@ -142,3 +142,10 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 ## 공장 조명 베이크
 
 `client/Assets/Textures/FactoryEnvironment/`의 `Lightmap-*_comp_*`와 `ReflectionProbe-*.exr`는 공장 씬의 고정 표면 조명, 그림자와 방별 반사에 사용한다. Codex AI 보조로 씬의 광원과 메시를 설정하고 Unity Progressive CPU Lightmapper와 반사 프로브로 다시 생성했다. 베이크 과정에서 외부 미디어를 추가하지 않았다. 제작자·법적 권리자는 미확인이며 별도 공개 라이선스를 지정하지 않았다.
+
+## 공장 강철의 산화 흔적과 보름달
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `FactoryLightOxidation_*` | `Textures/FactoryEnvironment/`, 공장의 `RustSteel` 표면 | Codex AI 보조로 Python·NumPy·Pillow에서 기존 브러시드 강철 `BrushedAlloy_*`와 `OxidizedSteel_*`를 좁은 산화 얼룩으로 합성해 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 원본은 위 표면 텍스처 기록 참조 | 신규 합성. 원본 PNG 유지 |
+| `FactoryFullMoon.jpg` | `Textures/FactoryEnvironment/`, 공장 야외 하늘 | [NASA SVS Moon Phase and Libration, 2026의 Full Moon 프레임](https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_full.1571_print.jpg) | NASA Scientific Visualization Studio, 시각화 Ernie Wright. [NASA SVS 사용 안내](https://svs.gsfc.nasa.gov/help/)의 공개 저작물 지침에 따라 출처 표기 | 원본 JPEG 유지. Unity 메시 UV로 달 표면만 표시 |

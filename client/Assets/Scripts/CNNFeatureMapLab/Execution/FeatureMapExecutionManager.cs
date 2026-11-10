@@ -60,21 +60,49 @@ namespace FeatureMapCorridor
             Recalculate();
         }
 
-        internal RoundCalculationResult CalculateRound(int layer, int map, int index) => RoundCalculation.Calculate(_model, Digit, layer, map, index, _input, _forward);
+        internal RoundCalculationResult CalculateRound(int layer, int map)
+        {
+            int index = layer == 4 ? 0 : StrongestCell(_forward[layer - 1][map].pre);
+            return RoundCalculation.Calculate(_model, Digit, layer, map, index, _input, _forward);
+        }
+
+        internal PoolingCalculationResult CalculatePooling(int channel)
+        {
+            float[] source = _forward[0][channel].act;
+            int inputSize = _model.LayerSize(1);
+            int outputIndex = StrongestCell(_forward[1][channel].pre);
+            return PoolingMath.ReadWindow(source, inputSize, outputIndex);
+        }
+
+        private static int StrongestCell(float[] values)
+        {
+            int best = 0;
+            for (int i = 1; i < values.Length; i++)
+            {
+                if (values[i] > values[best])
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+
         private void Recalculate()
         {
             _input = _model.Input(Digit);
             _forward = _model.Forward(Digit, _off);
+            var sizes = new int[_forward.Length];
             var scales = new float[_forward.Length][];
             for (int l = 0;l<_forward.Length;l++)
             {
+                sizes[l] = _model.LayerSize(l + 1);
                 scales[l] = new float[_forward[l].Length];
                 for (int m = 0;m<scales[l].Length;m++)
                 {
                     scales[l][m] = _model.Scale(l+1, m);
                 }
             }
-            Snapshot = new FeatureMapSnapshot(Digit, _model.Size, _input, _forward, scales, _model.Scores(_forward), _model.Probabilities(_forward));
+            Snapshot = new FeatureMapSnapshot(sizes, _input, _forward, scales, _model.Scores(_forward), _model.Probabilities(_forward));
         }
     }
 }

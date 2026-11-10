@@ -7,6 +7,7 @@ namespace FeatureMapCorridor
         internal static RoundCalculationResult Calculate(ICnnModel model, int digit, int layer, int map, int index, float[][] input, LayerOutput[][] forward)
         {
             bool output = layer == 4;
+            int size = model.LayerSize(output ? 3 : layer);
             float[][] sources = layer == 1 ? input : null;
             int count = layer == 1 ? input.Length : forward[layer-2].Length;
             var values = new float[count][];
@@ -33,10 +34,10 @@ namespace FeatureMapCorridor
             for (int i = 0;i<count;i++)
             {
                 float[] source = layer == 1 ? sources[i] : forward[layer-2][i].act;
-                values[i] = new float[model.Size*model.Size];
+                values[i] = new float[size*size];
                 if (output)
                 {
-                    float scale = model.Scale(3, i)*denominator;
+                    float scale = model.Scale(3, i)*Mathf.Max(.001f, denominator);
                     for (int j = 0;j<values[i].Length;j++)
                     {
                         values[i][j] = source[j]*templates[i][j]/scale;
@@ -48,14 +49,14 @@ namespace FeatureMapCorridor
                     float max = .001f;
                     for (int j = 0;j<values[i].Length;j++)
                     {
-                        values[i][j] = ConvolutionMath.Contribution(source, kernels[i], model.Size, j);
+                        values[i][j] = ConvolutionMath.Contribution(source, kernels[i], size, j);
                         max = Mathf.Max(max, Mathf.Abs(values[i][j]));
                     }
                     scales[i] = max;
                     terms[i] = values[i][index];
                 }
             }
-            return new RoundCalculationResult(layer, map, digit, index, model.Size, values, templates, kernels, scales, terms, output ? 0 : forward[layer-1][map].pre[index], !output && forward[layer-1][map].dead);
+            return new RoundCalculationResult(layer, map, digit, index, size, values, templates, kernels, scales, terms, output ? 0 : forward[layer-1][map].pre[index], output ? 0 : model.Bias(layer, map), !output && forward[layer-1][map].dead);
         }
     }
 }

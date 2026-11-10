@@ -18,18 +18,13 @@ namespace FeatureMapCorridor
         internal FeatureMapPanelController Channel(int index) => _channels[index];
         [SerializeField] private UI.WorldUIButtonController[] _digitButtons = new UI.WorldUIButtonController[3];
         [SerializeField] private Transform[] _expandedAnchors = new Transform[3];
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, Action<int> pixel, Action<int> digit)
+        internal void Bind(CorridorRenderUtility visuals, Action<int> digit)
         {
-            Action<int> select = index =>
-            {
-                SetExpanded(true);
-                pixel(index);
-            };
-            Picture.Bind(visuals, interaction, select, () => SetExpanded(false));
+            Picture.Bind(visuals);
             for (int i = 0; i < 3; i++)
             {
                 int number = i + 1;
-                _channels[i].Bind(visuals, interaction, select, () => SetExpanded(false));
+                _channels[i].Bind(visuals);
                 _ends[i] = _expandedAnchors[i].localPosition;
                 _buttons.Add(_digitButtons[i].GetComponent<UnityEngine.UI.Button>(), () => digit(number));
             }

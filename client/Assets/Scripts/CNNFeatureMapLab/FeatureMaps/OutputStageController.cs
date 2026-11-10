@@ -84,9 +84,13 @@ namespace FeatureMapCorridor
                 _streams[i].SetPosition(1, line.InverseTransformPoint(Vector3.Lerp(start, end, .55f)));
                 _streams[i].SetPosition(2, line.InverseTransformPoint(end));
             }
-            for (int i = 0; i < _evidencePlates.Length; i++)
+            for (int i = 0; i < _last.Length; i++)
             {
                 visuals.Texture(_evidencePlates[i], last[i].Texture);
+            }
+            for (int i = _last.Length; i < _evidencePlates.Length; i++)
+            {
+                _evidencePlates[i].gameObject.SetActive(false);
             }
             Reset();
         }
@@ -191,7 +195,7 @@ namespace FeatureMapCorridor
             {
                 _evidence.localPosition = StagingPosition;
                 float t = Mathf.SmoothStep(0, 1, elapsed/1.6f);
-                for (int i = 0; i < _evidencePlates.Length; i++)
+                for (int i = 0; i < _last.Length; i++)
                 {
                     Transform plate = _evidencePlates[i].transform;
                     plate.localPosition = Vector3.Lerp(_last[i].Position-StagingPosition, new Vector3(i*.06f, i*.06f, i*.16f), t);

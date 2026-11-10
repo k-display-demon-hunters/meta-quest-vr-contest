@@ -15,7 +15,6 @@ namespace FeatureMapCorridor
         internal Vector3 Destination => _destination;
         internal int Layer => _data.Layer;
         internal int Map => _data.Map;
-        internal int Index => _data.Index;
         internal int Stage
         {
             get;
@@ -24,6 +23,7 @@ namespace FeatureMapCorridor
 
         internal bool IsOutput => _data.IsOutput;
         internal int LastStage => IsOutput ? 8 : 5;
+        private bool SkipCellBreakdown => IsOutput || Map == 1;
         internal RoundCalculationResult Data => _data;
         internal Vector3 FilterPosition => _filter.Root.localPosition;
         internal float ButtonReadyAt
@@ -116,7 +116,7 @@ namespace FeatureMapCorridor
             {
                 return false;
             }
-            Show(IsOutput && Stage == 3 ? 5 : Stage+1);
+            Show(SkipCellBreakdown && Stage == 3 ? 5 : Stage+1);
             return true;
         }
 
@@ -126,7 +126,7 @@ namespace FeatureMapCorridor
             {
                 return false;
             }
-            Show(IsOutput && Stage == 5 ? 3 : Stage-1);
+            Show(SkipCellBreakdown && Stage == 5 ? 3 : Stage-1);
             return true;
         }
 

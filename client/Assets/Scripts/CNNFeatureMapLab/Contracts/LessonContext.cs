@@ -4,16 +4,17 @@ namespace FeatureMapCorridor
 {
     internal enum LessonPhase
     {
-        Start, Tour, AwaitRound, Round, Recap, AwaitOff, OffResult, AwaitOn, OnResult, Complete
+        Pooling, AwaitRound, Round, Recap, AwaitOff, OffResult, AwaitOn, OnResult, Complete
     }
     internal struct LessonContext
     {
         internal LessonPhase Phase;
-        internal int Digit, TourStage, Layer, Map, Stage, MapCount, Winner, WinnerPercent;
-        internal bool FirstTour, Mandatory, WaitingForFilter, FilterPending;
+        internal int Digit, Layer, Map, Stage, Winner, WinnerPercent;
+        internal bool CanGoBack, Mandatory, WaitingForFilter, FilterPending;
         internal Vector3 HintPosition;
         internal MapId Switch;
         internal RoundCalculationResult Calculation;
+        internal PoolingCalculationResult Pooling;
     }
     internal readonly struct RecapInfo
     {

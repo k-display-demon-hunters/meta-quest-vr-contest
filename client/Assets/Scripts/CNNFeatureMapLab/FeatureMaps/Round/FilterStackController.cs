@@ -88,6 +88,7 @@ namespace FeatureMapCorridor
                 if (layer == 4)
                 {
                     _templates[i].Frame(_colors[i]);
+                    _templates[i].SetGridSize(calculation.Size);
                     _templates[i].UpdateMap(calculation.Template(i), 1, false);
                     continue;
                 }

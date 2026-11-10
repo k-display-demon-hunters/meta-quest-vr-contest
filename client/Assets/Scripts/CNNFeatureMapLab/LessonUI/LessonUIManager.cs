@@ -73,17 +73,13 @@ namespace FeatureMapCorridor
             _hints.Hide();
             switch (context.Phase)
             {
-                case LessonPhase.Start:
-                _subtitle.Show("", LessonContent.StartBody, false, null);
-                _hints.Show(LessonContent.StartHint, context.HintPosition);
-                break;
-                case LessonPhase.Tour:
-                string prefix = context.TourStage == 0 && context.FirstTour ? LessonContent.TourIntro : "";
-                _subtitle.Show(LessonContent.TourHeader, prefix+LessonContent.Tour[context.TourStage], true, context.TourStage == 3 ? LessonContent.Understood : LessonContent.Next);
+                case LessonPhase.Pooling:
+                _subtitle.Show(LessonContent.RoundHeader(2), LessonContent.PoolingBody(context.Stage, context.Map, context.Pooling),
+                    true, context.Stage == 2 ? "전체 적용 ▶" : LessonContent.Next);
                 break;
                 case LessonPhase.AwaitRound:
-                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Digit), true, null);
-                _hints.Show(LessonContent.WaitingHint(context.Layer, context.Digit), context.HintPosition);
+                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map, context.Digit), context.CanGoBack, null);
+                _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map, context.Digit), context.HintPosition);
                 break;
                 case LessonPhase.Round:
                 if (context.WaitingForFilter)
@@ -94,7 +90,7 @@ namespace FeatureMapCorridor
                 _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next);
                 break;
                 case LessonPhase.Recap:
-                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.MapCount, context.Mandatory), true, LessonContent.Next);
+                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true, LessonContent.Next);
                 break;
                 case LessonPhase.AwaitOff:
                 _hints.Show(LessonContent.SwitchHint, context.HintPosition);
@@ -125,10 +121,10 @@ namespace FeatureMapCorridor
                 case 0: return LessonContent.FilterIntro(data.Layer, data.Map, data.Digit);
                 case 1: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
                 case 2: return LessonContent.Scan(data.Layer);
-                case 3: return LessonContent.Explain(data.Layer, data.Map, data.Digit);
-                case 4: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Disabled);
+                case 3: return LessonContent.Explain(data.Layer, data.Digit);
+                case 4: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Bias, data.Disabled);
                 case 5: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);
-                case 6: return LessonContent.MatchTemplates;
+                case 6: return LessonContent.MatchTemplates(data.Count);
                 case 7: return LessonContent.ShareLight(context.Winner, context.WinnerPercent);
                 default: return LessonContent.FlyAnswer(context.Winner);
             }

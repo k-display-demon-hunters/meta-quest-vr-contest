@@ -42,6 +42,7 @@ namespace FeatureMapCorridor
             get;
         }
 
+        internal float Bias { get; }
         internal bool Disabled
         {
             get;
@@ -56,7 +57,7 @@ namespace FeatureMapCorridor
         internal IReadOnlyList<float> Template(int source) => _templates[source];
         internal float Weight(int source, int row, int column) => _kernels[source][row, column];
         internal float Scale(int source) => _scales[source];
-        internal RoundCalculationResult(int layer, int map, int digit, int index, int size, float[][] values, float[][] templates, float[][, ] kernels, float[] scales, float[] terms, float pre, bool disabled)
+        internal RoundCalculationResult(int layer, int map, int digit, int index, int size, float[][] values, float[][] templates, float[][, ] kernels, float[] scales, float[] terms, float pre, float bias, bool disabled)
         {
             Layer = layer;
             Map = map;
@@ -74,6 +75,7 @@ namespace FeatureMapCorridor
             _scales = scales;
             Terms = Array.AsReadOnly(terms);
             Pre = pre;
+            Bias = bias;
             Disabled = disabled;
         }
     }

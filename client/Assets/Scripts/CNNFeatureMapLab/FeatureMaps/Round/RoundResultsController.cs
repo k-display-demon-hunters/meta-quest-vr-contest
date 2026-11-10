@@ -39,6 +39,10 @@ namespace FeatureMapCorridor
             _sources = display.Sources(data.Layer);
             _target = data.IsOutput ? null : display.Map(data.Layer, data.Map);
             _destination = display.Destination(data.Layer, data.Map, data.Digit);
+            for (int i = 0; i < data.Count; i++)
+            {
+                _images[i].SetGridSize(data.Size);
+            }
         }
 
         internal void Show(int stage)

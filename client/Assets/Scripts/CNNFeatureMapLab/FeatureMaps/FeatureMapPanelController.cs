@@ -28,14 +28,6 @@ namespace FeatureMapCorridor
         [SerializeField] private float _switchTravel = .72f;
         [SerializeField] private int _size;
         [SerializeField] private float _width;
-        private Transform _hoverBorder;
-        private Renderer[] _hoverBars;
-        internal string HoverCell
-        {
-            get;
-            private set;
-        }
-        = "";
         private Color _defaultFrame = new Color32(30, 58, 72, 255);
         [SerializeField] private Transform _root;
         internal Transform Root => _root;
@@ -44,7 +36,7 @@ namespace FeatureMapCorridor
         internal Texture2D Texture => _texture;
         [SerializeField] private XRSimpleInteractable _hit;
         [SerializeField] private XRSimpleInteractable _switchHit;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction = null, Action<int> clicked = null, Action doubleClicked = null)
+        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction = null, Action clicked = null)
         {
             _visuals = visuals;
             _texture = UnityEngine.Object.Instantiate(_texture);
@@ -52,24 +44,11 @@ namespace FeatureMapCorridor
             visuals.Texture(_surface, _texture);
             if (clicked != null)
             {
-                _hoverBorder = UnityEngine.Object.Instantiate(_border.gameObject, Root).transform;
-                _hoverBorder.name = "Pointer cell outline";
-                _hoverBars = _hoverBorder.GetComponentsInChildren<Renderer>(true);
-                _hoverBorder.gameObject.SetActive(false);
-                interaction.Bind(_hit, point =>
-                {
-                    int cell = CellAt(point);
-                    LogCell(_root.name, cell % _size, cell / _size);
-                    clicked(cell);
-                }, doubleClicked == null ? (Action<Vector3>)null : _ => doubleClicked(), Hover);
+                interaction.Bind(_hit, _ => clicked());
             }
         }
 
-        [System.Diagnostics.Conditional("UNITY_EDITOR"), System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
-        private static void LogCell(string name, int column, int row)
-        {
-            Debug.Log($"[Corridor] Cell {name}: ({column},{row})");
-        }
+        internal void SetGridSize(int size) => _size = size;
 
         internal void BindSwitch(InteractionManager interaction, Action toggle)
         {
@@ -78,47 +57,10 @@ namespace FeatureMapCorridor
             interaction.Bind(_switchHit, _ => toggle(), null, point => _switchHit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
         }
 
-        internal void Dispose()
-        {
-            UnityEngine.Object.Destroy(_texture);
-            if (_hoverBorder != null)
-            {
-                UnityEngine.Object.Destroy(_hoverBorder.gameObject);
-            }
-        }
+        internal void Dispose() => UnityEngine.Object.Destroy(_texture);
 
         private FeatureMapPanelController()
         {
-        }
-
-        private void Hover(Vector3? point)
-        {
-            _hoverBorder.gameObject.SetActive(point.HasValue);
-            if (!point.HasValue)
-            {
-                HoverCell = "";
-                return;
-            }
-            int cell = CellAt(point.Value);
-            HoverCell = $"({cell % _size},{cell / _size})";
-            _hoverBorder.localPosition = CellPosition(cell) + Vector3.back * .008f;
-            float width = _width / _size;
-            for (int i = 0; i < 4; i++)
-            {
-                _hoverBars[i].transform.localPosition = i < 2 ? new Vector3(0, (i-.5f)*width, 0)
-                : new Vector3((i-2.5f)*width, 0, 0);
-                _hoverBars[i].transform.localScale = i < 2 ? new Vector3(width, .012f, .012f)
-                : new Vector3(.012f, width, .012f);
-                _visuals.Paint(_hoverBars[i], Color.white);
-            }
-        }
-
-        private int CellAt(Vector3 world)
-        {
-            Vector3 local = Root.InverseTransformPoint(world);
-            int column = Mathf.Clamp(Mathf.FloorToInt((local.x/_width+.5f)*_size), 0, _size-1);
-            int row = Mathf.Clamp(Mathf.FloorToInt((.5f-local.y/_width)*_size), 0, _size-1);
-            return row*_size+column;
         }
 
         internal Vector3 CellPosition(int index)
@@ -158,15 +100,21 @@ namespace FeatureMapCorridor
             _badge.color = color;
         }
 
-        internal void UpdateMap(IReadOnlyList<float> values, float scale, bool off, int shown = int.MaxValue)
+        internal void UpdateMap(IReadOnlyList<float> values, float scale, bool off, int shown = int.MaxValue,
+            int only = -1)
         {
-            for (int y = 0; y < _size; y++)
-            for (int x = 0; x < _size; x++)
+            int width = _texture.width;
+            int height = _texture.height;
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
-                int index = y*_size+x;
-                _pixels[(_size-1-y)*_size+x] = off
-                ? ((x+y)%2 == 0 ? new Color32(26, 20, 22, 255) : new Color32(31, 23, 26, 255))
-                : index < shown ? CorridorTheme.MapColor(values[index]/scale) : new Color32(10, 18, 32, 255);
+                int row = (height - 1 - y) * _size / height;
+                int column = x * _size / width;
+                int index = row * _size + column;
+                _pixels[y * width + x] = off
+                ? ((column + row) % 2 == 0 ? new Color32(26, 20, 22, 255) : new Color32(31, 23, 30, 255))
+                : index < shown && (only < 0 || index == only) ? CorridorTheme.MapColor(values[index] / scale)
+                : new Color32(10, 18, 32, 255);
             }
             Upload();
             _off.gameObject.SetActive(off);

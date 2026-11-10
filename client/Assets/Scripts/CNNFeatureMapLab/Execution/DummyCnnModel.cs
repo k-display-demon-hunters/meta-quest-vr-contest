@@ -37,20 +37,21 @@ namespace FeatureMapCorridor
                 -.15f, -.2f
             }, new[]
             {
-                0f, 0f, -.05f
+                0f, 0f
             }, new[]
             {
-                -.35f, 0f, 0f, 0f, 0f
+                0f, 0f, -.05f, 0f
             }
         };
         private readonly int[] _mapCounts =
         {
-            2, 3, 5
+            2, 2, 4
         };
         private float[][][] _inputs;
         private float[][] _scales;
         private float[][][] _templates;
         public int Size => 16;
+        public int LayerSize(int layer) => layer < 2 ? Size : Size / 2;
         public int[] MapsPerLayer => _mapCounts;
         private static readonly float[, ] Smooth =
         {
@@ -88,7 +89,12 @@ namespace FeatureMapCorridor
                 -.5f, -.5f, -.5f
             }
         };
-        private static readonly float[, ] Zero = new float[3, 3];
+        private static readonly float[, ] Diagonal =
+        {
+            { -.5f, -.5f, 1f },
+            { -.5f, 1f, -.5f },
+            { 1f, -.5f, -.5f }
+        };
         private static readonly float[, ][, ] First =
         {
             {
@@ -108,68 +114,9 @@ namespace FeatureMapCorridor
             },
             {
                 Times(Smooth, 1.5f), Times(Smooth, -1f)
-            }
-        };
-        private static readonly float[, ][, ] Third =
-        {
-            {
-                Times(Smooth, 1.2f), Times(Smooth, 1.2f), Zero
             },
             {
-                Times(Smooth, -.4f), new float[, ]
-                {
-                    {
-                        0, 0, 0
-                    },
-                    {
-                        .5f, .5f, .5f
-                    },
-                    {
-                        0, 0, 0
-                    }
-                }, Zero
-            },
-            {
-                new float[, ]
-                {
-                    {
-                        0, .5f, 0
-                    },
-                    {
-                        0, .5f, 0
-                    },
-                    {
-                        0, .5f, 0
-                    }
-                }, Times(Smooth, -.4f), Zero
-            },
-            {
-                Zero, Zero, new float[, ]
-                {
-                    {
-                        -.15f, -.15f, -.15f
-                    },
-                    {
-                        -.15f, 1.2f, -.15f
-                    },
-                    {
-                        -.15f, -.15f, -.15f
-                    }
-                }
-            },
-            {
-                Zero, Zero, new float[, ]
-                {
-                    {
-                        -.2f, 0, .45f
-                    },
-                    {
-                        0, .45f, 0
-                    },
-                    {
-                        .45f, 0, -.2f
-                    }
-                }
+                Times(Diagonal, .6f), Times(Diagonal, -.3f)
             }
         };
         private static float[, ] Times(float[, ] source, float multiplier)
@@ -181,7 +128,7 @@ namespace FeatureMapCorridor
             return matrix;
         }
 
-        public float[, ] Kernel(int layer, int map, int src) => (layer == 1 ? First : layer == 2 ? Second : Third)[map, src];
+        public float[, ] Kernel(int layer, int map, int src) => (layer == 1 ? First : Second)[map, src];
         public float Bias(int layer, int map) => Biases[layer - 1][map];
         public float[][] Input(int digit)
         {
@@ -233,26 +180,42 @@ namespace FeatureMapCorridor
             var result = new LayerOutput[3][];
             for (int layer = 1; layer <= result.Length; layer++)
             {
+                int size = LayerSize(layer);
                 int count = _mapCounts[layer - 1];
                 var output = new LayerOutput[count];
                 var next = new float[count][];
                 for (int map = 0; map < count; map++)
                 {
                     bool dead = offMaps != null && offMaps.Contains((layer + "-" + map));
-                    var pre = new float[Size * Size];
+                    var pre = new float[size * size];
                     var act = new float[pre.Length];
-                    var kernels = new float[source.Length][, ];
-                    for (int src = 0; src < source.Length; src++)
+                    if (layer == 2)
                     {
-                        kernels[src] = Kernel(layer, map, src);
+                        for (int i = 0; i < pre.Length; i++)
+                        {
+                            pre[i] = PoolingMath.ReadWindow(source[map], LayerSize(layer - 1), i).Maximum;
+                        }
                     }
-                    for (int i = 0; i < pre.Length; i++)
+                    else
                     {
-                        float sum = Bias(layer, map);
-                        for (int src = 0; src < source.Length; src++)
-                        sum += ConvolutionMath.Contribution(source[src], kernels[src], Size, i);
-                        pre[i] = sum;
-                        act[i] = dead ? 0 : Mathf.Max(0, sum);
+                        var kernels = new float[source.Length][, ];
+                        for (int src = 0; src < kernels.Length; src++)
+                        {
+                            kernels[src] = Kernel(layer, map, src);
+                        }
+                        for (int i = 0; i < pre.Length; i++)
+                        {
+                            float sum = Bias(layer, map);
+                            for (int src = 0; src < kernels.Length; src++)
+                            {
+                                sum += ConvolutionMath.Contribution(source[src], kernels[src], size, i);
+                            }
+                            pre[i] = sum;
+                        }
+                    }
+                    for (int i = 0; i < act.Length; i++)
+                    {
+                        act[i] = dead ? 0 : Mathf.Max(0, pre[i]);
                     }
                     output[map] = new LayerOutput
                     {
@@ -287,7 +250,7 @@ namespace FeatureMapCorridor
                     foreach (LayerOutput[][] example in baseline)
                     foreach (float value in example[layer][map].act)
                     maximum = Mathf.Max(maximum, value);
-                    _scales[layer][map] = maximum;
+                    _scales[layer][map] = layer == 1 ? _scales[0][map] : maximum;
                 }
             }
             _templates = new float[3][][];
@@ -336,7 +299,7 @@ namespace FeatureMapCorridor
                         squared += template[i] * template[i];
                     }
                 }
-                scores[d] = dot / squared;
+                scores[d] = dot / Mathf.Max(.001f, squared);
             }
             return scores;
         }

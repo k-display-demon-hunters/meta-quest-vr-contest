@@ -8,6 +8,7 @@ namespace FeatureMapCorridor
         {
             get;
         }
+        int LayerSize(int layer);
         int[] MapsPerLayer
         {
             get;

@@ -17,15 +17,7 @@ namespace FeatureMapCorridor
         private Color32[] _pixels;
         [SerializeField] private Transform _border;
         [SerializeField] private Renderer[] _borderBars = new Renderer[4];
-        [SerializeField] private TMP_Text _off;
         [SerializeField] private TMP_Text _badge;
-        [SerializeField] private Transform _switch;
-        [SerializeField] private Renderer _switchTrack;
-        [SerializeField] private Transform _knob;
-        [SerializeField] private TMP_Text _switchText;
-        private float _switchValue = 1;
-        private Vector3 _knobOn;
-        [SerializeField] private float _switchTravel = .72f;
         [SerializeField] private int _size;
         [SerializeField] private float _width;
         private Color _defaultFrame = new Color32(30, 58, 72, 255);
@@ -35,7 +27,6 @@ namespace FeatureMapCorridor
         internal float Width => _width;
         internal Texture2D Texture => _texture;
         [SerializeField] private XRSimpleInteractable _hit;
-        [SerializeField] private XRSimpleInteractable _switchHit;
         internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction = null, Action clicked = null)
         {
             _visuals = visuals;
@@ -49,13 +40,6 @@ namespace FeatureMapCorridor
         }
 
         internal void SetGridSize(int size) => _size = size;
-
-        internal void BindSwitch(InteractionManager interaction, Action toggle)
-        {
-            _knobOn = _knob.localPosition;
-            Vector3 scale = _switchHit.transform.localScale;
-            interaction.Bind(_switchHit, _ => toggle(), null, point => _switchHit.transform.localScale = scale*(point.HasValue ? 1.04f : 1f));
-        }
 
         internal void Dispose() => UnityEngine.Object.Destroy(_texture);
 
@@ -100,7 +84,7 @@ namespace FeatureMapCorridor
             _badge.color = color;
         }
 
-        internal void UpdateMap(IReadOnlyList<float> values, float scale, bool off, int shown = int.MaxValue,
+        internal void UpdateMap(IReadOnlyList<float> values, float scale, int shown = int.MaxValue,
             int only = -1)
         {
             int width = _texture.width;
@@ -111,17 +95,11 @@ namespace FeatureMapCorridor
                 int row = (height - 1 - y) * _size / height;
                 int column = x * _size / width;
                 int index = row * _size + column;
-                _pixels[y * width + x] = off
-                ? ((column + row) % 2 == 0 ? new Color32(26, 20, 22, 255) : new Color32(31, 23, 30, 255))
-                : index < shown && (only < 0 || index == only) ? CorridorTheme.MapColor(values[index] / scale)
+                _pixels[y * width + x] =
+                    index < shown && (only < 0 || index == only) ? CorridorTheme.MapColor(values[index] / scale)
                 : new Color32(10, 18, 32, 255);
             }
             Upload();
-            _off.gameObject.SetActive(off);
-            if (_switch != null)
-            {
-                _switchText.text = off ? FeatureMapLabels.Off : FeatureMapLabels.On;
-            }
         }
 
         internal void DrawInput(IReadOnlyList<IReadOnlyList<float>> channels, int channel)
@@ -156,26 +134,6 @@ namespace FeatureMapCorridor
         {
             _texture.SetPixels32(_pixels);
             _texture.Apply(false);
-        }
-
-        internal void ShowSwitch(bool visible) => _switch.gameObject.SetActive(visible);
-        internal Transform Switch => _switch;
-        internal void AnimateSwitch(float delta, bool enabled)
-        {
-            if (_switch == null || !_switch.gameObject.activeSelf)
-            {
-                return;
-            }
-            float next = Mathf.MoveTowards(_switchValue, enabled ? 1 : 0, delta*5);
-            if (next == _switchValue)
-            {
-                return;
-            }
-            _switchValue = next;
-            _knob.localPosition = _knobOn + Vector3.left * (_switchTravel * (1 - next));
-            Color color = Color.Lerp(_visuals.Theme.Negative, _visuals.Theme.Cyan, next);
-            _visuals.Paint(_switchTrack, color);
-            _switchText.color = color;
         }
     }
 }

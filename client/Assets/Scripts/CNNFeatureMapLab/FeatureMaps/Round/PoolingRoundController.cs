@@ -29,7 +29,7 @@ namespace FeatureMapCorridor
             {
                 int size = snapshot.Size(1);
                 _detail.SetGridSize(size);
-                _detail.UpdateMap(snapshot.Values(1, channel), scale, snapshot.IsOff(1, channel));
+                _detail.UpdateMap(snapshot.Values(1, channel), scale);
                 int row = data.InputIndex / size;
                 int column = data.InputIndex % size;
                 _detail.Highlight(row, column, row + 1, column + 1, _visuals.Theme.Amber);
@@ -41,7 +41,7 @@ namespace FeatureMapCorridor
                 _window[2] = data.BottomLeft;
                 _window[3] = data.BottomRight;
                 _detail.SetGridSize(2);
-                _detail.UpdateMap(_window, scale, false);
+                _detail.UpdateMap(_window, scale);
                 if (stage == 2)
                 {
                     _detail.Cell(data.MaximumCell, _visuals.Theme.Yellow);
@@ -54,7 +54,7 @@ namespace FeatureMapCorridor
                 panel.Frame(i == channel ? _visuals.Theme.Amber : _visuals.Theme.Cyan);
                 int shown = stage == 3 || (stage == 2 && i == channel) ? int.MaxValue : 0;
                 int only = stage == 2 ? data.OutputIndex : -1;
-                panel.UpdateMap(snapshot.Values(2, i), snapshot.Scale(2, i), false, shown, only);
+                panel.UpdateMap(snapshot.Values(2, i), snapshot.Scale(2, i), shown, only);
                 if (i == channel && stage >= 2)
                 {
                     panel.Cell(data.OutputIndex, _visuals.Theme.Yellow);
@@ -70,7 +70,7 @@ namespace FeatureMapCorridor
                 FeatureMapPanelController panel = _display.Map(2, channel);
                 panel.ClearHighlight();
                 panel.Frame();
-                panel.UpdateMap(snapshot.Values(2, channel), snapshot.Scale(2, channel), snapshot.IsOff(2, channel));
+                panel.UpdateMap(snapshot.Values(2, channel), snapshot.Scale(2, channel));
             }
         }
 

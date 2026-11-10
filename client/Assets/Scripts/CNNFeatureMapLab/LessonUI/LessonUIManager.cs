@@ -90,21 +90,8 @@ namespace FeatureMapCorridor
                 _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next);
                 break;
                 case LessonPhase.Recap:
-                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true, LessonContent.Next);
-                break;
-                case LessonPhase.AwaitOff:
-                _hints.Show(LessonContent.SwitchHint, context.HintPosition);
-                _subtitle.Show("", LessonContent.SwitchBody, true, null);
-                break;
-                case LessonPhase.OffResult:
-                _subtitle.Show("", LessonContent.FirstOff(context.Switch.Layer, context.Switch.Map), true, LessonContent.Next);
-                break;
-                case LessonPhase.AwaitOn:
-                _hints.Show(LessonContent.RestoreSwitchHint, context.HintPosition);
-                _subtitle.Show("", LessonContent.RestoreSwitchBody, true, null);
-                break;
-                case LessonPhase.OnResult:
-                _subtitle.Show("", LessonContent.RestoredSwitch, true, LessonContent.Next);
+                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true,
+                    context.Layer == 4 ? LessonContent.Complete : LessonContent.Next);
                 break;
                 case LessonPhase.Complete:
                 _subtitle.Show("", LessonContent.CompleteBody, false, null);
@@ -122,7 +109,7 @@ namespace FeatureMapCorridor
                 case 1: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
                 case 2: return LessonContent.Scan(data.Layer);
                 case 3: return LessonContent.Explain(data.Layer, data.Digit);
-                case 4: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Bias, data.Disabled);
+                case 4: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Bias);
                 case 5: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);
                 case 6: return LessonContent.MatchTemplates(data.Count);
                 case 7: return LessonContent.ShareLight(context.Winner, context.WinnerPercent);

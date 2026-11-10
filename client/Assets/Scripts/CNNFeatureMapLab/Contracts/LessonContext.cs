@@ -4,7 +4,7 @@ namespace FeatureMapCorridor
 {
     internal enum LessonPhase
     {
-        Pooling, AwaitRound, Round, Recap, AwaitOff, OffResult, AwaitOn, OnResult, Complete
+        Pooling, AwaitRound, Round, Recap, Complete
     }
     internal struct LessonContext
     {
@@ -12,7 +12,6 @@ namespace FeatureMapCorridor
         internal int Digit, Layer, Map, Stage, Winner, WinnerPercent;
         internal bool CanGoBack, Mandatory, WaitingForFilter, FilterPending;
         internal Vector3 HintPosition;
-        internal MapId Switch;
         internal RoundCalculationResult Calculation;
         internal PoolingCalculationResult Pooling;
     }

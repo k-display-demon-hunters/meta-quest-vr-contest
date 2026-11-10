@@ -8,7 +8,6 @@ namespace FeatureMapCorridor
     {
         [SerializeField] private FeatureMapPanelController[] _images;
         [SerializeField] private Renderer[] _scanWindows;
-        [SerializeField] private TMPro.TMP_Text[] _scanWeights;
         [SerializeField] private Texture2D _plain;
         private readonly Vector3[] _mergePositions = new Vector3[5];
         private CorridorRenderUtility _visuals;
@@ -67,7 +66,7 @@ namespace FeatureMapCorridor
                 image.Frame(colors[i]);
                 image.Opacity(1);
                 image.ClearHighlight();
-                image.UpdateMap(_data.Values(i), _data.Scale(i), false, stage == 2 ? 0 : int.MaxValue);
+                image.UpdateMap(_data.Values(i), _data.Scale(i), stage == 2 ? 0 : int.MaxValue);
                 if (stage >= 4 && !IsOutput)
                 {
                     image.Cell(Index, _visuals.Theme.Yellow);
@@ -122,18 +121,6 @@ namespace FeatureMapCorridor
         private void SetScanPlate(int src)
         {
             _visuals.Texture(_scanWindows[src], IsOutput ? _filter.TemplateTexture(src) : _plain);
-            for (int n = 0; n < 9; n++)
-            {
-                TMPro.TMP_Text label = _scanWeights[(src)*9+n];
-                label.gameObject.SetActive(!IsOutput);
-                if (IsOutput)
-                {
-                    continue;
-                }
-                float weight = _data.Weight(src, n/3, n%3);
-                label.text = FilterStackController.WeightText(weight);
-                label.color = _filter.WeightColor(weight);
-            }
         }
 
         private void PositionImage(int index)
@@ -158,7 +145,7 @@ namespace FeatureMapCorridor
             for (int i = 0; i < _count; i++)
             {
                 PositionImage(i);
-                _images[i].UpdateMap(_data.Values(i), _data.Scale(i), false, shown);
+                _images[i].UpdateMap(_data.Values(i), _data.Scale(i), shown);
                 _scanWindows[i].gameObject.SetActive(shown < _size*_size);
                 if (shown == _size*_size)
                 {

@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -15,7 +14,6 @@ namespace FeatureMapCorridor
         [SerializeField] private Renderer[] _frames = new Renderer[Capacity];
         [SerializeField] private Transform[] _card = new Transform[Capacity];
         [SerializeField] private Transform[] _weights = new Transform[Capacity];
-        [SerializeField] private TMP_Text[] _numbers = new TMP_Text[Capacity*9];
         [SerializeField] private TMP_Text[] _badges = new TMP_Text[Capacity];
         [SerializeField] private FeatureMapPanelController[] _templates = new FeatureMapPanelController[Capacity];
         [SerializeField] private LineRenderer[] _links = new LineRenderer[Capacity];
@@ -36,10 +34,6 @@ namespace FeatureMapCorridor
         internal Transform Root => _root;
         internal Transform Plate(int index) => _card[index];
         internal Texture2D TemplateTexture(int index) => _templates[index].Texture;
-        internal static string WeightText(float weight) => Mathf.Abs(weight) < .005f ? "0.00"
-        : (weight < 0 ? "−" : "+")+Mathf.Abs(weight).ToString("0.00", CultureInfo.InvariantCulture);
-        internal Color32 WeightColor(float weight) => Mathf.Abs(weight) < .005f ? new Color32(107, 122, 138, 255)
-        : weight > 0 ? _visuals.Theme.Cyan : _visuals.Theme.Negative;
         [SerializeField] private XRSimpleInteractable[] _cardHits = new XRSimpleInteractable[Capacity];
         [SerializeField] private float _spreadSpacing = .95f;
         private Vector3[] _foldedPositions = new Vector3[Capacity];
@@ -89,15 +83,7 @@ namespace FeatureMapCorridor
                 {
                     _templates[i].Frame(_colors[i]);
                     _templates[i].SetGridSize(calculation.Size);
-                    _templates[i].UpdateMap(calculation.Template(i), 1, false);
-                    continue;
-                }
-                for (int n = 0; n < 9; n++)
-                {
-                    float value = calculation.Weight(i, n/3, n%3);
-                    TMP_Text number = _numbers[(i)*9+n];
-                    number.text = WeightText(value);
-                    number.color = WeightColor(value);
+                    _templates[i].UpdateMap(calculation.Template(i), 1);
                 }
             }
             for (int i = _count; i < Capacity; i++)
@@ -171,10 +157,6 @@ namespace FeatureMapCorridor
                 if (_layer == 4)
                 {
                     _templates[i].Opacity(dim ? .25f : 1);
-                }
-                else for (int n = 0; n < 9; n++)
-                {
-                    _numbers[(i)*9+n].alpha = dim ? .25f : 1;
                 }
             }
         }

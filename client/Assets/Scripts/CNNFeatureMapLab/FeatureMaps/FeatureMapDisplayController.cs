@@ -10,16 +10,13 @@ namespace FeatureMapCorridor
         {
             public FeatureMapPanelController[] Panels;
         }
-        [SerializeField] private Transform _root;
         [SerializeField] private InputPanelController _input;
         [SerializeField] private MapLayerView[] _layers;
         [SerializeField] private OutputStageController _output;
         private FeatureMapPanelController[][] _maps;
         private CorridorRenderUtility _visuals;
-        private FeatureMapSnapshot _snapshot;
         internal event Action<int> DigitSelected;
         internal event Action<int, int> MapSelected;
-        internal event Action<int, int> SwitchSelected;
         internal event Action<int> OutputSelected;
         internal event Action<string> ButtonPressed;
         internal int Winner => _output.Winner;
@@ -38,7 +35,6 @@ namespace FeatureMapCorridor
                     int map = m;
                     _maps[l][m].Bind(visuals, interaction, () => MapSelected?.Invoke(layer, map));
                     _maps[l][m].SetGridSize(snapshot.Size(layer));
-                    _maps[l][m].BindSwitch(interaction, () => SwitchSelected?.Invoke(layer, map));
                 }
             }
             _output.Bind(visuals, interaction, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
@@ -61,25 +57,19 @@ namespace FeatureMapCorridor
         internal void SetCamera(Camera camera) => _input.SetCamera(camera);
         internal void ShowSnapshot(FeatureMapSnapshot snapshot)
         {
-            _snapshot = snapshot;
             _input.Draw(snapshot.Input);
             for (int l = 0;l<_maps.Length;l++)
             for (int m = 0;m<_maps[l].Length;m++)
             {
-                _maps[l][m].UpdateMap(snapshot.Values(l+1, m), snapshot.Scale(l+1, m), snapshot.IsOff(l+1, m));
+                _maps[l][m].UpdateMap(snapshot.Values(l+1, m), snapshot.Scale(l+1, m));
             }
             _output.SetData(snapshot);
         }
 
-        internal void Tick(float now, float delta)
+        internal void Tick(float now)
         {
             _input.Tick(now);
             _output.Tick(now);
-            for (int l = 0;l<_maps.Length;l++)
-            for (int m = 0;m<_maps[l].Length;m++)
-            {
-                _maps[l][m].AnimateSwitch(delta, !_snapshot.IsOff(l+1, m));
-            }
         }
 
         internal FeatureMapPanelController Map(int layer, int map) => _maps[layer-1][map];
@@ -90,20 +80,11 @@ namespace FeatureMapCorridor
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
         internal Vector3 WaitingPosition(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.9f : Map(layer, map).Position+Vector3.up*1.75f;
-        internal Vector3 SwitchPosition(int layer, int map) => _root.InverseTransformPoint(Map(layer, map).Switch.position)+new Vector3(0, -.34f, -.2f);
         internal void HighlightLayer(int zone)
         {
             for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])
             {
                 panel.Frame(l+1 == zone ? _visuals.Theme.Cyan : (Color?)null);
-            }
-        }
-
-        internal void ShowSwitches(bool visible)
-        {
-            foreach (var layer in _maps) foreach (var panel in layer)
-            {
-                panel.ShowSwitch(visible);
             }
         }
 

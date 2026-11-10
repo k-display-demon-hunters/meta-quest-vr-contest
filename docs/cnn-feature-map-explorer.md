@@ -6,14 +6,14 @@
 
 씬의 `CorridorRoot`는 [FeatureMapCorridor.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/FeatureMapCorridor.prefab) 인스턴스다. 입력판, 피처맵, 바닥, 출력 장치, 문, 안내 UI와 연출용 오브젝트가 미리 저장되어 Play 없이 Scene 뷰에서 보이고 편집된다.
 
-전체 프리팹은 모델, 모듈 설정, 아래 중첩 프리팹 인스턴스를 연결한다. 각 원본은 `Prefabs/CNNFeatureMapLab/`에서 따로 열 수 있다.
+전체 프리팹은 실행 데이터 진입점, 모듈 설정, 아래 중첩 프리팹 인스턴스를 연결한다. 각 원본은 `Prefabs/CNNFeatureMapLab/`에서 따로 열 수 있다.
 
 | 중첩 프리팹 | 편집 대상 |
 | --- | --- |
-| `CorridorInput.prefab` | 입력 이미지, 숫자 선택 버튼, RGB 채널 3장과 펼침 앵커 |
-| `CorridorFirstConv.prefab` | 첫 Conv 피처맵 2장과 스위치 |
+| `CorridorInput.prefab` | 입구 왼쪽의 입력 이미지와 이미지에 붙인 숫자 선택 버튼, RGB 채널 3장과 펼침 앵커 |
+| `CorridorFirstConv.prefab` | 첫 Conv 피처맵 2장 |
 | `CorridorPooling.prefab` | Pooling 결과판 2장과 계산용 판 |
-| `CorridorSecondConv.prefab` | 두 번째 Conv 피처맵 4장, 스위치, 비활성 여분 판 |
+| `CorridorSecondConv.prefab` | 두 번째 Conv 피처맵 4장과 비활성 여분 판 |
 | `CorridorRoundPresentation.prefab` | Conv와 출력 비교에 함께 쓰는 필터 카드, 훑기 표시, 중간 결과판, 연출용 연결선 |
 | `CorridorOutput.prefab` | 출력 통, 점수·액체·빛 표시, 비교 판과 답 이동 앵커 |
 | `CorridorLessonUI.prefab` | 자막, 이전·다음 버튼, 힌트, 계산 요약, 완료 팝업 |
@@ -31,11 +31,11 @@
 
 에디터에서는 Game 창에 포커스를 두고 공용 XR 시뮬레이터의 가상 오른손 레이로 대상을 가리킨 뒤 Shift 없이 T를 누른다. Quest에서는 오른손 레이와 Trigger를 사용한다. 숫자 버튼으로 입력을 바꾸고, 피처맵 판을 선택해 계산을 연다.
 
-1. 첫 Conv에서 피처맵 1-1과 1-2를 차례로 열어 두 필터의 반응을 비교한다. 필터를 펼친 뒤 RGB별 훑기, 대표 결과 칸의 기여도와 편향, ReLU, 합치기를 본다. 계산 모듈이 대표 칸을 정한다.
+1. 첫 Conv에서 피처맵 1-1과 1-2를 차례로 열어 두 필터의 반응을 비교한다. 필터를 펼친 뒤 RGB별 훑기, 대표 결과 칸의 기여도와 편향, ReLU, 합치기를 본다. 저장된 대표 칸을 사용한다.
 2. MaxPooling에서는 기존 가운데 구역의 두 판에 채널별 결과를 표시하고, 나머지 판을 계산 보기에 사용한다. 다음 버튼으로 대표 2×2 영역과 네 값, 최댓값이 결과 한 칸에 들어가는 과정을 본다. 양쪽 결과판으로 채널을 전환하고 전체 적용을 누르면 8×8 결과 두 장을 본다.
 3. 두 번째 Conv는 Pooling 결과 두 장을 사용해 피처맵 네 장을 만든다. 피처맵 3-1과 3-2를 필수로 비교하며, 3-3과 3-4는 선택이다. 필터별 반응은 결과의 밝기와 위치로 관찰한다.
 4. 출력에서 현재 입력 숫자의 통을 눌러 마지막 피처맵 네 장과 숫자별 기준 틀의 비교, 빛 분배, 답 비행을 본다.
-5. 스위치 실험에서 피처맵 하나를 끈 뒤 다음을 누르고 같은 스위치를 다시 켠다. 완료하면 문이 열리고 공장 학습 세션에 출구 사용 가능 상태를 보낸다.
+5. 출력 정리에서 **체험 완료**를 누르면 진행률이 100%가 되고 문이 열린다. 공장 학습 세션에 출구 사용 가능 상태를 보낸다.
 
 체험은 첫 Conv 판 선택부터 시작한다. 입구에서 입력판을 누르는 RGB 펼침과 수용 영역 투어, 픽셀 직접 선택을 제거했다. 첫 Conv의 필터 연출에서 RGB 채널을 표시한다. 이전 버튼은 해당 설명과 연출을 다시 보여준다. 공용 공간 버튼과 팝업은 [공용 공간 UI](world-ui.md)를 사용한다.
 
@@ -45,15 +45,15 @@
 
 | 파일·모듈 | 현재 책임 |
 | --- | --- |
-| `CNNFeatureMapLabManager.cs` | 전체 학습 단계, 필수·선택 라운드 순서와 복귀 위치, 진행률·출구 조건, 모듈 이벤트 연결 |
-| `Execution/FeatureMapExecutionManager.cs` | 기존 모델 컴포넌트 연결, 선택 숫자와 꺼진 맵 목록, 입력·순전파 결과 및 계산 수명 |
+| `CNNFeatureMapLabManager.cs` | 전체 학습 단계, 필수·선택 라운드 순서와 복귀, 진행률·출구 조건, 모듈 이벤트 연결 |
+| `ExecutionData/FeatureMapExecutionDataManager.cs` | 선택 숫자 관리, 저장된 입력·레이어·연출 결과 조회 |
 | `FeatureMaps/FeatureMapsManager.cs` | 탐색·Conv 및 Pooling 표시, 필터 입력 대기, 내부 표시·입력 기능 연결 |
 | `LessonUI/LessonUIManager.cs` | 전달받은 상황에 따른 학습 문구 선택, 자막·힌트·팝업·디버그 표시, 이전·다음 요청 |
 | `Environment/CorridorEnvironmentManager.cs` | 복도 가시 상태, 바닥·구역·문·카메라 효과 연결 |
 
-계산 진입점은 기존 CnnModelProvider 컴포넌트를 대체하며 동일한 GUID와 `_modelInstance` 참조를 유지한다. 나머지 세 모듈 Manager와 표시 Controller는 기존과 같이 씬 진입점 내부에 직렬화된 일반 C# 객체다. 별도 Update를 갖는 컴포넌트로 일괄 변환하지 않았다.
+실행 데이터 진입점은 복도 루트의 기존 컴포넌트 GUID를 유지한다. 나머지 세 모듈 Manager와 표시 Controller는 기존과 같이 씬 진입점 내부에 직렬화된 일반 C# 객체다. 별도 Update를 갖는 컴포넌트로 일괄 변환하지 않았다.
 
-씬 Manager의 Awake가 계산 → 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하며 후처리를 복원하고, OnDestroy는 생성한 텍스처·디버그 표시를 정리한다.
+씬 Manager의 Awake가 실행 데이터 → 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하며 후처리를 복원하고, OnDestroy는 생성한 텍스처·디버그 표시를 정리한다.
 
 ### 외부 연결과 체험 내부 공간
 
@@ -61,12 +61,12 @@
 - `Environment/`는 이 체험이 소유한 복도·바닥·문·카메라 효과다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
 - `FeatureMaps/Interaction/ZoneSelectionController`는 체험 프리팹의 바닥 5개 영역 선택을 구역 번호로 전달한다. `InteractionManager → FeatureMapsManager → CNNFeatureMapLabManager`의 이벤트 경로를 거쳐, 씬 Manager가 Environment의 바닥 강조와 FeatureMaps의 표시 강조를 연결한다. 강조 상태의 소유자는 `CorridorEnvironmentManager`이며, 구역 선택 자체가 학습 단계를 변경하지 않는다.
 - 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
-### 계산과 전달 데이터
+### 실행 데이터와 전달 계약
 
-- `Execution/ICnnModel.cs`와 `DummyCnnModel.cs`는 현재 모델 계산을 유지한다. `ConvolutionMath`는 3×3 기여도를 계산하고 `RoundCalculation`은 채널별 중간 결과·템플릿 기여도를 준비한다.
-- `Contracts/FeatureMapSnapshot.cs`는 입력·맵·활성 상태·표시 스케일·출력 점수와 확률을 제공한다. `RoundCalculationResult.cs`는 해당 라운드의 커널·템플릿·중간 결과·비교값을 제공한다. 배열은 외부에서 변경하지 못하는 읽기 전용 조회로 전달한다.
-- `MapId`는 맵 식별 값이다. 기존 ICnnModel의 문자열 키 형식과 수학적 계산은 유지한다. `LessonContext`와 `RecapInfo`는 UI에 필요한 상황·수치·위치를 전달한다.
-- 표시 모듈은 ICnnModel을 직접 조회하지 않으며, 모델 객체나 내부 계산 배열을 공개 API로 전달하지 않는다.
+- `ExecutionData/Digit1ExecutionData.cs`부터 `Digit3ExecutionData.cs`까지 입력 RGB, 레이어 출력, 대표 칸과 채널별 기여도, Pooling 창, 출력 비교 틀·점수·확률을 C# 배열에 저장한다. 기준은 커밋 `b14a2db`의 기존 복도 모델이다.
+- `DigitExecutionData.cs`는 숫자마다 입력과 각 레이어의 결과 한 세트를 제공한다. 출력에는 후보 숫자 1·2·3의 점수와 확률, 비교 연출에 쓰는 채널별 기여도를 함께 저장한다.
+- `FeatureMapSnapshot`은 입력·맵·밝기 기준·점수와 확률을, `RoundCalculationResult`는 연출에 필요한 대표 칸·기여도·출력 틀을 읽기 전용으로 전달한다. 표시 모듈은 픽셀 값을 텍스처로 표시하고 연출을 재생한다.
+- Conv 카드와 훑기 판에는 커널 숫자 표기를 표시하지 않는다. 필터별 반응, 대표 칸의 채널별 기여도·편향·합과 ReLU는 저장 데이터로 설명한다.
 
 ### 피처맵 표시와 연출
 
@@ -74,16 +74,16 @@
 
 - `FeatureMapDisplayController`는 기본 입력판·맵·출력의 표시 변경과 복원을 소유한다. 라운드가 기본 패널을 바꿀 때 이 경로를 사용한다.
 - `InputPanelController`, `FeatureMapPanelController`, `OutputStageController`는 각 표시·입력을 담당한다. 입력판과 중간 결과판·템플릿은 같은 패널 타입의 서로 다른 인스턴스다.
-- `Round/PoolingRoundController`는 계산 모듈에서 받은 대표 영역과 최댓값을 기존 판에 표시한다. 선택 영역의 숫자는 기존 자막에 표시한다.
+- `Round/PoolingRoundController`는 저장된 대표 영역과 최댓값을 기존 판에 표시한다. 선택 영역의 숫자는 기존 자막에 표시한다.
 - `Round/FeatureMapRoundController`는 라운드 내부 단계·재생 시간을 소유하고, `FilterStackController`와 `RoundResultsController`가 카드·훑기·합치기 표시를 처리한다. 라운드 코드가 안내 UI를 직접 조작하지 않는다.
 - 다음 단계는 사용자 입력으로만 진행한다. 현재 단계의 연출을 먼저 완료하고 다음으로 이동하며, 이전 버튼은 해당 단계를 다시 재생한다.
 
 ### 입력 연결
 
 - 상호작용 대상은 기존 Core XR 리그의 오른손 레이와 XRI의 활성화·호버 이벤트를 사용한다. 레이 거리·색상·햅틱은 공용 설정을 따른다. UI는 기존 XRUIInputModule과 TrackedDeviceGraphicRaycaster를 사용한다.
-- InteractionManager는 복도 안에서만 선택용 XRSimpleInteractable을 활성화한다. 피처맵 판과 스위치 각각 8개, 필터 5개, 출력 3개, 바닥 구역 5개가 기존 Collider를 사용한다. Trigger로 판을 선택한다.
+- InteractionManager는 복도 안에서만 선택용 XRSimpleInteractable을 활성화한다. 피처맵 판 8개, 필터 5개, 출력 3개, 바닥 구역 5개가 기존 Collider를 사용한다. Trigger로 판을 선택한다.
 - 필터를 빠르게 두 번 누르면 접힌다. 바닥 선택은 구역을 강조하고 진행 단계를 유지한다.
-- 숫자 변경은 계산 모듈에서 재계산한다. Conv와 Pooling 설명은 갱신된 대표 영역을 사용한다. 완료 후에도 숫자를 바꿀 수 있고 선택 라운드는 원래 진행 위치로 돌아간다.
+- 숫자 변경은 실행 데이터에서 해당 입력과 결과를 선택한다. Conv와 Pooling 설명은 선택한 데이터의 대표 영역을 사용한다. 완료 후에도 숫자를 바꿀 수 있다. 선택 라운드를 마치면 다음 필수 라운드의 안내로 돌아간다.
 - 버튼 구독은 해당 Controller가 소유하는 `CorridorButtonBindings`로 연결·해제한다. 완료 팝업의 확인·닫기는 기존 WorldUIPopupController가 담당한다.
 
 ### 안내 UI·환경·표시 보조
@@ -94,11 +94,9 @@
 - `Presentation/CorridorRenderUtility`는 색·텍스처·빌보드·인스턴싱 표시 보조만 담당한다. 입력이나 런타임 자원 수명을 소유하지 않는다. 각 모듈은 자기 표시 객체의 빌보드 목록을 갖는다.
 - `CorridorTheme`는 기존 Settings/CorridorTheme.asset을 사용한다. 동적 표시 이름은 `FeatureMapLabels`, 정수 퍼센트 배분은 `PercentageFormatter`가 담당한다. 고정 문구·기본 배치는 기존 프리팹에 남아 있다.
 
-## 모델 교체와 에셋
+## 실행 데이터와 에셋
 
-`FeatureMapExecutionManager`의 Model Instance 슬롯은 복도 안에 미리 배치된 `DummyCnnModel.prefab` 인스턴스의 모델 컴포넌트를 참조한다. 모델을 런타임에 새로 생성하지 않는다. 교체 모델은 ICnnModel을 구현하며 현재 배치는 입력 16×16×3, 첫 Conv 16×16×2, MaxPooling 8×8×2, 두 번째 Conv 8×8×4, 출력 숫자 1·2·3을 기준으로 한다. 구성을 변경할 때는 저장된 패널·참조도 함께 맞춰야 한다.
-
-두 Conv는 3×3, stride 1, zero padding, bias, ReLU를 사용한다. 가운데 층은 채널별 2×2 최대값을 stride 2로 구한다. 대표 영역과 최종 템플릿 비교·softmax도 Execution에서 계산한다. 꺼진 맵의 pre는 유지하고 act만 0으로 전달한다. 모델 변경 시 LessonContent의 맵별 설명도 함께 맞춘다.
+현재 배치는 입력 16×16×3, 첫 Conv 16×16×2, MaxPooling 8×8×2, 두 번째 Conv 8×8×4, 출력 숫자 1·2·3을 기준으로 한다. 데이터를 갱신할 때는 입력, 레이어 결과, 표시 스케일과 설명에 표시할 대표 칸·중간 결과를 함께 맞춘다. 씬 진입점이 선택한 숫자의 저장 결과를 가져오므로 씬에 모델 프리팹을 연결할 필요가 없다.
 
 씬은 `Scenes/CNNFeatureMapLab.unity`, 프리팹은 `Prefabs/CNNFeatureMapLab/`에 유지한다. 재질·텍스처·메시는 각 종류의 CNNFeatureMapLab 폴더, 폰트는 Fonts/CNNFeatureMapLab, 후처리는 Settings/CorridorPostProcessing.asset을 그대로 사용한다. 원본을 재생성하거나 복제 보관하지 않았다.
 

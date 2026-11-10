@@ -4,13 +4,8 @@ namespace FeatureMapCorridor
 {
     internal static class LessonContent
     {
-        internal const string SwitchHint = "스위치를 눌러 꺼 보세요";
-        internal const string SwitchBody = "이번엔 피처맵 하나를 꺼 볼게요. 뒤쪽 층과 출력이 어떻게 바뀔까요?";
         internal const string FilterHint = "필터를 눌러 펼쳐 보세요";
         internal const string OutputDone = "출력까지 모두 계산했어요!";
-        internal const string RestoreSwitchHint = "다시 켜 보세요";
-        internal const string RestoreSwitchBody = "스위치를 다시 켜 보세요.";
-        internal const string RestoredSwitch = "다시 켜니 원래대로 돌아왔어요.";
         internal const string DoorOpenHint = "문이 열렸어요";
         internal const string CompleteBody = "모든 체험을 마쳤어요. 복도 끝의 문이 열렸어요.";
         internal const string InputLabel = "입력 · 16×16";
@@ -73,7 +68,7 @@ namespace FeatureMapCorridor
         : layer == 4 ? "판마다 맡은 피처맵 위에 통째로 겹쳐져요." : "판마다 맡은 피처맵을 처음부터 끝까지 훑어요.";
         internal static string Explain(int layer, int digit) => layer == 4
         ? string.Format("<b>출력 {0}</b>는 입력이 숫자 {0}인지 판단해야 해요. 그래서 필터의 판마다 <b>숫자 {0}일 때 그 피처맵이 밝아지는 곳</b>이 밝게 그려져 있어요. 피처맵이 그 모양과 많이 겹칠수록 점수가 커져요.", digit) : "필터마다 가중치가 달라요. 같은 입력을 사용해도 위치마다 계산된 값이 어떻게 달라지는지 피처맵에서 살펴보세요.";
-        internal static string Compare(int layer, System.Collections.Generic.IReadOnlyList<float> terms, float pre, float bias, bool dead)
+        internal static string Compare(int layer, System.Collections.Generic.IReadOnlyList<float> terms, float pre, float bias)
         {
             var message = new StringBuilder($"{terms.Count}장의 이미지의 <color=#FFE14A><b>노란 칸</b></color>만 볼게요.\n");
             for (int i = 0; i < terms.Count; i++)
@@ -85,7 +80,7 @@ namespace FeatureMapCorridor
                 .Append(" 결과: ").AppendLine(verdict);
             }
             message.AppendLine($"편향 {bias:0.###}을 포함한 합은 {pre:0.###}이에요.");
-            return message.Append(dead ? "이 피처맵은 스위치로 꺼져 있어서 결과 칸도 꺼져요." : pre > 0 ? "ReLU를 지나 양수는 그대로 남아요." : "ReLU를 지나면 결과가 <b>0</b>이에요.").ToString();
+            return message.Append(pre > 0 ? "ReLU를 지나 양수는 그대로 남아요." : "ReLU를 지나면 결과가 <b>0</b>이에요.").ToString();
         }
 
         internal static string Merge(int layer, int map, int digit, int count, int winner)
@@ -114,7 +109,5 @@ namespace FeatureMapCorridor
             return $"<b>{FeatureMapLabels.MapId(layer, map)}</b> 피처맵이 완성됐어요.";
         }
 
-        internal static string FirstOff(int layer, int map) =>
-            $"<b>{FeatureMapLabels.MapId(layer, map)}</b>를 껐어요. 뒤쪽 피처맵과 출력의 변화를 살펴보세요.";
     }
 }

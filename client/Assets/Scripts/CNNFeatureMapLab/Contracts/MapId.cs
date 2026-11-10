@@ -18,6 +18,5 @@ namespace FeatureMapCorridor
             Map = map;
         }
 
-        internal string ModelKey => Layer + "-" + Map;
     }
 }

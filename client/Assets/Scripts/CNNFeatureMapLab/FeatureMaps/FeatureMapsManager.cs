@@ -16,7 +16,6 @@ namespace FeatureMapCorridor
         private bool _waitingForFilter, _filterPending;
         internal event Action<int> DigitSelected;
         internal event Action<int, int> MapSelected;
-        internal event Action<int, int> SwitchSelected;
         internal event Action<int> OutputSelected;
         internal event Action<int> ZoneSelected;
         internal event Action RoundChanged;
@@ -29,7 +28,6 @@ namespace FeatureMapCorridor
         internal string HoverName => _interaction.HoverName;
         internal string LastClick => _interaction.LastClick;
         internal Vector3 WaitingHint(int layer, int map, int digit) => _display.WaitingPosition(layer, map, digit);
-        internal Vector3 SwitchHint(int layer, int map) => _display.SwitchPosition(layer, map);
         internal void Initialize(FeatureMapSnapshot snapshot)
         {
             _visuals.InitializeRuntime();
@@ -43,7 +41,6 @@ namespace FeatureMapCorridor
         {
             _display.DigitSelected += OnDigit;
             _display.MapSelected += OnMap;
-            _display.SwitchSelected += OnSwitch;
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
             _interaction.ZoneSelected += OnZone;
@@ -59,7 +56,6 @@ namespace FeatureMapCorridor
             _round.DisableInput();
             _display.DigitSelected -= OnDigit;
             _display.MapSelected -= OnMap;
-            _display.SwitchSelected -= OnSwitch;
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
             _interaction.ZoneSelected -= OnZone;
@@ -68,7 +64,6 @@ namespace FeatureMapCorridor
 
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
         private void OnMap(int layer, int map) => MapSelected?.Invoke(layer, map);
-        private void OnSwitch(int layer, int map) => SwitchSelected?.Invoke(layer, map);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
         private void OnZone(int zone) => ZoneSelected?.Invoke(zone);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
@@ -94,10 +89,10 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now, float delta)
+        internal void Tick(float now)
         {
             _interaction.UpdateHover();
-            _display.Tick(now, delta);
+            _display.Tick(now);
             _visuals.UpdateBillboards(_camera);
             if (!_roundActive)
             {
@@ -113,7 +108,6 @@ namespace FeatureMapCorridor
 
         internal void ShowSnapshot(FeatureMapSnapshot snapshot) => _display.ShowSnapshot(snapshot);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
-        internal void ShowSwitches(bool visible) => _display.ShowSwitches(visible);
         internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, int stage) =>
             _pooling.Show(snapshot, channel, data, stage);
 
@@ -171,15 +165,6 @@ namespace FeatureMapCorridor
             _waitingForFilter = false;
             _filterPending = false;
             _round.Show(_round.LastStage);
-        }
-
-        internal void CompleteOutputForRecap()
-        {
-            _display.StartMatch();
-            _display.FinishMatch();
-            _display.StartFill();
-            _display.FinishFill();
-            _display.Fly();
         }
 
         internal void CloseRound()

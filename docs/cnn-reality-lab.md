@@ -1,46 +1,80 @@
-# CNNRealityLab 패스스루
+# CNNRealityLab 숫자 인식 체험
 
-독립 씬 `client/Assets/Scenes/CNNRealityLab.unity`에 공용 OVRManager가 포함된 XRPlayerRig 프리팹 인스턴스와 OVRPassthroughLayer를 배치한다. 태블릿, 컨트롤러, 레이, 입력은 원본 프리팹을 그대로 사용한다. 공장과 ModelDesignLab은 로드하지 않는다. 빌드 씬 목록에 CNNRealityLab을 추가했으며 시작 씬은 유지한다.
+## 체험 범위
 
-RealityPassthroughController는 연결된 카메라의 배경을 투명하게 만들고 HDR·후처리를 중지한다. 종료 시 이전 상태를 복원한다. 패스스루는 Underlay로 배치한다. 태블릿과 컨트롤러의 표시·입력은 비활성화하지 않는다. MRUK 카메라 접근·촬영·전처리·기존 모델 추론 및 Additive 진입·복귀 진입점을 추가했다. UI 버튼 연결과 방 스캔은 제공하지 않는다.
+`client/Assets/Scenes/CNNRealityLab.unity`는 현실에 놓인 숫자 **0~3**을 촬영하여 이전 방에서 학습한 모델로 예측하는 체험이다. 새 학습, 모델 교체, 숫자 4~9의 표시·반응 탐구, 사물 자동 탐지는 제공하지 않는다. 정답 선택은 기록용이며 모델의 입력이나 학습에 전달하지 않는다.
 
-Meta Core와 MRUK 207.0.1을 공식 scoped registry에 선언한다. 공용 리그의 공식 컨트롤러 표시와 Reality의 패스스루가 같은 Meta Core 패키지를 사용한다.
+현재 작성한 체험 순서는 `내 모델 적용 → 촬영 → 28×28 입력 확인 → 인식 → 실제 숫자 선택 → 같은 숫자 재촬영 / 다른 숫자 촬영 → 결과 정리`이다. 고정 버튼·문구·미리보기·점수 막대는 씬에 저장하고 런타임에는 상태와 값만 갱신한다. 화면에는 숫자별 예측 확률(Softmax)로 표시한다. 실제 모델의 Softmax 출력을 백분율로 나타내며, 모델 전체의 정확도나 실제 정답 보장률을 의미하지 않는다.
 
-Android 빌드 후처리 소스는 생성된 unityLibrary manifest에 optional com.oculus.feature.PASSTHROUGH를 추가한다. horizonos.permission.HEADSET_CAMERA 권한 선언도 추가하며 Reality 진입 시 RealityPassthroughController가 SDK를 통해 권한을 요청하고 공용 OVRManager의 패스스루를 활성화한다. 종료 시 이전 설정을 복원한다. 이 후처리는 작성만 했으며 실행하지 않았다.
+## 기존 진입 연결과 모델 수명
 
-## UI 구성
+이번 변경은 `CNNModelDesignLab` 코드·씬 및 #3 모델방에서 AR로 넘어오는 진입·복귀 연결을 수정하지 않았다. 기존 `ModelRealitySessionController`가 Reality 씬을 Additive로 로드하고 패스스루 루트에 `CNNRealityLabManager`를 동적으로 추가한 뒤 `Initialize(source)`를 호출하는 계약을 유지한다. 공장 경유 실행은 기존 코드에서 거절하며 사용자용 AR 진입 버튼도 이번 범위에 포함하지 않는다.
 
-씬의 `CNNReality UI` 아래에 선택 안내, 인식 패널, 사용 안내 팝업을 저장했다. 런타임 UI 생성 코드나 새 Manager는 추가하지 않았다. 태블릿·컨트롤러·XRPlayerRig 및 공용 UI 프리팹 원본은 변경하지 않았다.
+학습 엔진은 출발 씬에 유지한다. `내 모델 적용하기`는 제공된 모델을 체험에 사용하기 시작하는 동작이며 모델 이동·복사·새 학습을 하지 않는다. 모델 준비 상태는 기존 씬 진입점의 `CanExit`를 조회하고 추론은 기존 `InferRealityAsync`를 사용한다. 실제 추론 엔진의 학습 완료·동시 실행 제한도 그대로 적용한다.
 
-| 오브젝트 | 현재 표시와 동작 |
+씬의 자체 XRPlayerRig와 패스스루 루트는 저장 상태에서 비활성이다. CNNRealityLab 하나만 활성 씬으로 실행하면 RealityStandaloneController가 씬의 리그·카메라·패스스루를 활성화하고 촬영 전용 모드를 시작한다. 이 모드는 촬영·28×28 미리보기·다시 촬영만 제공한다. 모델 적용·인식·정답 기록·요약은 연결 대기로 남긴다. 모델을 임의로 생성하지 않는다. 다른 씬과 Additive로 진입한 경우 이 초기화를 수행하지 않고 기존 모델 세션 진입을 따른다.
+
+## UI와 조작
+
+| 항목 | 현재 작성된 동작 |
 | --- | --- |
-| Number Selection Guide | 네 모서리로 된 빈 숫자 선택 프레임, 숫자 하나를 맞추라는 안내, 현재 촬영하지 않는다는 문구. 프레임 내부에는 배경이나 raycast 대상이 없다. |
-| Recognition Panel | 촬영 카메라·사용 모델의 미연결 상태, 선택한 원본과 28×28 CNN 입력의 빈 미리보기, 예측 대기 표시, 0~9의 빈 점수 막대 자리와 `—` 표시. 실제 이미지·추론 결과·점수 데이터는 없다. |
-| Capture / Recognize / Retake Button | 공용 WorldUIButton 프리팹 인스턴스. 촬영·인식하기·다시 촬영은 `Button.interactable = false`로 저장하고 클릭 동작을 연결하지 않았다. 아래에 사용 불가 이유를 표시한다. |
-| Help Button / Reality Usage Guide | 공용 WorldUIButton과 WorldUIPopup 인스턴스. 사용 안내 버튼이 팝업 진입점 Show를 호출하고 팝업의 닫기 버튼이 기존 동작으로 닫는다. 팝업은 처음에는 비활성이다. 기능 연결 전인 현재 상태를 안내문에 명시한다. |
+| 내 모델 적용하기 | 이전 방의 학습 모델이 사용 가능한 경우 체험 시작. 적용 전 촬영 불가 |
+| 숫자 선택 프레임 | 한 자리 숫자 0~3을 맞추는 0.48m 정사각형. 촬영 대기 중 머리 위치·회전을 따라 시야 정면 1.2m에 유지. 자동 검출·공간 앵커 없음 |
+| 촬영하기 | 선택 영역을 한 번 촬영. 실제 모델 입력을 Point 필터 미리보기로 표시 |
+| 인식하기 | 현재 촬영 입력으로 추론. 작업 중 촬영·중복 인식·기록·결과 정리 버튼 비활성 |
+| 다시 촬영 | 아직 예측하지 않은 입력을 버리고 촬영 단계로 복귀. 실패한 추론 입력도 다시 촬영 가능 |
+| 실제 숫자 0 / 1 / 2 / 3 | 첫 예측 이후 정답을 선택해 한 번만 기록. 재학습에는 사용하지 않음 |
+| 같은 숫자 재촬영 | 직전 입력·실제 숫자·예측을 유지해 비교. 정답은 직전 기록에서 계승하며 예측 완료 후 재촬영 기록을 추가 |
+| 다른 숫자 촬영 | 새 표본 시작. 이전 비교 이미지를 비우고 새 정답을 선택 |
+| 결과 정리 | 첫 촬영과 재촬영의 일치 횟수를 각각 표시. 이전·다음 기록으로 입력 이미지·실제 숫자·예측·예측 확률를 조회 |
+| 체험 계속하기 | 결과 정리 이전 단계와 진행 중 입력을 복원. 씬 전환은 하지 않음 |
+| 사용 안내 | 기존 공용 팝업으로 촬영·기록·비교 순서 안내 |
 
-선택 안내 Canvas는 월드 좌표 `(0, 1.5, 1.5)`, 인식 패널은 `(0.72, 1.4, 1.5)`에 배치하고 UI 배율은 0.001로 저장했다. 선택 프레임은 약 0.48m 정사각형, 패널은 0.82×1.08m다. 머리를 따라다니거나 현실 표면에 고정되는 기능은 없고 씬에 배치한 위치를 유지한다. 팝업은 `(0, 1.5, 1.25)`에 표시된다.
+현재 입력과 직전 입력을 나란히 표시한다. 원본 카메라 영상 미리보기는 제공하지 않으며 왼쪽 화면을 원본이라고 표기하지 않는다. 촬영 중 아직 인식하지 않은 이미지와 모델 출력이 혼동되지 않도록 새 입력에서는 점수와 예측 표시를 비운다.
 
-입력은 기존 리그의 EventSystem·XRUIInputModule·컨트롤러 ray를 사용한다. 새 입력 액션이나 태블릿 단축키는 추가하지 않았다. 패널 내부 버튼은 공용 프리팹의 Canvas·raycaster를 인스턴스에서 비활성화하고 패널 Canvas·TrackedDeviceGraphicRaycaster를 사용한다. 선택 프레임과 문구는 raycast를 받지 않는다.
+촬영 대기에는 시야를 따라오는 선택 프레임과 촬영 버튼만 표시한다. 촬영하면 프레임 위치를 고정하고 중앙의 작은 28×28 입력 미리보기와 인식·재촬영 버튼을 표시한다. 단독 촬영 모드에서는 인식 버튼을 숨긴다. 재촬영으로 돌아가면 시야 추적을 재개한다.
 
-UI 문구는 기존 Pretendard Regular·SemiBold 원본을 참조하며 폰트의 추가 사용처를 ASSET_CREDITS.md에 기록했다. 새 이미지·아이콘·미디어 파일은 추가하지 않았다. 28×28 및 0~9 표시는 현재 UI 배치용이며 모델 입력 규격이나 추론 API를 변경하지 않는다.
+결과 패널은 인식 성공 또는 결과 정리 단계에서만 표시한다. 열리는 순간 시야 정면 1.2m에 배치한 뒤 읽기·조작 중에는 공간에 고정한다. 패널 크기는 900×1320, 배율은 0.00065(0.585×0.858m)이며 촬영 프레임과 동시에 표시하지 않는다. 결과에는 실제 입력, 숫자별 예측 확률, 정답과의 일치 및 재촬영 비교를 표시한다. 실제 중간 피처맵이나 층별 계산 애니메이션은 아직 제공하지 않는다. UI는 기존 공용 WorldUIButton과 TrackedDeviceGraphicRaycaster를 사용하며 공용 리그·버튼 원본은 수정하지 않는다.
+
+## 책임과 이벤트
+
+모든 전용 스크립트는 `client/Assets/Scripts/CNNRealityLab/`에 둔다.
+
+| 클래스 | 책임 |
+| --- | --- |
+| `CNNRealityLabManager` | 체험 단계와 학습 모델 연결 상태, 촬영·추론·기록 순서, UI 요청 이벤트 연결. 기존 공개 Capture / RecognizeAsync / ExitAsync와 알림 이벤트 유지 |
+| `RealityCaptureManager` | 선택 프레임의 네 모서리를 카메라 영상 좌표로 변환하고 촬영·전처리 조율 |
+| `RealityCameraController` | 기존 MRUK 카메라 접근과 일회 GPU readback |
+| `RealityImagePreprocessor` | 기존 bilinear resize와 HWC RGB 입력 생성 |
+| `RealityUIManager` | UI 단일 진입점. 의미별 C# 요청 이벤트, 단계 안내·버튼 상태, 결과 표시 Controller 조율 |
+| `RealityViewController` | 촬영 프레임의 시야 추적, 촬영 후 위치 고정, 인식 완료 후 결과 패널 배치·표시 |
+| `RealityResultController` | 현재·직전 입력 미리보기, 출력 막대·비교 문구, 기록 조회와 세션 요약 표시, 표시 텍스처 해제 |
+| `RealityStandaloneController` | 단일 AR 씬 실행에서만 자체 리그와 촬영 전용 모드 초기화. #3 진입 경로 변경 없음 |
+| `RealitySession` / `RealityAttempt` | 세션 안에서 첫 촬영과 재촬영을 구분하는 관찰 기록. 읽기 전용 입력·출력·정답·예측·표본 번호 |
+
+`CNNRealityLabManager → RealityCaptureManager / RealityUIManager → 내부 Controller` 방향을 유지한다. UI 내부에서 씬 Manager를 참조하거나 탐색하지 않는다. Button UnityEvent는 UIManager의 요청 메서드로 연결하고, 씬 Manager는 OnEnable / OnDisable에서 로컬 C# 이벤트를 대칭으로 연결·해제한다. CaptureManager와 UIManager는 패스스루 루트에 미리 배치한다. 동적으로 추가되는 씬 Manager는 같은 오브젝트의 모듈 진입점을 사용한다.
+
+## 촬영·추론 데이터
+
+선택 프레임 네 모서리는 `PassthroughCameraAccess.WorldToViewportPoint`를 통해 실제 카메라 영상 좌표로 변환한다. 머리 카메라 viewport를 그대로 입력하지 않는다. 머리 뒤에 있거나 카메라 영상 범위를 벗어난 선택은 안내하고 재촬영을 기다린다. 투영한 네 점의 축 정렬 사각 영역을 사용하며 원근 보정은 하지 않는다. 프레임을 정면에서 바라보도록 안내한다.
+
+입력은 기존 `RealityRecognitionData`의 28×28×3 RGB, 0~1, 위쪽 행부터 HWC 순서다. 배경 제거·이진화·색 반전은 추가하지 않았다. 전체 카메라 프레임은 RGB24로 한 번 읽고 해제한다. 모델 입력과 결과를 세션 메모리에만 보관하고 디스크에 저장하거나 업로드하지 않는다. 표시 텍스처는 입력 교체 또는 Controller 파괴 시 해제한다.
+
+추론은 동일한 `reality:` 요청 ID로 기존 모델의 0~3 출력을 받는다. 비활성화·씬 해제 이후 도착한 결과는 UI를 갱신하지 않는다. 촬영/추론 실패 시 이유를 표시하고 다시 시도할 수 있게 한다. 출력 개수가 맞지 않는 결과를 정상 기록으로 취급하지 않는다. 기존 엔진에서 이미 수행하는 입력·출력 검증을 UI마다 중복하지 않는다.
+
+같은 숫자 재촬영은 직전 기록의 정답을 유지한다. 다른 숫자로 바꾸려면 `다른 숫자 촬영`을 사용한다. 첫 촬영의 오답은 재촬영 성공으로 덮어쓰지 않는다. 요약은 이번 관찰 횟수에 한정하며 모델 전체의 실제 정확도로 일반화하지 않는다. 모델 엔진·공장 진행률·출구 조건은 변경하지 않는다.
+
+## 기존 패스스루 설정
+
+Meta Core와 MRUK 207.0.1, 공용 OVRManager, Underlay OVRPassthroughLayer를 유지한다. `RealityPassthroughController`는 연결 카메라의 투명 배경·HDR·후처리와 패스스루 활성 상태를 변경하고 종료 시 복원한다. `horizonos.permission.HEADSET_CAMERA` 선언과 런타임 권한 요청은 기존 구현을 따른다.
+
+`RealityPresentationController`의 출발 씬 숨김·복원은 변경하지 않았다. 숨겨진 출발 씬의 Collider·입력과 MR 중 새로 생성된 시각 객체 처리는 기존 제한으로 남아 있다. 카메라 동기 GPU readback의 실기기 지연은 미측정이다.
 
 ## 확인 범위
 
-씬 YAML과 기존 프리팹 참조를 정적으로 확인했다. UI의 실제 표시·한글 렌더링·컨트롤러 ray 반응 및 팝업 조작은 실행 확인 전이다. SDK 참조 GUID는 Meta 공식 Unity-PassthroughCameraApiSamples의 CameraViewer와 Unity-StarterSamples의 PassthroughAtStartup 씬에서 확인했다. 207.0.1 패키지의 실제 임포트 결과·OpenXR 연동·기기 동작은 아직 검증하지 않았다. Unity 실행·컴파일·빌드·테스트·Simulator 설치를 수행하지 않았다. 헤드셋 없는 일반 에디터 화면에서 실제 현실 영상이 나타나는 구현은 아니다.
+소스 흐름, 씬의 로컬 참조·스크립트 참조·버튼 호출 대상·직렬화 필드를 정적으로 검토했다. Unity 6000.3.24f1에서 AR 단독 실행 코드의 컴파일을 완료했으며 컴파일 오류는 없었다. 기존 EditMode 테스트는 14개 중 13개 통과, 1개 실패했다. 실패한 ModelDesignTests.LocalCnnBuildFollowsSlotOrderAndExcludesUnplacedBlocks는 입력 크기 기대값 784와 실제 RGB 입력 2352가 불일치하며, 해당 테스트와 모델방 코드는 수정하지 않았다. AR 씬 단독 Android APK 빌드는 오류 0개·경고 10개로 성공했으며, 연결된 Quest 3S에 업데이트 설치하고 Android 실행 요청 성공 및 앱 프로세스 생성을 확인했다. 헤드셋 착용 후 실제 촬영·조작 확인은 아직 완료하지 않았다. 빌드 경고에는 XRInteractionRuntimeSettings의 누락 스크립트와 Meta XR 설정·성능 관련 안내가 포함되어 있다. 실기기 카메라 권한·좌표 정합·입력 방향·색상·가독성·XR ray 조작·실제 추론은 실행 확인 전이다. #3 모델방 진입·복귀와 공장 경유 통합은 이번 변경에서 추가하거나 검증하지 않았다.
 
-CNNRealityLab 자체 리그 및 패스스루 루트는 시작 시 비활성이다. ModelDesign 단독 실행에서 학습 후 EnterRealityAsync로 진입해야 기존 리그 카메라 연결과 패스스루 활성화가 이루어진다. FactoryEnvironment가 로드된 실행은 진입을 거절한다.
 
-## 기능 연결 (UI 미연결)
+### 시야 추적·단계별 화면 수정 확인
 
-ModelDesign의 EnterRealityAsync / ExitRealityAsync가 ModelRealitySessionController에 로드·복귀를 위임한다. 학습 엔진은 ModelDesign Execution에 유지된다. 씬 종료 시 전환 컴포넌트가 Reality도 정리한다. Core·공장·태블릿·컨트롤러 및 기존 UI 파일은 수정하지 않았다.
-
-EnterRealityAsync 완료 후 ModelDesign.Reality로 CNNRealityLabManager를 얻는다. IsCameraReady를 확인하고 Capture(Rect)로 카메라 영상 기준 정규화 선택 영역(좌하단 원점)을 전달한다. 머리 카메라 viewport를 그대로 사용하면 안 되며 WorldToCameraImage로 실제 카메라 투영 좌표를 얻을 수 있다. 원근 보정·자동 숫자 검출은 제공하지 않는다. 현재 고정 선택 프레임과 버튼에는 이 기능을 연결하지 않았다.
-
-Capture 결과는 RealityRecognitionData이며 28×28×3, RGB 0~1, 위쪽 행부터 HWC 순서다. 읽기 전용 Pixels와 CopyInput을 제공한다. 카메라 전체 프레임은 GPU에서 RGB24 CPU 이미지로 일회 읽기 후 해제한다. 전처리는 bilinear resize이며 배경 제거·이진화는 하지 않는다. InputPrepared 이벤트에서 동일 입력으로 UI 미리보기를 만들 수 있다. 원본 촬영 텍스처는 외부에 보관·제공하지 않는다.
-
-RecognizeAsync(input)는 같은 요청 ID로 ModelDesign의 외부 추론 진입점을 호출하며 InferenceCompleted 또는 Failed 이벤트를 보낸다. 출력은 기존 모델의 0~3 네 클래스다. UI의 0~9 자리·문구는 팀원 작업 범위로 그대로 두었다. 기존 내장 샘플 결과 표시에서는 reality: 요청을 제외한다. 실행 중에는 기존 엔진의 동시 실행 제한이 적용된다.
-
-RealityPresentationController는 출발 씬의 Renderer.forceRenderingOff, Canvas.enabled, Light.enabled를 저장·변경하고 복귀 시 복원한다. 모델 루트나 계산 컴포넌트를 비활성화하지 않는다. 제작 오브젝트의 Collider·물리·입력은 유지되므로 숨겨진 물체와의 레이 간섭은 아직 해결되지 않았다. MR 중 새로 생성된 시각 객체에는 초기 숨김 목록이 적용되지 않는다.
-
-카메라에는 PassthroughCameraAccess.GetTexture, IsPlaying, WorldToViewportPoint를 사용한다. 이번 공용 리그 전환 이후 컴파일·권한·영상 방향·색상·프레임 동작은 실행 확인 전이다. 카메라 읽기는 동기 GPU readback이며 실기기 지연은 미측정이다. [Meta 공식 PCA 문서](https://developers.meta.com/vr/documentation/unity/unity-pca-documentation/)
+이번 수정은 씬 참조와 코드 차이를 정적으로 검토했다. 이전 APK의 빌드·설치 결과는 이 수정본에 대한 검증이 아니다. 이번 수정 후 사용자 요청으로 컴파일 및 AR 단독 Android 재빌드를 수행했다. 컴파일 오류 없이 빌드에 성공했으며(오류 0개, 경고 10개), Quest 3S에 업데이트 설치하고 앱 실행 요청 성공과 프로세스 생성을 확인했다. 시작 직후 해당 프로세스의 Unity·AndroidRuntime 오류 로그는 없었다. 자동 테스트는 재실행하지 않았으며, 시야 추적·촬영·레이 조작의 실제 헤드셋 확인은 남아 있다. CNNModelDesignLab과 #3 진입 연결은 수정하지 않았다.

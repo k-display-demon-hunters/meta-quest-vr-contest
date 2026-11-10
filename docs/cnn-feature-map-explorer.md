@@ -6,7 +6,22 @@
 
 씬의 `CorridorRoot`는 [FeatureMapCorridor.prefab](../client/Assets/Prefabs/CNNFeatureMapLab/FeatureMapCorridor.prefab) 인스턴스다. 입력판, 피처맵, 바닥, 출력 장치, 문, 안내 UI와 연출용 오브젝트가 미리 저장되어 Play 없이 Scene 뷰에서 보이고 편집된다.
 
-- 씬에서 인스턴스를 편집하거나 프리팹을 열어 Transform과 UI 배치를 수정한다. 공통 원본에 반영할 변경만 프리팹에 Apply한다. 실행 시 복도 오브젝트를 다시 생성하지 않는다.
+전체 프리팹은 모델, 모듈 설정, 아래 중첩 프리팹 인스턴스를 연결한다. 각 원본은 `Prefabs/CNNFeatureMapLab/`에서 따로 열 수 있다.
+
+| 중첩 프리팹 | 편집 대상 |
+| --- | --- |
+| `CorridorInput.prefab` | 입력 이미지, 숫자 선택 버튼, RGB 채널 3장과 펼침 앵커 |
+| `CorridorFirstConv.prefab` | 첫 Conv 피처맵 2장과 스위치 |
+| `CorridorPooling.prefab` | Pooling 결과판 2장과 계산용 판 |
+| `CorridorSecondConv.prefab` | 두 번째 Conv 피처맵 4장, 스위치, 비활성 여분 판 |
+| `CorridorRoundPresentation.prefab` | Conv와 출력 비교에 함께 쓰는 필터 카드, 훑기 표시, 중간 결과판, 연출용 연결선 |
+| `CorridorOutput.prefab` | 출력 통, 점수·액체·빛 표시, 비교 판과 답 이동 앵커 |
+| `CorridorLessonUI.prefab` | 자막, 이전·다음 버튼, 힌트, 계산 요약, 완료 팝업 |
+| `CorridorEnvironment.prefab` | 바닥·계단·보행 Collider, 구역 강조, 문과 문틀 |
+
+- 기능별 배치는 해당 중첩 프리팹에서 편집한다. 전체 배치를 확인하려면 `FeatureMapCorridor.prefab`을 연다. 실행 시 복도 오브젝트를 다시 생성하지 않는다.
+- 중첩 프리팹 루트는 위치 0, 회전 0, 스케일 1을 유지한다. RGB 펼침, 필터 위치, 답 이동 등은 복도 기준 좌표를 사용하므로 개별 오브젝트의 Transform에서 배치를 조정한다.
+- 런타임 표시와 입력 참조는 전체 프리팹의 기존 모듈 설정에 연결되어 있다. `CorridorInput.prefab`에는 RGB 표시 오브젝트와 앵커가 함께 들어 있고, 다른 씬에서 펼침 동작을 사용하려면 해당 씬의 제어 연결이 필요하다.
 - 입력 그림은 `Input image`, RGB 펼침 위치는 `RGB expanded 1~3`, 출력 통은 `Output 1~3`, 정답 도착 위치는 각 통의 `Answer destination`, 비교 연출 기준점은 `Evidence staging`, 문은 `Corridor door`에서 편집한다. 맵·입력판 크기는 패널 루트의 Scale로 조절한다.
 - 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 문은 저장된 닫힘 위치에서 움직인다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다. 필터·강조선·계산 결과판은 학습 단계에 따라 이동·표시되므로 편집 시의 위치가 고정 표시 위치를 뜻하지는 않는다.
 - RGB 채널, 필터 카드, 계산 연출, 완료 팝업 등 단계별 오브젝트는 프리팹에 존재하지만 초기에는 비활성 상태일 수 있다. Hierarchy에서 선택해 편집하고 초기 표시 상태를 유지한다. 두 번째 Conv의 여분 판 한 장은 비활성 상태로 배치한다.

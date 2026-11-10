@@ -108,10 +108,10 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void ShowRound(RoundCalculationResult data, int stage)
+        internal void ShowRound(RoundCalculationResult data, LessonStep step)
         {
-            _input.MarkChannels(data.Layer == 1 && stage >= 1);
-            if (data.Layer == 1 && stage >= 1)
+            _input.MarkChannels(data.Layer == 1 && step != LessonStep.FilterIntro);
+            if (data.Layer == 1 && step != LessonStep.FilterIntro)
             {
                 _input.SetExpanded(true);
             }

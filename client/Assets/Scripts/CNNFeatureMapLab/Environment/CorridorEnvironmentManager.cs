@@ -18,7 +18,6 @@ namespace FeatureMapCorridor
             _floor.Bind(_visuals);
         }
 
-        internal void Start(bool standalone) => _camera.Start(standalone);
         internal void Enable() => _camera.VisibilityChanged += OnVisibility;
         internal void Disable()
         {

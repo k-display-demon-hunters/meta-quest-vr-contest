@@ -19,13 +19,13 @@ namespace FeatureMapCorridor
             _detail.Root.gameObject.SetActive(false);
         }
 
-        internal void Show(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, int stage)
+        internal void Show(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, LessonStep step)
         {
             _detail.Root.gameObject.SetActive(true);
             _detail.Badge($"계산 보기 · 채널 {channel + 1}", _visuals.Theme.Ink);
             _detail.ClearHighlight();
             float scale = snapshot.Scale(1, channel);
-            if (stage == 0 || stage == 3)
+            if (step == LessonStep.PoolingWindow || step == LessonStep.PoolingApply)
             {
                 int size = snapshot.Size(1);
                 _detail.SetGridSize(size);
@@ -42,7 +42,7 @@ namespace FeatureMapCorridor
                 _window[3] = data.BottomRight;
                 _detail.SetGridSize(2);
                 _detail.UpdateMap(_window, scale);
-                if (stage == 2)
+                if (step == LessonStep.PoolingMaximum)
                 {
                     _detail.Cell(data.MaximumCell, _visuals.Theme.Yellow);
                 }
@@ -52,10 +52,10 @@ namespace FeatureMapCorridor
                 FeatureMapPanelController panel = _display.Map(2, i);
                 panel.ClearHighlight();
                 panel.Frame(i == channel ? _visuals.Theme.Amber : _visuals.Theme.Cyan);
-                int shown = stage == 3 || (stage == 2 && i == channel) ? int.MaxValue : 0;
-                int only = stage == 2 ? data.OutputIndex : -1;
+                int shown = step == LessonStep.PoolingApply || (step == LessonStep.PoolingMaximum && i == channel) ? int.MaxValue : 0;
+                int only = step == LessonStep.PoolingMaximum ? data.OutputIndex : -1;
                 panel.UpdateMap(snapshot.Values(2, i), snapshot.Scale(2, i), shown, only);
-                if (i == channel && stage >= 2)
+                if (i == channel && (step == LessonStep.PoolingMaximum || step == LessonStep.PoolingApply))
                 {
                     panel.Cell(data.OutputIndex, _visuals.Theme.Yellow);
                 }

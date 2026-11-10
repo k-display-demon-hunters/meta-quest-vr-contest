@@ -12,17 +12,12 @@ namespace FeatureMapCorridor
         [SerializeField] private FeatureMapRoundController _round;
         private Camera _camera;
         private bool _roundActive;
-        private bool _waitingForFilter, _filterPending;
         internal event Action<int> DigitSelected;
         internal event Action<int, int> MapSelected;
         internal event Action<int> OutputSelected;
-        internal event Action RoundChanged;
+        internal event Action FilterExpanded;
+        internal event Action PresentationReady;
         internal event Action<string> ButtonPressed;
-        internal int RoundLayer => _round.Layer;
-        internal int RoundMap => _round.Map;
-        internal int RoundStage => _round.Stage;
-        internal bool RoundIsOutput => _round.IsOutput;
-        internal bool CanAdvanceRound => !_waitingForFilter && !_filterPending;
         internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
@@ -42,6 +37,7 @@ namespace FeatureMapCorridor
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
             _round.FilterPressed += OnFilter;
+            _round.PresentationReady += OnPresentationReady;
             _display.Enable();
             _round.EnableInput();
             _display.InputClicked += OnInputClicked;
@@ -60,23 +56,33 @@ namespace FeatureMapCorridor
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
             _round.FilterPressed -= OnFilter;
+            _round.PresentationReady -= OnPresentationReady;
         }
 
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
         private void OnMap(int layer, int map) => MapSelected?.Invoke(layer, map);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
+        private void OnPresentationReady() => PresentationReady?.Invoke();
         private void OnFilter(bool expanded)
         {
-            if (!_roundActive || _round.Stage != 0 || !expanded)
+            if (_roundActive && expanded)
             {
-                return;
+                FilterExpanded?.Invoke();
             }
-            _waitingForFilter = false;
-            _filterPending = true;
-            _round.Show(1, true);
-            RoundChanged?.Invoke();
         }
+
+        private static RoundStepSequence RulesFor(MapId round) => round.Layer switch
+        {
+            2 => PoolingRoundRules.Sequence,
+            4 => OutputRoundRules.Sequence,
+            _ => ConvRoundRules.ForMap(round.Map)
+        };
+
+        internal LessonStep FirstStep(MapId round) => RulesFor(round).First;
+        internal LessonStep LastStep(MapId round) => RulesFor(round).Last;
+        internal RoundTransition EvaluateTransition(MapId round, LessonStep step, RoundRequest request) =>
+            RulesFor(round).Evaluate(step, request, _round.PresentationPending);
 
         private void SetInputActive(bool active)
         {
@@ -103,107 +109,73 @@ namespace FeatureMapCorridor
                 return;
             }
             _round.Tick(now);
-            if (_filterPending && now >= _round.ButtonReadyAt)
-            {
-                _filterPending = false;
-                RoundChanged?.Invoke();
-            }
         }
 
         internal void ShowSnapshot(FeatureMapSnapshot snapshot) => _display.ShowSnapshot(snapshot);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
-        internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, int stage) =>
-            _pooling.Show(snapshot, channel, data, stage);
+        internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, LessonStep step) =>
+            _pooling.Show(snapshot, channel, data, step);
 
-        internal void ClosePooling(FeatureMapSnapshot snapshot) => _pooling.Close(snapshot);
-
-        internal void StartRound(RoundCalculationResult data)
+        internal void PrepareRound(RoundCalculationResult data)
         {
             _roundActive = true;
-            _waitingForFilter = true;
-            _filterPending = false;
-            _round.Start(data);
+            _round.Prepare(data);
         }
 
-        internal void RestartRound(RoundCalculationResult data)
+        internal void ShowRoundStep(LessonStep step, bool filterInput) => _round.Show(step, filterInput);
+
+        internal void FinishRoundStep(LessonStep step) => _round.FinishStep(step);
+
+        internal void CloseRound(MapId round, FeatureMapSnapshot snapshot)
         {
-            _roundActive = true;
-            int stage = _round.Stage;
-            _round.Start(data);
-            if (data.IsOutput && stage >= 7)
+            if (round.Layer == 2)
             {
-                _display.StartMatch();
-                _display.FinishMatch();
+                _pooling.Close(snapshot);
+                return;
             }
-            if (data.IsOutput && stage >= 8)
-            {
-                _display.StartFill();
-                _display.FinishFill();
-            }
-            _waitingForFilter = stage == 0;
-            _filterPending = false;
-            _round.Show(stage);
-            _round.FoldFilters();
+
+            ClosePresentation();
         }
 
-        internal bool AdvanceRound() => _round.Advance();
-        internal bool PreviousRound()
-        {
-            if (!_round.Previous())
-            {
-                return false;
-            }
-            _waitingForFilter = _round.Stage == 0;
-            _filterPending = false;
-            return true;
-        }
-
-        internal void ReplayLastStep()
-        {
-            if (_round.IsOutput)
-            {
-                _display.StartMatch();
-                _display.FinishMatch();
-                _display.StartFill();
-            }
-            _waitingForFilter = false;
-            _filterPending = false;
-            _round.Show(_round.LastStage);
-        }
-
-        internal void CloseRound()
+        private void ClosePresentation()
         {
             _roundActive = false;
             _round.Close();
         }
 
-        internal System.Collections.Generic.IReadOnlyList<RecapInfo> Recap()
+        internal RecapInfo FinishRoundForRecap()
         {
             if (_round.IsOutput)
             {
                 _display.CompleteOutput();
             }
             var data = _round.Data;
-            var recaps = new System.Collections.Generic.List<RecapInfo>();
+            RecapInfo recap;
             if (data.IsOutput)
             {
                 Vector3 destination = _round.Destination;
-                recaps.Add(new RecapInfo(new Vector3(destination.x, 4.5f, destination.z-.7f), 4, 0, data.Digit, data.Count));
+                recap = new RecapInfo(new Vector3(destination.x, 4.5f, destination.z-.7f), 4, 0, data.Digit, data.Count);
             }
             else
             {
                 var position = _display.Map(data.Layer, data.Map).Position + Vector3.up * 1.6f;
-                recaps.Add(new RecapInfo(position, data.Layer, data.Map, data.Digit, data.Count));
+                recap = new RecapInfo(position, data.Layer, data.Map, data.Digit, data.Count);
             }
-            CloseRound();
-            return recaps.AsReadOnly();
+            ClosePresentation();
+            return recap;
         }
 
-        internal LessonContext DescribeRound(bool mandatory)
+        internal LessonContext DescribeRound(MapId round, LessonStep step)
         {
             return new LessonContext
             {
-                Layer = _round.Layer, Map = _round.Map, Stage = _round.Stage, Mandatory = mandatory, WaitingForFilter = _waitingForFilter, FilterPending = _filterPending, HintPosition = _round.FilterPosition+Vector3.up*.8f, Calculation = _round.Data, Winner = _display.Winner, WinnerPercent = _display.WinnerPercent
+                WaitingForFilter = RoundStepSequence.WaitsForFilter(step),
+                FilterPending = _round.PresentationPending,
+                IsLastStep = step == LastStep(round),
+                HintPosition = _round.FilterPosition + Vector3.up * .8f,
+                Calculation = _round.Data,
+                Winner = _display.Winner,
+                WinnerPercent = _display.WinnerPercent
             };
         }
 

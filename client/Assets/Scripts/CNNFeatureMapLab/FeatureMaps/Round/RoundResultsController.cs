@@ -44,20 +44,21 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Show(int stage)
+        internal void Show(LessonStep step)
         {
             Color32[] colors = Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             _lastScan = -1;
+            bool showResults = step is LessonStep.Scan or LessonStep.Explain or LessonStep.CellBreakdown or LessonStep.Merge;
             for (int i = 0; i < _count; i++)
             {
                 FeatureMapPanelController image = _images[i];
-                image.Root.gameObject.SetActive(stage >= 2 && stage <= 5);
-                _scanWindows[i].gameObject.SetActive(stage == 2);
-                if (stage == 2)
+                image.Root.gameObject.SetActive(showResults);
+                _scanWindows[i].gameObject.SetActive(step == LessonStep.Scan);
+                if (step == LessonStep.Scan)
                 {
                     SetScanPlate(i);
                 }
-                if (stage < 2 || stage > 5)
+                if (!showResults)
                 {
                     continue;
                 }
@@ -66,8 +67,8 @@ namespace FeatureMapCorridor
                 image.Frame(colors[i]);
                 image.Opacity(1);
                 image.ClearHighlight();
-                image.UpdateMap(_data.Values(i), _data.Scale(i), stage == 2 ? 0 : int.MaxValue);
-                if (stage >= 4 && !IsOutput)
+                image.UpdateMap(_data.Values(i), _data.Scale(i), step == LessonStep.Scan ? 0 : int.MaxValue);
+                if ((step is LessonStep.CellBreakdown or LessonStep.Merge) && !IsOutput)
                 {
                     image.Cell(Index, _visuals.Theme.Yellow);
                 }
@@ -77,25 +78,25 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(int stage, float elapsed)
+        internal void Tick(LessonStep step, float elapsed)
         {
-            if (stage == 2)
+            if (step == LessonStep.Scan)
             {
                 Scan(elapsed);
             }
-            if (stage == 5)
+            if (step == LessonStep.Merge)
             {
                 Merge(elapsed);
             }
         }
 
-        internal void Finish(int stage)
+        internal void Finish(LessonStep step)
         {
-            if (stage == 2)
+            if (step == LessonStep.Scan)
             {
                 Scan(IsOutput ? 3.5f : 10f);
             }
-            if (stage == 5)
+            if (step == LessonStep.Merge)
             {
                 Merge(1.9f);
             }

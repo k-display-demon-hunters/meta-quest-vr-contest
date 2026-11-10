@@ -46,20 +46,20 @@
 | 파일·모듈 | 현재 책임 |
 | --- | --- |
 | `CNNFeatureMapLabManager.cs` | LessonState의 소유·변경, 학습 전환·출구 조건, 모듈 이벤트 연결 |
-| `LessonState.cs` | 현재 Phase·선택 숫자·필수 라운드 인덱스·필수 여부·Pooling 단계와 채널·진행률 |
+| `LessonState.cs` | 현재 Phase·선택 숫자·활성 라운드와 공통 Step·필수 라운드 인덱스·필수 여부·진행률 |
 | `ExecutionData/FeatureMapExecutionDataManager.cs` | 전달받은 숫자의 저장된 입력·레이어·연출 결과 조회 |
-| `FeatureMaps/FeatureMapsManager.cs` | 탐색·Conv 및 Pooling 표시, 필터 입력 대기, 내부 표시·입력 기능 연결 |
+| `FeatureMaps/FeatureMapsManager.cs` | 체험별 진행 규칙 조회, 필터 입력과 연출 준비 상태 전달, 내부 표시·입력 조율 |
 | `LessonUI/LessonUIManager.cs` | 전달받은 상황에 따른 학습 문구 선택, 자막·힌트·팝업·디버그 표시, 이전·다음 요청 |
-| `Environment/CorridorEnvironmentManager.cs` | 복도 가시 상태, 바닥·구역·카메라 효과 연결 |
+| `Environment/CorridorEnvironmentManager.cs` | 복도 가시 상태, 바닥·구역 표시 연결 |
 
 실행 데이터 진입점은 복도 루트의 기존 컴포넌트 GUID를 유지한다. 나머지 세 모듈 Manager와 표시 Controller는 기존과 같이 씬 진입점 내부에 직렬화된 일반 C# 객체다. 별도 Update를 갖는 컴포넌트로 일괄 변환하지 않았다.
 
-씬 Manager는 private LessonState 인스턴스를 소유하고 상태 변경을 담당한다. 다른 모듈에는 필요한 값과 표시 데이터만 전달한다. 초기 선택 숫자는 2이며, 상태는 실행 중 메모리에 보관한다. Conv·출력 라운드의 세부 연출 단계와 재생 시간은 기존 Round Controller가 관리한다. 씬 Manager의 Awake는 상태의 선택 숫자로 스냅샷을 조회한 뒤 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하며 후처리를 복원하고, OnDestroy는 생성한 텍스처·디버그 표시를 정리한다.
+씬 Manager는 private LessonState 인스턴스를 소유하고 상태 변경을 담당한다. 다른 모듈에는 필요한 값과 표시 데이터만 전달한다. 초기 선택 숫자는 2이며, 상태는 실행 중 메모리에 보관한다. Conv·Pooling·출력은 공통 Round Phase와 LessonStep을 사용한다. 단계 전환은 씬 Manager가 규칙의 결과를 받아 적용하며, Controller는 전달받은 단계의 표시와 재생 시간을 관리한다. 씬 Manager의 Awake는 상태의 선택 숫자로 스냅샷을 조회한 뒤 피처맵 → UI → 환경 순서로 초기화한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다. LateUpdate는 환경의 복도 가시 상태를 확인한 다음 활성 모듈의 Tick을 호출한다. OnDisable은 상호작용 대상의 이벤트 구독을 해제하고 입력을 비활성화하고, OnDestroy는 생성한 텍스처·디버그 표시를 정리한다.
 
 ### 외부 연결과 체험 내부 공간
 
 - 외부 학습 세션과의 계약은 `CNNFeatureMapLabManager`의 기존 `ILearningExperience`다. CNNFeatureMapLab 런타임 코드는 FactoryEnvironment의 Manager, 복도 위치, 방·바닥 구역 데이터를 직접 참조하거나 조회하지 않는다. 카메라와 입력은 기존 공용 XR 리그와 XRI를 사용한다.
-- `Environment/`는 이 체험이 소유한 복도·바닥·카메라 효과다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
+- `Environment/`는 이 체험이 소유한 복도·바닥 표시와 가시 상태를 담당한다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
 - 씬 Manager가 학습 단계에 맞춰 CorridorEnvironmentManager의 바닥 강조와 FeatureMapsManager의 피처맵 표시 강조를 함께 갱신한다.
 - 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
 ### 실행 데이터와 전달 계약
@@ -76,8 +76,10 @@
 - `FeatureMapDisplayController`는 기본 입력판·맵·출력의 표시 변경과 복원을 소유한다. 라운드가 기본 패널을 바꿀 때 이 경로를 사용한다.
 - `InputPanelController`, `FeatureMapPanelController`, `OutputStageController`는 각 표시·입력을 담당한다. 입력판과 중간 결과판·템플릿은 같은 패널 타입의 서로 다른 인스턴스다.
 - `Round/PoolingRoundController`는 저장된 대표 영역과 최댓값을 기존 판에 표시한다. 선택 영역의 숫자는 기존 자막에 표시한다.
-- `Round/FeatureMapRoundController`는 라운드 내부 단계·재생 시간을 소유하고, `FilterStackController`와 `RoundResultsController`가 카드·훑기·합치기 표시를 처리한다. 라운드 코드가 안내 UI를 직접 조작하지 않는다.
-- 다음 단계는 사용자 입력으로만 진행한다. 현재 단계의 연출을 먼저 완료하고 다음으로 이동하며, 이전 버튼은 해당 단계를 다시 재생한다.
+- `Round/ConvRoundRules.cs`, `PoolingRoundRules.cs`, `OutputRoundRules.cs`는 각 체험의 순서와 종료 동작을 정의한다. `RoundStepSequence`는 같은 순서에서 다음과 이전을 찾고, 필터 입력 대기와 연출 준비 여부를 반영해 `RoundTransition`을 반환한다.
+- 씬 Manager가 이전·다음·필터 펼침 요청을 받아 `FeatureMapsManager`에 전환을 조회한다. 전환을 적용할 때 `LessonState.Step`을 갱신한 뒤, 표시와 UI에 같은 단계 값을 전달한다. Pooling은 마지막 단계 후 다음 필수 체험으로 이동하고 Conv와 출력은 정리 화면으로 이동한다.
+- `Round/FeatureMapRoundController`는 받은 단계의 연출을 실행하며, 후반 출력 단계에서는 앞 단계의 점수와 채움 표시를 복원한다. `FilterStackController`와 `RoundResultsController`가 카드·훑기·합치기를 표시한다. RoundController는 필터 펼침 직후 0.7초 대기를 관리한다. 대기가 끝나면 `FeatureMapsManager`가 `PresentationReady`를 씬 Manager에 전달해 버튼 표시를 갱신한다. 단계 전환은 사용자 요청으로 이루어진다.
+- 정리 화면에 들어갈 때 씬 Manager는 `FeatureMapsManager.FinishRoundForRecap()`으로 연출을 마무리하고, 반환된 `RecapInfo` 하나를 `LessonUIManager.AddRecap()`에 전달한다.
 
 ### 입력 연결
 
@@ -92,7 +94,7 @@
 
 - `LessonContent`는 학습 설명 데이터, `LessonUIManager`는 상황에 맞는 설명 선택, SubtitlePanel/HintBubbles/CompletionPopup Controller는 실제 표시를 담당한다.
 - `LessonUI/CorridorDebugController`는 에디터·Development Build의 왼손 위 HUD와 화면 진단을 담당한다. Inspector의 `Lesson UI > Debug > Show Debug`에서 켠다. 씬·라운드 상태 및 포인터·셀·클릭·UI 정보를 값으로 전달받으며 릴리스에서는 진단 표시를 제외한다.
-- `CorridorCameraController`는 단독 씬 설정, 복도 안팎 판정, 후처리 적용·복원을 담당한다.
+- `CorridorCameraController`는 공용 XR 카메라 위치를 읽어 복도 안팎을 판정한다. 체험은 카메라 후처리·배경색, XR 눈높이, 전역 안개를 변경하지 않는다. 카메라·환경 설정은 FactoryEnvironment에서 관리하며, 피처맵 전용 Global Volume과 후처리 프로필은 제거했다. 단독 실행에서도 환경 설정을 자동으로 덮어쓰지 않는다.
 - `Presentation/CorridorRenderUtility`는 색·텍스처·빌보드·인스턴싱 표시 보조만 담당한다. 입력이나 런타임 자원 수명을 소유하지 않는다. 각 모듈은 자기 표시 객체의 빌보드 목록을 갖는다.
 - `CorridorTheme`는 기존 Settings/CorridorTheme.asset을 사용한다. 동적 표시 이름은 `FeatureMapLabels`, 정수 퍼센트 배분은 `PercentageFormatter`가 담당한다. 고정 문구·기본 배치는 기존 프리팹에 남아 있다.
 
@@ -100,7 +102,7 @@
 
 현재 배치는 입력 16×16×3, 첫 Conv 16×16×2, MaxPooling 8×8×2, 두 번째 Conv 8×8×4, 출력 숫자 1·2·3을 기준으로 한다. 데이터를 갱신할 때는 입력, 레이어 결과, 표시 스케일과 설명에 표시할 대표 칸·중간 결과를 함께 맞춘다. 씬 진입점이 선택한 숫자의 저장 결과를 가져오므로 씬에 모델 프리팹을 연결할 필요가 없다.
 
-씬은 `Scenes/CNNFeatureMapLab.unity`, 프리팹은 `Prefabs/CNNFeatureMapLab/`에 유지한다. 재질·텍스처·메시는 각 종류의 CNNFeatureMapLab 폴더, 폰트는 Fonts/CNNFeatureMapLab, 후처리는 Settings/CorridorPostProcessing.asset을 그대로 사용한다. 원본을 재생성하거나 복제 보관하지 않았다.
+씬은 `Scenes/CNNFeatureMapLab.unity`, 프리팹은 `Prefabs/CNNFeatureMapLab/`에 유지한다. 재질·텍스처·메시는 각 종류의 CNNFeatureMapLab 폴더, 폰트는 Fonts/CNNFeatureMapLab에 유지한다. 원본을 재생성하거나 복제 보관하지 않았다.
 
 ## 이번 리팩토링의 확인 범위
 

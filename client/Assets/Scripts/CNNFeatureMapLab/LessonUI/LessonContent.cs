@@ -35,15 +35,15 @@ namespace FeatureMapCorridor
             ? $"출력의 숫자 {digit} 통을 눌러 보세요."
             : $"<b>{RoundNames[layer - 1]}</b>\n{FeatureMapLabels.MapId(layer, map)} 판을 눌러 필터를 살펴보세요.";
 
-        internal static string PoolingBody(int stage, int channel, PoolingCalculationResult data)
+        internal static string PoolingBody(LessonStep step, int channel, PoolingCalculationResult data)
         {
-            switch (stage)
+            switch (step)
             {
-                case 0:
+                case LessonStep.PoolingWindow:
                     return $"채널 {channel + 1}의 16×16 피처맵에서 대표 2×2 영역을 표시했어요. 양쪽 판을 눌러 채널을 바꿀 수 있어요.";
-                case 1:
+                case LessonStep.PoolingValues:
                     return $"네 칸의 값이에요.\n{data.TopLeft:0.###}   {data.TopRight:0.###}\n{data.BottomLeft:0.###}   {data.BottomRight:0.###}";
-                case 2:
+                case LessonStep.PoolingMaximum:
                     return $"가장 큰 값 <b>{data.Maximum:0.###}</b>을 결과판의 한 칸에 담았어요.";
                 default:
                     return "같은 계산을 두 채널에 적용했어요. 격자는 <b>16×16 → 8×8</b>로 줄고 채널은 <b>두 장</b>이에요.";

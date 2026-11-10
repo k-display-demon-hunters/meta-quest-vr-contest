@@ -44,6 +44,7 @@
 
 - 외부 학습 세션과의 계약은 `CNNFeatureMapLabManager`의 기존 `ILearningExperience`다. CNNFeatureMapLab 런타임 코드는 FactoryEnvironment의 Manager, 복도 위치, 방·바닥 구역 데이터를 직접 참조하거나 조회하지 않는다. 카메라와 입력은 기존 공용 XR 리그와 XRI를 사용한다.
 - `Environment/`는 이 체험이 소유한 복도·바닥·문·카메라 효과다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
+- 발판 `Walk surface`의 BoxCollider는 발판 상단 높이에서 표시용 `Slab`의 바닥까지 이어진다. 공장 ROOM #2의 낮은 바닥에서도 발판 옆면에 충돌한다.
 - `FeatureMaps/Interaction/ZoneSelectionController`는 체험 프리팹의 바닥 5개 영역 선택을 구역 번호로 전달한다. `InteractionManager → FeatureMapsManager → CNNFeatureMapLabManager`의 이벤트 경로를 거쳐, 씬 Manager가 Environment의 바닥 강조와 FeatureMaps의 표시 강조를 연결한다. 강조 상태의 소유자는 `CorridorEnvironmentManager`이며, 구역 선택 자체가 학습 단계를 변경하지 않는다.
 - 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
 ### 계산과 전달 데이터

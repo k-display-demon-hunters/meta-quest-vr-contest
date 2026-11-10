@@ -12,6 +12,7 @@ namespace FeatureMapCorridor
         [SerializeField] private CompletionPopupController _completion;
         [SerializeField] private CorridorDebugController _debug;
         private Camera _camera;
+        private bool _completed;
         internal event Action PreviousRequested;
         internal event Action NextRequested;
         internal void Initialize()
@@ -46,7 +47,7 @@ namespace FeatureMapCorridor
 
         internal void SetVisible(bool visible)
         {
-            _subtitle.SetVisible(visible);
+            _subtitle.SetVisible(visible && !_completed);
             if (visible)
             {
                 _camera = Camera.main;
@@ -71,80 +72,69 @@ namespace FeatureMapCorridor
         internal void Show(LessonContext context)
         {
             _hints.Hide();
+            _completed = context.Phase == LessonPhase.Complete;
             switch (context.Phase)
             {
-                case LessonPhase.Start:
-                _subtitle.Show("", LessonContent.StartBody, false, null);
-                _hints.Show(LessonContent.StartHint, context.HintPosition);
-                break;
-                case LessonPhase.Tour:
-                string prefix = context.TourStage == 0 && context.FirstTour ? LessonContent.TourIntro : "";
-                _subtitle.Show(LessonContent.TourHeader, prefix+LessonContent.Tour[context.TourStage], true, context.TourStage == 3 ? LessonContent.Understood : LessonContent.Next);
-                break;
                 case LessonPhase.AwaitRound:
-                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Digit), true, null);
-                _hints.Show(LessonContent.WaitingHint(context.Layer, context.Digit), context.HintPosition);
+                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map, context.Digit), context.CanGoBack, null);
+                _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map, context.Digit), context.HintPosition);
                 break;
                 case LessonPhase.Round:
-                if (context.WaitingForFilter)
-                {
-                    _hints.Show(LessonContent.FilterHint, context.HintPosition);
-                }
-                string next = context.WaitingForFilter || context.FilterPending ? null : context.Stage == (context.Layer == 4 ? 8 : 5) ? LessonContent.Understood : LessonContent.Next;
-                _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next);
+                ShowRound(context);
                 break;
                 case LessonPhase.Recap:
-                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.MapCount, context.Mandatory), true, LessonContent.Next);
-                break;
-                case LessonPhase.AwaitOff:
-                _hints.Show(LessonContent.SwitchHint, context.HintPosition);
-                _subtitle.Show("", LessonContent.SwitchBody, true, null);
-                break;
-                case LessonPhase.OffResult:
-                _subtitle.Show("", LessonContent.FirstOff(context.Switch.Layer, context.Switch.Map), true, LessonContent.Next);
-                break;
-                case LessonPhase.AwaitOn:
-                _hints.Show(LessonContent.RestoreSwitchHint, context.HintPosition);
-                _subtitle.Show("", LessonContent.RestoreSwitchBody, true, null);
-                break;
-                case LessonPhase.OnResult:
-                _subtitle.Show("", LessonContent.RestoredSwitch, true, LessonContent.Next);
+                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true,
+                    context.Layer == 4 ? LessonContent.Complete : LessonContent.Next);
                 break;
                 case LessonPhase.Complete:
-                _subtitle.Show("", LessonContent.CompleteBody, false, null);
-                _hints.Show(LessonContent.DoorOpenHint, context.HintPosition);
+                _subtitle.SetVisible(false);
                 break;
             }
+        }
+
+        private void ShowRound(LessonContext context)
+        {
+            if (context.Layer == 2)
+            {
+                _subtitle.Show(LessonContent.RoundHeader(2), LessonContent.PoolingBody(context.Step, context.Map, context.Pooling),
+                    true, context.Step == LessonStep.PoolingMaximum ? "전체 적용 ▶" : LessonContent.Next);
+                return;
+            }
+
+            if (context.WaitingForFilter)
+            {
+                _hints.Show(LessonContent.FilterHint, context.HintPosition);
+            }
+            string next = context.WaitingForFilter || context.FilterPending
+                ? null
+                : context.IsLastStep ? LessonContent.Understood : LessonContent.Next;
+            _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next);
         }
 
         private static string RoundBody(LessonContext context)
         {
             var data = context.Calculation;
-            switch (context.Stage)
+            switch (context.Step)
             {
-                case 0: return LessonContent.FilterIntro(data.Layer, data.Map, data.Digit);
-                case 1: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
-                case 2: return LessonContent.Scan(data.Layer);
-                case 3: return LessonContent.Explain(data.Layer, data.Map, data.Digit);
-                case 4: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Disabled);
-                case 5: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);
-                case 6: return LessonContent.MatchTemplates;
-                case 7: return LessonContent.ShareLight(context.Winner, context.WinnerPercent);
+                case LessonStep.FilterIntro: return LessonContent.FilterIntro(data.Layer, data.Map, data.Digit);
+                case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
+                case LessonStep.Scan: return LessonContent.Scan(data.Layer);
+                case LessonStep.Explain: return LessonContent.Explain(data.Layer, data.Digit);
+                case LessonStep.Merge: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);
+                case LessonStep.CompareTemplates: return LessonContent.MatchTemplates(data.Count);
+                case LessonStep.FillProbabilities: return LessonContent.ShareLight(context.Winner, context.WinnerPercent);
                 default: return LessonContent.FlyAnswer(context.Winner);
             }
         }
 
-        internal void AddRecaps(System.Collections.Generic.IReadOnlyList<RecapInfo> recaps)
+        internal void AddRecap(RecapInfo recap)
         {
-            foreach (var recap in recaps)
+            var names = new string[recap.SourceCount];
+            for (int i = 0; i < names.Length; i++)
             {
-                var names = new string[recap.SourceCount];
-                for (int i = 0;i<names.Length;i++)
-                {
-                    names[i] = recap.Layer == 1 ? FeatureMapLabels.InputChannels[i] : FeatureMapLabels.MapId(recap.Layer-1, i);
-                }
-                _hints.AddRecap(recap.Position, names, recap.Layer == 4 ? LessonContent.OutputScore(recap.Digit) : FeatureMapLabels.MapId(recap.Layer, recap.Map), recap.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs);
+                names[i] = recap.Layer == 1 ? FeatureMapLabels.InputChannels[i] : FeatureMapLabels.MapId(recap.Layer-1, i);
             }
+            _hints.AddRecap(recap.Position, names, recap.Layer == 4 ? LessonContent.OutputScore(recap.Digit) : FeatureMapLabels.MapId(recap.Layer, recap.Map), recap.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs);
         }
 
         internal void ShowDebug(string state, string hover, string cell, string click) => _debug.Show(state, hover, cell, click, _camera, _visuals.DebugFont);

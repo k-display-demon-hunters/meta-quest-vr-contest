@@ -15,70 +15,95 @@ namespace FeatureMapCorridor
         internal Vector3 Destination => _destination;
         internal int Layer => _data.Layer;
         internal int Map => _data.Map;
-        internal int Index => _data.Index;
-        internal int Stage
-        {
-            get;
-            private set;
-        }
+        private LessonStep _displayedStep;
+        private float? _presentationReadyAt;
 
         internal bool IsOutput => _data.IsOutput;
-        internal int LastStage => IsOutput ? 8 : 5;
         internal RoundCalculationResult Data => _data;
         internal Vector3 FilterPosition => _filter.Root.localPosition;
-        internal float ButtonReadyAt
-        {
-            get;
-            private set;
-        }
+        internal bool PresentationPending => _presentationReadyAt.HasValue;
 
         internal event Action<bool> FilterPressed;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, FeatureMapDisplayController display)
+        internal event Action PresentationReady;
+        internal void Bind(CorridorRenderUtility visuals, FeatureMapDisplayController display)
         {
             _display = display;
-            _filter.Bind(visuals, interaction);
+            _filter.Bind(visuals);
             _results.Bind(visuals, _filter);
         }
 
-        internal void EnableInput() => _filter.ExpansionChanged += OnFilter;
-        internal void DisableInput() => _filter.ExpansionChanged -= OnFilter;
-        private void OnFilter(bool expanded) => FilterPressed?.Invoke(expanded);
-        internal void Start(RoundCalculationResult data)
+        internal string HoverName => _filter.HoverName;
+        internal event Action<string> InputClicked;
+        internal void SetInputActive(bool active) => _filter.SetInputActive(active);
+        private void OnInputClicked(string name) => InputClicked?.Invoke(name);
+        internal void EnableInput()
         {
+            _filter.ExpansionChanged += OnFilter;
+            _filter.InputClicked += OnInputClicked;
+        }
+        internal void DisableInput()
+        {
+            _filter.ExpansionChanged -= OnFilter;
+            _filter.InputClicked -= OnInputClicked;
+        }
+        private void OnFilter(bool expanded) => FilterPressed?.Invoke(expanded);
+        internal void Prepare(RoundCalculationResult data, Transform anchor)
+        {
+            _presentationReadyAt = null;
             _data = data;
             _destination = _display.Destination(Layer, Map, data.Digit);
-            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map), _destination);
+            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map), _destination, anchor);
             _results.Configure(data, _display);
-            Show(0);
         }
 
-        internal void Show(int stage, bool filterInput = false)
+        internal void Show(LessonStep step, bool filterInput)
         {
-            Stage = stage;
+            _displayedStep = step;
             _started = Time.unscaledTime;
-            ButtonReadyAt = stage == 1 && filterInput ? _started+.7f : _started;
-            if (IsOutput && stage <= 6)
-            {
-                _display.ResetOutput();
-            }
-            _filter.ShowCards(stage <= 4);
+            _presentationReadyAt = filterInput ? _started + .7f : null;
+
+            _filter.ShowCards((IsOutput || step == LessonStep.FilterOpened) && (step is LessonStep.FilterIntro or LessonStep.FilterOpened
+                or LessonStep.Scan or LessonStep.Explain));
             if (!filterInput)
             {
-                _filter.SetExpanded(stage>0, true);
+                _filter.SetExpanded(step != LessonStep.FilterIntro, true);
             }
-            _filter.DimDuringScan(stage == 2);
-            _display.ShowRound(_data, stage);
-            _results.Show(stage);
-            if (stage == 6)
+            _filter.DimDuringScan(step == LessonStep.Scan);
+            _display.ShowRound(_data, step);
+            if (!IsOutput)
+            {
+                int shown = step == LessonStep.Explain ? int.MaxValue : 0;
+                if (step == LessonStep.Merge)
+                {
+                    _display.DrawResult(Layer, Map, int.MaxValue, _data.Index);
+                }
+                else
+                {
+                    _display.DrawResult(Layer, Map, shown);
+                }
+            }
+            _results.Show(step);
+
+            if (IsOutput)
+            {
+                ShowOutput(step);
+            }
+        }
+
+        private void ShowOutput(LessonStep step)
+        {
+            // Rebuild the prerequisite visuals for revisits and input changes as well as forward navigation.
+            _display.ResetOutput();
+            if (step is LessonStep.CompareTemplates or LessonStep.FillProbabilities or LessonStep.RevealAnswer)
             {
                 _display.StartMatch();
             }
-            if (stage == 7)
+            if (step is LessonStep.FillProbabilities or LessonStep.RevealAnswer)
             {
                 _display.FinishMatch();
                 _display.StartFill();
             }
-            if (stage == 8)
+            if (step == LessonStep.RevealAnswer)
             {
                 _display.FinishFill();
                 _display.Fly();
@@ -88,50 +113,34 @@ namespace FeatureMapCorridor
         internal void Tick(float now)
         {
             _filter.Tick(now);
-            _results.Tick(Stage, now-_started);
-        }
-
-        internal void FoldFilters() => _filter.SetExpanded(false, true);
-        internal void FinishStage()
-        {
-            _results.Finish(Stage);
-            if (Stage == 6)
+            _results.Tick(_displayedStep, now - _started);
+            if (_presentationReadyAt is float readyAt && now >= readyAt)
             {
-                _display.FinishMatch();
-            }
-            if (Stage == 7)
-            {
-                _display.FinishFill();
-            }
-            if (Stage == 8)
-            {
-                _display.CompleteOutput();
+                _presentationReadyAt = null;
+                PresentationReady?.Invoke();
             }
         }
 
-        internal bool Advance()
+        internal void FinishStep(LessonStep step)
         {
-            FinishStage();
-            if (Stage == LastStage)
+            _results.Finish(step);
+            switch (step)
             {
-                return false;
+                case LessonStep.CompareTemplates:
+                    _display.FinishMatch();
+                    break;
+                case LessonStep.FillProbabilities:
+                    _display.FinishFill();
+                    break;
+                case LessonStep.RevealAnswer:
+                    _display.CompleteOutput();
+                    break;
             }
-            Show(IsOutput && Stage == 3 ? 5 : Stage+1);
-            return true;
-        }
-
-        internal bool Previous()
-        {
-            if (Stage == 0)
-            {
-                return false;
-            }
-            Show(IsOutput && Stage == 5 ? 3 : Stage-1);
-            return true;
         }
 
         internal void Close()
         {
+            _presentationReadyAt = null;
             _filter.Hide();
             _display.CloseRound(_data);
             _results.Hide();

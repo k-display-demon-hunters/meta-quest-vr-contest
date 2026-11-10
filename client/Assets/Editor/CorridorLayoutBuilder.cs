@@ -3,7 +3,6 @@ using System.IO;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 // Persists transient layout resources only when explicitly saving an edited corridor.
@@ -25,15 +24,6 @@ public static class CorridorLayoutBuilder
             saved.Add(font);
             AddSubAsset(font.material, font, saved);
             foreach (Texture2D atlas in font.atlasTextures) { AddSubAsset(atlas, font, saved); }
-        }
-
-        foreach (Object dependency in dependencies)
-        {
-            if (dependency is not VolumeProfile profile || IsPersistent(profile)) { continue; }
-            profile.hideFlags = HideFlags.None;
-            AssetDatabase.CreateAsset(profile, NewPath("Settings", "CorridorPostProcessing", ".asset"));
-            saved.Add(profile);
-            foreach (VolumeComponent component in profile.components) { AddSubAsset(component, profile, saved); }
         }
 
         foreach (Object dependency in dependencies)

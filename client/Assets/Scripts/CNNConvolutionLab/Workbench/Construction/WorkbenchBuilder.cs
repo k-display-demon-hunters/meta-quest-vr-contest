@@ -14,6 +14,7 @@ namespace CNNConvolution
         [SerializeField] private Transform _equationAnchor;
         [SerializeField] private Transform _sumEquationAnchor;
         [SerializeField] private Text _placementHint;
+        [SerializeField] private Material _placementPreviewMaterial;
 
         private SideNumberController _sideNumbers;
         private WorkbenchPrimitiveFactory _factory;
@@ -25,7 +26,7 @@ namespace CNNConvolution
             _sideNumbers = new SideNumberController();
             _factory = new WorkbenchPrimitiveFactory(transform, font, _sideNumbers);
             InputGridController input = new InputGridController(_factory, _inputAnchor);
-            _kernel = new WorkbenchKernelController(_factory, transform, _kernelHome, _kernelTarget);
+            _kernel = new WorkbenchKernelController(_factory, transform, _kernelHome, _kernelTarget, _placementPreviewMaterial);
             ResultGridController result = new ResultGridController(_factory, _resultAnchor);
             EquationDisplayController equations = new EquationDisplayController(_factory, _sumAnchor, _equationAnchor, _sumEquationAnchor);
             FlyingNumberController number = new FlyingNumberController(_factory, "Animated calculation copy", 0.9f);

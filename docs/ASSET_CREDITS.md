@@ -142,3 +142,38 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 ## 공장 조명 베이크
 
 `client/Assets/Textures/FactoryEnvironment/`의 `Lightmap-*_comp_*`와 `ReflectionProbe-*.exr`는 공장 씬의 고정 표면 조명, 그림자와 방별 반사에 사용한다. Codex AI 보조로 씬의 광원과 메시를 설정하고 Unity Progressive CPU Lightmapper와 반사 프로브로 다시 생성했다. 베이크 과정에서 외부 미디어를 추가하지 않았다. 제작자·법적 권리자는 미확인이며 별도 공개 라이선스를 지정하지 않았다.
+
+## 튜토리얼 사물함과 공장 선반 상자
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `TutorialLockerCoating_*` | 튜토리얼 사물함 문, 손잡이, 통풍구와 번호판 | Codex AI 보조로 Python·NumPy·Pillow에서 도장 입자, 문별 긁힘·찍힘, 금속 표면, 번호를 합성해 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `ShelfKraftCarton_*` | 공장 선반의 골판지 상자와 재고 라벨 | Codex AI 보조로 Python·NumPy·Pillow에서 기존 `CorrugatedCarton`의 종이 결, 새 절단면·포장 테이프·재고 라벨을 합성해 알베도·노멀·금속성/매끄러움 맵 제작. 기존 Noto Sans CJK KR Regular로 라벨 조판 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 폰트 원출처와 SIL OFL 1.1은 위 **Noto Sans CJK KR Regular 2.004** 기록을 따름 | 신규 합성. 원본 텍스처·폰트 유지 |
+
+선반 케이스 재질에는 기존 `FactoryPowderCoat_*`, `BrushedAlloy_*`, `DarkIndustrialRubber_Normal.png`를 재사용했다. Codex AI 보조로 재질 색·매끄러움·노멀 강도와 케이스별 UV를 조정했다. 이미지 원본을 유지했고 출처와 권리 정보는 위 공장 환경 표면 텍스처 기록을 따른다.
+
+## 공장 연구 데스크 전자기기
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `WorkstationInputLegends.png` | 배경 키보드 각인과 키보드·마우스 외장 | Codex AI 보조로 Python·NumPy·Pillow에서 한영 키 각인, 플라스틱 색상과 미세 표면 결 합성 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `WorkstationMonitorDisplays.png` | 연구 데스크의 배경 모니터 | Codex AI 보조로 Python·Pillow에서 진단 그래프, 작업 기록, 바탕화면, 시계 등 정적 레이아웃을 직접 조판·합성 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `ResearchDeskPhoneFace.png` | 연구 데스크 유선 전화기의 LCD와 키 각인 | Codex AI 보조로 Python·Pillow에서 가상 내선·회선 상태 화면, 숫자와 기능 키를 직접 조판 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+
+위 텍스처의 문자에 기존 **Noto Sans CJK KR Regular 2.004**를 재사용했다. 원본 폰트와 동봉한 SIL OFL 1.1 고지는 유지한다. 모니터·전화기 외장과 PC 본체 재질에는 기존 `DarkIndustrialRubber_Normal.png`를, PC 금속 부품에는 기존 `BrushedAlloy_*`를 사용한다. 원본 이미지와 출처·권리 정보는 위 공장 환경 표면 텍스처 기록을 따른다. 참고 사진 자체는 런타임 에셋에 사용하지 않았다.
+
+## 공장 실내 벽과 환풍기
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `FactoryLabPanelCream_*`, `FactoryLabPanelSlate_*` | 공장 작업 구역 실내 벽의 회백색 패널과 청회색 하부 마감 | Codex AI 보조로 Python·NumPy·Pillow에서 줄눈, 표면 결, 걸레받이의 알베도·노멀·금속성/매끄러움 맵 합성 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
+| `FaultyFanBearing.wav` | `Audio/FactoryEnvironment/`, 환풍기 3대의 재시동 마찰음 | Codex AI 보조로 Python·NumPy에서 철판이 맞긁힐 때의 고음 공명과 불규칙한 마찰을 합성. 주 음역 3–6 kHz, 0.96초, 24 kHz 모노 PCM | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 기존 합성음 교체 |
+
+키 큰 사물함 번호판에는 기존 `TutorialLockerCoating_*` 아틀라스의 번호 영역을, 합성곱 관찰 콘솔에는 기존 `FactoryDiagnosticDisplays.png`의 계산 표본 한 장을 재사용했다. 원본 이미지와 출처·권리 기록은 유지하고 Codex AI 보조로 메시 UV를 조정했다.
+
+## 공장 강철의 산화 흔적과 보름달
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `FactoryLightOxidation_*` | `Textures/FactoryEnvironment/`, 공장의 `RustSteel` 표면 | Codex AI 보조로 Python·NumPy·Pillow에서 기존 브러시드 강철 `BrushedAlloy_*`와 `OxidizedSteel_*`를 좁은 산화 얼룩으로 합성해 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 원본은 위 표면 텍스처 기록 참조 | 신규 합성. 원본 PNG 유지 |
+| `FactoryFullMoon.jpg` | `Textures/FactoryEnvironment/`, 공장 야외 하늘 | [NASA SVS Moon Phase and Libration, 2026의 Full Moon 프레임](https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_full.1571_print.jpg) | NASA Scientific Visualization Studio, 시각화 Ernie Wright. [NASA SVS 사용 안내](https://svs.gsfc.nasa.gov/help/)의 공개 저작물 지침에 따라 출처 표기 | 원본 JPEG 유지. Unity 메시 UV로 달 표면만 표시 |

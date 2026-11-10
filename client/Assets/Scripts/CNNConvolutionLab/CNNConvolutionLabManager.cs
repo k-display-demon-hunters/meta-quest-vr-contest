@@ -12,6 +12,7 @@ namespace CNNConvolution
         [SerializeField] private LessonUIController _ui;
         [SerializeField] private WorkbenchBuilder _spatial;
         [SerializeField] private Font _font;
+        private readonly LessonPlayback _playback = new LessonPlayback();
         private InputGridController _input;
         private WorkbenchKernelController _kernel;
         private ResultGridController _result;
@@ -27,6 +28,7 @@ namespace CNNConvolution
         private ResultSummaryController _summary;
 
         private const float CalculationProgressLimit = 0.95f;
+        private const float LaterWindowPlaybackSpeed = 1.5f;
         private bool _started;
         private bool _completed;
 
@@ -38,13 +40,15 @@ namespace CNNConvolution
 
         private void Awake()
         {
-            _summary = new ResultSummaryController(_ui);
+            _summary = new ResultSummaryController(_ui, _playback);
         }
 
         private void OnEnable()
         {
             _summary.FinishRequested += FinishPractice;
             _summary.Confirmed += HideWorkbench;
+            _ui.PlaybackToggleRequested += TogglePlayback;
+            _ui.RestartRequested += RestartPractice;
             if (_started && !_completed)
             {
                 BeginPractice();
@@ -67,7 +71,9 @@ namespace CNNConvolution
                 _initialized = true;
             }
             _calculation = ConvolutionCalculation.CreateExample();
+            _playback.Speed = 1f;
             _ui.BeginCalculation();
+            SetPaused(false);
             _spatial.gameObject.SetActive(true);
             _spatial.Show();
             _input.Prepare(_calculation);
@@ -75,6 +81,24 @@ namespace CNNConvolution
             _result.BeginProducts();
             _equations.Clear();
             StartCoroutine(RunLesson());
+        }
+
+        private void TogglePlayback() => SetPaused(!_playback.IsPaused);
+
+        private void SetPaused(bool paused)
+        {
+            _playback.IsPaused = paused;
+            _placement.SetPaused(paused);
+            _quiz.SetPaused(paused);
+            _ui.SetPaused(paused);
+        }
+
+        private void RestartPractice()
+        {
+            StopPractice();
+            Progress = 0f;
+            ProgressChanged?.Invoke(Progress);
+            BeginPractice();
         }
 
         public IEnumerator EndSession()
@@ -103,12 +127,15 @@ namespace CNNConvolution
             _kernel = workbench.Kernel;
             _result = workbench.Result;
             _equations = workbench.Equations;
-            _placement = new KernelInteractionController(workbench.Factory, _kernel, _spatial.PlacementTarget, _spatial.PlacementHint, _ui);
-            _multiplication = new MultiplicationController(workbench.Factory, _input, _kernel, _result, _equations, workbench.Number, _ui);
-            _channelSum = new ChannelSumController(workbench.Factory, _input, _result, _equations, workbench.Number, _ui);
-            _outputRecording = new OutputRecordingController(_kernel, _result, _equations, workbench.Number, _ui);
-            _windowMovement = new WindowMovementController(_input, _kernel, _equations, _ui);
-            _quiz = new ConvolutionQuizController(_result, _equations, _ui);
+            _placement = new KernelInteractionController(workbench.Factory, _kernel, _spatial.PlacementTarget,
+                _spatial.PlacementHint, _ui, _playback);
+            _multiplication = new MultiplicationController(workbench.Factory, _input, _kernel, _result, _equations,
+                workbench.Number, _ui, _playback);
+            _channelSum = new ChannelSumController(workbench.Factory, _input, _result, _equations,
+                workbench.Number, _ui, _playback);
+            _outputRecording = new OutputRecordingController(_kernel, _result, _equations, workbench.Number, _ui, _playback);
+            _windowMovement = new WindowMovementController(_input, _kernel, _equations, _ui, _playback);
+            _quiz = new ConvolutionQuizController(_result, _equations, _ui, _playback);
         }
 
         private void HideWorkbench()
@@ -127,12 +154,20 @@ namespace CNNConvolution
 
         private IEnumerator RunLesson()
         {
+            _ui.Instruction = "필터 손잡이를 잡고 입력판 왼쪽 위 점선에 놓으세요.";
             yield return _placement.Run();
+            _ui.Instruction = "입력값과 가중치를 곱하고, R · G · B의 결과가 합쳐지는 모습을 살펴보세요.";
             yield return RunFirstWindow();
             SetProgress(1f / 9f * CalculationProgressLimit);
 
+            _playback.Speed = LaterWindowPlaybackSpeed;
             yield return MoveToWindow(0, 1, false);
+            _playback.Speed = 1f;
+            _ui.Instruction = "오른쪽 출력판의 빈칸 8개 중 하나를 레이로 선택하세요.";
             yield return _quiz.Run(_calculation.Row * 3 + _calculation.Column);
+
+            _playback.Speed = LaterWindowPlaybackSpeed;
+            _ui.Instruction = "필터가 한 칸씩 움직일 때마다 출력값이 채워지는 모습을 살펴보세요.";
             yield return RunWindow();
             SetProgress(2f / 9f * CalculationProgressLimit);
 
@@ -145,6 +180,8 @@ namespace CNNConvolution
                 SetProgress((step + 3f) / 9f * CalculationProgressLimit);
             }
 
+            _playback.Speed = 1f;
+            _ui.Instruction = "‘결과 확인’을 눌러 완성된 3×3 출력판을 살펴보세요.";
             yield return _summary.Run(_calculation.Outputs(), new[]
             {
                 _calculation.Sum(0, 0, 0), _calculation.Sum(1, 0, 0), _calculation.Sum(2, 0, 0)
@@ -192,6 +229,8 @@ namespace CNNConvolution
         {
             _summary.FinishRequested -= FinishPractice;
             _summary.Confirmed -= HideWorkbench;
+            _ui.PlaybackToggleRequested -= TogglePlayback;
+            _ui.RestartRequested -= RestartPractice;
             StopPractice();
             ExitAvailabilityChanged?.Invoke(false);
         }

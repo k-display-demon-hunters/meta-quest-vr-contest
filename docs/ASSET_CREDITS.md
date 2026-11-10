@@ -95,7 +95,7 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 ## ROOM 1-2 연속 체험 폰트 재사용 (2026-11-08)
 
 - 에셋: 기존 `client/Assets/Fonts/NotoSansCJKkr-Regular.otf`.
-- 사용 위치: `ConvolutionWorkbench`의 5×5 입력·3×3 결과와 두 계산판, `PixelCalculationUI`의 고정 3×3 요약, 합성곱 체험의 공용 `WorldUIButton` 인스턴스 라벨.
+- 사용 위치: `ConvolutionWorkbench`의 5×5 입력·3×3 결과와 두 계산판, `PixelCalculationUI`의 고정 3×3 요약과 오른쪽 목표·조작 안내, 합성곱 체험의 공용 `WorldUIButton` 인스턴스 라벨.
 - 원출처·권리자·라이선스: 위 **Noto Sans CJK KR Regular 2.004** 기록의 공식 배포본과 © 2014–2021 Adobe, SIL OFL 1.1을 그대로 따른다. 기존 폰트 파일과 배포 라이선스 고지를 보존한다.
 - 수정: 폰트 원본 수정·복제 없음. Codex AI 보조로 씬 전용 프리팹의 글자 배치·크기·색과 참조를 추가·수정했다.
 

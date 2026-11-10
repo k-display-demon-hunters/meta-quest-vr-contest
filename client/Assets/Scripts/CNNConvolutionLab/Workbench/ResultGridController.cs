@@ -11,6 +11,8 @@ namespace CNNConvolution
         private readonly Text[] _products = new Text[9];
         private readonly Transform[] _productMarks = new Transform[9];
         private readonly Transform _highlight;
+        private readonly MeshRenderer[] _highlightEdges;
+        private readonly MaterialPropertyBlock _highlightProperties = new MaterialPropertyBlock();
         private readonly WorkbenchPrimitiveFactory _factory;
 
         public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor)
@@ -44,9 +46,11 @@ namespace CNNConvolution
             }
             _result.SetPositionAndRotation(anchor.position, anchor.rotation);
             _highlight = factory.Highlight("Active product cell", 0.178f, 0.158f);
+            _highlightEdges = _highlight.GetComponentsInChildren<MeshRenderer>(true);
         }
 
         public Vector3 CellPosition(int index) => _factory.LocalPoint(_products[index].transform.position);
+        public bool HasRecordedValue(int index) => _productMarks[index].gameObject.activeSelf;
 
         // Bind the selection overlay during construction so it keeps the original canvas and hit plane.
         public void AttachSelectionSurface(int index, Action<RectTransform> bind)
@@ -85,6 +89,17 @@ namespace CNNConvolution
             _highlight.SetParent(_result, false);
             _highlight.localPosition = WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + Vector3.back * 0.075f;
             _highlight.gameObject.SetActive(true);
+        }
+
+        public void SetHighlightGlow(bool glowing)
+        {
+            Color emission = glowing ? WorkbenchColors.CalculationAccent * 0.65f : Color.black;
+            foreach (MeshRenderer edge in _highlightEdges)
+            {
+                edge.GetPropertyBlock(_highlightProperties);
+                _highlightProperties.SetColor("_EmissionColor", emission);
+                edge.SetPropertyBlock(_highlightProperties);
+            }
         }
 
         public void HideHighlight() => _highlight.gameObject.SetActive(false);

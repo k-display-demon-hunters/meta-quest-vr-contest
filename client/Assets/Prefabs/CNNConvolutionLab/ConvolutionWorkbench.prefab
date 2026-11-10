@@ -2261,6 +2261,7 @@ MonoBehaviour:
   _equationAnchor: {fileID: 1081}
   _sumEquationAnchor: {fileID: 20001}
   _placementHint: {fileID: 2006}
+  _placementPreviewMaterial: {fileID: 2100000, guid: c7488ab521e84cd3ab341311f184804f, type: 2}
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0

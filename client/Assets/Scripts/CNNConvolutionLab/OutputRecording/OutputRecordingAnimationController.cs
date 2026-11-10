@@ -8,12 +8,15 @@ namespace CNNConvolution
         private readonly WorkbenchKernelController _kernel;
         private readonly ResultGridController _result;
         private readonly FlyingNumberController _number;
+        private readonly LessonPlayback _playback;
 
-        public OutputRecordingAnimationController(WorkbenchKernelController kernel, ResultGridController result, FlyingNumberController number)
+        public OutputRecordingAnimationController(WorkbenchKernelController kernel, ResultGridController result,
+            FlyingNumberController number, LessonPlayback playback)
         {
             _kernel = kernel;
             _result = result;
             _number = number;
+            _playback = playback;
         }
         public IEnumerator Run(int index, int value)
         {
@@ -28,7 +31,7 @@ namespace CNNConvolution
         }
         private IEnumerator Fly(Vector3 start, Vector3 end, float duration)
         {
-            for (float time = 0; time < duration; time += Time.unscaledDeltaTime)
+            for (float time = 0; time < duration; time += _playback.DeltaTime)
             {
                 _number.Move(Vector3.Lerp(start, end, Mathf.SmoothStep(0, 1, time / duration)));
                 yield return null;

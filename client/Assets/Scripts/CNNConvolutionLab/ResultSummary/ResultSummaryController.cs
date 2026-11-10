@@ -7,15 +7,17 @@ namespace CNNConvolution
     internal sealed class ResultSummaryController
     {
         private readonly LessonUIController _ui;
+        private readonly LessonPlayback _playback;
         private bool _confirmed;
         private bool _ready;
 
         public event Action FinishRequested;
         public event Action Confirmed;
 
-        public ResultSummaryController(LessonUIController ui)
+        public ResultSummaryController(LessonUIController ui, LessonPlayback playback)
         {
             _ui = ui;
+            _playback = playback;
         }
 
         public IEnumerator Run(int[] outputs, int[] firstSums)
@@ -26,10 +28,8 @@ namespace CNNConvolution
             _ui.FinishRequested += HandleFinish;
             _ui.Title = "아홉 위치의 계산이 끝났어요";
             _ui.Explanation = "입력판 위를 이동하며 출력값 9개를 만들었어요.";
-            _ui.Guide = "입력 5×5 → 필터 3×3 → 출력 3×3";
-            _ui.Feedback = "결과 확인을 눌러 완성된 지도를 살펴보세요.";
             _ui.ShowNext("결과 확인");
-            yield return new WaitUntil(() => _confirmed);
+            yield return new WaitUntil(() => _confirmed && !_playback.IsPaused);
             _ui.NextRequested -= HandleConfirm;
             _ui.HideNext();
             Confirmed?.Invoke();

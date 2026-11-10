@@ -7,14 +7,18 @@ namespace CNNConvolution
 {
     internal sealed class OutputSelectionController
     {
+        private readonly ResultGridController _grid;
         private readonly Button[] _buttons = new Button[9];
         private readonly Image[] _targets = new Image[9];
+        private int _highlightedIndex;
         private bool _enabled;
+        private bool _paused;
 
         public event Action<int> Selected;
 
         public OutputSelectionController(ResultGridController grid)
         {
+            _grid = grid;
             for (int index = 0; index < _buttons.Length; index++)
             {
                 int selected = index;
@@ -44,18 +48,52 @@ namespace CNNConvolution
             _buttons[index] = button;
             button.onClick.AddListener(() =>
             {
-                if (_enabled) { Selected?.Invoke(index); }
+                if (button.interactable) { Selected?.Invoke(index); }
             });
         }
 
         public void SetEnabled(bool enabled)
         {
+            if (_enabled == enabled) { return; }
             _enabled = enabled;
+            RefreshButtons();
+            _grid.SetHighlightGlow(enabled);
+            if (enabled)
+            {
+                // Start at the bottom-right and cycle through every unrecorded cell.
+                _highlightedIndex = 0;
+                AdvanceHighlight();
+            }
+            else { _grid.HideHighlight(); }
+        }
+
+        public void SetPaused(bool paused)
+        {
+            _paused = paused;
+            if (_enabled) { RefreshButtons(); }
+        }
+
+        public void AdvanceHighlight()
+        {
+            int index = _highlightedIndex;
+            for (int remaining = _buttons.Length; remaining > 0; remaining--)
+            {
+                index = (index + _buttons.Length - 1) % _buttons.Length;
+                if (_grid.HasRecordedValue(index)) { continue; }
+                _highlightedIndex = index;
+                _grid.Highlight(index);
+                return;
+            }
+        }
+
+        private void RefreshButtons()
+        {
             for (int index = 0; index < _buttons.Length; index++)
             {
-                _buttons[index].interactable = enabled;
-                _targets[index].raycastTarget = enabled;
-                _targets[index].color = enabled ? new Color(0.15f, 0.24f, 0.29f, 0.22f) : Color.clear;
+                bool selectable = _enabled && !_paused && !_grid.HasRecordedValue(index);
+                _buttons[index].interactable = selectable;
+                _targets[index].raycastTarget = selectable;
+                _targets[index].color = selectable ? new Color(0.15f, 0.24f, 0.29f, 0.22f) : Color.clear;
             }
         }
     }

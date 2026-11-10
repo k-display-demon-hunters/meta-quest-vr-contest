@@ -5,18 +5,26 @@ namespace CNNConvolution
 {
     internal sealed class KernelPlacementDisplayController
     {
+        private const float PreviewTravelDuration = 1.35f;
+        private const float PreviewHoldDuration = 0.45f;
+        private const float PreviewPauseDuration = 0.5f;
+        private const float PreviewFrontOffset = 0.045f;
+
         private readonly WorkbenchKernelController _kernel;
         private readonly Text _hint;
+        private readonly Transform _preview;
         private readonly Transform _gripArrow;
         private readonly Transform _dropTarget;
         private readonly Transform _placementDashed;
         private readonly Transform _placementSolid;
         private readonly Transform _placementCheck;
+        private float _previewTime;
 
         public KernelPlacementDisplayController(WorkbenchPrimitiveFactory factory, WorkbenchKernelController kernel, Transform target, Text hint)
         {
             _kernel = kernel;
             _hint = hint;
+            _preview = kernel.CreatePlacementPreview();
             _gripArrow = factory.Root("Grip arrow");
             kernel.AttachGripArrow(_gripArrow);
             factory.Tile(_gripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
@@ -67,6 +75,7 @@ namespace CNNConvolution
             _placementSolid.gameObject.SetActive(ready);
             _placementCheck.gameObject.SetActive(completed);
             _gripArrow.gameObject.SetActive(showGrip);
+            if (!showGrip) { HidePreview(); }
             _kernel.SetTitleVisible(showGrip);
             _hint.gameObject.SetActive(true);
             _hint.text = message;
@@ -75,12 +84,40 @@ namespace CNNConvolution
             _kernel.TintHandle(accent, emphasize ? 0.35f : 0.12f);
         }
 
+        public void UpdatePreview(float deltaTime)
+        {
+            float visibleDuration = PreviewTravelDuration + PreviewHoldDuration;
+            _previewTime = Mathf.Repeat(_previewTime + deltaTime, visibleDuration + PreviewPauseDuration);
+            if (_previewTime >= visibleDuration)
+            {
+                _preview.gameObject.SetActive(false);
+                return;
+            }
+
+            float progress = Mathf.SmoothStep(0, 1, _previewTime / PreviewTravelDuration);
+            Pose home = _kernel.HomePose;
+            Pose target = _kernel.TargetPose;
+            // Keep the preview just in front of the real filter at the start of each loop.
+            Vector3 offset = _preview.parent.TransformVector(Vector3.back * PreviewFrontOffset);
+            _preview.SetPositionAndRotation(
+                Vector3.Lerp(home.position, target.position, progress) + offset,
+                Quaternion.Slerp(home.rotation, target.rotation, progress));
+            _preview.gameObject.SetActive(true);
+        }
+
         public void HidePlacement()
         {
+            HidePreview();
             _dropTarget.gameObject.SetActive(false);
             _gripArrow.gameObject.SetActive(false);
             _hint.gameObject.SetActive(false);
             _kernel.TintHandle(new Color(0.47f, 0.38f, 0.24f), 0);
+        }
+
+        private void HidePreview()
+        {
+            _previewTime = 0;
+            _preview.gameObject.SetActive(false);
         }
     }
 }

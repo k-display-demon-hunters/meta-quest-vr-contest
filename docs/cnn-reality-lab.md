@@ -69,4 +69,4 @@ Meta Core와 MRUK 207.0.1, 공용 OVRManager, Underlay OVRPassthroughLayer를 �
 
 ## 확인 범위
 
-소스 흐름, 씬의 로컬 참조·스크립트 참조·버튼 호출 대상·직렬화 필드를 정적으로 검토했다. Unity 6000.3.24f1에서 AR 단독 실행 코드의 컴파일을 완료했으며 컴파일 오류는 없었다. 기존 EditMode 테스트는 14개 중 13개 통과, 1개 실패했다. 실패한 ModelDesignTests.LocalCnnBuildFollowsSlotOrderAndExcludesUnplacedBlocks는 입력 크기 기대값 784와 실제 RGB 입력 2352가 불일치하며, 해당 테스트와 모델방 코드는 수정하지 않았다. AR 씬 단독 Android APK 빌드는 진행 중이며 실기기 실행 결과는 아직 확인 전이다. 실기기 카메라 권한·좌표 정합·입력 방향·색상·가독성·XR ray 조작·실제 추론은 실행 확인 전이다. #3 모델방 진입·복귀와 공장 경유 통합은 이번 변경에서 추가하거나 검증하지 않았다.
+소스 흐름, 씬의 로컬 참조·스크립트 참조·버튼 호출 대상·직렬화 필드를 정적으로 검토했다. Unity 6000.3.24f1에서 AR 단독 실행 코드의 컴파일을 완료했으며 컴파일 오류는 없었다. 기존 EditMode 테스트는 14개 중 13개 통과, 1개 실패했다. 실패한 ModelDesignTests.LocalCnnBuildFollowsSlotOrderAndExcludesUnplacedBlocks는 입력 크기 기대값 784와 실제 RGB 입력 2352가 불일치하며, 해당 테스트와 모델방 코드는 수정하지 않았다. AR 씬 단독 Android APK 빌드는 오류 0개·경고 10개로 성공했으며, 연결된 Quest 3S에 업데이트 설치하고 Android 실행 요청 성공 및 앱 프로세스 생성을 확인했다. 헤드셋 착용 후 실제 촬영·조작 확인은 아직 완료하지 않았다. 빌드 경고에는 XRInteractionRuntimeSettings의 누락 스크립트와 Meta XR 설정·성능 관련 안내가 포함되어 있다. 실기기 카메라 권한·좌표 정합·입력 방향·색상·가독성·XR ray 조작·실제 추론은 실행 확인 전이다. #3 모델방 진입·복귀와 공장 경유 통합은 이번 변경에서 추가하거나 검증하지 않았다.

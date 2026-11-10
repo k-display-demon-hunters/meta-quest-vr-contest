@@ -7,6 +7,7 @@ namespace RealityLab
     public sealed class RealityResultController : MonoBehaviour
     {
         [SerializeField] private RawImage _currentImage;
+        [SerializeField] private RawImage _capturePreview;
         [SerializeField] private RawImage _previousImage;
         [SerializeField] private Text _currentCaption;
         [SerializeField] private Text _previousCaption;
@@ -26,6 +27,8 @@ namespace RealityLab
         public void ShowInput(RealityRecognitionData input, RealityAttempt previous)
         {
             SetImage(_currentImage, ref _currentTexture, input);
+            _capturePreview.texture = _currentTexture;
+            _capturePreview.enabled = input != null;
             SetImage(_previousImage, ref _previousTexture, previous?.Input);
             _currentCaption.text = input == null ? "촬영 전" : "실제 모델 입력 · 28×28 RGB";
             _previousCaption.text = previous == null ? "이전 촬영 없음" :

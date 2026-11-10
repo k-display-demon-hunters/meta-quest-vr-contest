@@ -8,6 +8,7 @@ namespace RealityLab
     public sealed class RealityUIManager : MonoBehaviour
     {
         [SerializeField] private RealityResultController _results;
+        [SerializeField] private RealityViewController _view;
         [SerializeField] private Text _cameraStatus;
         [SerializeField] private Text _modelStatus;
         [SerializeField] private Text _guideStatus;
@@ -62,6 +63,7 @@ namespace RealityLab
         {
             _modelReady = modelReady;
             _cameraReady = cameraReady;
+            _guideStatus.text = cameraReady ? "숫자를 프레임 안에 맞춰 주세요" : "카메라 권한 / 준비 확인 중";
             _cameraStatus.text = cameraReady ? "카메라 · 촬영 가능" : "카메라 · 준비 / 권한 확인 대기";
             _modelStatus.text = _stage == RealityStage.AwaitingModel
                 ? (modelReady ? "내 모델 · 적용 가능" : "내 모델 · 학습 모델 연결 대기")
@@ -73,6 +75,7 @@ namespace RealityLab
         public void ShowStage(RealityStage stage)
         {
             _stage = stage;
+            _view.ShowStage(stage);
             _summaryPanel.SetActive(stage == RealityStage.Summary);
             _historyControls.SetActive(stage == RealityStage.Summary);
             _interactionControls.SetActive(stage != RealityStage.Summary);
@@ -136,6 +139,10 @@ namespace RealityLab
 
         private void RefreshButtons()
         {
+            _apply.gameObject.SetActive(_stage == RealityStage.AwaitingModel && !_previewOnly);
+            _capture.gameObject.SetActive(_stage == RealityStage.Ready);
+            _recognize.gameObject.SetActive(_stage == RealityStage.Captured && !_previewOnly);
+            _retake.gameObject.SetActive(_stage == RealityStage.Captured);
             _apply.interactable = _stage == RealityStage.AwaitingModel && _modelReady;
             _capture.interactable = _stage == RealityStage.Ready && _cameraReady && (_modelReady || _previewOnly);
             _recognize.interactable = _stage == RealityStage.Captured && _modelReady;

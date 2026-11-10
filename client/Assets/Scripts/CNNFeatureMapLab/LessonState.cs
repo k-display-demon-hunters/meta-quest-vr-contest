@@ -4,6 +4,7 @@ namespace FeatureMapCorridor
     internal sealed class LessonState
     {
         internal LessonPhase Phase { get; set; } = LessonPhase.AwaitRound;
+        internal System.Collections.Generic.HashSet<MapId> RevealedMaps { get; } = new System.Collections.Generic.HashSet<MapId>();
         internal int Digit { get; set; } = 2;
         internal int RequiredRoundIndex { get; set; }
         internal bool MandatoryRound { get; set; }

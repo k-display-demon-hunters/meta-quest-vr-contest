@@ -30,10 +30,16 @@ namespace FeatureMapCorridor
         internal float Width => _width;
         internal Texture2D Texture => _texture;
         [SerializeField] private XRSimpleInteractable _hit;
-        internal void Bind(CorridorRenderUtility visuals, Action clicked = null)
+        internal void Bind(CorridorRenderUtility visuals, Action clicked = null, bool showEmptyGrid = false)
         {
             _visuals = visuals;
-            _texture = UnityEngine.Object.Instantiate(_texture);
+            _texture = showEmptyGrid
+                ? new Texture2D(_size * 4, _size * 4, TextureFormat.RGBA32, false)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp
+                }
+                : UnityEngine.Object.Instantiate(_texture);
             _pixels = new Color32[_texture.width * _texture.height];
             visuals.Texture(_surface, _texture);
             _clicked = clicked;
@@ -136,6 +142,11 @@ namespace FeatureMapCorridor
         }
 
         internal void Cell(int index, Color color) => Highlight(index/_size, index%_size, index/_size, index%_size, color);
+        internal void MoveCellHighlight(int index, Vector3 origin, float progress)
+        {
+            _border.position = Vector3.Lerp(origin, Root.TransformPoint(CellPosition(index)), progress);
+        }
+
         internal void ClearHighlight() => _border.gameObject.SetActive(false);
         internal void Frame(Color? color = null) => _visuals.Paint(_frame, color ?? _defaultFrame);
         internal void Opacity(float alpha) => _visuals.Paint(_surface, new Color(1, 1, 1, alpha));
@@ -147,7 +158,7 @@ namespace FeatureMapCorridor
         }
 
         internal void UpdateMap(IReadOnlyList<float> values, float scale, int shown = int.MaxValue,
-            int only = -1)
+            int only = -1, int always = -1)
         {
             int width = _texture.width;
             int height = _texture.height;
@@ -158,10 +169,17 @@ namespace FeatureMapCorridor
                 int column = x * _size / width;
                 int index = row * _size + column;
                 _pixels[y * width + x] =
-                    index < shown && (only < 0 || index == only) ? CorridorTheme.MapColor(values[index] / scale)
-                : new Color32(10, 18, 32, 255);
+                    (index == always || index < shown && (only < 0 || index == only)) ? CorridorTheme.MapColor(values[index] / scale)
+                : EmptyCellColor(x, y, width, height);
             }
             Upload();
+        }
+
+        private Color32 EmptyCellColor(int x, int y, int width, int height)
+        {
+            bool gridLine = (width > _size && x * _size % width < _size) ||
+                (height > _size && (height - 1 - y) * _size % height < _size);
+            return gridLine ? new Color32(24, 37, 52, 255) : new Color32(10, 18, 32, 255);
         }
 
         internal void DrawInput(IReadOnlyList<IReadOnlyList<float>> channels, int channel)

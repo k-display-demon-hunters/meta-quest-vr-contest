@@ -41,7 +41,7 @@ namespace FeatureMapCorridor
         private void OnEnable()
         {
             _featureMaps.DigitSelected += DigitSelected;
-            _featureMaps.MapSelected += MapSelected;
+            _featureMaps.OperationSelected += OperationSelected;
             _featureMaps.OutputSelected += TinSelected;
             _featureMaps.FilterExpanded += OnFilterExpanded;
             _featureMaps.PresentationReady += RenderLesson;
@@ -89,7 +89,7 @@ namespace FeatureMapCorridor
             }
             _state.Digit = digit;
             _snapshot = _executionData.GetSnapshot(_state.Digit);
-            _featureMaps.ShowSnapshot(_snapshot);
+            _featureMaps.ShowSnapshot(_snapshot, _state.RevealedMaps);
             if (inRound)
             {
                 PrepareActiveRound();
@@ -123,42 +123,40 @@ namespace FeatureMapCorridor
         private void AwaitRound()
         {
             MapId round = RequiredRound;
-            if (round.Layer == 2)
+            if (round.Layer == 4)
             {
-                BeginRound(round, true, _featureMaps.FirstStep(round));
-                return;
+                for (int map = 2; map < _snapshot.MapCount(3); map++)
+                {
+                    var result = new MapId(3, map);
+                    if (_state.RevealedMaps.Add(result))
+                    {
+                        _featureMaps.RevealOutputInput(map);
+                    }
+                }
             }
+            _featureMaps.ShowOperations(round.Layer, _state.RevealedMaps);
 
             Highlight(round.Layer);
             _state.Phase = LessonPhase.AwaitRound;
             RenderLesson();
         }
 
-        private void MapSelected(int layer, int map)
+        private void OperationSelected(MapId round)
         {
-            if (_state.Phase == LessonPhase.Round && IsPooling)
-            {
-                if (layer == 2 && map != _state.ActiveRound.Map)
-                {
-                    _state.ActiveRound = new MapId(layer, map);
-                    PrepareActiveRound();
-                    ShowCurrentStep();
-                }
-                return;
-            }
-            if (layer == 2 || _state.Phase != LessonPhase.AwaitRound)
+            if (_state.Phase != LessonPhase.AwaitRound ||
+                (round.Layer != RequiredRound.Layer && !_state.RevealedMaps.Contains(round)))
             {
                 return;
             }
 
-            var round = new MapId(layer, map);
-            bool mandatory = layer == RequiredRound.Layer && map == RequiredRound.Map;
+            bool mandatory = round.Layer == RequiredRound.Layer &&
+                (round.Layer == 2 || round.Map == RequiredRound.Map);
             BeginRound(round, mandatory, _featureMaps.FirstStep(round));
         }
 
         private void TinSelected(int digit)
         {
-            if (_state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4 && digit == _state.Digit)
+            if (_state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4 && digit == _state.Digit && !_featureMaps.RevealingOutputInputs)
             {
                 MapId round = RequiredRound;
                 BeginRound(round, true, _featureMaps.FirstStep(round));
@@ -168,6 +166,7 @@ namespace FeatureMapCorridor
         private void BeginRound(MapId round, bool mandatory, LessonStep step)
         {
             _state.Phase = LessonPhase.Round;
+            _featureMaps.ShowOperations(0, _state.RevealedMaps);
             _state.ActiveRound = round;
             _state.MandatoryRound = mandatory;
             _state.Step = step;
@@ -192,7 +191,7 @@ namespace FeatureMapCorridor
         {
             if (IsPooling)
             {
-                _featureMaps.ShowPooling(_snapshot, _state.ActiveRound.Map, _poolingCalculation, _state.Step);
+                _featureMaps.ShowPooling(_snapshot, _state.ActiveRound.Map, _poolingCalculation, _state.Step, _state.RevealedMaps);
             }
             else
             {
@@ -201,12 +200,21 @@ namespace FeatureMapCorridor
             RenderLesson();
         }
 
-        private void CloseRound() => _featureMaps.CloseRound(_state.ActiveRound, _snapshot);
+        private void CloseRound()
+        {
+            _featureMaps.CloseRound(_state.ActiveRound);
+            _featureMaps.RestoreResults(_state.RevealedMaps);
+        }
 
         private void ShowRecap()
         {
             _state.Phase = LessonPhase.Recap;
+            if (_state.ActiveRound.Layer != 4)
+            {
+                _state.RevealedMaps.Add(_state.ActiveRound);
+            }
             _lessonUI.AddRecap(_featureMaps.FinishRoundForRecap());
+            _featureMaps.RestoreResults(_state.RevealedMaps);
             if (_state.MandatoryRound && _state.ActiveRound.Layer != 4)
             {
                 CompleteRequiredRound();
@@ -289,22 +297,20 @@ namespace FeatureMapCorridor
                     break;
                 case RoundOutcome.BeforeFirstStep:
                     CloseRound();
-                    if (IsPooling)
-                    {
-                        ShowPreviousRequiredRound();
-                    }
-                    else
-                    {
-                        AwaitRound();
-                    }
+                    AwaitRound();
                     break;
                 case RoundOutcome.ShowRecap:
                     ShowRecap();
                     break;
                 case RoundOutcome.Complete:
+                    _state.RevealedMaps.Add(new MapId(2, 0));
+                    _state.RevealedMaps.Add(new MapId(2, 1));
                     CloseRound();
-                    CompleteRequiredRound();
-                    _state.RequiredRoundIndex++;
+                    if (_state.MandatoryRound)
+                    {
+                        CompleteRequiredRound();
+                        _state.RequiredRoundIndex++;
+                    }
                     AwaitRound();
                     break;
             }
@@ -362,7 +368,7 @@ namespace FeatureMapCorridor
             _lessonUI.Disable();
             _environment.Disable();
             _featureMaps.DigitSelected -= DigitSelected;
-            _featureMaps.MapSelected -= MapSelected;
+            _featureMaps.OperationSelected -= OperationSelected;
             _featureMaps.OutputSelected -= TinSelected;
             _featureMaps.FilterExpanded -= OnFilterExpanded;
             _featureMaps.PresentationReady -= RenderLesson;

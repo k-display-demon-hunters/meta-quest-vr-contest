@@ -11,9 +11,9 @@
 | 중첩 프리팹 | 편집 대상 |
 | --- | --- |
 | `CorridorInput.prefab` | 입구 왼쪽의 입력 이미지와 이미지에 붙인 숫자 선택 버튼, RGB 채널 3장과 펼침 앵커 |
-| `CorridorFirstConv.prefab` | 첫 Conv 피처맵 2장 |
-| `CorridorPooling.prefab` | Pooling 결과판 2장과 계산용 판 |
-| `CorridorSecondConv.prefab` | 두 번째 Conv 피처맵 4장과 비활성 여분 판 |
+| `CorridorFirstConv.prefab` | 첫 Conv 필터 장치 2개, 계산 앵커, 결과판 2장 |
+| `CorridorPooling.prefab` | 채널별 Pooling 조작부 2개, 계산 앵커, 결과판 2장과 계산용 판 |
+| `CorridorSecondConv.prefab` | 두 번째 Conv 필터 장치 4개, 계산 앵커, 결과판 4장과 비활성 여분 판 |
 | `CorridorRoundPresentation.prefab` | Conv와 출력 비교에 함께 쓰는 필터 카드, 훑기 표시, 중간 결과판, 연출용 연결선 |
 | `CorridorOutput.prefab` | 출력 통, 점수·액체·빛 표시, 비교 판과 답 이동 앵커 |
 | `CorridorLessonUI.prefab` | 자막, 이전·다음 버튼, 힌트, 계산 요약, 완료 팝업 |
@@ -23,21 +23,21 @@
 - 중첩 프리팹 루트는 위치 0, 회전 0, 스케일 1을 유지한다. RGB 펼침, 필터 위치, 답 이동 등은 복도 기준 좌표를 사용하므로 개별 오브젝트의 Transform에서 배치를 조정한다.
 - 런타임 표시와 입력 참조는 전체 프리팹의 기존 모듈 설정에 연결되어 있다. `CorridorInput.prefab`에는 RGB 표시 오브젝트와 앵커가 함께 들어 있고, 다른 씬에서 펼침 동작을 사용하려면 해당 씬의 제어 연결이 필요하다.
 - 입력 그림은 `Input image`, RGB 펼침 위치는 `RGB expanded 1~3`, 출력 통은 `Output 1~3`, 정답 도착 위치는 각 통의 `Answer destination`, 비교 연출 기준점은 `Evidence staging`에서 편집한다. 맵·입력판 크기는 패널 루트의 Scale로 조절한다.
-- 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다. 필터·강조선·계산 결과판은 학습 단계에 따라 이동·표시되므로 편집 시의 위치가 고정 표시 위치를 뜻하지는 않는다.
+- 연산 장치와 결과판은 프리팹에 저장되어 있다. 필터 장치는 3×3 돌출 격자, Pooling 장치는 2×2 격자다. 장치의 Transform에서 조작 위치를, 같은 번호의 `Calculation anchor`에서 Conv 카드나 Pooling 계산판이 나타나는 위치를 편집한다. 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다.
 - RGB 채널, 필터 카드, 계산 연출, 완료 팝업 등 단계별 오브젝트는 프리팹에 존재하지만 초기에는 비활성 상태일 수 있다. Hierarchy에서 선택해 편집하고 초기 표시 상태를 유지한다. 두 번째 Conv의 여분 판 한 장은 비활성 상태로 배치한다.
 - `Editor/CorridorPrefabBuilder.cs`는 저장된 배치를 프리팹으로 저장하는 도구다. 기존 프리팹이 있으면 메뉴에서 재생성하지 않는다. 저장할 때 필요한 임시 표시 에셋의 영속화는 `CorridorLayoutBuilder`가 담당한다. 런타임의 최초 배치 생성 코드와 `BuildLayoutForEditor`는 제거했다.
 
 ## 진행
 
-에디터에서는 Game 창에 포커스를 두고 공용 XR 시뮬레이터의 가상 오른손 레이로 대상을 가리킨 뒤 Shift 없이 T를 누른다. Quest에서는 오른손 레이와 Trigger를 사용한다. 숫자 버튼으로 입력을 바꾸고, 피처맵 판을 선택해 계산을 연다.
+에디터에서는 Game 창에 포커스를 두고 공용 XR 시뮬레이터의 가상 오른손 레이로 대상을 가리킨 뒤 Shift 없이 T를 누른다. Quest에서는 오른손 레이와 Trigger를 사용한다. 숫자 버튼으로 입력을 바꾸고, 필터 또는 Pooling 장치를 눌러 계산을 시작한다. 실행 초기에는 결과판에 빈 격자가 보인다.
 
-1. 첫 Conv에서 피처맵 1-1과 1-2를 차례로 열어 두 필터의 반응을 비교한다. 필터를 펼친 뒤 RGB별 훑기, 대표 결과 칸의 기여도와 편향, ReLU, 합치기를 본다. 저장된 대표 칸을 사용한다.
-2. MaxPooling에서는 기존 가운데 구역의 두 판에 채널별 결과를 표시하고, 나머지 판을 계산 보기에 사용한다. 다음 버튼으로 대표 2×2 영역과 네 값, 최댓값이 결과 한 칸에 들어가는 과정을 본다. 양쪽 결과판으로 채널을 전환하고 전체 적용을 누르면 8×8 결과 두 장을 본다.
-3. 두 번째 Conv는 Pooling 결과 두 장을 사용해 피처맵 네 장을 만든다. 피처맵 3-1과 3-2를 필수로 비교하며, 3-3과 3-4는 선택이다. 필터별 반응은 결과의 밝기와 위치로 관찰한다.
+1. 필터 1-1을 누르면 RGB 입력을 펼친다. 필터가 같은 위치를 함께 훑으면 특징에 반응하는 부분이 결과판에 드러난다. 필터 1-2에서도 같은 입력의 다른 반응을 비교한다. 수식·가중치·ReLU 설명 단계는 사용하지 않는다.
+2. Pooling 조작부를 누르면 이전 피처맵의 작은 영역을 강조한다. 강한 반응이 작은 결과판으로 이동하고, 전체 적용에서는 두 채널의 결과가 채워진다. 설명은 중요한 특징을 보존한다는 역할에 집중하며 네 값의 숫자를 나열하지 않는다.
+3. 두 번째 Conv는 Pooling 결과 두 장을 사용해 피처맵 네 장을 만든다. 필터 3-1과 3-2는 필수 비교이고, 3-3과 3-4는 선택이다. 선택 필터의 결과가 아직 비어 있으면 출력 차례에 빠르게 채운다.
 4. 출력에서 현재 입력 숫자의 통을 눌러 마지막 피처맵 네 장과 숫자별 기준 틀의 비교, 빛 분배, 답 비행을 본다.
 5. 출력 정리에서 **체험 완료**를 누르면 진행률이 100%가 된다. 공장 학습 세션에 출구 사용 가능 상태를 보낸다. 내부 문과 문 안내 힌트는 제거했으며, 실제 문 개폐와 출구 안내는 FactoryEnvironment가 담당한다. 완료 팝업은 체험 완료만 표시한다.
 
-체험은 첫 Conv 판 선택부터 시작한다. 입구에서 입력판을 누르는 RGB 펼침과 수용 영역 투어, 픽셀 직접 선택을 제거했다. 첫 Conv의 필터 연출에서 RGB 채널을 표시한다. 이전 버튼은 해당 설명과 연출을 다시 보여준다. 공용 공간 버튼과 팝업은 [공용 공간 UI](world-ui.md)를 사용한다.
+완성한 연산은 다음 장치를 고르는 동안 다시 선택할 수 있다. 이전 버튼은 해당 단계의 설명과 표시를 복원한다. 숫자를 바꾸면 현재 단계와 공개된 결과판을 새 입력의 데이터로 갱신한다. 공용 공간 버튼과 팝업은 [공용 공간 UI](world-ui.md)를 사용한다.
 
 ## 모듈과 상태 소유권
 
@@ -67,26 +67,26 @@
 - `ExecutionData/Digit1ExecutionData.cs`부터 `Digit3ExecutionData.cs`까지 입력 RGB, 레이어 출력, 대표 칸과 채널별 기여도, Pooling 창, 출력 비교 틀·점수·확률을 C# 배열에 저장한다. 기준은 커밋 `b14a2db`의 기존 복도 모델이다.
 - `DigitExecutionData.cs`는 숫자마다 입력과 각 레이어의 결과 한 세트를 제공한다. 출력에는 후보 숫자 1·2·3의 점수와 확률, 비교 연출에 쓰는 채널별 기여도를 함께 저장한다.
 - `FeatureMapSnapshot`은 입력·맵·밝기 기준·점수와 확률을, `RoundCalculationResult`는 연출에 필요한 대표 칸·기여도·출력 틀을 읽기 전용으로 전달한다. 표시 모듈은 픽셀 값을 텍스처로 표시하고 연출을 재생한다.
-- Conv 카드와 훑기 판에는 커널 숫자 표기를 표시하지 않는다. 필터별 반응, 대표 칸의 채널별 기여도·편향·합과 ReLU는 저장 데이터로 설명한다.
+- 저장된 결과 데이터로 시각 연출을 재생한다. 입력 영역과 결과의 밝기·위치를 비교하며 특징 추출과 보존을 설명한다.
 
 ### 피처맵 표시와 연출
 
 - 입력·은닉층·출력 사이의 기본 연결선 38개는 제거했다. 필터를 펼칠 때는 채널 수에 맞춰 최대 4개의 입력선을 표시한다. 결과 연결선과 대표 영역 테두리도 해당 연출에서 표시한다.
 
-- `FeatureMapDisplayController`는 기본 입력판·맵·출력의 표시 변경과 복원을 소유한다. 라운드가 기본 패널을 바꿀 때 이 경로를 사용한다.
+- 씬 Manager의 `LessonState`는 공개한 결과를 기억한다. `FeatureMapDisplayController`는 그 결과에 맞춰 입력판·피처맵·출력의 표시를 복원하고, 라운드 연출은 이 경로로 대표 칸과 순차 공개 상태를 그린다.
 - `InputPanelController`, `FeatureMapPanelController`, `OutputStageController`는 각 표시·입력을 담당한다. 입력판과 중간 결과판·템플릿은 같은 패널 타입의 서로 다른 인스턴스다.
-- `Round/PoolingRoundController`는 저장된 대표 영역과 최댓값을 기존 판에 표시한다. 선택 영역의 숫자는 기존 자막에 표시한다.
+- `Round/PoolingRoundController`는 저장된 대표 영역과 최댓값을 기존 판에 표시한다. 자막은 강한 반응의 보존을 설명한다.
 - `Round/ConvRoundRules.cs`, `PoolingRoundRules.cs`, `OutputRoundRules.cs`는 각 체험의 순서와 종료 동작을 정의한다. `RoundStepSequence`는 같은 순서에서 다음과 이전을 찾고, 필터 입력 대기와 연출 준비 여부를 반영해 `RoundTransition`을 반환한다.
 - 씬 Manager가 이전·다음·필터 펼침 요청을 받아 `FeatureMapsManager`에 전환을 조회한다. 전환을 적용할 때 `LessonState.Step`을 갱신한 뒤, 표시와 UI에 같은 단계 값을 전달한다. Pooling은 마지막 단계 후 다음 필수 체험으로 이동하고 Conv와 출력은 정리 화면으로 이동한다.
-- `Round/FeatureMapRoundController`는 받은 단계의 연출을 실행하며, 후반 출력 단계에서는 앞 단계의 점수와 채움 표시를 복원한다. `FilterStackController`와 `RoundResultsController`가 카드·훑기·합치기를 표시한다. RoundController는 필터 펼침 직후 0.7초 대기를 관리한다. 대기가 끝나면 `FeatureMapsManager`가 `PresentationReady`를 씬 Manager에 전달해 버튼 표시를 갱신한다. 단계 전환은 사용자 요청으로 이루어진다.
+- `Round/FeatureMapRoundController`는 받은 단계의 연출을 실행한다. Conv에서는 선택된 장치의 계산 앵커에서 카드가 펼쳐지고, `RoundResultsController`가 대표 위치에 커널을 겹치고 결과판을 채운다. 출력에서는 기존 비교 연출과 필터 펼침 직후 0.7초 대기를 관리한다. 대기가 끝나면 `FeatureMapsManager`가 `PresentationReady`를 씬 Manager에 전달한다.
 - 정리 화면에 들어갈 때 씬 Manager는 `FeatureMapsManager.FinishRoundForRecap()`으로 연출을 마무리하고, 반환된 `RecapInfo` 하나를 `LessonUIManager.AddRecap()`에 전달한다.
 
 ### 입력 연결
 
 - 상호작용 대상은 기존 Core XR 리그의 오른손 레이와 XRI의 활성화·호버 이벤트를 사용한다. 레이 거리·색상·햅틱은 공용 설정을 따른다. UI는 기존 XRUIInputModule과 TrackedDeviceGraphicRaycaster를 사용한다.
-- 피처맵 판은 FeatureMapPanelController, 필터는 FilterStackController, 출력 통은 OutputStageController가 자신의 XRI 클릭·호버 이벤트를 직접 구독한다. FeatureMapsManager는 표시·라운드 Controller에 입력 활성 상태를 전달한다. 각 Controller는 활성 상태 변경 시 이벤트 구독과 해제, 잡기 방지 필터 등록과 해제를 대칭으로 처리한다. 피처맵 판 8개, 필터 5개, 출력 3개가 기존 Collider를 사용한다.
+- 필터·Pooling 장치 8개는 `OperationDeviceController`가 XRI 입력을 받는다. `FeatureMapsManager`가 선택 가능한 장치를 활성화하고 선택 요청을 씬 Manager에 전달한다. 출력 통과 출력 비교 카드는 각각 `OutputStageController`와 `FilterStackController`가 입력을 받는다. 피처맵 결과판은 표시용이다.
 - 각 대상은 오른손 레이의 활성화 이벤트와 기존 히트 결과를 사용하며, UI가 앞에 있거나 레이가 물체를 잡고 있으면 클릭을 처리하지 않는다. Grip으로 학습 조작 대상을 잡는 것은 각 Controller의 선택 필터가 차단한다. 호버 효과는 진입·이탈 이벤트로 갱신하고 디버그용 대상 이름과 클릭 기록은 모듈 내부에서 전달한다.
-- 필터를 빠르게 두 번 누르면 접힌다. 0.4초 이내 같은 카드의 두 번째 클릭 판정은 FilterStackController가 소유한다.
+- 출력 비교 카드를 빠르게 두 번 누르면 접힌다. 0.4초 이내 같은 카드의 두 번째 클릭 판정은 FilterStackController가 소유한다.
 - 숫자를 선택하면 씬 Manager가 LessonState.Digit을 변경하고 ExecutionData에서 해당 숫자의 스냅샷을 조회해 표시한다. ExecutionData는 선택 상태를 보관하지 않는다. Conv와 Pooling 설명은 선택한 데이터의 대표 영역을 사용한다. 완료 후에도 숫자를 바꿀 수 있다. 선택 라운드를 마치면 다음 필수 라운드의 안내로 돌아간다.
 - 버튼 구독은 해당 Controller가 소유하는 `CorridorButtonBindings`로 연결·해제한다. 완료 팝업의 확인·닫기는 기존 WorldUIPopupController가 담당한다.
 

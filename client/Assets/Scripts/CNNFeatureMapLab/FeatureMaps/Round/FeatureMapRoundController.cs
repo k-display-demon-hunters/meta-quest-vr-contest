@@ -47,12 +47,12 @@ namespace FeatureMapCorridor
             _filter.InputClicked -= OnInputClicked;
         }
         private void OnFilter(bool expanded) => FilterPressed?.Invoke(expanded);
-        internal void Prepare(RoundCalculationResult data)
+        internal void Prepare(RoundCalculationResult data, Transform anchor)
         {
             _presentationReadyAt = null;
             _data = data;
             _destination = _display.Destination(Layer, Map, data.Digit);
-            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map), _destination);
+            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map), _destination, anchor);
             _results.Configure(data, _display);
         }
 
@@ -62,14 +62,26 @@ namespace FeatureMapCorridor
             _started = Time.unscaledTime;
             _presentationReadyAt = filterInput ? _started + .7f : null;
 
-            _filter.ShowCards(step is LessonStep.FilterIntro or LessonStep.FilterOpened
-                or LessonStep.Scan or LessonStep.Explain or LessonStep.CellBreakdown);
+            _filter.ShowCards((IsOutput || step == LessonStep.FilterOpened) && (step is LessonStep.FilterIntro or LessonStep.FilterOpened
+                or LessonStep.Scan or LessonStep.Explain));
             if (!filterInput)
             {
                 _filter.SetExpanded(step != LessonStep.FilterIntro, true);
             }
             _filter.DimDuringScan(step == LessonStep.Scan);
             _display.ShowRound(_data, step);
+            if (!IsOutput)
+            {
+                int shown = step == LessonStep.Explain ? int.MaxValue : 0;
+                if (step == LessonStep.Merge)
+                {
+                    _display.DrawResult(Layer, Map, int.MaxValue, _data.Index);
+                }
+                else
+                {
+                    _display.DrawResult(Layer, Map, shown);
+                }
+            }
             _results.Show(step);
 
             if (IsOutput)

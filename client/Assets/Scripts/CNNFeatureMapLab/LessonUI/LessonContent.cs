@@ -29,25 +29,22 @@ namespace FeatureMapCorridor
         internal static string RoundHeader(int round) => $"[{round}/4 · {RoundNames[round - 1]}]";
         internal static string WaitingHint(int layer, int map, int digit) => layer == 4
             ? $"숫자 {digit} 통을 눌러 보세요"
-            : $"{FeatureMapLabels.MapId(layer, map)} 판을 눌러 보세요";
+            : $"{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요";
 
         internal static string WaitingBody(int layer, int map, int digit) => layer == 4
             ? $"출력의 숫자 {digit} 통을 눌러 보세요."
-            : $"<b>{RoundNames[layer - 1]}</b>\n{FeatureMapLabels.MapId(layer, map)} 판을 눌러 필터를 살펴보세요.";
+            : layer == 2
+                ? "<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling 장치를 눌러 강한 반응이 어떻게 남는지 살펴보세요."
+                : $"<b>필터는 특징을 추출합니다.</b>\n{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 피처맵을 만들어 보세요.";
 
         internal static string PoolingBody(LessonStep step, int channel, PoolingCalculationResult data)
         {
-            switch (step)
+            return step switch
             {
-                case LessonStep.PoolingWindow:
-                    return $"채널 {channel + 1}의 16×16 피처맵에서 대표 2×2 영역을 표시했어요. 양쪽 판을 눌러 채널을 바꿀 수 있어요.";
-                case LessonStep.PoolingValues:
-                    return $"네 칸의 값이에요.\n{data.TopLeft:0.###}   {data.TopRight:0.###}\n{data.BottomLeft:0.###}   {data.BottomRight:0.###}";
-                case LessonStep.PoolingMaximum:
-                    return $"가장 큰 값 <b>{data.Maximum:0.###}</b>을 결과판의 한 칸에 담았어요.";
-                default:
-                    return "같은 계산을 두 채널에 적용했어요. 격자는 <b>16×16 → 8×8</b>로 줄고 채널은 <b>두 장</b>이에요.";
-            }
+                LessonStep.PoolingWindow => "Pooling은 중요한 특징을 보존하면서 크기를 줄입니다. 강조된 영역의 밝은 반응을 살펴보세요.",
+                LessonStep.PoolingMaximum => "강한 반응이 작은 결과판으로 옮겨져 남아요.",
+                _ => "크기가 줄어도 중요한 특징은 남아 있어요. 앞의 피처맵과 비교해 보세요."
+            };
         }
 
         internal static string FilterIntro(int layer, int map, int digit) => layer == 4
@@ -55,30 +52,19 @@ namespace FeatureMapCorridor
         : string.Format("{0}는 이 필터 하나로 만들어져요.", FeatureMapLabels.MapId(layer, map));
         internal static string FilterOpen(int layer, int count, int size)
         {
-            string why = layer == 1 ? "입력이 R·G·B 3장" : layer == 4 ? $"마지막 Conv의 피처맵이 {count}장"
-            : $"Pooling 결과가 {count}장";
-            return string.Format("{0}이라서 필터도 <b>{1} 판 {2}장</b>이에요.\n<color=#8FA3B8>필터를 두 번 누르면 다시 겹쳐져요</color>", why, layer == 4 ? $"{size}×{size}" : "3×3", count);
+            if (layer == 1)
+                return "필터는 특징을 추출합니다. 색깔별 이미지에서 어떤 부분이 드러나는지 살펴보세요.";
+            if (layer == 3)
+                return "Pooling을 거친 두 피처맵이 입력이에요. 앞에서 찾은 특징을 조합해 새로운 특징을 추출해요.";
+            string why = $"마지막 Conv의 피처맵이 {count}장";
+            return $"{why}이라서 필터도 <b>{size}×{size} 판 {count}장</b>이에요.\n<color=#8FA3B8>필터를 두 번 누르면 다시 겹쳐져요</color>";
         }
 
-        internal static string Scan(int layer) => layer == 1 ? "R을 훑는 판, G를 훑는 판, B를 훑는 판이 각자 맡은 이미지를 처음부터 끝까지 훑어요."
-        : layer == 4 ? "판마다 맡은 피처맵 위에 통째로 겹쳐져요." : "판마다 맡은 피처맵을 처음부터 끝까지 훑어요.";
+        internal static string Scan(int layer) => layer == 4
+            ? "판마다 맡은 피처맵 위에 통째로 겹쳐져요."
+            : "필터가 지나가며 찾아낸 특징이 결과판에 드러나요.";
         internal static string Explain(int layer, int digit) => layer == 4
-        ? string.Format("<b>출력 {0}</b>는 입력이 숫자 {0}인지 판단해야 해요. 그래서 필터의 판마다 <b>숫자 {0}일 때 그 피처맵이 밝아지는 곳</b>이 밝게 그려져 있어요. 피처맵이 그 모양과 많이 겹칠수록 점수가 커져요.", digit) : "필터마다 가중치가 달라요. 같은 입력을 사용해도 위치마다 계산된 값이 어떻게 달라지는지 피처맵에서 살펴보세요.";
-        internal static string Compare(int layer, System.Collections.Generic.IReadOnlyList<float> terms, float pre, float bias)
-        {
-            var message = new StringBuilder($"{terms.Count}장의 이미지의 <color=#FFE14A><b>노란 칸</b></color>만 볼게요.\n");
-            for (int i = 0; i < terms.Count; i++)
-            {
-                float term = terms[i];
-                string verdict = term == 0 ? "<color=#8FA3B8>0</color>"
-                : term > 0 ? "<color=#62E4D9><b>밝게 (+)</b></color>" : "<color=#FF7A6B><b>어둡게 (−)</b></color>";
-                message.Append(FeatureMapLabels.Marks[i]).Append(' ').Append(layer == 1 ? FeatureMapLabels.Channels[i] : $"{layer - 1}-{i + 1}")
-                .Append(" 결과: ").AppendLine(verdict);
-            }
-            message.AppendLine($"편향 {bias:0.###}을 포함한 합은 {pre:0.###}이에요.");
-            return message.Append(pre > 0 ? "ReLU를 지나 양수는 그대로 남아요." : "ReLU를 지나면 결과가 <b>0</b>이에요.").ToString();
-        }
-
+        ? string.Format("<b>출력 {0}</b>는 입력이 숫자 {0}인지 판단해야 해요. 그래서 필터의 판마다 <b>숫자 {0}일 때 그 피처맵이 밝아지는 곳</b>이 밝게 그려져 있어요. 피처맵이 그 모양과 많이 겹칠수록 점수가 커져요.", digit) : "필터마다 찾아내는 특징이 달라요. 같은 이미지에서 어디가 밝게 드러났는지 비교해 보세요.";
         internal static string Merge(int layer, int map, int digit, int count, int winner)
         {
             if (layer != 4)

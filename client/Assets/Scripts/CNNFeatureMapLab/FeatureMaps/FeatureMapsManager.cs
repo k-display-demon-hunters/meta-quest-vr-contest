@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace FeatureMapCorridor
@@ -10,10 +12,18 @@ namespace FeatureMapCorridor
         [SerializeField] private FeatureMapDisplayController _display;
         [SerializeField] private PoolingRoundController _pooling;
         [SerializeField] private FeatureMapRoundController _round;
+        [SerializeField] private OperationDeviceController[] _firstFilters;
+        [SerializeField] private OperationDeviceController[] _poolingDevices;
+        [SerializeField] private OperationDeviceController[] _secondFilters;
+        private OperationDeviceController[][] _devices;
         private Camera _camera;
+        private bool _visible;
+        private int _availableLayer;
+        private IReadOnlyCollection<MapId> _revealed;
+        internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
         private bool _roundActive;
         internal event Action<int> DigitSelected;
-        internal event Action<int, int> MapSelected;
+        internal event Action<MapId> OperationSelected;
         internal event Action<int> OutputSelected;
         internal event Action FilterExpanded;
         internal event Action PresentationReady;
@@ -21,11 +31,44 @@ namespace FeatureMapCorridor
         internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
-        internal Vector3 WaitingHint(int layer, int map, int digit) => _display.WaitingPosition(layer, map, digit);
+        internal Vector3 WaitingHint(int layer, int map, int digit) => layer == 4
+            ? _display.OutputHintPosition(digit)
+            : _display.Map(layer, map).Root.parent.InverseTransformPoint(_devices[layer - 1][map].Position) + Vector3.up * .35f;
+
+        internal void ShowOperations(int layer, IReadOnlyCollection<MapId> revealed)
+        {
+            _availableLayer = layer;
+            _revealed = revealed;
+            UpdateDevices();
+        }
+
+        private void UpdateDevices()
+        {
+            for (int layer = 1; layer <= _devices.Length; layer++)
+            for (int map = 0; map < _devices[layer - 1].Length; map++)
+            {
+                bool completed = _revealed.Contains(new MapId(layer, map));
+                bool available = layer == _availableLayer || (_availableLayer != 0 && completed);
+                OperationDeviceController device = _devices[layer - 1][map];
+                device.SetAvailable(available, completed);
+                device.SetInputActive(_visible && available);
+            }
+        }
         internal void Initialize(FeatureMapSnapshot snapshot)
         {
             _visuals.InitializeRuntime();
             _display.Bind(_visuals, snapshot);
+            _devices = new[] { _firstFilters, _poolingDevices, _secondFilters };
+            for (int layer = 1; layer <= _devices.Length; layer++)
+            for (int map = 0; map < _devices[layer - 1].Length; map++)
+            {
+                var operation = new MapId(layer, map);
+                _devices[layer - 1][map].Bind(_visuals, () =>
+                {
+                    LastClick = FeatureMapLabels.Operation(operation.Layer, operation.Map);
+                    OperationSelected?.Invoke(operation);
+                });
+            }
             _pooling.Bind(_visuals, _display);
             _round.Bind(_visuals, _display);
         }
@@ -33,7 +76,6 @@ namespace FeatureMapCorridor
         internal void Enable()
         {
             _display.DigitSelected += OnDigit;
-            _display.MapSelected += OnMap;
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
             _round.FilterPressed += OnFilter;
@@ -52,7 +94,6 @@ namespace FeatureMapCorridor
             _display.InputClicked -= OnInputClicked;
             _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
-            _display.MapSelected -= OnMap;
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
             _round.FilterPressed -= OnFilter;
@@ -60,7 +101,6 @@ namespace FeatureMapCorridor
         }
 
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
-        private void OnMap(int layer, int map) => MapSelected?.Invoke(layer, map);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
         private void OnPresentationReady() => PresentationReady?.Invoke();
@@ -76,7 +116,7 @@ namespace FeatureMapCorridor
         {
             2 => PoolingRoundRules.Sequence,
             4 => OutputRoundRules.Sequence,
-            _ => ConvRoundRules.ForMap(round.Map)
+            _ => ConvRoundRules.ForMap(round)
         };
 
         internal LessonStep FirstStep(MapId round) => RulesFor(round).First;
@@ -86,9 +126,14 @@ namespace FeatureMapCorridor
 
         private void SetInputActive(bool active)
         {
+            _visible = active;
             _display.SetInputActive(active);
-            _round.SetInputActive(active);
+            UpdateFilterInput();
+            UpdateDevices();
         }
+
+        private void UpdateFilterInput() =>
+            _round.SetInputActive(_visible && _roundActive && _round.IsOutput);
 
         internal void SetVisible(bool visible)
         {
@@ -104,6 +149,7 @@ namespace FeatureMapCorridor
         {
             _display.Tick(now);
             _visuals.UpdateBillboards(_camera);
+            _pooling.Tick(now);
             if (!_roundActive)
             {
                 return;
@@ -111,26 +157,35 @@ namespace FeatureMapCorridor
             _round.Tick(now);
         }
 
-        internal void ShowSnapshot(FeatureMapSnapshot snapshot) => _display.ShowSnapshot(snapshot);
+        internal void ShowSnapshot(FeatureMapSnapshot snapshot, IReadOnlyCollection<MapId> revealed)
+        {
+            _display.ShowSnapshot(snapshot);
+            RestoreResults(revealed);
+        }
+
+        internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
+        internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
-        internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data, LessonStep step) =>
-            _pooling.Show(snapshot, channel, data, step);
+        internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
+            LessonStep step, IReadOnlyCollection<MapId> revealed) =>
+            _pooling.Show(snapshot, channel, data, step, revealed, _poolingDevices[channel].CalculationAnchor);
 
         internal void PrepareRound(RoundCalculationResult data)
         {
             _roundActive = true;
-            _round.Prepare(data);
+            _round.Prepare(data, data.IsOutput ? null : _devices[data.Layer - 1][data.Map].CalculationAnchor);
+            UpdateFilterInput();
         }
 
         internal void ShowRoundStep(LessonStep step, bool filterInput) => _round.Show(step, filterInput);
 
         internal void FinishRoundStep(LessonStep step) => _round.FinishStep(step);
 
-        internal void CloseRound(MapId round, FeatureMapSnapshot snapshot)
+        internal void CloseRound(MapId round)
         {
             if (round.Layer == 2)
             {
-                _pooling.Close(snapshot);
+                _pooling.Close();
                 return;
             }
 
@@ -140,6 +195,7 @@ namespace FeatureMapCorridor
         private void ClosePresentation()
         {
             _roundActive = false;
+            UpdateFilterInput();
             _round.Close();
         }
 

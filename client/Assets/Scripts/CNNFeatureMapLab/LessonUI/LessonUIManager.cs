@@ -120,7 +120,6 @@ namespace FeatureMapCorridor
                 case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
                 case LessonStep.Scan: return LessonContent.Scan(data.Layer);
                 case LessonStep.Explain: return LessonContent.Explain(data.Layer, data.Digit);
-                case LessonStep.CellBreakdown: return LessonContent.Compare(data.Layer, data.Terms, data.Pre, data.Bias);
                 case LessonStep.Merge: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);
                 case LessonStep.CompareTemplates: return LessonContent.MatchTemplates(data.Count);
                 case LessonStep.FillProbabilities: return LessonContent.ShareLight(context.Winner, context.WinnerPercent);

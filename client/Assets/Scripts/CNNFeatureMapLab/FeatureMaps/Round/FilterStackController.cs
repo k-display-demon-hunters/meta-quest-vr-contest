@@ -33,6 +33,7 @@ namespace FeatureMapCorridor
         private bool _expanded;
         private bool _animating;
         private bool _connected;
+        private Quaternion _savedRotation;
         internal event Action<bool> ExpansionChanged;
         internal Transform Root => _root;
         internal Transform Plate(int index) => _card[index];
@@ -43,6 +44,7 @@ namespace FeatureMapCorridor
         internal void Bind(CorridorRenderUtility visuals)
         {
             _visuals = visuals;
+            _savedRotation = _root.localRotation;
             for (int i = 0; i < Capacity; i++)
             {
                 _foldedPositions[i] = _card[i].localPosition;
@@ -143,7 +145,7 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal void Configure(RoundCalculationResult calculation, FeatureMapPanelController[] sources, FeatureMapPanelController result, Vector3 destination)
+        internal void Configure(RoundCalculationResult calculation, FeatureMapPanelController[] sources, FeatureMapPanelController result, Vector3 destination, Transform anchor)
         {
             int layer = calculation.Layer;
             _layer = layer;
@@ -151,10 +153,8 @@ namespace FeatureMapCorridor
             _result = result;
             _colors = layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             _count = sources.Length;
-            float sourceZ = 0;
             for (int i = 0; i < _count; i++)
             {
-                sourceZ += sources[i].Position.z;
                 _card[i].gameObject.SetActive(true);
                 _card[i].localPosition = Folded(i);
                 _badges[i].color = _colors[i];
@@ -170,8 +170,18 @@ namespace FeatureMapCorridor
             {
                 _card[i].gameObject.SetActive(false);
             }
-            float sourceDepth = layer == 1 ? -7.75f : sourceZ/_count;
-            _root.localPosition = new Vector3(destination.x*.3f, layer == 4 ? 1.6f : destination.y+1.7f, (destination.z+sourceDepth)*.5f);
+            if (calculation.IsOutput)
+            {
+                float sourceDepth = 0;
+                foreach (var source in sources) sourceDepth += source.Position.z;
+                _root.localPosition = new Vector3(destination.x * .3f, 1.6f,
+                    (destination.z + sourceDepth / _count) * .5f);
+                _root.localRotation = _savedRotation;
+            }
+            else
+            {
+                _root.SetPositionAndRotation(anchor.position, anchor.rotation);
+            }
             _title.text = FeatureMapLabels.FilterTitle(layer, _count, layer == 4 ? calculation.Size : 3);
             _root.gameObject.SetActive(true);
             _connected = true;

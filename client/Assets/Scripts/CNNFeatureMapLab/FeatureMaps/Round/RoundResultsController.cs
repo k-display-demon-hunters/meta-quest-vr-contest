@@ -14,11 +14,10 @@ namespace FeatureMapCorridor
         private FilterStackController _filter;
         private RoundCalculationResult _data;
         private FeatureMapPanelController[] _sources;
-        private FeatureMapPanelController _target;
+        private FeatureMapDisplayController _display;
         private Vector3 _destination;
         private int _lastScan;
         private int Layer => _data.Layer;
-        private int Index => _data.Index;
         private bool IsOutput => _data.IsOutput;
         private int _size => _data.Size;
         private int _count => _data.Count;
@@ -35,8 +34,8 @@ namespace FeatureMapCorridor
         internal void Configure(RoundCalculationResult data, FeatureMapDisplayController display)
         {
             _data = data;
+            _display = display;
             _sources = display.Sources(data.Layer);
-            _target = data.IsOutput ? null : display.Map(data.Layer, data.Map);
             _destination = display.Destination(data.Layer, data.Map, data.Digit);
             for (int i = 0; i < data.Count; i++)
             {
@@ -48,15 +47,19 @@ namespace FeatureMapCorridor
         {
             Color32[] colors = Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             _lastScan = -1;
-            bool showResults = step is LessonStep.Scan or LessonStep.Explain or LessonStep.CellBreakdown or LessonStep.Merge;
+            bool showResults = IsOutput && (step is LessonStep.Scan or LessonStep.Explain or LessonStep.Merge);
             for (int i = 0; i < _count; i++)
             {
                 FeatureMapPanelController image = _images[i];
                 image.Root.gameObject.SetActive(showResults);
-                _scanWindows[i].gameObject.SetActive(step == LessonStep.Scan);
-                if (step == LessonStep.Scan)
+                bool showWindow = step == LessonStep.Scan;
+                _scanWindows[i].gameObject.SetActive(showWindow);
+                if (showWindow)
                 {
                     SetScanPlate(i);
+                    Color color = colors[i];
+                    color.a = IsOutput ? .5f : .12f;
+                    _visuals.Paint(_scanWindows[i], color);
                 }
                 if (!showResults)
                 {
@@ -68,13 +71,6 @@ namespace FeatureMapCorridor
                 image.Opacity(1);
                 image.ClearHighlight();
                 image.UpdateMap(_data.Values(i), _data.Scale(i), step == LessonStep.Scan ? 0 : int.MaxValue);
-                if ((step is LessonStep.CellBreakdown or LessonStep.Merge) && !IsOutput)
-                {
-                    image.Cell(Index, _visuals.Theme.Yellow);
-                }
-                Color color = colors[i];
-                color.a = .5f;
-                _visuals.Paint(_scanWindows[i], color);
             }
         }
 
@@ -84,7 +80,7 @@ namespace FeatureMapCorridor
             {
                 Scan(elapsed);
             }
-            if (step == LessonStep.Merge)
+            if (step == LessonStep.Merge && IsOutput)
             {
                 Merge(elapsed);
             }
@@ -96,7 +92,7 @@ namespace FeatureMapCorridor
             {
                 Scan(IsOutput ? 3.5f : 10f);
             }
-            if (step == LessonStep.Merge)
+            if (step == LessonStep.Merge && IsOutput)
             {
                 Merge(1.9f);
             }
@@ -127,8 +123,7 @@ namespace FeatureMapCorridor
         private void PositionImage(int index)
         {
             FeatureMapPanelController source = _sources[index];
-            float gap = Layer == 1 ? .12f : .85f;
-            _images[index].Root.localPosition = source.Position+Vector3.up*(source.Width+gap);
+            _images[index].Root.localPosition = source.Position + Vector3.up * (source.Width + .85f);
             _images[index].Root.localRotation = source.Root.localRotation;
             _images[index].Root.localScale = Vector3.one;
         }
@@ -137,16 +132,20 @@ namespace FeatureMapCorridor
         {
             float duration = IsOutput ? 3.5f : 10;
             int shown = Mathf.Min(_size*_size, Mathf.FloorToInt(_size*_size*elapsed/duration));
-            if (shown == _lastScan)
-            {
-                return;
-            }
+            bool changed = shown != _lastScan;
             _lastScan = shown;
+            if (!IsOutput && changed)
+            {
+                _display.DrawResult(Layer, _data.Map, shown);
+            }
             float fly = Mathf.SmoothStep(0, 1, Mathf.Clamp01(elapsed/.43f));
             for (int i = 0; i < _count; i++)
             {
-                PositionImage(i);
-                _images[i].UpdateMap(_data.Values(i), _data.Scale(i), shown);
+                if (IsOutput)
+                {
+                    PositionImage(i);
+                    _images[i].UpdateMap(_data.Values(i), _data.Scale(i), shown);
+                }
                 _scanWindows[i].gameObject.SetActive(shown < _size*_size);
                 if (shown == _size*_size)
                 {
@@ -154,8 +153,17 @@ namespace FeatureMapCorridor
                 }
                 Transform window = _scanWindows[i].transform;
                 FeatureMapPanelController source = _sources[i];
+                float cursor = Mathf.Clamp(elapsed / duration * _size * _size, 0, _size * _size - 1);
+                int cell = Mathf.FloorToInt(cursor);
+                int nextCell = Mathf.Min(cell + 1, _size * _size - 1);
+                Vector3 local = Vector3.Lerp(source.CellPosition(cell), source.CellPosition(nextCell), cursor - cell);
                 Vector3 position = IsOutput ? source.Root.TransformPoint(0, 0, -.035f)
-                : source.Root.TransformPoint(source.CellPosition(shown));
+                    : source.Root.TransformPoint(local);
+                if (!IsOutput)
+                {
+                    source.Highlight(cell / _size - 1, cell % _size - 1,
+                        cell / _size + 1, cell % _size + 1, Layer == 1 ? CorridorTheme.Rgb[i] : CorridorTheme.Pairs[i]);
+                }
                 Transform plate = _filter.Plate(i);
                 window.position = Vector3.Lerp(plate.position, position, fly);
                 window.rotation = Quaternion.Slerp(plate.rotation, source.Root.rotation, fly);
@@ -171,8 +179,8 @@ namespace FeatureMapCorridor
             {
                 FeatureMapPanelController image = _images[i];
                 image.Root.localPosition = Vector3.Lerp(_mergePositions[i], _destination+Vector3.back*.058f, Mathf.SmoothStep(0, 1, t));
-                image.Root.localRotation = Quaternion.Slerp(_sources[i].Root.localRotation, _target == null ? Quaternion.identity : _target.Root.localRotation, t);
-                image.Root.localScale = Vector3.one*(IsOutput ? Mathf.Lerp(1, .2f, t) : 1);
+                image.Root.localRotation = Quaternion.Slerp(_sources[i].Root.localRotation, Quaternion.identity, t);
+                image.Root.localScale = Vector3.one * Mathf.Lerp(1, .2f, t);
                 image.Opacity(1-Mathf.InverseLerp(.75f, 1, t));
                 if (t == 1)
                 {

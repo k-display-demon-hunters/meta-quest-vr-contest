@@ -48,7 +48,7 @@ namespace FactoryEnvironment
         {
             [SerializeField] private FactoryShutterId _id;
             [SerializeField] private Transform _frame;
-            [SerializeField] private float _approachDistance = 2f;
+            [SerializeField] private float _approachDistance = 6f;
 
             public FactoryShutterId Id => _id;
             public Transform Frame => _frame;

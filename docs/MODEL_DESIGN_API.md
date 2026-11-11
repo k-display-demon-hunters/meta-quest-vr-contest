@@ -45,7 +45,7 @@ EventSystem과 XRUIInputModule은 공용 `XRPlayerRig.prefab`의 자식으로 �
 
 1. 공급소에서 블록을 잡으면 같은 종류의 프리팹을 보충한다. 잡은 블록은 공급 블록 상태에서 벗어난다.
 2. 기존 슬롯의 블록을 잡으면 슬롯 점유와 모델의 해당 레이어를 제거한다. 나머지 슬롯은 이동하지 않는다.
-3. 놓을 때 컨베이어 로컬 좌표와 슬롯의 `Placement Half Extents`로 위치를 판단한다. 유효한 빈 슬롯이면 점유·모델 데이터를 등록하고 블록을 앵커에 정렬한다.
+3. 놓을 때 슬롯 앵커의 로컬 좌표와 `Placement Half Extents`로 위치를 판단한다. 유효한 빈 슬롯이면 점유·모델 데이터를 등록하고 블록을 앵커에 정렬한다.
 4. 슬롯 밖·점유 슬롯에 놓거나 잡기가 취소되면 블록을 등록 해제하고 파괴한다. 상호작용 종료 시 아직 손에 들린 임시 블록도 정리한다.
 5. 실행 정의를 만들 때 빈 슬롯을 건너뛰고 슬롯 순서대로 레이어를 복사한 뒤 고정 Output(Dense 4·Softmax)을 붙인다.
 
@@ -65,9 +65,11 @@ Builder가 인접한 배치 블록의 연결 지점 쌍을 모아 Conveyor에 �
 
 ### 바닥 조립 슬롯과 공급 책상
 
-조립 행은 바닥의 Y=0, Z=1.2에 두고 기존 1.0 간격의 8개 슬롯(X=-3.5…3.5)을 유지한다. Input·Output은 X=±4.6, Y=0.138, Z=1.2에 둔다. 설정 기기는 바닥 슬롯의 기존 위치를 따르고 점유 시 팝업 높이 보정을 유지한다. 제어 패널 기준점은 Y=2.112다. 조립 행 아래에는 책상을 두지 않는다.
+조립 행은 씬 루트 기준 Y=0, Z=0.62에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.62에 둔다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 판 앞쪽 윗면에는 슬롯 번호와 빈 상태 또는 설정 가능 상태를 표시하고 블록은 뒤쪽에 안착한다. 판 앞의 설정 기기는 점유된 슬롯에서 오른손 Trigger로 팝업을 연다.
 
-공급 책상은 오른쪽 (6.1, 1.212, 0.3), Y 회전 90°에 두고 긴 축 배율을 1.7로 넓힌다. Conv·Pooling·Flatten·Dense 공급 블록은 이 부모 아래 X=-1.6575, -0.5525, 0.5525, 1.6575, Y=Z=0에 놓아 네 패드 위에 정렬한다. 블록 바닥은 패드 상면과 일치하고 새 공급 블록도 이 위치를 사용한다. 폴더 구조와 기존 프리팹 GUID는 유지한다.
+공급 책상은 조립 행과 동쪽 벽 사이에 두고 방 중앙을 향한다. 씬 루트 기준 위치는 (0.333333, 0.9696, 2.05)이고 공급대 그룹의 균일 배율은 0.8이다. 흰색 둥근 상판 아래에 얇은 테두리와 바깥으로 벌어지는 다리 네 개를 둔다. 책상은 그룹 안에서 긴 축 배율 1.7을 사용한다. Conv·Pooling·Flatten·Dense 공급 블록과 보충 블록은 이 부모 아래 X=-1.6575, -0.5525, 0.5525, 1.6575, Y=Z=0에서 네 패드에 정렬된다. 블록을 슬롯에 놓으면 고정 Input·Output과 같은 루트 기준 배율 1로 정렬된다.
+
+제어 패널은 공급 책상 왼쪽의 씬 루트 기준 (-2.566667, 1.52, 2.05)에 두고 방 중앙을 향한다. 모델 검사 페이지의 첫 안내는 공급 책상에서 Grip으로 블록을 잡고 빈 슬롯에 놓는 두 단계다. 구성 오류가 있으면 위치·원인·수정 안내를 표시하며 여러 오류는 이전·다음 버튼으로 확인한다. 콘솔은 ROOM #1-2의 짙은 패널과 호박색 강조선, 청회색 버튼을 사용한다.
 
 ## 실행 검증과 학습
 
@@ -98,7 +100,7 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 | `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 표시와 설정 기기. 자식 순서는 슬롯 순서와 대응한다. |
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
-| `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 배치는 프리팹에 저장한다. |
+| `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 화면 요소는 프리팹에, 패널 기준점은 씬에 저장한다. |
 | `ModelDatasetController` | `_trainingDataset`, `_testDataset`으로 RGB 바이너리 연결. 평가 픽셀에서 샘플 텍스처 생성 |
 | `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 오른손 ray가 슬롯의 XRI 활성화 이벤트와 제어 패널·팝업의 UI 입력을 제공한다. |
 
@@ -108,4 +110,4 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 
 ## Reality 외부 이미지 연결
 
-ModelExecutionManager.InferExternalAsync는 정규화된 RGB float 배열과 reality: 요청 ID를 기존 학습 엔진에 전달한다. CNNModelDesignLabManager는 EnterRealityAsync/ExitRealityAsync 및 InferRealityAsync를 제공한다. ModelRealitySessionController가 CNNRealityLab을 Additive로 로드하고 기존 카메라를 연결한다. 모델은 이동하거나 복제하지 않는다. 기존 내부 샘플 UI는 reality: 결과를 표시하지 않는다. 공장 경유 실행은 지원하지 않으며 UI 버튼 연결도 추가하지 않았다. 상세 계약과 제한은 [CNNRealityLab](cnn-reality-lab.md)을 따른다. 컴파일·실행 검증은 수행하지 않았다.
+모델방에서 학습을 끝내면 제어 패널의 **현실 숫자 인식** 버튼으로 AR에 진입할 수 있다. `RealityLab.ModelRealitySessionController`가 `CNNRealityLab`을 Additive로 로드하고 기존 카메라를 연결한다. AR은 모델방에 유지한 학습 모델을 사용한다. `ModelExecutionManager.InferExternalAsync`는 정규화된 RGB 배열과 `reality:` 요청 ID를 기존 학습 엔진에 전달한다. 모델방의 내장 샘플 UI는 AR 결과를 건너뛴다. [CNNRealityLab 구현](cnn-reality-lab.md)

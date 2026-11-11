@@ -2,7 +2,7 @@
 
 [FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 정문 앞마당, 튜토리얼실, 세 체험실, 연결 복도와 후문 하역 공간으로 구성한다. 중앙 복도를 공유하던 이전 구조를 순차적으로 통과하는 방 구조로 교체했다. 공장을 직접 실행하면 정문 앞에서 시작한다.
 
-공장 공간과 문·양피지 입장 조건은 FactoryEnvironmentManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
+현재 구역에 따른 학습 단계와 태블릿 이동은 FactoryEnvironmentManager가 조율한다. 셔터 통행 조건은 FactoryShuttersManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
 
 ## 공장 외형 보강
 
@@ -16,6 +16,8 @@
 
 씬의 오브젝트 ID와 Transform, 충돌 영역, 셔터의 이동 방식과 체험 연결을 유지한다. 실내 등기구와 간접광을 다시 베이크해 라이트맵 2장과 방별 반사 프로브 5개를 생성했다. 데스크 주변과 튜토리얼 작업화·연구복은 데스크톱 Unity Play의 전후 화면에서 확인했다. Quest 기기 성능은 실측하지 않았다. 텍스처 출처는 [에셋 출처 및 저작권](ASSET_CREDITS.md)에 기록했다.
 
+후속 배치에는 천장에 지지대로 연결한 선형 등기구 27개를 추가했다. 튜토리얼과 ROOM #2에는 8개씩 두 줄로 배치하고, ROOM #1·#3과 휴게실에서는 책상과 통로에 가까운 곳을 보완했다. 각 기구의 확산판 아래에는 베이크 면광원 하나를 배치했다. 기존 책상 램프 7개에는 소형 작업광을 연결했다. 개별 기존 면광원의 강도를 낮추고 간접광 배율을 1로 되돌렸다. 동적 그림자용 혼합 스폿은 기존 5개를 사용한다. 새 배치는 씬에 저장했으며 라이트맵·반사 프로브는 위 베이크 결과를 유지한다.
+
 ### 연구복과 가까이 보는 가구의 형태
 
 튜토리얼 옷장의 연구복 세 벌은 열린 앞섶, 앞뒤 천 두께, 중력 방향으로 늘어진 소매와 열린 소맷단, 접힌 옷깃, 입체 주머니와 봉제선을 가진 곡면 메시다. 튜토리얼 바닥의 연구복에는 옷장에 걸린 베이지색 연구복과 같은 깃·앞섶·주머니·단추·소맷단과 재질을 사용한다. 몸판과 소매를 바닥에 맞게 펼쳐 접힘을 표현했다. 휴게실 바닥의 연구복에는 연속적인 굴곡을 적용했다. 청색 연구복 재질에는 기존 섬유 노멀 맵을 촘촘히 반복한다.
@@ -26,9 +28,27 @@
 
 세 연구실 환풍기의 판형 날개는 반경에 따라 폭과 피치가 달라지는 곡면 날개로 수정했다. 휴게실의 매트리스·베개·접힌 침구와 옷걸이의 작업복에는 곡면, 부풀음과 접힌 깃을 적용했다. 튜토리얼 작업화 두 짝의 밑창은 발끝·아치·뒤꿈치 형태를 따르고, 중앙 홈과 분리된 트레드를 가진다. 갑피에는 패딩 칼라, 혀, 아일릿, 교차 끈과 매듭, 뒤꿈치 고리를 적용했다. 금속 보관함 39개는 기존 본체에 별도 손잡이, 잠금쇠와 체결부를 가진다. 기존 표시 오브젝트의 위치·종류와 충돌 영역을 유지한다.
 
-문서 인쇄에는 `FactoryResearchPages` 재질과 아틀라스를 사용한다. 문서마다 별도 표본·문서 번호와 계산 내용을 배치하고, 실제 플레이 데이터와 혼동하지 않도록 설명용 계산 예시라고 적는다. 옷의 천 조각은 인쇄 서류에서 제외한다. 배경 장비 화면 21곳은 `FactoryDiagnosticDisplays.png`의 네 가지 계산 표본을 사용하며 기존 반복 줄무늬를 제거했다. 인터랙티브 체험 화면이나 학습 로직은 수정하지 않는다.
+문서 인쇄에는 `FactoryResearchPages` 재질과 아틀라스를 사용한다. 문서마다 별도 표본·문서 번호와 계산 내용을 배치하고, 실제 플레이 데이터와 혼동하지 않도록 설명용 계산 예시라고 적는다. 옷의 천 조각은 인쇄 서류에서 제외한다. 배경 계산 장비의 화면에는 `FactoryDiagnosticDisplays.png`의 계산 표본을 사용한다.
+
+연구 데스크의 배경 모니터 16대에는 얇은 베젤, 후면 통풍구, 전원 표시등, 스탠드와 케이블을 적용했다. 12대는 진단 그래프·장비 기록·바탕화면·시계 등 9가지 정적 화면 구성을 사용하고 4대는 꺼진 패널을 사용한다. 키보드는 한영 각인과 숫자패드가 있는 104키 사무용 6대, 남색 포인트의 68키 컴팩트형 1대다. 마우스 7개는 곡면 외장, 분리된 클릭 버튼과 홈이 있는 휠을 사용한다. 유선 전화기 1개에는 받침과 수화기, 번호·기능 키, 코일선과 내선·회선 상태 화면을 적용했다. 데스크 아래 PC 본체 7대는 파노라마 유리형 2대, 전면 통풍형 3대, 알루미늄 프레임 유리형 2대로 나눠 배치하며 팬·그래픽카드·냉각 부품·포트를 모델링했다. 이 소품은 기존 데스크의 정적 표시 메시이며 해당 표면의 라이트맵 UV를 투영해 사용한다. 연구 데스크 모니터 16대와 휴게실 모니터 1대는 기존 화면 위에 서로 다른 충격점과 분기 패턴을 사용한다. 각 모니터 앞 상판에 얇은 유리 파편을 흩어 놓았다.
+
+튜토리얼 동쪽 사물함 18개 문에는 눌러 성형한 면, 뒤로 들어간 통풍구, 곡선 손잡이, 경첩과 번호판을 적용했다. `TutorialLockerCoating` 아틀라스에는 문마다 다른 도장 마모와 찍힘을 배치한다. 선반 위 골판지 상자 35개는 접힌 덮개와 이음새, 눌린 모서리, 포장 테이프와 개별 재고 라벨을 사용한다. 나머지 케이스 38개에는 형태를 따라가는 보강 홈, 뚜껑 접합부와 손잡이를 적용하고, 청색 도장 금속·올리브색 도장 금속·성형 플라스틱에 다른 표면을 사용한다. 기존 배치와 충돌 영역을 사용하며, 교체한 표면은 기존 라이트맵 UV를 보존하거나 해당 표면의 UV를 투영해 사용한다.
 
 휴게실 창과 배경 관측창의 `Factory/Thin Refractive Glass` 셰이더는 굴절률 1.5의 프레넬 반사와 얇은 유리의 화면 공간 굴절 근사를 사용한다. 카메라의 불투명 색상 버퍼를 읽으므로 화면 밖 물체와 다른 투명 물체의 정확한 굴절은 표현하지 않는다. 공장 카메라에서만 색상 텍스처를 요청하며, 반사 프로브에는 유리 레이어를 제외한다. 완전한 광선 추적이나 실측 광학 재현은 아니다.
+
+### 연구실 벽 마감과 설비
+
+튜토리얼·ROOM #1~#3·휴게실의 실내 벽에 회백색 패널을 적용했다. 벽 하단은 청회색 패널과 걸레받이 띠를 사용하며, 낮아진 ROOM #2의 기존 벽 하부 구조는 유지한다. `FactoryLabPanelCream`과 `FactoryLabPanelSlate`는 줄눈, 표면 결, 매끄러움이 다른 재질이다. 벽의 기존 위치와 충돌 영역을 사용한다.
+
+ROOM #1~#3의 키 큰 사물함 9개는 기존 베이지색과 올리브색을 사용한다. 성형 문과 통풍구·손잡이·경첩·번호판, 선반과 행거가 있는 내부를 모델링했다. 문 두 개는 21°와 23° 열린 정적 표시이며, 문 자체의 얇은 충돌 영역을 추가했다. ROOM #1의 합성곱 관찰 콘솔은 아틀라스에서 계산 표본 한 장을 정방향으로 표시하고, 화면 위 안내 문구 오브젝트를 비활성화했다. 1-1과 1-2 사이 아치 위의 외장 덮개와 체결 장식은 제거했다.
+
+환풍기 3대의 가드와 몸체는 고정되어 있다. `FactoryFanController`가 44초 주기마다 회전체를 두 번 가속하고, 회전 사이에는 약 18초 동안 멈춘다. 각 환풍기는 서로 다른 시점에 재시동하며, 해당 위치의 3D AudioSource에서 고음의 금속 마찰음을 재생한다.
+
+ROOM 1-2 북서쪽 사물함 두 개에는 기존 베이지색을 살린 광택 도장과 금속 반사를 적용했다. 문 통풍구는 개구부를 가리던 루버 판을 제거해 내부 깊이가 보인다. 휴게실 북벽 사물함은 같은 청회색으로 통일하고 왼쪽에 두 개를 추가했다. 휴게 테이블과 의자 세 개, 동쪽 벽의 쿠션형 소파, 걸쇠에 외투를 걸 수 있는 스탠드를 새 표시 메시로 교체했다. 소파는 벽을 따라 0.43m 이동했고 북동쪽에 프린터 선반이 있는 데스크톱 책상을 배치했다. 흰색 조리 기기는 조작면이 방 중앙을 향하도록 90° 돌렸다. 바닥의 작업복 세 벌과 와인병·소주병 일곱 개는 새 형상을 사용한다. 휴게실 가구는 기존 라이트 프로브와 반사 프로브를 사용한다.
+
+튜토리얼 옷장의 연구복 세 벌은 어깨가 옷걸이의 경사를 따라가도록 배치했고, 옷장 앞 바닥 연구복과 휴게실 외투에는 접힌 옷깃, 봉제선, 열린 소맷단과 주름을 추가했다. ROOM 1-2 칸막이 선반의 전면 보와 기둥 일부에는 녹 자국을 더했다. 관찰 콘솔의 앞면은 진단 화면을 표시하고 측면과 뒷면은 유광 검정으로 마감했다. ROOM 1의 현미경 네 대는 곡면 본체와 계단형 받침을 공유한다. 각 현미경의 기존 배치 방향에 맞춰 본체를 조정하고 접안부, 대물렌즈, 재물대를 연결했다.
+
+휴게실 식탁에는 서로 다른 컵을 놓고 서류와 도시락통의 위치와 방향을 조정했다. 소파 쿠션과 침구는 가장자리를 둥글리고 천이 내려앉는 형태를 보강했다. 바닥 게임기 두 대에는 별도의 조작부와 화면을 배치했다. 조리 기기 받침장은 상판 및 주전자와 함께 90° 회전한다. 입구의 황흑 경고 테이프 뒤에는 기존 출입 차단 충돌체가 놓여 있다. `LoungeClockController`는 기기 현지 시각을 읽어 휴게실 벽시계의 시침·분침·초침을 표시한다.
 
 ## 배치
 
@@ -53,7 +73,7 @@
 
 ROOM #1은 X[-32,-12], Z[-14,6]의 20×20m 공간이다. 동쪽 입구 (-12,0,0)를 고정하고 이전 16×16m 외곽에서 서쪽 4m·남북 각각 2m를 확장했다. 체험 위치와 내부 문을 보존하기 위해 중앙 벽은 X=-20을 유지하고 양 끝만 새 외곽까지 연장한다. 동쪽의 체험 1-1(CNNScreenLab) 공간은 명목상 8×20m, 서쪽의 체험 1-2(CNNConvolutionLab) 공간은 12×20m다. 통로 중심은 (-20, 0, -8.8)이며 폭 3.2m·최고 높이 3.2m의 아치다. 벽은 천장까지 이어지고 아치형 금속 셔터가 통로를 닫는다. 같은 FactoryShutterController로 기존 문과 동일하게 1.6초 동안 3.3m 상하 이동한다. 벽·아치 상부와 셔터에 충돌 영역을 저장한다.
 
-ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. FactorySceneLoadController가 지역 진입 이벤트에 반응해 씬을 전환하고, FactoryEnvironmentManager가 준비 결과와 양피지 수집 조건에 따라 문을 연다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. 내부 공유 문은 관찰 완료·콘텐츠 준비·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
+ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. FactorySceneLoadController가 지역 진입 이벤트에 반응해 씬을 전환하고, FactoryShuttersManager가 퇴장 가능 상태와 양피지 수집 조건에 따라 문을 연다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. 내부 공유 문은 관찰 완료·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
 
 ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 왼쪽에서 시작하며, 두 체험 사이에는 남쪽 아치를 지나는 별도 경로를 둔다. 외부 출구는 (-26,0,6)으로 옮기고 폭 3.2m를 유지한다. 복도2 세로 구간은 X[-27.8,-24.2], Z[6,10.2], 가로 구간은 X[-27.8,-12], Z[10.2,13.8]로 맞추어 기존 ROOM #2 입구 (-12,0,12)에 연결한다. 다음 방 안내선은 (-23,-1.5) → (-23,3) → (-26,3) → (-26,12)를 지나 고정 컨볼루션 표시를 우회하고 ROOM #2 서쪽 입구에서 끝난다.
 
@@ -76,13 +96,13 @@ ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 �
 | 튜토리얼 | 동쪽 벽의 작은 수납칸 캐비닛, 북서·남서 벽 철제 선반 | 캐비닛 6칸(문 18개), 선반 2개 | 캐비닛 2.2m, 선반 2.55m |
 | ROOM #1 | 북서 벽 캐비닛 2칸, 북동 단독 캐비닛, 동쪽 구획 북벽 선반, 동남쪽 L 배치 데스크 | 캐비닛 3칸, 선반 1개, 데스크 2개 | 데스크·모니터 1.71m |
 | ROOM #2 | 북서에 떨어진 박스, 남벽 왼쪽 데스크·중앙 선반·오른쪽 캐비닛 | 박스 5개, 데스크 1개, 선반 1개, 캐비닛 3칸 | 박스 약 0.71m |
-| ROOM #3 | 북서 벽 캐비닛, 북동 적층 박스 | 캐비닛 3칸, 박스 6개(3·2·1층) | 적층 1.75m |
+| ROOM #3 | 북서 벽 캐비닛, 남동쪽 적층 박스 | 캐비닛 3칸, 박스 6개(3·2·1층) | 적층 1.75m |
 
 캐비닛은 녹슨 몸체·도장 문·통풍구·손잡이·명찰판, 선반은 철제 기둥·가로 받침·후면 교차 보강대와 수납 상자로 구성한다. 데스크에는 서랍·컴퓨터 본체·모니터·키보드·문서를 배치한다. 모니터 표시는 기본 도형으로 만든 고정 장식이며 별도 체험이나 UI 입력을 추가하지 않는다.
 
 새 가구는 방·재질별 33개 결합 메시(FactoryFurnishing_*)와 기존 재질 및 새 재질 5개(FurnishingLockerCream·FurnishingLockerOlive·FurnishingCardboard·FurnishingDeskTop·FurnishingDisplay)를 사용한다. 새 메시·재질은 기존 종류별 FactoryEnvironment 폴더에 둔다. 캐비닛·선반·데스크·개별 박스·적층 묶음에 고정 BoxCollider 28개를 두고 Rigidbody·XR 잡기·광원·동작 스크립트는 추가하지 않는다.
 
-ROOM #1의 북서 캐비닛은 서쪽 4m·북쪽 2m, 북쪽 선반·단독 캐비닛은 북쪽 2m, 동남쪽 데스크 두 개는 남쪽 2m 이동했다. 가구 크기는 유지한다. ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-12,-8.5]이며 내부 경로 중심 X=-13.6과 0.445m 떨어진다. 남쪽 데스크는 Z[-13.4,-12.5]로 아치 진입 경로 Z=-8.8을 비운다. ROOM #3 적층 박스는 X[25.992,28.208], Z[16.838,18.454]이며 현재 모델 표시의 북쪽 끝 Z≈16.04보다 약 0.80m 북쪽에 있다. 북쪽 출구 (22,19)와 프레임 구간도 비운다. 가구별 표시 경계끼리는 겹치지 않으며, 선반 속 상자와 데스크 위 부품·적층 상자는 각 가구를 이루는 구성 요소다. 사용자가 체험물을 직접 옮긴 이후의 임의 위치까지 제한하는 기능은 추가하지 않았다.
+ROOM #1의 북서 캐비닛은 서쪽 4m·북쪽 2m, 북쪽 선반·단독 캐비닛은 북쪽 2m, 동남쪽 데스크 두 개는 남쪽 2m 이동했다. 가구 크기는 유지한다. ROOM #1 동쪽 데스크는 X[-13.155,-12.405], Z[-12,-8.5]이며 내부 경로 중심 X=-13.6과 0.445m 떨어진다. 남쪽 데스크는 Z[-13.4,-12.5]로 아치 진입 경로 Z=-8.8을 비운다. ROOM #3 기본 적층 박스는 남동쪽 X[25.992,28.208], Z[5.417,7.054]에 있다. 북쪽 출구 (22,19)와 프레임 구간도 비운다. 가구별 표시 경계끼리는 겹치지 않으며, 선반 속 상자와 데스크 위 부품·적층 상자는 각 가구를 이루는 구성 요소다. 사용자가 체험물을 직접 옮긴 이후의 임의 위치까지 제한하는 기능은 추가하지 않았다.
 
 ## 추가 연구실 배경 장식
 
@@ -94,11 +114,11 @@ ROOM #1의 북서 캐비닛은 서쪽 4m·북쪽 2m, 북쪽 선반·단독 캐�
 | ROOM #1 · 1-1 | 내부 아치 남쪽 박스, 중앙 벽 북쪽 구간의 작은 연구 데스크와 선반 |
 | ROOM #1 · 1-2 | 북쪽 출구 옆 박스·상부 환풍기, 중앙 벽 서쪽 선반 2개, 서쪽 외벽의 긴 연구 데스크 |
 | ROOM #2 | 입구 옆 상부 환풍기, 북쪽 벽의 특징 맵 시제품 전시물 |
-| ROOM #3 | 북서쪽 같은 형태의 선반 2개, 북쪽 연구 데스크·추가 적층 박스, 동쪽 박스 더미, 남서쪽 선반·환풍기, 서쪽 입구 남쪽의 연구 데스크 |
+| ROOM #3 | 북서쪽 같은 형태의 선반 2개, 북쪽 연구 데스크, 남동쪽 추가 적층 박스, 동쪽 박스 더미, 남서쪽 선반·환풍기, 서쪽 입구 남쪽의 연구 데스크 |
 
-추가 장식은 선반 8개·데스크 4개·환풍기 3개·박스 묶음 5개(상자 10개)·특징 맵 전시물 1개·연구실 의자 8개다. 기존 데스크 3개를 포함한 연구 데스크 7개에 의자를 연결한 배치이며, 긴 데스크에는 의자 두 개를 둔다. 의자는 좌면 높이 약 0.58m·전체 높이 약 1.19m로 0.91m 데스크에 맞추고, 어두운 좌판·올리브색 등받이·금속 높이 조절 기둥·발받침 링·다섯 갈래 바퀴 받침으로 구성한다. 의자와 환풍기를 포함한 추가 장식은 움직이지 않으며 XR 잡기·앉기·회전 동작은 추가하지 않는다.
+추가 장식은 선반 8개·데스크 4개·환풍기 3개·박스 묶음 5개(상자 10개)·특징 맵 전시물 1개·연구실 의자 8개다. 기존 데스크 3개를 포함한 연구 데스크 7개에 의자를 연결한 배치이며, 긴 데스크에는 의자 두 개를 둔다. 의자는 좌면 높이 약 0.58m·전체 높이 약 1.19m로 0.91m 데스크에 맞추고, 어두운 좌판·올리브색 등받이·금속 높이 조절 기둥·발받침 링·다섯 갈래 바퀴 받침으로 구성한다. 의자와 가구는 고정 배경이며, 환풍기 날개는 별도 회전체로 움직인다.
 
-ROOM #2의 특징 맵 시제품은 X[-3.6,2.4], Z[17.01,17.59]의 고정 전시대에 5개 패널과 격자 표시를 두었다. 실제 특징 맵 체험의 계산·입력·진행과 연결하지 않는다. ROOM #3 동쪽 박스 더미는 X[27.73,28.57]로 기본 모델 콘텐츠의 동쪽 경계 X≈26.87과 약 0.86m, 동쪽 벽 안쪽 면 X=28.84와 약 0.27m 떨어진다. 선반과 데스크는 벽에 박히지 않게 여유를 두고 환풍기는 높이 약 4.6~4.8m의 상부에 배치한다.
+ROOM #2의 특징 맵 시제품은 X[-3.6,2.4], Z[17.01,17.59]의 고정 전시대에 5개 패널과 격자 표시를 두었다. 실제 특징 맵 체험의 계산·입력·진행과 연결하지 않는다. ROOM #3 동쪽 박스 더미는 X[27.73,28.57]로 공급 책상의 동쪽 경계 X≈26.50과 약 1.23m, 동쪽 벽 안쪽 면 X=28.84와 약 0.27m 떨어진다. 추가 적층 박스는 기본 적층 박스 옆의 X[27.13,28.47], Z[7.25,8.19]에 있다. 두 더미의 메시와 충돌체는 남동쪽으로 이동했고 라이트맵은 이전 위치에서 베이크한 데이터를 사용한다. 선반과 데스크는 벽에 박히지 않게 여유를 두고 환풍기는 높이 약 4.6~4.8m의 상부에 배치한다.
 
 FactoryDetail_*.asset 32개는 기존 FactoryEnvironment 재질을 사용하는 기본 도형·원통·링의 방/재질별 결합 메시다. 추가 오브젝트의 BoxCollider는 29개이며 씬 루트 아래 각 방의 additional laboratory background 그룹에 저장한다. 새로운 스크립트·패키지·이미지·폰트·광원은 추가하지 않았다.
 
@@ -114,7 +134,7 @@ FactoryFloorDebris_*.asset 23개는 방·재질별 결합 메시이며 무광 �
 
 ## 컨볼루션 벽 쪽 배치
 
-최신 main의 PixelCalculationUI와 B 퀴즈 구조를 반영한 후, ROOM #1의 1-2 기준점을 (-28.55,-0.30,-2.75)로 옮기고 CNNConvolutionLab 씬 루트 배율을 (2,2,2)로 설정했다. 화면과 입체 모형을 함께 두 배로 확대한다. 화면 평면은 서쪽 벽 안쪽 면 X=-31.84 앞의 X=-31.05에 놓이며, 입체 모형의 깊이와 펼침 여유를 남긴다. 입장 판정·경로·문·계산·입력·완료 코드는 수정하지 않았다.
+ROOM #1의 1-2는 기준점 (-28.55, -0.3, -2.0)에서 서쪽 벽을 향한다. 콘텐츠 루트의 균일 배율 1.2는 작업대·표시 UI·잡기 대상에 함께 적용한다. 작업대 받침이 바닥 바로 위에 오도록 기준점 높이를 맞춘다.
 
 서쪽 외벽의 긴 연구 데스크와 의자 두 개는 화면을 바라볼 때 왼쪽인 남쪽으로 6m 함께 옮겼다. 데스크는 X[-31.425,-30.575], Z[-12.5,-6.5], 의자 중심은 약 (-29.75,0,-11)과 (-29.75,0,-8)에 둔다. 다른 데스크·배경 위치는 유지한다.
 
@@ -137,7 +157,7 @@ FactoryFloorDebris_*.asset 23개는 방·재질별 결합 메시이며 무광 �
 
 튜토리얼 연구복 장은 X[-2.78,-0.82], Z[2.89,3.55], 최대 높이 2.335m다. ROOM #2 컬럼 장비는 문 앞에서 서쪽 벽의 데스크 옆으로 이동해 X[-11.64,-9.66], Z[6.815,7.985], 최대 높이 약 3.15m이고, 챔버 장비는 X[3.67,5.73], Z[16.025,17.425], 최대 높이 2.84m다. 특징 맵 체험의 루트는 북쪽으로 2.1m 이동했다. 비활성 학습 표시까지 포함한 저장된 메시·UI의 북쪽 끝은 Z≈16.433으로 전시대 앞면 Z=17.01과 약 0.58m 떨어진다. 챔버 장비와는 X축으로 겹치지 않는다. 장비·옷장에만 새 고정 BoxCollider 3개를 두며, 작은 바닥 파손물과 종이·책상 소품에는 새 Collider를 추가하지 않았다. 모든 새 소품은 동작·잡기·앉기·조명 제어 기능 없는 배경이다. 특정 제조사나 TEM·SEM의 실제 장비를 재현한 기능은 없다.
 
-ROOM #3 천장 하단 Y=6.8m와 밀폐 지붕을 유지한다. 트러스는 기존 철제 보 아래 Y≈5.78~6.25에 부착하며 북쪽 기존 덕트 앞에서 끝난다. 동쪽 덕트는 X≈26.93~27.67, Y≈5.72~6.18에 두고, 서쪽 파이프는 중심 X=11.90/12.17, Y=5.60에 둔다. 선형 등은 X=15/19/23, Z=8.5/14.8에 배치하고 기존 지붕에 행거로 고정했다. 등 외형은 기존 발광 재질을 사용하며 실제 Light는 추가하지 않았다. 가장 낮은 새 등 하단 Y≈5.40과 고정 모델 체험 제어판 상단 Y≈4.18 사이에는 약 1.2m를 남긴다. 접합부는 구조에 의도적으로 맞닿으며 벽·기존 보·덕트·환풍기와 관통하지 않도록 배치한다.
+ROOM #3 천장 하단 Y=6.8m와 밀폐 지붕을 유지한다. 트러스는 기존 철제 보 아래 Y≈5.78~6.25에 부착하며 북쪽 기존 덕트 앞에서 끝난다. 동쪽 덕트는 X≈26.93~27.67, Y≈5.72~6.18에 두고, 서쪽 파이프는 중심 X=11.90/12.17, Y=5.60에 둔다. 선형 등은 X=15/19/23, Z=8.5/14.8에 배치하고 기존 지붕에 행거로 고정했다. 등 외형은 기존 발광 재질을 사용하며 실제 Light는 추가하지 않았다. 가장 낮은 새 등 하단 Y≈5.40과 모델 체험 제어판 상단 Y≈3.29 사이에는 약 2.11m를 남긴다. 접합부는 구조에 의도적으로 맞닿으며 벽·기존 보·덕트·환풍기와 관통하지 않도록 배치한다.
 
 FactoryResearch_*.asset 60개는 방·재질별로 결합한 메시이며, 신규 재질 4개(ResearchWornRed·LabCoatBlue·ChippedLens·BrightPaperEdge)와 기존 공장 재질을 참조한다. 새 메시·재질·씬 그룹은 기존 종류별 FactoryEnvironment 경로에 둔다. 참고 이미지를 텍스처로 가져오지 않았고 외부 모델·이미지·폰트·패키지는 추가하지 않았다.
 
@@ -225,7 +245,7 @@ ROOM #2의 기존 파손 판 15개와 연결된 셀·프레임을 각기 다른 
 
 2026-11-02: ROOM #1 · 1-1의 ContentAnchor를 (-17.6,0,-3.2)에서 (-17.6,0,-2.45)로 이동했다. 체험의 Y 회전 -90°에서 화면 오른쪽은 월드 +Z이므로 이동량은 정확히 0.75m다. FactorySceneLoadController가 이 기준점으로 CNNScreenLab의 전체 콘텐츠 루트를 배치하므로 이미지 보드·돋보기·RGB 전개·설명·버튼이 함께 이동한다. 관찰 씬 내부 배치 값과 상호작용 코드는 변경하지 않았다. 이미지 보드의 Z 범위는 [-6.05,1.15]이며 아치 개구부 북쪽 끝 Z=-7.2와 약 1.15m 떨어진다.
 
-ROOM #3에는 기존 파손물과 별개로 체험대 앞 바닥에 두 번째 컨베이어 더미를 추가했다. 짧게 꺾이고 끊긴 프레임, 일부만 남은 롤러, 비대칭으로 찢겨 들린 고무 벨트, 떨어진 롤러·베어링으로 이전 더미와 다른 형태다. 전체 경계는 X≈22.89~23.97, Z≈13.46~15.36, Y≈0.014~0.32m이며 주 안내 경로의 동쪽 가장자리 X=22.7과 약 0.19m를 띄운다. 체험대 앞 바닥에만 배치하고 추가 Collider나 동작은 없다. 기존 더미와 모델 제작 체험은 유지한다.
+ROOM #3의 두 번째 컨베이어 더미는 남쪽 빈 바닥에 놓인다. 짧게 꺾이고 끊긴 프레임, 일부만 남은 롤러, 비대칭으로 찢겨 들린 고무 벨트와 떨어진 롤러·베어링으로 구성한다. 전체 경계는 X≈20.89~21.97, Z≈6.76~8.66, Y≈0.014~0.32m다. 바닥 슬롯 접근 구역과 첫 번째 컨베이어 더미 사이에 여유를 두며 배경 메시로 표시한다. 라이트맵은 이 더미를 옮기기 전 배치에서 베이크한 데이터를 사용한다.
 
 기존 재질을 재사용한 FactoryConveyorExtra_*.asset 6개로 저장했다. 저장 전후 체험 기준점 이동량 (0,0,0.75), 기존 MonoBehaviour 설정 일치, 씬 로컬 참조·메시 정점·인덱스를 정적으로 확인했다. 이번 변경 후 Unity 실행·Play·컴파일·테스트·빌드는 수행하지 않았다.
 
@@ -240,35 +260,37 @@ ROOM #3에는 기존 파손물과 별개로 체험대 앞 바닥에 두 번째 �
 | 체험 | 로드 기준점 X, Y, Z | Y 회전 | 표시 방향 |
 | --- | --- | --- | --- |
 | ROOM #1 · 1-1 스크린 | -17.6, 0, -2.45 | -90° | 동쪽 공간에서 중앙 벽 방향으로 관찰 |
-| ROOM #1 · 1-2 컨볼루션 | -28.55, -0.375, -2.0 | -90° | 서쪽 공간에서 서쪽 벽 방향으로 관찰 |
+| ROOM #1 · 1-2 컨볼루션 | -28.55, -0.3, -2.0 | -90° | 서쪽 공간에서 서쪽 벽 방향으로 관찰 |
 | ROOM #2 | -6.5, 0, 12 | 90° | 서쪽 입구에서 동쪽 출구까지 0.53배 크기의 내리막 체험을 배치 |
-| ROOM #3 | 23, 0, 12 | 90° | 동쪽에 배치하고 서쪽의 방 중앙에서 관찰 |
+| ROOM #3 | 23, 0, 12 | 90° | 서쪽에서 바라볼 때 바닥 조립 행 뒤에 공급 책상과 그 왼쪽 콘솔을 배치 |
 
-튜토리얼도 같은 ContentAnchor 배치 경로를 사용한다. 튜토리얼 ContentAnchor의 위치는 (0, 0, -1)이며 안내 패널의 루트 기준 로컬 위치는 (0, 1.65, 2.5)로 FactoryTutorial 씬에 저장한다. TutorialManager는 Start에서 XR 참조와 안내 UI를 초기화한다. 기준점은 벽 표면이 아니라 콘텐츠 루트의 위치다. 원래 체험의 자식 로컬 좌표를 유지하며, FactorySceneLoadController가 FactoryLayoutData의 ContentAnchor에서 위치·회전·배율을 직접 읽어 콘텐츠 루트에 적용한다. ROOM #1의 1-2와 ROOM #3 기준점은 균일 배율 1.5, ROOM #2 기준점은 0.53을 사용한다. ROOM #3의 위치 (23, 0, 12)와 Y 회전 90°는 유지한다. 스크린 보드는 첫 화면에서 로컬 Z=1.8에 있어 중심 X=-19.4, Z 범위 -6.20~1.00에 표시된다. RGB 화면 이후에는 위의 단계별 배치와 기존 축소 이동을 적용한다. 중앙 벽 동쪽 면 X=-19.84와 약 0.44m 떨어지고 아치 개구부를 비킨다. 보드의 배율만 2→3으로 바꾸어 화면은 4.8×2.7m에서 7.2×4.05m로 1.5배 확대했다. 보드 중심 높이를 3.125m로 맞춰 기존 하단 높이 1.1m와 조작 UI를 유지한다. 필터 루트만 1.5배로 맞춰 보드 선택 프레임·3×3 표시의 비율을 유지하며, 컨볼루션·다른 방·문·경로는 그대로다. 특징 맵은 기존 로컬 Z≈3 위치를 사용한다. ROOM #1 내부 경로는 스크린 앞에서 동쪽 X=-13.6으로 빠져 RGB 전개 범위 바깥을 따라 남쪽으로 이동한 뒤 Z=-8.8에서 아치를 향하도록 배치한다. 실제 표시와 사용자 잡기·확대 범위는 Unity 실행 검토 전이다.
+튜토리얼도 같은 ContentAnchor 배치 경로를 사용한다. 튜토리얼 ContentAnchor의 위치는 (0, 0, -1)이며 안내 패널의 루트 기준 로컬 위치는 (0, 1.65, 2.5)로 FactoryTutorial 씬에 저장한다. TutorialManager는 Start에서 XR 참조와 안내 UI를 초기화한다. 기준점은 벽 표면이 아니라 콘텐츠 루트의 위치다. 원래 체험의 자식 로컬 좌표를 유지하며, FactorySceneLoadController가 FactoryLayoutData의 ContentAnchor에서 위치·회전·배율을 직접 읽어 콘텐츠 루트에 적용한다. 기준점의 균일 배율은 ROOM #1의 1-2가 1.2, ROOM #2가 0.53, ROOM #3이 1.5다. ROOM #3의 위치 (23, 0, 12)와 Y 회전 90°는 유지한다. 스크린 보드는 첫 화면에서 로컬 Z=1.8에 있어 중심 X=-19.4, Z 범위 -6.20~1.00에 표시된다. RGB 화면 이후에는 위의 단계별 배치와 기존 축소 이동을 적용한다. 중앙 벽 동쪽 면 X=-19.84와 약 0.44m 떨어지고 아치 개구부를 비킨다. 보드의 배율만 2→3으로 바꾸어 화면은 4.8×2.7m에서 7.2×4.05m로 1.5배 확대했다. 보드 중심 높이를 3.125m로 맞춰 기존 하단 높이 1.1m와 조작 UI를 유지한다. 필터 루트만 1.5배로 맞춰 보드 선택 프레임·3×3 표시의 비율을 유지하며, 컨볼루션·다른 방·문·경로는 그대로다. 특징 맵은 기존 로컬 Z≈3 위치를 사용한다. ROOM #1 내부 경로는 스크린 앞에서 동쪽 X=-13.6으로 빠져 RGB 전개 범위 바깥을 따라 남쪽으로 이동한 뒤 Z=-8.8에서 아치를 향하도록 배치한다. 실제 표시와 사용자 잡기·확대 범위는 Unity 실행 검토 전이다.
 
 튜토리얼 안내 기준점은 (0, 0, -1), 안내 패널은 그 앞 2.5m·높이 1.65m에 표시한다. 정문 시작점은 (0, 0, -17)이다. 걸어서 진입하는 콘텐츠 로드·전환은 플레이어 위치와 방향을 바꾸지 않는다. 태블릿의 단계 이동은 별도 도착점으로 이동한다. 합성곱 도착점은 (-21.5,0,-3.4), Y 회전 -90°로 안내판 정면을 향한다.
 
 ## 문과 안내선
 
-튜토리얼실과 세 체험실에 각각 입구·출구 셔터가 있고, 후문 공간에는 입구 셔터가 있다. ROOM #1 내부 아치 셔터를 포함해 총 10개다. 셔터 패널은 Collider와 함께 1.6초 동안 위아래로 3.3m 이동한다. 모든 셔터는 닫힌 상태로 시작하며 별도의 초기 열림 설정은 두지 않는다. Awake에서 씬에 저장된 패널 위치를 닫힘 기준점으로 저장하고, Open·Close 요청에 따라 이동 애니메이션으로 개폐한다. AreaController가 카메라 위치로 접근을 판정하고, ShutterController는 전달받은 명령과 접근 상태로 패널을 움직인다. ShuttersManager가 접근 이벤트를 받아 EnvironmentManager에서 제공한 조건 조회 함수로 개방 여부를 확인하고 해당 Controller를 제어한다. EnvironmentManager는 통행 조건을 제공하고 안내선을 RouteGuideController에 전달한다. ShuttersManager는 공장 씬의 Factory Environment 오브젝트에 배치하며 실제 셔터 Controller 10개를 한 번씩 등록한다. 공유 셔터는 다음 체험실의 입구 조건에 따라 열리도록 처리한다.
+튜토리얼실과 세 체험실에 각각 입구·출구 셔터가 있고, 후문 공간에는 입구 셔터가 있다. ROOM #1 내부 아치 셔터를 포함해 총 10개다. 셔터 패널은 Collider와 함께 1.6초 동안 위아래로 3.3m 이동한다. 모든 셔터는 닫힌 상태로 시작하며 별도의 초기 열림 설정은 두지 않는다. Awake에서 씬에 저장된 패널 위치를 닫힘 기준점으로 저장하고, Open·Close 요청에 따라 이동 애니메이션으로 개폐한다. AreaController가 카메라 위치로 접근을 판정하고, ShutterController는 전달받은 명령과 접근 상태로 패널을 움직인다. ShuttersManager가 접근 이벤트를 받아 통행 조건을 판단하고 해당 Controller를 제어한다. ShuttersManager는 공장 씬의 Factory Environment 오브젝트에 배치하며 실제 셔터 Controller 10개를 한 번씩 등록한다. 공유 셔터는 다음 체험실의 입구 조건에 따라 열리도록 처리한다.
 
-FactoryLayoutData의 Inspector에서 _shutters 배열에 FactoryLayoutData.Shutter 10개를 등록한다. 각 항목은 셔터 ID(_id), 고정 문틀 Transform(_frame), 접근 거리(_approachDistance)를 저장한다. ShutterController에는 대응하는 ID와 패널 이동 설정을 두며 접근 거리는 중복 저장하지 않는다. 접근 기준점에는 움직이는 _panel이 아닌 고정 문틀 Transform을 연결한다. 현재 모든 셔터의 접근 거리는 2m다. AreaController는 문틀과 카메라의 XZ 거리로 접근 여부를 계산하므로 문틀을 이동하면 판정 기준도 따라간다. 접근용 Collider나 별도 위치 좌표는 추가하지 않는다. 방의 기존 바닥 Collider와 우선 볼륨 참조는 유지한다.
+FactoryLayoutData의 Inspector에서 _shutters 배열에 FactoryLayoutData.Shutter 10개를 등록한다. 각 항목은 셔터 ID(_id), 고정 문틀 Transform(_frame), 접근 거리(_approachDistance)를 저장한다. ShutterController에는 대응하는 ID와 패널 이동 설정을 두며 접근 거리는 중복 저장하지 않는다. 접근 기준점에는 움직이는 _panel이 아닌 고정 문틀 Transform을 연결한다. 모든 셔터의 접근 거리는 6m다. AreaController는 문틀과 카메라의 XZ 거리로 접근 여부를 계산하므로 문틀을 이동하면 판정 기준도 따라간다. 접근용 Collider나 별도 위치 좌표는 추가하지 않는다. 방의 기존 바닥 Collider와 우선 볼륨 참조는 유지한다.
 
-AreaController는 Awake에서 같은 오브젝트의 FactoryLayoutData.Shutters를 직접 읽어 접근 판정 상태를 초기화한다. FactoryLayoutData.Shutter는 LayoutData 내부에 정의하고 직렬화하는 설정 객체이며 외부에는 읽기 전용 프로퍼티를 제공한다. EnvironmentManager는 ShuttersManager.Configure에 CanOpenShutter 조건 조회 함수만 전달한다. 셔터 설정 데이터를 전달하는 SetShutters·CreateShutterData·GetShutterData 경로는 제거했다. AreaController는 ID별 접근 상태를 소유하고 상태 변경 시 ShutterProximityChanged(id, isNear)를 발행한다. ShuttersManager는 씬에 연결한 AreaController 참조를 사용해 자신의 OnEnable/OnDisable에서 ShutterProximityChanged를 직접 구독·해제한다. EnvironmentManager는 이 이벤트 구독에 관여하지 않는다. 이벤트 처리는 ShuttersManager가 맡는다. 가까워지면 조건을 조회해 열고, 멀어지면 로딩 상태나 통행 조건과 관계없이 닫는다. ShuttersManager는 재판정 시에도 AreaController.IsNearShutter를 직접 조회하며, EnvironmentManager 컴포넌트는 참조하지 않는다.
+AreaController는 Awake에서 같은 오브젝트의 FactoryLayoutData.Shutters를 직접 읽어 접근 판정 상태를 초기화한다. FactoryLayoutData.Shutter는 LayoutData 내부에 정의하고 직렬화하는 설정 객체이며 외부에는 읽기 전용 프로퍼티를 제공한다. AreaController는 ID별 접근 상태를 소유하고 상태 변경 시 ShutterProximityChanged(id, isNear)를 발행한다. ShuttersManager는 씬에 연결한 AreaController 참조를 사용해 자신의 OnEnable/OnDisable에서 ShutterProximityChanged를 직접 구독·해제한다. 일반 근접 개폐에서는 가까워지면 통행 조건을 확인해 열고, 멀어지면 닫는다. ShuttersManager는 재판정 시에도 AreaController.IsNearShutter를 직접 조회한다.
 
 AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 변경과 셔터 이벤트를 알린다. 구역이 바뀌지 않아도 접근 판정은 계속한다. 닫힘 보류도 같은 IsNear를 사용한다. ShutterController는 실행 순서 100의 LateUpdate에서 이동하므로 같은 프레임에 갱신된 접근 상태로 닫힘을 보류한다. 문턱 위에 있지 않아도 접근 범위 안이면 닫히지 않으며, 범위를 벗어나면 대기 중인 닫힘을 이어간다. ShutterController에는 카메라 참조나 플레이어 위치 탐색이 없다.
 
-1. 현재 목적지까지 고정된 청록색 바닥선과 화살표를 표시한다.
+1. FactoryRouteGuideController는 시작 시 튜토리얼 안내선을 켠다. LearningSessionManager의 StageAvailabilityChanged에서 퇴장이 가능하다는 알림을 받으면 LearningStageCatalog.Stages 순서에 따라 다음 체험의 안내선을 켠다. 마지막 체험 다음에는 후문을 안내한다. 목적지 씬이 로드되기 전에도 안내선을 표시한다.
 2. FactoryRouteGuideController는 AreaChanged를 직접 구독해 도착 구역의 Stage가 표시 중인 목적지와 일치할 때 안내선을 끄고 목적지를 None으로 비운다. 방 진입 자체로 셔터를 닫는 명령은 보내지 않는다.
 3. 셔터의 접근 범위를 벗어나면 닫고, 닫히는 중 다시 접근하면 닫힘을 보류한다. 개방 조건을 만족하면 다시 열린다. 정방향과 역방향 모두 동일한 셔터 ID·거리·개방 조건을 사용한다.
 4. AreaChanged를 받은 로더가 _areaOrder의 바로 이전·현재·다음 Stage 씬을 준비한다. sceneLoaded에서 로더가 콘텐츠를 배치한 뒤 ContentLoaded(stage, scene)를 발행하여 세션이 Start 전에 초기 데이터와 이벤트 구독을 적용한다.
-5. CanOpenShutter(id)는 현재 진행 방향 대신 StageSpace의 입출구 ID 관계로 해당 문에 연결된 체험을 확인한다. 로딩 중에는 새 개방을 보류하며 연결된 학습 씬이 로드되어야 한다. 최초 통행 허가는 출구라면 해당 체험의 퇴장 가능 상태, 입구라면 LearningStageCatalog.Stages의 이전 체험 퇴장 가능 상태와 해당 입장 양피지를 확인한다. 튜토리얼은 이전 체험·양피지 없이 로딩 완료로 허용하고, 후문은 마지막 체험의 퇴장 가능 상태를 확인하며 엔딩 씬의 사전 로드를 요구하지 않는다. 공유 아치 문은 Screen 출구와 Convolution 입구 조건을 함께 확인한다.
-6. 로딩 종료·체험 상태 변경·양피지 수집·구역 변경 시 EnvironmentManager가 ShuttersManager.RefreshConditions를 호출한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 멀리 있는 문은 닫힘 상태를 요청한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
-7. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
+5. CanOpenShutter(id)는 현재 진행 방향 대신 StageSpace의 입출구 ID 관계로 해당 문에 연결된 체험을 확인한다. 개방 판단에는 로딩 중 여부나 씬 로드 여부를 사용하지 않는다. 최초 통행 허가는 출구라면 해당 체험의 퇴장 가능 상태, 입구라면 LearningStageCatalog.Stages의 이전 체험 퇴장 가능 상태와 해당 입장 양피지를 확인한다. 튜토리얼 입구는 접근하면 열리고, 후문은 마지막 체험의 퇴장 가능 상태를 확인한다. 공유 아치 문은 Screen 출구와 Convolution 입구 조건을 함께 확인한다.
+6. ShuttersManager는 LearningSessionManager의 StageAvailabilityChanged와 ParchmentManager의 Collected를 직접 구독해 개방 조건을 재판정한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 조건 변경은 자동 개방을 대기 중인 출구도 재판정한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
+7. 플레이어가 접근 범위 안에 있고 닫힌 셔터를 열 수 없으면 `FactoryShuttersManager`는 해당 `FactoryShutterController`에 안내판 표시를 요청한다. 안내판은 `Prefabs/FactoryEnvironment/ShutterUnavailableSign.prefab`에 저장한 양면 World Space UI이며 문구는 “체험을 완료하거나 양피지를 모두 수집해야 문을 열 수 있습니다”로 고정한다. 문이 열리거나 접근 범위를 벗어나면 안내판을 숨긴다. Manager는 기존 개방 가능 여부만 사용한다.
+8. FactoryShuttersManager는 LearningSessionManager의 StageAvailabilityChanged를 직접 구독한다. 체험에서 퇴장이 가능해지면 FactoryLayoutData.GetStageSpace(stage).ExitShutter로 출구를 조회하고 셔터당 한 번 자동 개방을 요청한다. 기존 개방 조건이 충족되면 접근 범위 밖에서도 출구를 열고 안내판을 숨긴다. 플레이어가 6m 안에 들어온 뒤 다시 밖으로 나가면 문을 닫고 일반 근접 개폐로 돌아간다. 개방 시 이미 6m 안에 있으면 접근한 것으로 처리한다. ShuttersManager는 출구마다 자동 개방 대기와 접근 여부를 관리한다.
+9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.
 
-통행을 처음 허용한 셔터 ID는 EnvironmentManager의 _permittedShutters에 현재 공장 세션 동안 보관한다. 실제 문은 이탈 시 닫히지만 통행 허가는 체험 초기화·씬 언로드 후에도 유지되므로 재접근과 역방향에서도 다시 열 수 있다. 이미 허가된 문도 연결된 학습 씬의 로딩 여부는 매번 확인한다. 공장 씬을 새로 시작하면 통행 허가는 초기화된다. 태블릿 이동 시에는 별도의 CloseAll을 호출하지 않고 이동 후 AreaController의 거리 판정으로 이전 문을 닫고 새 문을 처리한다. 안내선은 RefreshRouteGuide로 분리해 _routeSource와 _routeDestination으로 갱신하며 문 개방 조회는 안내선을 변경하지 않는다. 목적지 Stage에 도착하면 RouteGuideController가 안내를 종료한다.
+통행을 처음 허용한 셔터 ID는 ShuttersManager의 _permittedShutters에 현재 공장 세션 동안 보관한다. 실제 문은 이탈 시 닫히지만 통행 허가는 체험 초기화·씬 언로드 후에도 유지되므로 재접근과 역방향에서도 다시 열 수 있다. 공장 씬을 새로 시작하면 통행 허가는 초기화된다. 태블릿 이동 시에는 별도의 CloseAll을 호출하지 않고 이동 후 AreaController의 거리 판정으로 이전 문을 닫고 새 문을 처리한다.
 
 바닥선은 폭 0.12m·두께 0.012m이며, 중심은 해당 발판이나 바닥보다 0.025m 위에 있다. 화살촉은 직전 크기의 0.75배로 줄여 날개 폭 0.0675m, 뒤쪽 길이 0.75m·좌우 폭 0.375m(각 날개 약 0.839m)다. 각 구간 시작에서 1.6m 뒤에 첫 화살표를 두고, 직전 간격 5.5m의 1.5배인 8.25m 간격으로 배치했다. 현재 목적지 경로 5개의 화살촉은 19개이고 ROOM #1 내부 경로에 4개가 더 있다. FactoryRoute.mat의 청록색 (0.08, 1, 0.8)과 그림자·프로브 설정은 유지한다.
 
@@ -294,12 +316,12 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 | [FactorySceneLoadController](../client/Assets/Scripts/FactoryEnvironment/FactorySceneLoadController.cs) | AreaChanged만 구독, 이전·현재·다음 씬 로드·언로드, 콘텐츠 배치·조명·Rigidbody 동기화, 로드된 씬 목록·처리 중 상태, 로딩 결과·해제 전 정리 알림과 종료 중 정리 |
 | [LearningStageCatalog](../client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs) | 전체 다섯 단계의 순서·이름·씬 이름·입장 문서와 체험 소속 문서, 기존 태블릿 네 카드의 연결 목록 |
 | [LearningProgress](../client/Assets/Scripts/Core/Learning/LearningProgress.cs) / [LearningProgressSnapshot](../client/Assets/Scripts/Core/Learning/LearningProgressSnapshot.cs) | 체험별 최대 진행률과 완료 기록 / 외부에 전달할 읽기 전용 상태 복사 |
-| [FactoryEnvironmentManager](../client/Assets/Scripts/FactoryEnvironment/FactoryEnvironmentManager.cs) | 모듈 조회 함수·이벤트 연결, 셔터별 통행 조건과 세션 통행 허가 보관, 조건 변경 시 재판정 요청, 안내선·현재 단계·태블릿 이동 조율 |
+| [FactoryEnvironmentManager](../client/Assets/Scripts/FactoryEnvironment/FactoryEnvironmentManager.cs) | 현재 단계 갱신, 튜토리얼 퇴장 가능 상태와 로더 상태를 사용한 태블릿 이동 조율 |
 | [FactoryLayoutData](../client/Assets/Scripts/FactoryEnvironment/FactoryLayoutData.cs) | Area 데이터·Collider 참조·구역 순서·인접 구역 조회, 체험별 경로·콘텐츠 기준점·입출구 셔터 ID와 정문 기준점, 셔터 ID·문틀·접근 거리 목록 |
-| [FactoryShuttersManager](../client/Assets/Scripts/FactoryEnvironment/FactoryShuttersManager.cs) | Controller 배열과 AreaController 참조 보관, 접근 이벤트 직접 구독·해제와 수신, 전달받은 조건 조회 함수로 개방 판단, 이탈 시 닫기와 조건 변경 재판정 |
+| [FactoryShuttersManager](../client/Assets/Scripts/FactoryEnvironment/FactoryShuttersManager.cs) | 접근·퇴장 가능 상태·양피지 수집 이벤트 직접 구독, 셔터별 개방 조건과 통행 허가 관리, 자동 개방 후 접근·이탈 상태 관리 및 Controller 제어 |
 | [FactoryShutterController](../client/Assets/Scripts/FactoryEnvironment/FactoryShutterController.cs) | 셔터 ID와 패널 이동 설정, 닫힘 기준점 저장, 셔터 패널과 Collider 이동, 전달받은 접근 상태에 따른 닫힘 보류 |
 | [FactoryAreaController](../client/Assets/Scripts/FactoryEnvironment/FactoryAreaController.cs) | 공용 XR 카메라 확보, LayoutData의 Area 데이터를 사용한 볼륨·바닥 포함 판정과 AreaChanged 발행, 셔터 접근 판정과 상태 조회·변경 이벤트 |
-| [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | 방별 고정 경로와 ROOM #1 내부 경로 표시, AreaChanged 직접 구독으로 목적지 도착 시 안내 종료 |
+| [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | StageAvailabilityChanged와 AreaChanged 직접 구독, 초기 튜토리얼과 다음 체험 안내선 표시, 목적지 도착 시 안내 종료 |
 | [FactoryPlayerController](../client/Assets/Scripts/FactoryEnvironment/FactoryPlayerController.cs) | Awake에서 XR 리그와 인터랙터 확보, Start에서 정문 배치·ray 준비, 단계별 도착점 보관·선택과 이동, ContentUnloading 직접 구독으로 언로드할 씬의 잡은 물체 해제, AreaChanged 직접 구독으로 후문 진입 시 로드된 체험의 잡은 물체 해제 |
 | [TabletMiniMapController](../client/Assets/Scripts/FactoryEnvironment/TabletMiniMapController.cs) | 태블릿 전용 지도. 공장 바닥·벽·양피지 위치에서 TabletMapData 생성, TabletManager에 직접 전달·해제 |
 
@@ -364,11 +386,11 @@ FactoryAreaController는 Start에서 공용 XROrigin의 카메라 Transform을 �
 
 _areaOrder에는 위 표 순서대로 방과 연결 통로를 등록한다. 통로 5개의 Stage는 직렬화 값 None이며 프로퍼티로는 null을 반환한다. 앞마당·Outside·휴게실·InspectionRoom은 순서 배열에서 제외한다. 튜토리얼이 다시 로드되면 안내와 입력 제어도 다시 시작한다. 첫 통로에서 튜토리얼을 활성화한다. 엔딩은 인접 Stage일 때 미리 로드하지 않으며 RearCourt 진입 시 Single로 전환해 공장·학습 씬을 종료한다.
 
-RefreshPreparedEntrance는 제거했다. 셔터 개폐는 접근 이벤트를 받는 ShuttersManager가 처리하고, CanOpenShutter는 접근 방향과 무관하게 셔터 ID에 연결된 체험·양피지·로딩 상태를 판단한다. _routeSource와 _routeDestination은 AreaChanged와 LayoutData의 인접 구역에서 정하는 안내선 전용 상태다. 첫 통로에서 준비한 튜토리얼은 로딩 완료 후 입구에 접근하면 열린다.
+튜토리얼 씬은 구역 진입으로 준비되며 튜토리얼 입구 셔터는 접근하면 열린다.
 
 진행 순서에 등록되지 않은 구역은 기존 씬을 유지한다. 등록된 구역의 Stage가 null이면 해당 항목의 씬만 생략하고 바로 이전·다음 항목의 Stage는 처리한다. 빈 Stage를 넘어 더 먼 항목을 탐색하지 않는다. 처리 중 새 체험 구역 이벤트가 오면 진행 중인 비동기 작업을 마친 뒤 최신 구역을 처리한다. 정상 처리 후에는 이전·현재·다음 체험만 남긴다. 로더는 LayoutData에서 조회한 이전·다음 Area와 전달된 현재 Area의 Stage로 required 목록을 만든다. None은 생략하고 이미 로드된 씬은 재사용하며 누락된 씬을 순서대로 로드한다. 필요한 씬 준비가 끝난 뒤 목록에 포함되지 않는 씬을 정리한다. UpdateScenes는 한 번의 목록 갱신만 수행한다. 처리 중 새 AreaChanged가 오면 최신 위치와 대기 플래그를 저장하며, 진행 중인 로드·해제가 끝나면 남은 이전 요청 작업을 생략한다. 대기 이벤트가 있는 경우에만 다음 UpdateScenes를 시작하고, 없으면 IsBusy를 해제하고 끝낸다. while 반복이나 자동 재시도는 없다.
 
-로더는 Stage와 Unity Scene을 저장한다. sceneLoaded에서 ILearningExperience가 있는 콘텐츠 루트를 찾고 다른 루트를 비활성화한 뒤 ContentAnchor의 위치·회전·배율을 적용한다. 콘텐츠 조명을 비활성화하고 Rigidbody 위치·회전을 동기화한 뒤 ContentLoaded(stage, scene)를 발행한다. 세션은 이 알림에서 ILearningExperience를 찾아 초기 데이터·진행률 구독을 연결한다. 이 작업은 Start 전에 끝난다. 로딩 처리가 끝나면 StateChanged로 IsBusy 변경을 알린다. 공장은 AreaChanged를 직접 구독해 현재 단계와 문·경로를 관리하고 접근·IsLoaded·퇴장 가능·양피지 조건을 조합한다. 체험 초기화로 진행 불가가 되어도 유지 범위 안 씬은 해제하지 않는다.
+로더는 Stage와 Unity Scene을 저장한다. sceneLoaded에서 ILearningExperience가 있는 콘텐츠 루트를 찾고 다른 루트를 비활성화한 뒤 ContentAnchor의 위치·회전·배율을 적용한다. 콘텐츠 조명을 비활성화하고 Rigidbody 위치·회전을 동기화한 뒤 ContentLoaded(stage, scene)를 발행한다. 세션은 이 알림에서 ILearningExperience를 찾아 초기 데이터·진행률 구독을 연결한다. 이 작업은 Start 전에 끝난다. 로딩 처리가 끝나면 StateChanged로 IsBusy 변경을 알린다. FactoryEnvironmentManager는 AreaChanged를 직접 구독해 현재 단계를 갱신한다. 체험 초기화로 진행 불가가 되어도 유지 범위 안 씬은 해제하지 않는다.
 
 Screen 구역 진입 시 로더가 Convolution을 미리 로드한다. 각 체험은 Start에서 자체 초기화하고 내부 사용자 입력에 따라 진행하며, 공장의 구역 진입·이탈 상태를 전달받지 않는다. 세션은 구체 체험 Manager를 참조하지 않고 ILearningExperience로 상태 구독·진행 기록·종료 요청만 처리한다. 두 씬 사이에 픽셀 데이터를 전달하지 않으며, Convolution은 항상 자체 고정 5×5 RGB 예제를 사용한다. Screen의 선택 변경이나 재시작은 Convolution의 입력·진행 상태를 초기화하지 않는다. 기존 문 개방 조건과 학습 순서는 유지한다.
 
@@ -404,7 +426,7 @@ ROOM #1 벽·아치 셔터·두 체험 기준점과 Screen/Convolution 전환 �
 
 캐비닛·선반·박스·연구 데스크 교체는 씬의 장식 참조와 가구 표시 경계, 체험·문·경로의 위치를 정적으로 대조했다. 기존 체험·문·경로·건축 오브젝트와 스크립트는 수정하지 않았다. 이 교체에 대한 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
 
-합성곱 진입문·콘텐츠 기준점·경로는 FactoryLayoutData의 ConvolutionLab 목적지에 연결하고, 영역 정의는 FactoryAreaController, 플레이어 도착점은 FactoryPlayerController에 연결한다. RouteGuide.SetDestination으로 해당 경로를 표시한다. 화면의 ROOM 번호와 기존 공간 오브젝트 배치는 유지한다.
+합성곱 진입문·콘텐츠 기준점·경로는 FactoryLayoutData의 ConvolutionLab 목적지에 연결하고, 영역 정의는 FactoryAreaController, 플레이어 도착점은 FactoryPlayerController에 연결한다. FactoryRouteGuideController는 픽셀 관찰 체험에서 퇴장이 가능해지면 해당 경로를 표시한다. 화면의 ROOM 번호와 기존 공간 오브젝트 배치는 유지한다.
 
 ## 태블릿 자유 이동
 

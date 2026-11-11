@@ -115,7 +115,7 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 | ArchiveType/Stamp/Beep/Hit/BigHit/Rewind.wav, ArchiveRing/CRT/Machine/Footsteps.wav | 오프닝·엔딩 3D 효과음. Ring·CRT·Machine·Footsteps는 삭제되어 제출 대상 제외. | Codex 보조 Node.js PCM 합성. 사인파·필터 없는 제한 난수·지수 감쇠·충격 반복을 조합, 44.1kHz mono PCM16. 외부 녹음·음악 샘플 사용 없음. | 프로젝트용 합성 효과음, 별도 공개 라이선스 지정 없음. 실제 피아노·현악·사람 발소리 녹음이 아닌 합성 근사음. |
 | Pretendard SemiBold / Nanum Pen Script | 신규 씬 자막·표지·숫자 라벨 | 프로젝트에 있는 원본 폰트 재사용; 위 기존 폰트 출처 및 동봉 OFL 유지. | 원본 변경 없음. |
 
-EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 오프닝 내레이션과 음악은 아래 미국 우체국 오프닝 항목에, 엔딩 내레이션은 다음 항목에 기록했다.
+EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 오프닝에서 사용하는 내레이션과 음악은 아래 미국 우체국 오프닝 항목에 기록했다.
 
 ### 오프닝·엔딩 인물 이미지와 내레이션
 

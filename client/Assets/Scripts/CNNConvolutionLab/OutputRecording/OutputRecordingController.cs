@@ -1,5 +1,4 @@
 using System.Collections;
-using UnityEngine;
 
 namespace CNNConvolution
 {
@@ -9,13 +8,15 @@ namespace CNNConvolution
         private readonly EquationDisplayController _equations;
         private readonly OutputRecordingAnimationController _animation;
         private readonly LessonUIController _ui;
+        private readonly LessonPlayback _playback;
         public OutputRecordingController(WorkbenchKernelController kernel, ResultGridController result,
-            EquationDisplayController equations, FlyingNumberController number, LessonUIController ui)
+            EquationDisplayController equations, FlyingNumberController number, LessonUIController ui, LessonPlayback playback)
         {
             _result = result;
             _equations = equations;
             _ui = ui;
-            _animation = new OutputRecordingAnimationController(kernel, result, number);
+            _playback = playback;
+            _animation = new OutputRecordingAnimationController(kernel, result, number, playback);
         }
         public IEnumerator Run(ConvolutionCalculation calculation, bool firstOutput)
         {
@@ -28,9 +29,9 @@ namespace CNNConvolution
             _ui.Title = OutputRecordingContent.RecordTitle(calculation.Row, calculation.Column);
             _ui.Explanation = OutputRecordingContent.RecordExplanation();
             _equations.ShowRgbSum(calculation.Output(calculation.Row, calculation.Column), OutputRecordingContent.Equation(calculation));
-            yield return new WaitForSecondsRealtime(0.7f);
+            yield return _playback.Wait(0.7f);
             yield return _animation.Run(calculation.Row * 3 + calculation.Column, calculation.Output(calculation.Row, calculation.Column));
-            yield return new WaitForSecondsRealtime(0.35f);
+            yield return _playback.Wait(0.35f);
         }
     }
 }

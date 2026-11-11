@@ -19,25 +19,23 @@ namespace CinematicEditor
         private const string DataPath = "Assets/Data/OpeningEnding/CinematicText.asset";
         private const string ResultPath = "Assets/Data/OpeningEnding/CinematicModelResult.asset";
         private static Font _font;
-        private static Material _wood, _paper, _metal, _wall, _dark, _cyan, _amber, _green, _tile;
+        private static Material _wood, _paper, _metal, _dark, _cyan, _amber, _green;
         private static CinematicText _content;
 
         [MenuItem("Tools/Factory/Create Documentary Opening and Ending")]
         public static void Create()
         {
             _font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Pretendard/Pretendard-SemiBold.otf");
-            foreach (string path in new[] { "Assets/Data/OpeningEnding", "Assets/Materials/OpeningEnding", "Assets/Meshes/OpeningEnding" })
+            foreach (string path in new[] { "Assets/Data/OpeningEnding", "Assets/Materials/OpeningEnding" })
             { Directory.CreateDirectory(path); }
             AssetDatabase.Refresh();
             _wood = Material("ArchiveOak", new Color(.23f,.125f,.064f));
             _paper = Material("ArchivePaper", new Color(.76f,.69f,.52f));
             _metal = Material("ArchiveMetal", new Color(.2f,.25f,.22f));
-            _wall = Material("ArchivePlaster", new Color(.49f,.46f,.37f));
             _dark = Material("ArchiveCharcoal", new Color(.025f,.032f,.033f));
             _cyan = Material("ArchiveCyan", new Color(.18f,.77f,.72f), true);
             _amber = Material("ArchiveAmber", new Color(1,.52f,.13f), true);
             _green = Material("ArchiveCRT", new Color(.26f,.9f,.46f), true);
-            _tile = Material("ArchiveTerrazzo", new Color(.33f,.32f,.28f));
             _content = AssetDatabase.LoadAssetAtPath<CinematicText>(DataPath);
             if (_content == null) { _content = ScriptableObject.CreateInstance<CinematicText>(); AssetDatabase.CreateAsset(_content, DataPath); FillContent(); }
             CinematicModelResult result = AssetDatabase.LoadAssetAtPath<CinematicModelResult>(ResultPath);
@@ -95,12 +93,7 @@ namespace CinematicEditor
                     Source="OpenAI image_gen · 일상 속 시각 인식 재구성 · 연도는 연출용, 기술 최초 출시 연도가 아님" };
             }
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
-            _content.Rewind=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningTimelinePulse.wav"); _content.Ring=Audio("Ring"); _content.Stamp=Audio("Stamp");
-            _content.Machine=Audio("Machine"); _content.Footsteps=Audio("Footsteps"); _content.CRT=Audio("CRT"); _content.Beep=Audio("Beep");
-            _content.Crowd=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/ArchiveCrowd.mp3");
-            _content.Printer=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/ArchivePrinter.mp3");
-            _content.Credits="CNN 공장 · 체험 완료\n차세대디스플레이 경진대회\n\n숫자 하나가, 세상을 보는 눈이 되기까지";
-            _content.AudioCredits="공간 이미지 · OpenAI 이미지 생성 / 역사적 분위기 재구성\n군중 · SpliceSound / 프린터 · viertelnachvier (Freesound, CC0)\n효과음 · Codex 보조 합성 / 서체 · Pretendard (OFL)";
+            _content.Rewind=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningTimelinePulse.wav"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
             EditorUtility.SetDirty(_content);
         }
         private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Archive"+name+".wav");
@@ -136,13 +129,6 @@ namespace CinematicEditor
             Value(sequence,"_ending",ending); Value(sequence,"_destination",ending?"CNNArchiveOpening":"FactoryEnvironment");
             Assign(presentation,"_world",world); Assign(presentation,"_audio",audio); Assign(presentation,"_type",type);
             Assign(world,"_world",stage);
-            Transform room=Root("1989 Post office · spatial reconstruction",stage);
-            if (ending)
-            {
-                BuildRoom(room);
-                CombineRoom(room);
-            }
-            Assign(world,"_room",room);
             Transform portal=Primitive("Archive surface",stage,new Vector3(0,1.85f,3),new Vector3(1.6f,1.067f,1),_dark,PrimitiveType.Quad);
             Material film=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveFilm.mat");
             if (film==null) { film=new Material(Shader.Find("CNN/ArchivePhoto")); AssetDatabase.CreateAsset(film,"Assets/Materials/OpeningEnding/ArchiveFilm.mat"); }
@@ -167,15 +153,13 @@ namespace CinematicEditor
                 TextAt(c.transform,"Year",(2026-i*3).ToString(),Vector2.zero,new Vector2(250,90),32);
             }
             Assign(world,"_timeline",timeline);
-            List<Transform> letters=new List<Transform>(); List<Transform> boxes=new List<Transform>();
+            List<Transform> boxes=new List<Transform>();
             for(int i=0;i<10;i++)
             {
                 Vector3 p=new Vector3((i%5-2)*.72f,1.3f+(i/5)*.65f,3.8f+(i%2)*.35f);
-                Transform letter=Envelope(stage,"Mail "+i,p); letters.Add(letter);
                 Transform box=Recognition(stage,"Recognition "+i,p+new Vector3(0,0,-.03f),new Vector2(.45f,.27f),_green,i==0?"12345":(12000+i*173).ToString()); boxes.Add(box);
             }
-            Array(world,"_letters",letters); Array(world,"_boxes",boxes);
-            Transform hero=Envelope(stage,"Hero envelope",new Vector3(0,1.4f,5.8f)); Assign(world,"_envelope",hero);
+            Array(world,"_boxes",boxes);
             Transform digit=Root("Handwritten digit",stage); digit.localPosition=new Vector3(0,1.9f,2.4f);
             List<Transform> pixels=new List<Transform>();
             for(int row=0;row<16;row++) for(int col=0;col<16;col++)
@@ -192,9 +176,6 @@ namespace CinematicEditor
             numeral.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");
             Assign(world,"_digit",digit); Assign(world,"_numeral",numeral); Array(world,"_pixels",pixels);
             Assign(world,"_digitBox",Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2"));
-            List<Transform> fragments=new List<Transform>();
-            for(int i=0;i<96;i++){Transform f=Box("Dissolving room fragment",stage,Vector3.zero,Vector3.one*.22f,i%2==0?_paper:_wood);f.gameObject.SetActive(false);fragments.Add(f);}
-            Array(world,"_fragments",fragments);
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
             Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);
             Box("Door light",factory,new Vector3(0,1.5f,.15f),new Vector3(3.1f,3,.1f),_cyan);
@@ -230,87 +211,42 @@ namespace CinematicEditor
             Image backing=ImageAt(captions.transform,"Caption backing",new Vector2(1500,245),new Color(0,0,0,.45f));
             Text text=TextAt(captions.transform,"Type line","",Vector2.zero,new Vector2(1450,240),48);
             Assign(type,"_line",text); Assign(type,"_backing",backing);
-            Canvas hints=CanvasAt(stage,"Skip hint",new Vector3(0,.4f,2.3f),new Vector2(1100,120),.0015f);
-            Text hint=TextAt(hints.transform,"Hold trigger",_content.Skip,new Vector2(0,15),new Vector2(1100,70),26);
-            hint.color=new Color(.55f,.59f,.57f);
+            Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,.4f,2.3f),new Vector2(1100,120),.0015f);
             Image bar=ImageAt(hints.transform,"Hold progress",new Vector2(500,5),new Color(.3f,.8f,.73f));
             bar.rectTransform.anchoredPosition=new Vector2(0,-35); bar.type=Image.Type.Filled; bar.fillMethod=Image.FillMethod.Horizontal; bar.fillAmount=0;
             bar.sprite=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            Assign(type,"_hint",hint); Assign(type,"_holdBar",bar);
-            Canvas flashCanvas=CanvasAt(stage,"Arrival exposure",new Vector3(0,1.6f,.45f),new Vector2(4000,4000),.002f);
-            Image flash=ImageAt(flashCanvas.transform,"Exposure",new Vector2(4000,4000),Color.clear); Assign(world,"_flash",flash);
-            if (!ending)
+            Assign(type,"_holdBar",bar);
+            if (ending)
+            {
+                Canvas completion = CanvasAt(stage, "Ending Completion Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(720, 370), .0018f);
+                TextAt(completion.transform, "Completion Title", "CNN 공장 · 체험 완료", new Vector2(0, 135), new Vector2(720, 110), 54);
+                Button restart = CreateCinematicButton(completion, "Restart Button", "처음부터 다시 시작", 660);
+                Assign(presentation, "_restartButton", restart);
+                completion.gameObject.SetActive(false);
+            }
+            else
             {
                 Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(420, 122), .0018f);
-                start.gameObject.AddComponent<GraphicRaycaster>();
-                start.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-                Image face = ImageAt(start.transform, "Start Button", new Vector2(420, 122), new Color(.1f, .38f, .37f, 1));
-                face.raycastTarget = true;
-                Button button = face.gameObject.AddComponent<Button>();
-                button.targetGraphic = face;
-                TextAt(face.transform, "Start Label", "시작", Vector2.zero, new Vector2(400, 110), 48);
-                Assign(presentation, "_startButton", button);
+                Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420);
+                Assign(presentation, "_startButton", startButton);
             }
             BuildAudio(stage,audio);
-            room.gameObject.SetActive(false); factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
-            foreach(Transform t in letters.Concat(boxes).Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}
-            hero.gameObject.SetActive(false); digit.gameObject.SetActive(false); portal.gameObject.SetActive(false); timeline.gameObject.SetActive(false);
+            factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
+            foreach(Transform t in boxes.Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}
+            digit.gameObject.SetActive(false); portal.gameObject.SetActive(false); timeline.gameObject.SetActive(false);
             EditorSceneManager.SaveScene(scene,"Assets/Scenes/"+name+".unity");
         }
 
-        private static void BuildRoom(Transform room)
+        private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width)
         {
-            Box("Floor substrate",room,new Vector3(0,-.09f,0),new Vector3(12,.1f,12),_dark);
-            for(int x=-6;x<6;x++) for(int z=-6;z<6;z++)
-            {Box("Terrazzo tile",room,new Vector3(x+.5f,-.025f,z+.5f),new Vector3(.996f,.05f,.996f),_tile);}
-            Box("Left wall",room,new Vector3(-5.2f,2.5f,0),new Vector3(.16f,5,12),_wall);
-            Box("Right wall",room,new Vector3(5.2f,2.5f,0),new Vector3(.16f,5,12),_wall);
-            Box("Rear wall",room,new Vector3(0,2.5f,-5.5f),new Vector3(10.5f,5,.15f),_wall);
-            Box("Ceiling",room,new Vector3(0,4.8f,0),new Vector3(10.5f,.12f,12),_wall);
-            for(int s=-1;s<=1;s+=2)
-            {
-                for(int i=0;i<6;i++)
-                {
-                    float z=-3+i*1.1f;
-                    Box("Shelf backing",room,new Vector3(s*4.9f,1.65f,z),new Vector3(.18f,2.4f,1),_wood);
-                    for(int row=0;row<5;row++)
-                    {
-                        Box("Mail pigeonhole",room,new Vector3(s*4.7f,.7f+row*.42f,z),new Vector3(.5f,.035f,1),_wood);
-                        Box("Sorted letters",room,new Vector3(s*4.55f,.8f+row*.42f,z),new Vector3(.22f,.10f,.72f),_paper);
-                    }
-                }
-                for(int z=-3;z<=3;z+=3)
-                {Box("Fluorescent fixture",room,new Vector3(s*2.6f,4.45f,z),new Vector3(1.5f,.08f,.16f),_paper);}
-            }
-            Box("Service counter",room,new Vector3(-2, .53f,3.7f),new Vector3(2.9f,1.06f,.85f),_wood);
-            Box("Counter top",room,new Vector3(-2,1.1f,3.7f),new Vector3(3.04f,.09f,1),_paper);
-            for(int i=0;i<5;i++) {Box("Panel moulding",room,new Vector3(-3.2f+i*.6f,.55f,3.26f),new Vector3(.035f,.9f,.02f),_paper);}
-            Transform stamp=Root("Rubber stamp",room); stamp.localPosition=new Vector3(-1.8f,1.18f,3.3f);
-            Box("Stamp base",stamp,Vector3.zero,new Vector3(.15f,.04f,.08f),_dark);
-            Primitive("Stamp handle",stamp,new Vector3(0,.08f,0),new Vector3(.045f,.07f,.045f),_wood,PrimitiveType.Cylinder);
-            Transform desk=Root("Period office desk",room); desk.localPosition=new Vector3(3.3f,0,.6f);
-            Box("Desk top",desk,new Vector3(0,.9f,0),new Vector3(1.7f,.08f,.8f),_wood);
-            for(int i=0;i<4;i++) {Box("Desk leg",desk,new Vector3((i%2==0?-.7f:.7f),.43f,(i<2?-.3f:.3f)),new Vector3(.06f,.86f,.06f),_metal);}
-            Box("Phone base",desk,new Vector3(.45f,1.0f,0),new Vector3(.32f,.12f,.24f),_dark);
-            Box("Phone receiver",desk,new Vector3(.45f,1.1f,0),new Vector3(.38f,.06f,.07f),_dark);
-            Primitive("Rotary dial",desk,new Vector3(.45f,1.075f,-.03f),new Vector3(.12f,.009f,.12f),_paper,PrimitiveType.Cylinder);
-            Box("Dot matrix printer",desk,new Vector3(-.35f,1.09f,0),new Vector3(.6f,.3f,.38f),_paper);
-            Box("Paper feed",desk,new Vector3(-.35f,1.25f,-.2f),new Vector3(.35f,.01f,.55f),_paper);
-            Transform conveyor=Root("Sorting machine",room); conveyor.localPosition=new Vector3(-3,0,-2.4f);
-            Box("Conveyor frame",conveyor,new Vector3(0,.72f,0),new Vector3(1.3f,.2f,2.5f),_metal);
-            for(int i=0;i<13;i++) {Box("Roller",conveyor,new Vector3(0,.84f,-1.1f+i*.18f),new Vector3(1.2f,.045f,.07f),_dark);}
-            for(int i=0;i<4;i++) {Box("Mail parcel",conveyor,new Vector3(.15f,.99f,-.7f+i*.45f),new Vector3(.4f,.25f,.3f),_paper);}
-            Box("CRT case",room,new Vector3(2.5f,1.4f,3.8f),new Vector3(.7f,.6f,.6f),_paper);
-            Box("CRT glass",room,new Vector3(2.5f,1.43f,3.485f),new Vector3(.54f,.38f,.01f),Material("ArchiveCRTGlass",new Color(.015f,.065f,.025f),true));
-            Canvas crt=CanvasAt(room,"CRT digits",new Vector3(2.5f,1.43f,3.47f),new Vector2(500,320),.001f);
-            Text digits=TextAt(crt.transform,"Recognized digits","1  2  3  4  5",Vector2.zero,new Vector2(480,300),42);digits.color=new Color(.25f,.85f,.4f);
-            Canvas sign=CanvasAt(room,"Post Office sign",new Vector3(0,3.9f,5.8f),new Vector2(1400,200),.002f);
-            TextAt(sign.transform,"Sign",_content.PostSign,Vector2.zero,new Vector2(1400,200),65);
-            Canvas calendar=CanvasAt(room,"Calendar",new Vector3(3.5f,2.2f,3.9f),new Vector2(300,450),.0015f);
-            ImageAt(calendar.transform,"Calendar paper",new Vector2(300,450),new Color(.78f,.73f,.6f));
-            Text text=TextAt(calendar.transform,"Date",_content.Calendar,Vector2.zero,new Vector2(280,420),64);text.color=new Color(.2f,.17f,.12f);
-            AudioReverbZone reverb=room.gameObject.AddComponent<AudioReverbZone>(); reverb.reverbPreset=AudioReverbPreset.Off;
-            reverb.minDistance=4; reverb.maxDistance=12; reverb.decayTime=1.4f; reverb.room=-1200; reverb.reverb=-700;
+            canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+            Image face = ImageAt(canvas.transform, name, new Vector2(width, 122), new Color(.1f, .38f, .37f, 1));
+            face.raycastTarget = true;
+            Button button = face.gameObject.AddComponent<Button>();
+            button.targetGraphic = face;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            TextAt(face.transform, "Button Label", label, Vector2.zero, new Vector2(width - 20, 110), 48);
+            return button;
         }
 
         private static void BuildEraProp(Transform root,int era)
@@ -348,31 +284,6 @@ namespace CinematicEditor
             else {Recognition(root,"Radiology frame",new Vector3(0,1.7f,0),new Vector2(.8f,1.1f),_cyan,"");}
         }
 
-        private static void CombineRoom(Transform room)
-        {
-            Dictionary<Material,List<CombineInstance>> groups=new Dictionary<Material,List<CombineInstance>>();
-            MeshFilter[] filters=room.GetComponentsInChildren<MeshFilter>();
-            foreach(MeshFilter filter in filters)
-            {
-                Material material=filter.GetComponent<MeshRenderer>().sharedMaterial;
-                if(!groups.TryGetValue(material,out List<CombineInstance> list)){list=new List<CombineInstance>();groups.Add(material,list);}
-                list.Add(new CombineInstance { mesh=filter.sharedMesh, transform=room.worldToLocalMatrix*filter.transform.localToWorldMatrix });
-            }
-            foreach(var pair in groups)
-            {
-                Mesh mesh=new Mesh {name="PostOffice_"+pair.Key.name,indexFormat=UnityEngine.Rendering.IndexFormat.UInt32};
-                mesh.CombineMeshes(pair.Value.ToArray());mesh.RecalculateBounds();
-                string path="Assets/Meshes/OpeningEnding/"+mesh.name+".asset";
-                Mesh saved=AssetDatabase.LoadAssetAtPath<Mesh>(path);
-                if(saved==null){AssetDatabase.CreateAsset(mesh,path);saved=mesh;}
-                else {EditorUtility.CopySerialized(mesh,saved);UnityEngine.Object.DestroyImmediate(mesh);}
-                Transform part=Root("Static room · "+pair.Key.name,room);
-                part.gameObject.AddComponent<MeshFilter>().sharedMesh=saved;
-                part.gameObject.AddComponent<MeshRenderer>().sharedMaterial=pair.Key;
-            }
-            foreach(MeshFilter filter in filters){UnityEngine.Object.DestroyImmediate(filter.gameObject);}
-        }
-
         private static void BuildAudio(Transform stage,CinematicAudioController audio)
         {
             Assign(audio,"_screen",Source(stage,"Screen muffled",new Vector3(0,1.8f,3),true,.12f,3000));
@@ -381,14 +292,7 @@ namespace CinematicEditor
             Assign(audio,"_impact",Source(stage,"Score hit",new Vector3(0,1.7f,2),false,1));
             Assign(audio,"_rewind",Source(stage,"Tape rewind",new Vector3(0,1.7f,3),false,.3f));
             Assign(audio,"_pad",Source(stage,"Optional score",Vector3.zero,true,.15f));
-            Vector3[] positions={new Vector3(-3,1.5f,2),new Vector3(3,1.5f,-2),new Vector3(0,1.5f,-4),new Vector3(-2,0,0),new Vector3(-3,.9f,-2.4f),new Vector3(4,1.2f,1),new Vector3(2.5f,1.4f,3.5f),new Vector3(-2,1.7f,3.7f)};
-            string[] names={"Crowd front left","Crowd behind right","Crowd rear","Footsteps","Sorting machine","Radio slot","CRT hum","Clerk voice slot"};
-            List<AudioSource> room=new List<AudioSource>();
-            for(int i=0;i<positions.Length;i++){room.Add(Source(stage,names[i],positions[i],true,0));}
-            Array(audio,"_room",room);
             Assign(audio,"_stamp",Source(stage,"Stamp",new Vector3(-1.8f,1.18f,3.3f),false,1));
-            Assign(audio,"_ring",Source(stage,"Rotary telephone",new Vector3(3.75f,1.1f,.6f),false,1));
-            Assign(audio,"_printer",Source(stage,"Dot matrix printer",new Vector3(2.95f,1.2f,.6f),false,1));
             Assign(audio,"_beep",Source(stage,"Recognition click",new Vector3(0,1.5f,3),false,1));
         }
         private static AudioSource Source(Transform parent,string name,Vector3 position,bool loop,float volume,float cutoff=22000)
@@ -427,14 +331,13 @@ namespace CinematicEditor
             Material material=AssetDatabase.LoadAssetAtPath<Material>(path);
             if(material==null){material=new Material(Shader.Find(unlit?"Universal Render Pipeline/Unlit":"Universal Render Pipeline/Lit"));AssetDatabase.CreateAsset(material,path);}
             material.color=color;material.enableInstancing=true;if(material.HasProperty("_Smoothness")){material.SetFloat("_Smoothness",.18f);}
-            string[] textured={"ArchiveOak","ArchiveTerrazzo","ArchivePlaster","ArchivePaper"};
-            int tile=System.Array.IndexOf(textured,name);
-            if(tile>=0)
+            bool oak = name == "ArchiveOak";
+            if (oak || name == "ArchivePaper")
             {
                 material.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/ArchiveMaterials.png"));
                 material.SetTextureScale("_BaseMap",new Vector2(.495f,.495f));
-                material.SetTextureOffset("_BaseMap",new Vector2((tile%2)*.5f+.0025f,tile<2?.5025f:.0025f));
-                material.color=tile==0?new Color(.72f,.65f,.53f):new Color(.73f,.72f,.66f);
+                material.SetTextureOffset("_BaseMap", oak ? new Vector2(.0025f, .5025f) : new Vector2(.5025f, .0025f));
+                material.color = oak ? new Color(.72f, .65f, .53f) : new Color(.73f, .72f, .66f);
             }
             return material;
         }

@@ -43,6 +43,7 @@ docs 폴더에 있다.
 ## Unity 파일 배치 기준
 
 - `client/Assets`의 상위 폴더는 에셋 종류로 구분하고, 씬 전용 파일은 그 안의 `<씬 이름>` 폴더에 둔다. 예를 들어 `CNNPixelLab.unity` 전용 스크립트는 `Scripts/CNNPixelLab/`, 프리팹은 `Prefabs/CNNPixelLab/`에 둔다.
+- 모델 제작 후 진입하는 CNNRealityLab의 전용 런타임 스크립트는 모델 제작의 하위 기능으로 `Scripts/CNNModelDesignLab/Reality/`에 둔다. AR 코드는 `RealityLab` 네임스페이스를 사용한다.
 - 여러 씬에서 사용하는 공용 스크립트는 `Scripts/Core/`에 둔다. 공용 프리팹·재질·텍스처·메시·셰이더는 각 에셋 종류의 `Common/` 폴더에 둔다.
 - 파일을 새로 만들 때 아래 기준을 따른다. 기존 파일의 이동이나 이름 변경은 사용자가 해당 범위를 요청한 경우에만 수행한다. 한 씬의 모든 종류의 에셋을 별도의 `Assets/<씬 이름>` 폴더에 함께 모으지 않는다.
 

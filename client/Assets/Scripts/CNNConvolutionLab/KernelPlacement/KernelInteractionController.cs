@@ -6,13 +6,14 @@ namespace CNNConvolution
     // Placement-stage entry point. The workbench owns XR components and visual objects.
     internal sealed class KernelInteractionController
     {
-        private const float LocalPlacementRadius = 0.1f;
+        private const float LocalPlacementRadius = 0.15f;
         private const float PlacementDuration = 0.18f;
         private const float ReturnDuration = 0.3f;
         private enum PlacementState { Hidden, Waiting, Hovered, Moving, Ready, Returning, Settling, Complete }
         private readonly WorkbenchKernelController _kernel;
         private readonly KernelPlacementDisplayController _display;
         private readonly LessonUIController _ui;
+        private readonly LessonPlayback _playback;
         private PlacementState _state = PlacementState.Hidden;
         private Pose _motionStart;
         private float _motionTime;
@@ -22,13 +23,15 @@ namespace CNNConvolution
         private bool _active;
 
         private bool IsWithinTarget => _kernel.IsWithinTarget(LocalPlacementRadius);
+        private bool IsWaitingForGrab => _state == PlacementState.Waiting || _state == PlacementState.Hovered;
 
         public KernelInteractionController(WorkbenchPrimitiveFactory factory, WorkbenchKernelController kernel, Transform target,
-            UnityEngine.UI.Text hint, LessonUIController ui)
+            UnityEngine.UI.Text hint, LessonUIController ui, LessonPlayback playback)
         {
             _kernel = kernel;
             _display = new KernelPlacementDisplayController(factory, kernel, target, hint);
             _ui = ui;
+            _playback = playback;
         }
 
         public IEnumerator Run()
@@ -45,20 +48,34 @@ namespace CNNConvolution
             ShowState(PlacementState.Waiting);
             _ui.Title = "필터가 지나간 자리";
             _ui.Explanation = "손잡이를 잡아 입력판 맨 왼쪽 위의 점선에 놓으세요.";
-            _ui.Guide = "고정 학습 예제 · 입력 5×5 · 필터 3×3";
-            _ui.Feedback = "계산을 익히기 위한 고정 예제예요. 각 채널의 값은 0~3이에요.";
             _ui.ShowSkip(true);
             while (!_aligned)
             {
-                UpdatePlacement(Time.unscaledDeltaTime);
+                if (!_playback.IsPaused)
+                {
+                    float deltaTime = _playback.DeltaTime;
+                    UpdatePlacement(deltaTime);
+                    if (IsWaitingForGrab) { _display.UpdatePreview(deltaTime); }
+                }
                 yield return null;
             }
             _active = false;
             _kernel.SetGrabEnabled(false);
             _ui.ShowSkip(false);
-            yield return new WaitForSecondsRealtime(0.45f);
+            yield return _playback.Wait(0.45f);
             Cancel();
             _kernel.SetTitleVisible(false);
+        }
+
+        public void SetPaused(bool paused)
+        {
+            if (!_active) { return; }
+            if (paused && _kernel.IsSelected)
+            {
+                _kernel.CancelGrab();
+                BeginMotion(false);
+            }
+            _kernel.SetGrabEnabled(!paused && !_moving && !_aligned);
         }
 
         public void Cancel()
@@ -78,7 +95,7 @@ namespace CNNConvolution
 
         private void HandleAssist()
         {
-            if (!_active || _aligned || (_moving && _movingToTarget)) { return; }
+            if (!_active || _playback.IsPaused || _aligned || (_moving && _movingToTarget)) { return; }
             _kernel.CancelGrab();
             BeginMotion(true);
         }
@@ -91,7 +108,7 @@ namespace CNNConvolution
 
         private void HandleKernelReleased()
         {
-            if (!_active) { return; }
+            if (!_active || _playback.IsPaused) { return; }
             BeginMotion(IsWithinTarget);
         }
 
@@ -155,7 +172,7 @@ namespace CNNConvolution
             }
             bool ready = state == PlacementState.Ready || state == PlacementState.Settling || state == PlacementState.Complete;
             _display.ShowPlacement(message, ready, state == PlacementState.Complete,
-                state == PlacementState.Waiting || state == PlacementState.Hovered,
+                IsWaitingForGrab,
                 state == PlacementState.Hovered || state == PlacementState.Ready);
         }
     }

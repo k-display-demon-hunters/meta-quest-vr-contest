@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace FeatureMapCorridor
@@ -10,27 +12,38 @@ namespace FeatureMapCorridor
         {
             public FeatureMapPanelController[] Panels;
         }
-        [SerializeField] private Transform _root;
         [SerializeField] private InputPanelController _input;
         [SerializeField] private MapLayerView[] _layers;
-        [SerializeField] private MapLinksController _links;
         [SerializeField] private OutputStageController _output;
         private FeatureMapPanelController[][] _maps;
         private CorridorRenderUtility _visuals;
-        private FeatureMapSnapshot _snapshot;
-        internal event Action<int> InputSelected;
         internal event Action<int> DigitSelected;
-        internal event Action<int, int, int> MapSelected;
-        internal event Action<int, int> SwitchSelected;
+        private FeatureMapSnapshot _snapshot;
+        private readonly List<int> _outputInputs = new List<int>();
+        private float _outputRevealStarted;
+        private int _outputCellsShown;
+        internal bool RevealingOutputInputs => _outputInputs.Count != 0;
         internal event Action<int> OutputSelected;
         internal event Action<string> ButtonPressed;
-        internal Vector3 InputPosition => _input.Picture.Position;
+        internal event Action<string> InputClicked;
+        internal string HoverName
+        {
+            get
+            {
+                return _output.HoverName;
+            }
+        }
+        internal void SetInputActive(bool active)
+        {
+            _output.SetInputActive(active);
+        }
+        private void OnInputClicked(string name) => InputClicked?.Invoke(name);
         internal int Winner => _output.Winner;
         internal int WinnerPercent => _output.WinnerPercent;
-        internal void Bind(CorridorRenderUtility visuals, InteractionManager interaction, FeatureMapSnapshot snapshot)
+        internal void Bind(CorridorRenderUtility visuals, FeatureMapSnapshot snapshot)
         {
             _visuals = visuals;
-            _input.Bind(visuals, interaction, index => InputSelected?.Invoke(index), digit => DigitSelected?.Invoke(digit));
+            _input.Bind(visuals, digit => DigitSelected?.Invoke(digit));
             _maps = new FeatureMapPanelController[_layers.Length][];
             for (int l = 0;l<_layers.Length;l++)
             {
@@ -38,44 +51,27 @@ namespace FeatureMapCorridor
                 _maps[l] = _layers[l].Panels;
                 for (int m = 0;m<_maps[l].Length;m++)
                 {
-                    int map = m;
-                    _maps[l][m].Bind(visuals, interaction, index => MapSelected?.Invoke(layer, map, index));
-                    _maps[l][m].BindSwitch(interaction, () => SwitchSelected?.Invoke(layer, map));
+                    _maps[l][m].SetGridSize(snapshot.Size(layer));
+                    _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, interaction, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
-            var starts = new System.Collections.Generic.List<Vector3>();
-            var ends = new System.Collections.Generic.List<Vector3>();
-            for (int layer = 1;layer <= _maps.Length;layer++)
-            {
-                int count = layer == 1 ? 1 : _maps[layer-2].Length;
-                for (int source = 0;source<count;source++)
-                foreach (var target in _maps[layer-1])
-                {
-                    starts.Add(layer == 1 ? _input.Picture.Root.position : _maps[layer-2][source].Root.position);
-                    ends.Add(target.Root.position);
-                }
-            }
-            foreach (var source in _maps[2])
-            for (int digit = 1;digit <= 3;digit++)
-            {
-                starts.Add(source.Root.position);
-                ends.Add(_root.TransformPoint(_output.Tin(digit)));
-            }
-            _links.Bind(visuals, starts.ToArray(), ends.ToArray(), _root.up*.33f);
+            _output.Bind(visuals, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
             ShowSnapshot(snapshot);
+            RestoreResults(new HashSet<MapId>());
         }
 
         internal void Enable()
         {
             _input.ButtonPressed += OnButton;
             _input.Enable();
+            _output.InputClicked += OnInputClicked;
         }
 
         internal void Disable()
         {
             _input.ButtonPressed -= OnButton;
             _input.Disable();
+            _output.InputClicked -= OnInputClicked;
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);
@@ -83,38 +79,61 @@ namespace FeatureMapCorridor
         internal void ShowSnapshot(FeatureMapSnapshot snapshot)
         {
             _snapshot = snapshot;
+            _outputInputs.Clear();
             _input.Draw(snapshot.Input);
-            for (int l = 0;l<_maps.Length;l++)
-            for (int m = 0;m<_maps[l].Length;m++)
-            {
-                _maps[l][m].UpdateMap(snapshot.Values(l+1, m), snapshot.Scale(l+1, m), snapshot.IsOff(l+1, m));
-            }
             _output.SetData(snapshot);
         }
 
-        internal void Tick(float now, float delta)
+        internal void RestoreResults(IReadOnlyCollection<MapId> revealed)
         {
-            _input.Tick(now);
-            _links.Tick(now, _snapshot);
-            _output.Tick(now);
-            for (int l = 0;l<_maps.Length;l++)
-            for (int m = 0;m<_maps[l].Length;m++)
+            _outputInputs.Clear();
+            for (int layer = 1; layer <= _maps.Length; layer++)
+            for (int map = 0; map < _snapshot.MapCount(layer); map++)
             {
-                _maps[l][m].AnimateSwitch(delta, !_snapshot.IsOff(l+1, m));
+                bool complete = revealed.Contains(new MapId(layer, map));
+                DrawResult(layer, map, complete ? int.MaxValue : 0);
             }
         }
 
-        internal FeatureMapPanelController Input => _input.Picture;
+        internal void DrawResult(int layer, int map, int shown, int only = -1, int always = -1) =>
+            Map(layer, map).UpdateMap(_snapshot.Values(layer, map), _snapshot.Scale(layer, map), shown, only, always);
+
+        internal void RevealOutputInput(int map)
+        {
+            _outputInputs.Add(map);
+            _outputRevealStarted = Time.unscaledTime;
+            _outputCellsShown = -1;
+        }
+
+        private void UpdateOutputInputs(float now)
+        {
+            if (!RevealingOutputInputs) return;
+            int count = _snapshot.Size(3) * _snapshot.Size(3);
+            int shown = Mathf.FloorToInt(Mathf.Clamp01(now - _outputRevealStarted) * count);
+            if (shown == _outputCellsShown) return;
+            _outputCellsShown = shown;
+            foreach (int map in _outputInputs)
+            {
+                DrawResult(3, map, shown);
+            }
+            if (shown == count) _outputInputs.Clear();
+        }
+
+        internal void Tick(float now)
+        {
+            _input.Tick(now);
+            _output.Tick(now);
+            UpdateOutputInputs(now);
+        }
+
         internal FeatureMapPanelController Map(int layer, int map) => _maps[layer-1][map];
         internal FeatureMapPanelController[] Sources(int layer) => layer == 1 ? new[]
         {
             _input.Channel(0), _input.Channel(1), _input.Channel(2)
         }
         : _maps[layer-2];
-        internal int MapCount(int layer) => _maps[layer-1].Length;
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
-        internal Vector3 WaitingPosition(int layer, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.9f : Map(layer, 0).Position+Vector3.up*1.75f;
-        internal Vector3 SwitchPosition(int layer, int map) => _root.InverseTransformPoint(Map(layer, map).Switch.position)+new Vector3(0, -.34f, -.2f);
+        internal Vector3 OutputHintPosition(int digit) => _output.Tin(digit) + Vector3.up * .9f;
         internal void HighlightLayer(int zone)
         {
             for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])
@@ -123,58 +142,24 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void ShowSwitches(bool visible)
+        internal void ShowRound(RoundCalculationResult data, LessonStep step)
         {
-            foreach (var layer in _maps) foreach (var panel in layer)
-            {
-                panel.ShowSwitch(visible);
-            }
-        }
-
-        internal void DimLinks(bool dimmed) => _links.Dimmed = dimmed;
-        internal void Celebrate(int layer) => _links.Celebrate(layer);
-        internal void ClearHighlights()
-        {
-            _input.Picture.ClearHighlight();
-            foreach (var layer in _maps) foreach (var panel in layer)
-            {
-                panel.ClearHighlight();
-            }
-        }
-
-        internal void ShowTourRange(int layer, int index, int size)
-        {
-            if (layer == 0)
-            {
-                _input.Picture.Cell(index, Color.white);
-                return;
-            }
-            int row = index/size;
-            int col = index%size;
-            foreach (var panel in _maps[layer-1])
-            {
-                panel.Highlight(row-layer, col-layer, row+layer, col+layer, Color.white);
-            }
-        }
-
-        internal void ShowTourStep(int stage, int row, int column, int size)
-        {
-            var source = stage == 1 ? _input.Picture : _maps[stage-2][0];
-            source.Highlight(row-1, column-1, row+1, column+1, _visuals.Theme.Amber);
-            Map(stage, 0).Cell(row*size+column, _visuals.Theme.Amber);
-        }
-
-        internal void ShowRound(RoundCalculationResult data, int stage)
-        {
-            _input.MarkChannels(data.Layer == 1 && stage >= 1);
-            if (data.Layer == 1 && stage >= 1)
+            _input.MarkChannels(data.Layer == 1 && step != LessonStep.FilterIntro);
+            if (data.Layer == 1 && step != LessonStep.FilterIntro)
             {
                 _input.SetExpanded(true);
             }
             if (!data.IsOutput)
             {
                 Map(data.Layer, data.Map).Frame(_visuals.Theme.Amber);
-                Map(data.Layer, data.Map).Cell(data.Index, _visuals.Theme.Yellow);
+                if (step is LessonStep.Merge)
+                {
+                    Map(data.Layer, data.Map).Cell(data.Index, _visuals.Theme.Yellow);
+                }
+                else
+                {
+                    Map(data.Layer, data.Map).ClearHighlight();
+                }
             }
             var sources = Sources(data.Layer);
             var colors = data.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
@@ -185,11 +170,15 @@ namespace FeatureMapCorridor
                 {
                     sources[i].Badge(FeatureMapLabels.Marks[i]+" "+FeatureMapLabels.MapId(data.Layer-1, i), colors[i]);
                 }
-                if (!data.IsOutput)
+                if (!data.IsOutput && step != LessonStep.Scan)
                 {
                     int row = data.Index/data.Size;
                     int col = data.Index%data.Size;
-                    sources[i].Highlight(row-1, col-1, row+1, col+1, Color.white);
+                    sources[i].Highlight(row - 1, col - 1, row + 1, col + 1, colors[i]);
+                }
+                else if (!data.IsOutput)
+                {
+                    sources[i].ClearHighlight();
                 }
             }
         }
@@ -197,6 +186,10 @@ namespace FeatureMapCorridor
         internal void CloseRound(RoundCalculationResult data)
         {
             _input.MarkChannels(false);
+            if (data.Layer == 1)
+            {
+                _input.SetExpanded(false);
+            }
             if (!data.IsOutput)
             {
                 Map(data.Layer, data.Map).ClearHighlight();
@@ -220,20 +213,6 @@ namespace FeatureMapCorridor
         internal void FinishFill() => _output.FinishFill();
         internal void Fly() => _output.Fly(true);
         internal void CompleteOutput() => _output.Complete();
-        internal string HoveredCell()
-        {
-            string cell = _input.Picture.HoverCell;
-            foreach (var layer in _maps) foreach (var panel in layer) if (panel.HoverCell.Length>0)
-            {
-                cell = panel.HoverCell;
-            }
-            for (int i = 0;i<3;i++) if (_input.Channel(i).HoverCell.Length>0)
-            {
-                cell = _input.Channel(i).HoverCell;
-            }
-            return cell;
-        }
-
         internal void Dispose()
         {
             _input.Dispose();

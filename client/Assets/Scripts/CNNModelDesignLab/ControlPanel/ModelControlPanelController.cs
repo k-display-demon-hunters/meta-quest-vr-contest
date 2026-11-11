@@ -25,6 +25,7 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Button _predictionTab;
 
         [Header("Actions and request errors")]
+        [SerializeField] private Button _realityButton;
         [SerializeField] private Button _startTrainingButton;
         [SerializeField] private Button _stopTrainingButton;
         [SerializeField] private Text _startTrainingLabel;
@@ -42,12 +43,13 @@ namespace ModelDesignScene.ControlPanel
         [Header("Status colors")]
         [SerializeField] private Color _readyColor = new Color(0.25f, 0.84f, 0.69f);
         [SerializeField] private Color _problemColor = new Color(1f, 0.7f, 0.36f);
-        [SerializeField] private Color _neutralColor = new Color(0.39f, 0.73f, 0.95f);
+        [SerializeField] private Color _neutralColor = new Color(0.73f, 0.48f, 0.21f);
 
         private bool _hasIssues;
         private bool _isDragging;
         private bool _isBusy;
 
+        internal event Action OnRealityRequested;
         internal event Action OnStartRequested;
         internal event Action OnStopRequested;
         internal event Action<string> OnInferenceRequested;
@@ -58,6 +60,7 @@ namespace ModelDesignScene.ControlPanel
             _validationTab.onClick.AddListener(ShowValidationPage);
             _trainingTab.onClick.AddListener(ShowTrainingPage);
             _predictionTab.onClick.AddListener(ShowPredictionPage);
+            _realityButton.onClick.AddListener(HandleRealityRequested);
             _startTrainingButton.onClick.AddListener(HandleStartRequested);
             _stopTrainingButton.onClick.AddListener(HandleStopRequested);
             _dismissErrorButton.onClick.AddListener(DismissError);
@@ -68,6 +71,10 @@ namespace ModelDesignScene.ControlPanel
             _inference.OnError += ShowError;
             ResetSessionUI();
         }
+
+        private void HandleRealityRequested() => OnRealityRequested?.Invoke();
+
+        internal void SetRealityAvailable(bool available) => _realityButton.interactable = available;
 
         internal void SetSamples(IReadOnlyList<DatasetSample> samples)
         {
@@ -268,6 +275,7 @@ namespace ModelDesignScene.ControlPanel
             _validationTab.onClick.RemoveListener(ShowValidationPage);
             _trainingTab.onClick.RemoveListener(ShowTrainingPage);
             _predictionTab.onClick.RemoveListener(ShowPredictionPage);
+            _realityButton.onClick.RemoveListener(HandleRealityRequested);
             _startTrainingButton.onClick.RemoveListener(HandleStartRequested);
             _stopTrainingButton.onClick.RemoveListener(HandleStopRequested);
             _dismissErrorButton.onClick.RemoveListener(DismissError);

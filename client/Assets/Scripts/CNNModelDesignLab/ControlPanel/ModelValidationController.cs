@@ -14,16 +14,14 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Text _action;
         [SerializeField] private Text _location;
         [SerializeField] private Text _issueCount;
+        [SerializeField] private GameObject _suggestedFix;
+        [SerializeField] private GameObject _diagnosticsTip;
         [SerializeField] private Button _previousIssue;
         [SerializeField] private Button _nextIssue;
         [SerializeField] private Image _statusAccent;
-        [SerializeField] private Text[] _slotLabels;
-        [SerializeField] private Image[] _slotSurfaces;
         [SerializeField] private Color _readyColor = new Color(0.22f, 0.8f, 0.59f);
         [SerializeField] private Color _problemColor = new Color(1f, 0.68f, 0.22f);
-        [SerializeField] private Color _placingColor = new Color(0.28f, 0.71f, 0.95f);
-        [SerializeField] private Color _emptySlotColor = new Color(0.08f, 0.12f, 0.17f);
-        [SerializeField] private Color _occupiedSlotColor = new Color(0.14f, 0.3f, 0.34f);
+        [SerializeField] private Color _placingColor = new Color(0.73f, 0.48f, 0.21f);
 
         private IReadOnlyList<ValidationIssue> _issues = Array.Empty<ValidationIssue>();
         private IReadOnlyList<LayerDefinition> _slotLayers = Array.Empty<LayerDefinition>();
@@ -64,53 +62,52 @@ namespace ModelDesignScene.ControlPanel
         private void RefreshView()
         {
             bool showProblem = !_isDragging && _issues.Count > 0;
-            ValidationIssue issue = showProblem ? _issues[_issueIndex] : null;
-            LayerDefinition problemLayer = GetIssueLayer(issue);
             int occupiedCount = 0;
-            for (int index = 0; index < _slotLabels.Length; index++)
+            foreach (LayerDefinition layer in _slotLayers)
             {
-                LayerDefinition layer = index < _slotLayers.Count ? _slotLayers[index] : null;
                 if (layer != null)
                 {
                     occupiedCount++;
                 }
-                _slotLabels[index].text = $"{index + 1:00}\n" + (layer == null ? "빈 슬롯" : GetLayerName(layer.Type));
-                _slotSurfaces[index].color = layer != null && ReferenceEquals(layer, problemLayer)
-                    ? _problemColor : layer == null ? _emptySlotColor : _occupiedSlotColor;
             }
 
+            bool showIntro = !_isDragging && !showProblem && occupiedCount == 0;
+            bool showIssueNavigation = showProblem && _issues.Count > 1;
+            _location.gameObject.SetActive(!showIntro);
+            _suggestedFix.SetActive(!showIntro);
+            _diagnosticsTip.SetActive(showIssueNavigation);
+            _previousIssue.gameObject.SetActive(showIssueNavigation);
+            _nextIssue.gameObject.SetActive(showIssueNavigation);
             _previousIssue.interactable = showProblem && _issueIndex > 0;
             _nextIssue.interactable = showProblem && _issueIndex + 1 < _issues.Count;
             _issueCount.text = showProblem ? $"문제 {_issueIndex + 1} / {_issues.Count}"
                 : _isDragging ? "배치 중" : _hasValidationResult ? "검사 완료" : "검사 대기";
+            if (showIntro)
+            {
+                _statusAccent.color = _placingColor;
+                _title.text = "블록으로 모델을 만들어 보세요";
+                _issueCount.text = "처음 시작하기";
+                _reason.text = "1. 공급 책상에서 Grip으로 블록을 잡으세요.\n2. 빈 슬롯 위에서 Grip을 놓으세요.";
+                return;
+            }
             if (_isDragging)
             {
                 _statusAccent.color = _placingColor;
                 _title.text = "블록을 배치하고 있어요";
                 _location.text = "빈 슬롯에 놓기";
-                _reason.text = "잡은 블록을 컨베이어의 빈 슬롯 위로 옮겨 주세요.";
+                _reason.text = "잡은 블록을 바닥의 빈 슬롯 위로 옮겨 주세요.";
                 _action.text = "Grip을 놓으면 슬롯에 붙습니다. 슬롯 밖이나 이미 찬 슬롯에 놓으면 블록이 삭제됩니다.";
                 return;
             }
             if (!showProblem)
             {
-                if (occupiedCount == 0)
-                {
-                    _statusAccent.color = _placingColor;
-                    _title.text = "블록으로 모델을 만들어 보세요";
-                    _location.text = "오른쪽 부품 선반 → 컨베이어 빈 슬롯";
-                    _issueCount.text = "처음 시작하기";
-                    _reason.text = "1. 오른쪽 선반의 블록을 Grip으로 잡으세요.\n2. 컨베이어의 빈 슬롯 위에서 Grip을 놓으세요.";
-                    _action.text = "슬롯의 설정 버튼을 Trigger로 누르세요.\n예시: Conv → Pooling → Flatten → Dense → 학습 시작";
-                    return;
-                }
                 if (!_hasValidationResult)
                 {
                     _statusAccent.color = _placingColor;
                     _title.text = "학습 시작 시 모델을 검사합니다";
                     _location.text = $"INPUT → {occupiedCount}개 블록 → OUTPUT";
                     _reason.text = "원하는 블록과 설정값을 배치하세요. 아직 전체 모델 검사를 진행하지 않았습니다.";
-                    _action.text = "학습 시작을 누르면 순서·입력 크기·자원 한도를 검사한 뒤 학습합니다.";
+                    _action.text = "학습 시작을 누르면 층 순서와 입력 크기를 검사합니다.";
                     return;
                 }
                 _statusAccent.color = _readyColor;
@@ -121,8 +118,9 @@ namespace ModelDesignScene.ControlPanel
                 return;
             }
 
+            ValidationIssue issue = _issues[_issueIndex];
             _statusAccent.color = _problemColor;
-            _location.text = GetIssueLocation(problemLayer);
+            _location.text = GetIssueLocation(GetIssueLayer(issue));
             DescribeIssue(issue.Message, out string title, out string reason, out string action);
             _title.text = title;
             _reason.text = reason;

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace FeatureMapCorridor
@@ -8,92 +10,134 @@ namespace FeatureMapCorridor
     {
         [SerializeField] private CorridorRenderUtility _visuals;
         [SerializeField] private FeatureMapDisplayController _display;
-        [SerializeField] private InteractionManager _interaction;
-        [SerializeField] private ReceptiveFieldTourController _tour;
+        [SerializeField] private PoolingRoundController _pooling;
         [SerializeField] private FeatureMapRoundController _round;
+        [SerializeField] private OperationDeviceController[] _firstFilters;
+        [SerializeField] private OperationDeviceController[] _poolingDevices;
+        [SerializeField] private OperationDeviceController[] _secondFilters;
+        private OperationDeviceController[][] _devices;
         private Camera _camera;
-        private bool _tourActive, _roundActive;
-        private bool _waitingForFilter, _filterPending;
-        internal event Action<int> InputSelected;
+        private bool _visible;
+        private int _availableLayer;
+        private IReadOnlyCollection<MapId> _revealed;
+        internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
+        private bool _roundActive;
         internal event Action<int> DigitSelected;
-        internal event Action<int, int, int> MapSelected;
-        internal event Action<int, int> SwitchSelected;
+        internal event Action<MapId> OperationSelected;
         internal event Action<int> OutputSelected;
-        internal event Action<int> ZoneSelected;
-        internal event Action RoundChanged;
+        internal event Action FilterExpanded;
+        internal event Action PresentationReady;
         internal event Action<string> ButtonPressed;
-        internal int RoundLayer => _round.Layer;
-        internal int RoundMap => _round.Map;
-        internal int RoundIndex => _round.Index;
-        internal int RoundStage => _round.Stage;
-        internal bool RoundIsOutput => _round.IsOutput;
-        internal bool CanAdvanceRound => !_waitingForFilter && !_filterPending;
-        internal string HoverName => _interaction.HoverName;
-        internal string LastClick => _interaction.LastClick;
-        internal string HoveredCell => _display.HoveredCell();
-        internal Vector3 InputHint => _display.InputPosition+Vector3.up*1.1f;
-        internal Vector3 WaitingHint(int layer, int digit) => _display.WaitingPosition(layer, digit);
-        internal Vector3 SwitchHint(int layer, int map) => _display.SwitchPosition(layer, map);
+        internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
+        internal string LastClick { get; private set; } = "—";
+        private void OnInputClicked(string name) => LastClick = name;
+        internal Vector3 WaitingHint(int layer, int map, int digit) => layer == 4
+            ? _display.OutputHintPosition(digit)
+            : _display.Map(layer, map).Root.parent.InverseTransformPoint(_devices[layer - 1][map].Position) + Vector3.up * .35f;
+
+        internal void ShowOperations(int layer, IReadOnlyCollection<MapId> revealed)
+        {
+            _availableLayer = layer;
+            _revealed = revealed;
+            UpdateDevices();
+        }
+
+        private void UpdateDevices()
+        {
+            for (int layer = 1; layer <= _devices.Length; layer++)
+            for (int map = 0; map < _devices[layer - 1].Length; map++)
+            {
+                bool completed = _revealed.Contains(new MapId(layer, map));
+                bool available = layer == _availableLayer || (_availableLayer != 0 && completed);
+                OperationDeviceController device = _devices[layer - 1][map];
+                device.SetAvailable(available, completed);
+                device.SetInputActive(_visible && available);
+            }
+        }
         internal void Initialize(FeatureMapSnapshot snapshot)
         {
             _visuals.InitializeRuntime();
-            _interaction.Initialize();
-            _display.Bind(_visuals, _interaction, snapshot);
-            _tour.Bind(_visuals, _display, snapshot.Size);
-            _round.Bind(_visuals, _interaction, _display);
+            _display.Bind(_visuals, snapshot);
+            _devices = new[] { _firstFilters, _poolingDevices, _secondFilters };
+            for (int layer = 1; layer <= _devices.Length; layer++)
+            for (int map = 0; map < _devices[layer - 1].Length; map++)
+            {
+                var operation = new MapId(layer, map);
+                _devices[layer - 1][map].Bind(_visuals, () =>
+                {
+                    LastClick = FeatureMapLabels.Operation(operation.Layer, operation.Map);
+                    OperationSelected?.Invoke(operation);
+                });
+            }
+            _pooling.Bind(_visuals, _display);
+            _round.Bind(_visuals, _display);
         }
 
         internal void Enable()
         {
-            _display.InputSelected += OnInput;
             _display.DigitSelected += OnDigit;
-            _display.MapSelected += OnMap;
-            _display.SwitchSelected += OnSwitch;
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
-            _interaction.ZoneSelected += OnZone;
             _round.FilterPressed += OnFilter;
+            _round.PresentationReady += OnPresentationReady;
             _display.Enable();
             _round.EnableInput();
+            _display.InputClicked += OnInputClicked;
+            _round.InputClicked += OnInputClicked;
         }
 
         internal void Disable()
         {
-            _interaction.SetActive(false);
+            SetInputActive(false);
             _display.Disable();
             _round.DisableInput();
-            _display.InputSelected -= OnInput;
+            _display.InputClicked -= OnInputClicked;
+            _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
-            _display.MapSelected -= OnMap;
-            _display.SwitchSelected -= OnSwitch;
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
-            _interaction.ZoneSelected -= OnZone;
             _round.FilterPressed -= OnFilter;
+            _round.PresentationReady -= OnPresentationReady;
         }
 
-        private void OnInput(int index) => InputSelected?.Invoke(index);
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
-        private void OnMap(int layer, int map, int index) => MapSelected?.Invoke(layer, map, index);
-        private void OnSwitch(int layer, int map) => SwitchSelected?.Invoke(layer, map);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
-        private void OnZone(int zone) => ZoneSelected?.Invoke(zone);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
+        private void OnPresentationReady() => PresentationReady?.Invoke();
         private void OnFilter(bool expanded)
         {
-            if (!_roundActive || _round.Stage != 0 || !expanded)
+            if (_roundActive && expanded)
             {
-                return;
+                FilterExpanded?.Invoke();
             }
-            _waitingForFilter = false;
-            _filterPending = true;
-            _round.Show(1, true);
-            RoundChanged?.Invoke();
         }
+
+        private static RoundStepSequence RulesFor(MapId round) => round.Layer switch
+        {
+            2 => PoolingRoundRules.Sequence,
+            4 => OutputRoundRules.Sequence,
+            _ => ConvRoundRules.ForMap(round)
+        };
+
+        internal LessonStep FirstStep(MapId round) => RulesFor(round).First;
+        internal LessonStep LastStep(MapId round) => RulesFor(round).Last;
+        internal RoundTransition EvaluateTransition(MapId round, LessonStep step, RoundRequest request) =>
+            RulesFor(round).Evaluate(step, request, _round.PresentationPending);
+
+        private void SetInputActive(bool active)
+        {
+            _visible = active;
+            _display.SetInputActive(active);
+            UpdateFilterInput();
+            UpdateDevices();
+        }
+
+        private void UpdateFilterInput() =>
+            _round.SetInputActive(_visible && _roundActive && _round.IsOutput);
 
         internal void SetVisible(bool visible)
         {
-            _interaction.SetActive(visible);
+            SetInputActive(visible);
             if (visible)
             {
                 _camera = Camera.main;
@@ -101,146 +145,93 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now, float delta)
+        internal void Tick(float now)
         {
-            _interaction.UpdateHover();
-            _display.Tick(now, delta);
+            _display.Tick(now);
             _visuals.UpdateBillboards(_camera);
-            if (_tourActive)
-            {
-                _tour.Tick(now);
-            }
+            _pooling.Tick(now);
             if (!_roundActive)
             {
                 return;
             }
             _round.Tick(now);
-            if (_filterPending && now >= _round.ButtonReadyAt)
-            {
-                _filterPending = false;
-                RoundChanged?.Invoke();
-            }
         }
 
-        internal void ShowSnapshot(FeatureMapSnapshot snapshot) => _display.ShowSnapshot(snapshot);
+        internal void ShowSnapshot(FeatureMapSnapshot snapshot, IReadOnlyCollection<MapId> revealed)
+        {
+            _display.ShowSnapshot(snapshot);
+            RestoreResults(revealed);
+        }
+
+        internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
+        internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
-        internal void ShowSwitches(bool visible) => _display.ShowSwitches(visible);
-        internal void Celebrate(int layer) => _display.Celebrate(layer);
-        internal void ShowTour(int stage, int index)
-        {
-            _roundActive = false;
-            _tourActive = true;
-            _tour.Show(stage, index);
-        }
+        internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
+            LessonStep step, IReadOnlyCollection<MapId> revealed) =>
+            _pooling.Show(snapshot, channel, data, step, revealed, _poolingDevices[channel].CalculationAnchor);
 
-        internal void FinishTour() => _tour.Finish();
-        internal void ClearTour()
-        {
-            _tourActive = false;
-            _tour.Clear();
-        }
-
-        internal void StartRound(RoundCalculationResult data)
-        {
-            ClearTour();
-            _roundActive = true;
-            _waitingForFilter = true;
-            _filterPending = false;
-            _display.DimLinks(true);
-            _round.Start(data);
-        }
-
-        internal void RestartRound(RoundCalculationResult data)
+        internal void PrepareRound(RoundCalculationResult data)
         {
             _roundActive = true;
-            _display.DimLinks(true);
-            int stage = _round.Stage;
-            _round.Start(data);
-            if (data.IsOutput && stage >= 7)
-            {
-                _display.StartMatch();
-                _display.FinishMatch();
-            }
-            if (data.IsOutput && stage >= 8)
-            {
-                _display.StartFill();
-                _display.FinishFill();
-            }
-            _waitingForFilter = stage == 0;
-            _filterPending = false;
-            _round.Show(stage);
-            _round.FoldFilters();
+            _round.Prepare(data, data.IsOutput ? null : _devices[data.Layer - 1][data.Map].CalculationAnchor);
+            UpdateFilterInput();
         }
 
-        internal bool AdvanceRound() => _round.Advance();
-        internal bool PreviousRound()
+        internal void ShowRoundStep(LessonStep step, bool filterInput) => _round.Show(step, filterInput);
+
+        internal void FinishRoundStep(LessonStep step) => _round.FinishStep(step);
+
+        internal void CloseRound(MapId round)
         {
-            if (!_round.Previous())
+            if (round.Layer == 2)
             {
-                return false;
+                _pooling.Close();
+                return;
             }
-            _waitingForFilter = _round.Stage == 0;
-            _filterPending = false;
-            return true;
+
+            ClosePresentation();
         }
 
-        internal void ReplayLastStep()
-        {
-            if (_round.IsOutput)
-            {
-                _display.StartMatch();
-                _display.FinishMatch();
-                _display.StartFill();
-            }
-            _waitingForFilter = false;
-            _filterPending = false;
-            _round.Show(_round.LastStage);
-        }
-
-        internal void CompleteOutputForRecap()
-        {
-            _display.StartMatch();
-            _display.FinishMatch();
-            _display.StartFill();
-            _display.FinishFill();
-            _display.Fly();
-        }
-
-        internal void CloseRound()
+        private void ClosePresentation()
         {
             _roundActive = false;
+            UpdateFilterInput();
             _round.Close();
-            _display.DimLinks(false);
         }
 
-        internal System.Collections.Generic.IReadOnlyList<RecapInfo> Recap(bool mandatory)
+        internal RecapInfo FinishRoundForRecap()
         {
             if (_round.IsOutput)
             {
                 _display.CompleteOutput();
             }
             var data = _round.Data;
-            var recaps = new System.Collections.Generic.List<RecapInfo>();
+            RecapInfo recap;
             if (data.IsOutput)
             {
                 Vector3 destination = _round.Destination;
-                recaps.Add(new RecapInfo(new Vector3(destination.x, 4.5f, destination.z-.7f), 4, 0, data.Digit, data.Count));
+                recap = new RecapInfo(new Vector3(destination.x, 4.5f, destination.z-.7f), 4, 0, data.Digit, data.Count);
             }
             else
-            for (int i = 0;i<_display.MapCount(data.Layer);i++)
-            if (mandatory || i == data.Map)
             {
-                recaps.Add(new RecapInfo(_display.Map(data.Layer, i).Position+Vector3.up*1.6f, data.Layer, i, data.Digit, data.Count));
+                var position = _display.Map(data.Layer, data.Map).Position + Vector3.up * 1.6f;
+                recap = new RecapInfo(position, data.Layer, data.Map, data.Digit, data.Count);
             }
-            CloseRound();
-            return recaps.AsReadOnly();
+            ClosePresentation();
+            return recap;
         }
 
-        internal LessonContext DescribeRound(bool mandatory)
+        internal LessonContext DescribeRound(MapId round, LessonStep step)
         {
             return new LessonContext
             {
-                Layer = _round.Layer, Map = _round.Map, Stage = _round.Stage, MapCount = _round.IsOutput ? 0 : _display.MapCount(_round.Layer), Mandatory = mandatory, WaitingForFilter = _waitingForFilter, FilterPending = _filterPending, HintPosition = _round.FilterPosition+Vector3.up*.8f, Calculation = _round.Data, Winner = _display.Winner, WinnerPercent = _display.WinnerPercent
+                WaitingForFilter = RoundStepSequence.WaitsForFilter(step),
+                FilterPending = _round.PresentationPending,
+                IsLastStep = step == LastStep(round),
+                HintPosition = _round.FilterPosition + Vector3.up * .8f,
+                Calculation = _round.Data,
+                Winner = _display.Winner,
+                WinnerPercent = _display.WinnerPercent
             };
         }
 
@@ -248,7 +239,7 @@ namespace FeatureMapCorridor
         {
             _display.Dispose();
             _round.Dispose();
-            _tour.Dispose();
+            _pooling.Dispose();
         }
     }
 }

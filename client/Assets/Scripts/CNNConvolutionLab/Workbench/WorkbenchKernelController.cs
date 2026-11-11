@@ -17,6 +17,7 @@ namespace CNNConvolution
         private readonly Transform _home;
         private readonly Transform _target;
         private readonly WorkbenchPrimitiveFactory _factory;
+        private readonly Material _placementPreviewMaterial;
         private readonly XRGrabInteractable _grab;
         private readonly Rigidbody _body;
         private readonly MaterialPropertyBlock _handleProperties = new MaterialPropertyBlock();
@@ -27,19 +28,21 @@ namespace CNNConvolution
         public event Action Grabbed;
         public event Action Released;
 
-        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform home, Transform target)
+        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform home, Transform target,
+            Material placementPreviewMaterial)
         {
             _root = root;
             _factory = factory;
             _home = home;
             _target = target;
+            _placementPreviewMaterial = placementPreviewMaterial;
             _kernel = factory.Root("Fixed weight slice");
             _gripAccents = FilterFrame(factory, _kernel);
             _kernelTitle = factory.Caption(_kernel, "3×3 필터", new Vector3(0, -0.36f, 0), 0.7f);
             _kernelTitle.fontSize = 40;
             for (int i = 0; i < 9; i++)
             {
-                Transform tile = factory.Tile(_kernel, WorkbenchPrimitiveFactory.GridCellPosition(i, 3) + new Vector3(0.052f, 0.052f, 0), new Vector3(0.045f, 0.045f, 0.025f), new Color(0.11f, 0.15f, 0.17f));
+                Transform tile = CreateWeightTile(_kernel, i);
                 _weights[i] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
                 _weights[i].fontSize = 32;
             }
@@ -93,6 +96,26 @@ namespace CNNConvolution
             arrow.SetParent(_kernel, false);
             arrow.localScale = Vector3.one * 0.45f;
             arrow.localPosition = new Vector3(0, 0.41f, -0.04f);
+        }
+
+        public Transform CreatePlacementPreview()
+        {
+            Transform preview = _factory.Root("Filter placement preview");
+            FilterFrame(_factory, preview);
+            for (int i = 0; i < _weights.Length; i++) { CreateWeightTile(preview, i); }
+            foreach (MeshRenderer renderer in preview.GetComponentsInChildren<MeshRenderer>())
+            {
+                renderer.sharedMaterial = _placementPreviewMaterial;
+                renderer.SetPropertyBlock(null);
+            }
+            preview.gameObject.SetActive(false);
+            return preview;
+        }
+
+        private Transform CreateWeightTile(Transform parent, int index)
+        {
+            Vector3 position = WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + new Vector3(0.052f, 0.052f, 0);
+            return _factory.Tile(parent, position, new Vector3(0.045f, 0.045f, 0.025f), new Color(0.11f, 0.15f, 0.17f));
         }
 
         private MeshRenderer[] FilterFrame(WorkbenchPrimitiveFactory factory, Transform parent)

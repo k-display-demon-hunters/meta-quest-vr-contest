@@ -1016,11 +1016,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 1\nEMPTY"
+      value: "슬롯 1\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1050,11 +1050,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 2\nEMPTY"
+      value: "슬롯 2\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1084,11 +1084,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 3\nEMPTY"
+      value: "슬롯 3\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1118,11 +1118,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 4\nEMPTY"
+      value: "슬롯 4\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1152,11 +1152,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 5\nEMPTY"
+      value: "슬롯 5\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1186,11 +1186,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 6\nEMPTY"
+      value: "슬롯 6\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1220,11 +1220,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 7\nEMPTY"
+      value: "슬롯 7\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1254,11 +1254,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.39
+      value: -0.535
       objectReference: {fileID: 0}
     - target: {fileID: 1503, guid: a48b8a75524f4017824f4374445242ec, type: 3}
       propertyPath: m_Text
-      value: "SLOT 8\nEMPTY"
+      value: "슬롯 8\n비어 있음"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1571,7 +1571,7 @@ Transform:
   m_GameObject: {fileID: 4000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1602,7 +1602,7 @@ Transform:
   m_GameObject: {fileID: 4100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1633,7 +1633,7 @@ Transform:
   m_GameObject: {fileID: 4200}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1664,7 +1664,7 @@ Transform:
   m_GameObject: {fileID: 4300}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1695,7 +1695,7 @@ Transform:
   m_GameObject: {fileID: 4400}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1726,7 +1726,7 @@ Transform:
   m_GameObject: {fileID: 4500}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1757,7 +1757,7 @@ Transform:
   m_GameObject: {fileID: 4600}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1788,7 +1788,7 @@ Transform:
   m_GameObject: {fileID: 4700}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.126, z: 0}
+  m_LocalPosition: {x: 0, y: 0.138, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

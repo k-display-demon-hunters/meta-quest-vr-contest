@@ -26,7 +26,6 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform[] _zoneEdges = new Transform[5];
         [SerializeField] private TMP_Text[] _names = new TMP_Text[3*2];
         private Vector3[] _nameScales = new Vector3[6];
-        private int _highlight = -1;
         internal void Bind(CorridorRenderUtility visuals)
         {
             _visuals = visuals;
@@ -41,10 +40,8 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal int HighlightedZone => _highlight;
         internal void Highlight(int zone)
         {
-            _highlight = zone;
             for (int i = 0; i < _zoneOverlay.Length; i++)
             {
                 _zoneOverlay[i].enabled = zone >= 0;

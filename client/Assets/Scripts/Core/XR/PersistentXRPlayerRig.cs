@@ -1,3 +1,4 @@
+using Tablet;
 using UnityEngine;
 
 namespace XR
@@ -11,15 +12,30 @@ namespace XR
         [SerializeField] private Material _leftControllerMaterial;
         [SerializeField] private Material _rightControllerMaterial;
         [SerializeField] private GameObject _metaRuntime;
+        [SerializeField] private Transform _leftGripVisual;
+        [SerializeField] private Transform _rightGripVisual;
+        [SerializeField] private TabletManager _tablet;
+        private GameObject _leftControllerModel;
+        private GameObject _rightControllerModel;
+
+        public bool ControllerModelsVisible => _leftControllerModel.activeSelf;
+        public bool TabletVisible => _tablet.IsAvailable;
 
         private void Start()
         {
-            foreach (Transform target in GetComponentsInChildren<Transform>(true))
-            {
-                if (target.name != "LeftHand Grip Visual" && target.name != "RightHand Grip Visual") { continue; }
-                bool left = target.name.StartsWith("Left");
-                CreateControllerVisual(target, left);
-            }
+            _leftControllerModel = CreateControllerVisual(_leftGripVisual, true).gameObject;
+            _rightControllerModel = CreateControllerVisual(_rightGripVisual, false).gameObject;
+        }
+
+        public void SetControllerModelsVisible(bool visible)
+        {
+            _leftControllerModel.SetActive(visible);
+            _rightControllerModel.SetActive(visible);
+        }
+
+        public void SetTabletVisible(bool visible)
+        {
+            _tablet.SetAvailable(visible);
         }
 
         public OVRControllerHelper CreateControllerVisual(Transform parent, bool left)

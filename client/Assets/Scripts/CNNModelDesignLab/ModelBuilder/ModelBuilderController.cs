@@ -230,6 +230,7 @@ namespace ModelDesignScene.ModelBuilder
             if (!cancelled && _slots.TryPlace(slot, block))
             {
                 _model.PlaceLayer(slot, block.Layer);
+                block.transform.localScale = Vector3.one;
                 _conveyor.AlignBlock(slot, block);
                 _manager.NotifyChanged();
             }

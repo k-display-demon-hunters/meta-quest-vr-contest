@@ -13,6 +13,7 @@ namespace FactoryEnvironment
     public sealed class FactoryPlayerController : MonoBehaviour
     {
         private const float FloorDescentSpeed = 3f;
+        private const float FloorContactTolerance = 0.06f;
 
         [Serializable]
         private sealed class StageArrival
@@ -23,10 +24,15 @@ namespace FactoryEnvironment
 
         [SerializeField] private FactorySceneLoadController _sceneLoader;
         [SerializeField] private FactoryAreaController _areaController;
+        [SerializeField] private BoxCollider _modelDesignRoomFloor;
+        [SerializeField] private MeshCollider _modelDesignWalkSurface;
         [SerializeField] private StageArrival[] _stageArrivals;
         private FactoryLayoutData _layoutData;
         private XRBodyTransformer _bodyTransformer;
         private XRBaseInteractor[] _interactors;
+#if UNITY_EDITOR
+        private bool _usesEditorSimulator;
+#endif
 
         public XROrigin Rig { get; private set; }
         public Transform CameraTransform => Rig.Camera.transform;
@@ -56,8 +62,9 @@ namespace FactoryEnvironment
             float height = CameraTransform.position.y - Rig.Origin.transform.position.y;
 #if UNITY_EDITOR
             // Keep the editor simulator at eye level without changing real headset tracking.
-            if (!UnityEngine.XR.XRSettings.isDeviceActive
-                && FindFirstObjectByType<XR.XREditorSimulator>() != null && height < 0.5f)
+            _usesEditorSimulator = !UnityEngine.XR.XRSettings.isDeviceActive
+                && FindFirstObjectByType<XR.XREditorSimulator>() != null;
+            if (_usesEditorSimulator && height < 0.5f)
             {
                 Vector3 offset = Rig.CameraFloorOffsetObject.transform.localPosition;
                 offset.y += Rig.CameraYOffset - height;
@@ -74,12 +81,55 @@ namespace FactoryEnvironment
         private void Update()
         {
             FactoryAreaId area = _areaController.CurrentArea.Id;
-            if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom)
+            if (area == FactoryAreaId.ModelDesignRoom)
+            {
+                FollowModelDesignFloor();
+            }
+            else if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom)
             {
                 // Follow the lower treads even when the shared rig has no thumbstick input.
                 Vector3 descent = Vector3.down * (FloorDescentSpeed * Time.deltaTime);
                 _bodyTransformer.constrainedBodyManipulator.MoveBody(descent);
             }
+        }
+
+        private void FollowModelDesignFloor()
+        {
+            if (!_modelDesignWalkSurface.enabled) { return; }
+
+            Vector3 feet = _bodyTransformer.bodyPositionEvaluator.GetBodyGroundWorldPosition(Rig);
+            Bounds surface = _modelDesignWalkSurface.bounds;
+            float roomFloorY = _modelDesignRoomFloor.bounds.max.y;
+#if UNITY_EDITOR
+            if (_usesEditorSimulator)
+            {
+                // WASD changes the simulated tracked pose without going through the character controller.
+                float editorFloorY = GetModelDesignSupportHeight(feet, surface.max.y + FloorContactTolerance, roomFloorY);
+                Rig.Origin.transform.position += Vector3.up * (editorFloorY - feet.y);
+                return;
+            }
+#endif
+            if (feet.y < roomFloorY - FloorContactTolerance)
+            {
+                // Recover an origin that entered the room below the structural floor.
+                Rig.MoveCameraToWorldLocation(CameraTransform.position + Vector3.up * (roomFloorY - feet.y));
+                return;
+            }
+
+            float supportY = GetModelDesignSupportHeight(feet, feet.y + FloorContactTolerance, roomFloorY);
+            float distance = Mathf.Min(feet.y - supportY, FloorDescentSpeed * Time.deltaTime);
+            if (distance > 0f)
+            {
+                _bodyTransformer.constrainedBodyManipulator.MoveBody(Vector3.down * distance);
+            }
+        }
+
+        private float GetModelDesignSupportHeight(Vector3 feet, float castHeight, float roomFloorY)
+        {
+            feet.y = castHeight;
+            Ray ray = new Ray(feet, Vector3.down);
+            float range = castHeight - roomFloorY + FloorContactTolerance;
+            return _modelDesignWalkSurface.Raycast(ray, out RaycastHit hit, range) ? hit.point.y : roomFloorY;
         }
 
         public void MoveToStage(LearningStageId stage)

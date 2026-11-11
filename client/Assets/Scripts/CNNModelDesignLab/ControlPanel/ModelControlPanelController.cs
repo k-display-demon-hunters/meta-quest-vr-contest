@@ -129,7 +129,7 @@ namespace ModelDesignScene.ControlPanel
             _statusAccent.color = _neutralColor;
             _validation.ShowValidation(Array.Empty<ValidationIssue>(), Array.Empty<LayerDefinition>(), false, false);
             _stopTrainingButton.interactable = false;
-            _stateText.text = "블록을 조립하고 순서를 확인한 뒤 학습을 시작하세요.";
+            _stateText.text = string.Empty;
             SetModelChanged(false);
             DismissError();
             RefreshStartButton();
@@ -192,7 +192,7 @@ namespace ModelDesignScene.ControlPanel
                     break;
                 default:
                     _stateText.text = hasTrainedModel ? "학습된 모델이 있습니다. 이미지를 선택해 예측해 보세요."
-                        : "블록을 조립하고 순서를 확인한 뒤 학습을 시작하세요.";
+                        : string.Empty;
                     break;
             }
             _stopTrainingButton.interactable = canCancel;

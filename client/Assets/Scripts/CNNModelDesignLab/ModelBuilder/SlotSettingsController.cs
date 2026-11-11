@@ -9,16 +9,13 @@ namespace ModelDesignScene.ModelBuilder
 {
     public sealed class SlotSettingsController : MonoBehaviour
     {
-        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-
         [SerializeField] private XRSimpleInteractable _interactable;
-        [SerializeField] private Renderer _body;
+        [SerializeField] private BoxCollider _hitArea;
         [SerializeField] private Text _label;
         [SerializeField] private Transform _popupAnchor;
-        [SerializeField] private Color _emptyColor = new Color(0.16f, 0.2f, 0.24f);
-        [SerializeField] private Color _readyColor = new Color(0.12f, 0.42f, 0.55f);
+        [SerializeField] private Vector2 _occupiedLabelPosition;
 
-        private MaterialPropertyBlock _properties;
+        private Color _idleLabelColor;
         private int _slotIndex;
         private bool _hovered;
         private float _pressedUntil;
@@ -30,7 +27,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void Awake()
         {
-            _properties = new MaterialPropertyBlock();
+            _idleLabelColor = _label.color;
             _interactable.activated.AddListener(HandleActivated);
             _interactable.hoverEntered.AddListener(HandleHoverEntered);
             _interactable.hoverExited.AddListener(HandleHoverExited);
@@ -46,31 +43,33 @@ namespace ModelDesignScene.ModelBuilder
         {
             Block = block;
             bool occupied = block != null;
+            _hitArea.enabled = occupied;
             _interactable.enabled = occupied;
-            _label.text = $"슬롯 {_slotIndex + 1}\n" + (occupied ? "설정" : "비어 있음");
-            if (!occupied) _hovered = false;
-            RefreshSurface();
+            _label.rectTransform.anchoredPosition = occupied ? _occupiedLabelPosition : Vector2.zero;
+            _label.text = occupied ? $"슬롯 {_slotIndex + 1} · 설정" : $"슬롯 {_slotIndex + 1}\n비어 있음";
+            if (!occupied)
+            {
+                _hovered = false;
+                _pressedUntil = 0f;
+            }
+            RefreshLabelColor();
         }
 
-        private void RefreshSurface()
+        private void RefreshLabelColor()
         {
-            _body.GetPropertyBlock(_properties);
-            Color color = Block == null ? _emptyColor : Time.unscaledTime < _pressedUntil ? Color.white
-                : _hovered ? UI.SceneUIStyle.Accent : UI.SceneUIStyle.Button;
-            _properties.SetColor(BaseColor, color);
-            _properties.SetColor("_EmissionColor", Block != null && _hovered ? color * 0.4f : Color.black);
-            _body.SetPropertyBlock(_properties);
+            _label.color = Time.unscaledTime < _pressedUntil ? Color.white
+                : _hovered ? UI.SceneUIStyle.Accent : _idleLabelColor;
         }
 
-        private void HandleHoverEntered(HoverEnterEventArgs args) { _hovered = true; RefreshSurface(); }
-        private void HandleHoverExited(HoverExitEventArgs args) { _hovered = _interactable.isHovered; RefreshSurface(); }
+        private void HandleHoverEntered(HoverEnterEventArgs args) { _hovered = true; RefreshLabelColor(); }
+        private void HandleHoverExited(HoverExitEventArgs args) { _hovered = _interactable.isHovered; RefreshLabelColor(); }
 
         private void Update()
         {
             if (_pressedUntil > 0f && Time.unscaledTime >= _pressedUntil)
             {
                 _pressedUntil = 0f;
-                RefreshSurface();
+                RefreshLabelColor();
             }
         }
 
@@ -78,7 +77,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             _hovered = false;
             _pressedUntil = 0f;
-            if (_properties != null) RefreshSurface();
+            RefreshLabelColor();
         }
 
         private void HandleActivated(ActivateEventArgs args)
@@ -96,7 +95,7 @@ namespace ModelDesignScene.ModelBuilder
             }
 
             _pressedUntil = Time.unscaledTime + 0.12f;
-            RefreshSurface();
+            RefreshLabelColor();
             OnSettingsRequested?.Invoke(this);
         }
 

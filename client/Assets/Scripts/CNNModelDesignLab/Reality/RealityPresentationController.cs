@@ -8,6 +8,7 @@ namespace RealityLab
         private readonly Dictionary<Renderer, bool> _renderers = new Dictionary<Renderer, bool>();
         private readonly Dictionary<Canvas, bool> _canvases = new Dictionary<Canvas, bool>();
         private readonly Dictionary<Light, bool> _lights = new Dictionary<Light, bool>();
+        private readonly Dictionary<Collider, bool> _colliders = new Dictionary<Collider, bool>();
         public void Hide(Scene source)
         {
             foreach (GameObject root in source.GetRootGameObjects())
@@ -16,6 +17,8 @@ namespace RealityLab
                 { _renderers.Add(renderer, renderer.forceRenderingOff); renderer.forceRenderingOff = true; }
                 foreach (Canvas canvas in root.GetComponentsInChildren<Canvas>(true))
                 { _canvases.Add(canvas, canvas.enabled); canvas.enabled = false; }
+                foreach (Collider collider in root.GetComponentsInChildren<Collider>(true))
+                { _colliders.Add(collider, collider.enabled); collider.enabled = false; }
                 foreach (Light light in root.GetComponentsInChildren<Light>(true))
                 { _lights.Add(light, light.enabled); light.enabled = false; }
             }
@@ -25,6 +28,8 @@ namespace RealityLab
             foreach (var item in _renderers) { if (item.Key != null) { item.Key.forceRenderingOff = item.Value; } }
             foreach (var item in _canvases) { if (item.Key != null) { item.Key.enabled = item.Value; } }
             foreach (var item in _lights) { if (item.Key != null) { item.Key.enabled = item.Value; } }
+            foreach (var item in _colliders) { if (item.Key != null) { item.Key.enabled = item.Value; } }
+            _colliders.Clear();
             _renderers.Clear(); _canvases.Clear(); _lights.Clear();
         }
     }

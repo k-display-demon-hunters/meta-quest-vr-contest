@@ -20,6 +20,9 @@ namespace ModelDesignScene.ModelBuilder
         private Mesh _outputMesh;
         private Vector3Int _visualShape = new Vector3Int(-1, -1, -1);
         private bool _visualSpatial;
+        private bool _visualFlat;
+        private Text _paletteNameplate;
+        private Text _paletteCaption;
 
         private float FlowHeight => _visualSpatial
             ? -0.08f + Mathf.Max(0.12f, _visualShape.x * 0.025f + 0.04f) * 0.5f : 0.27f;
@@ -60,10 +63,14 @@ namespace ModelDesignScene.ModelBuilder
             _grabInteractable.selectExited.AddListener(HandleReleased);
         }
 
-        internal void Initialize(LayerDefinition layer, bool isPalette)
+        internal void Initialize(LayerDefinition layer, bool isPalette, Text paletteNameplate = null, Text paletteCaption = null)
         {
             Layer = layer;
             IsPalette = isPalette;
+            _paletteNameplate = paletteNameplate;
+            _paletteCaption = paletteCaption;
+            _label.enabled = !isPalette;
+            _outputCaption.enabled = !isPalette;
             name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
             RefreshLabel();
         }
@@ -71,7 +78,12 @@ namespace ModelDesignScene.ModelBuilder
         internal void TakeFromPalette()
         {
             IsPalette = false;
+            _paletteNameplate = null;
+            _paletteCaption = null;
+            _label.enabled = true;
+            _outputCaption.enabled = true;
             _grabInteractable.retainTransformParent = false;
+            RefreshLabel();
         }
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
@@ -155,20 +167,28 @@ namespace ModelDesignScene.ModelBuilder
             {
                 height = width = 0;
             }
-            _label.text = title + "\n" + (spatial ? $"{height} x {width} x {channels}" : $"{elements} elements")
+            string shapeLabel = spatial ? $"{height} × {width} × {channels}" : $"{elements} elements";
+            _label.text = title + "\n" + shapeLabel
                 + (!_hasInputShape && !IsFixed ? "\nExample" : "");
             _outputCaption.text = spatial
                 ? (channels > 0 ? (Layer.Type == LayerType.Input ? "RGB / 3 channels shown" : $"{channels} channels / 1 shown") : "Spatial output unavailable")
                 : (elements > 0 ? VectorBlockMesh.VectorCaption(elements) : "Input unavailable");
+            if (IsPalette)
+            {
+                _paletteNameplate.text = string.Join("\n", title.Split(new[] { " / " }, 2, StringSplitOptions.None));
+                _paletteCaption.text = "Example\n" + shapeLabel + "\n" + _outputCaption.text;
+            }
+            bool layFlat = IsPalette && Layer.Type == LayerType.MaxPooling2D;
             Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, elements);
-            if (_visualShape == shape && _visualSpatial == spatial)
+            if (_visualShape == shape && _visualSpatial == spatial && _visualFlat == layFlat)
             {
                 return;
             }
             _visualShape = shape;
             _visualSpatial = spatial;
+            _visualFlat = layFlat;
             Mesh previousMesh = _outputMesh;
-            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial);
+            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial, layFlat);
             _surface.sharedMesh = _outputMesh;
             _collider.center = _outputMesh.bounds.center;
             _collider.size = _outputMesh.bounds.size + new Vector3(0.02f, 0.02f, 0.03f);

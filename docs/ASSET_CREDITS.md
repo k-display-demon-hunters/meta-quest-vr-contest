@@ -202,3 +202,9 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 ROOM 1-2 사물함과 휴게실 가구는 기존 도장·직물·작업대 표면 텍스처와 사물함 번호판을 재사용한다. 원본 이미지와 위 출처·권리 기록을 유지했다. 첨부 사진은 형상 참고에 사용했다.
 
 ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 게임기 외장에는 `DarkIndustrialRubber_Normal.png`를 재사용했다. 원본 텍스처와 위 공장 표면 기록의 출처·권리 정보를 유지했다.
+
+## ROOM 1-2 공중 합성곱 UI의 기존 폰트 재사용 (2026-11-11)
+
+| 에셋명 | 사용 위치 | 원출처 | 제작자·저작권자 | 라이선스·수정 여부 |
+| --- | --- | --- | --- | --- |
+| Noto Sans CJK KR Regular 2.004 | CNNConvolutionLab 공중 RGB·필터·중간 곱·출력 표시, 단계 안내 및 다시 보기 버튼 | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe | SIL Open Font License 1.1. 기존 프로젝트 폰트 재사용, 폰트 원본 수정 없음. 기존 배포용 라이선스 유지. |

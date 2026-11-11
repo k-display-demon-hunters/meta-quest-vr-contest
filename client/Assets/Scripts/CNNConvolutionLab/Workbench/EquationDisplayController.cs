@@ -19,11 +19,11 @@ namespace CNNConvolution
             factory.Frame(slot, 0.67f, 0.19f, 0.05f, new Color(0.47f, 0.38f, 0.24f));
             _sumLabel = factory.Caption(slot, "합: —", new Vector3(0, 0, -0.03f), 0.61f);
             _sumLabel.fontSize = 42;
-            Transform equationPlate = factory.FormulaPlate("One cell multiplication plate", 0.9f);
-            _equation = factory.Caption(equationPlate, "", new Vector3(0, 0, -0.027f), 0.86f);
+            Transform equationPlate = factory.FormulaPlate("One cell multiplication plate", 0.82f);
+            _equation = factory.Caption(equationPlate, "", new Vector3(0, 0, -0.027f), 0.78f);
             _equation.fontSize = 48;
-            Transform sumEquationPlate = factory.FormulaPlate("Channel and RGB sum plate", 1.12f);
-            _sumEquation = factory.Caption(sumEquationPlate, "", new Vector3(0, 0, -0.027f), 1.08f);
+            Transform sumEquationPlate = factory.FormulaPlate("Channel and RGB sum plate", 1.04f);
+            _sumEquation = factory.Caption(sumEquationPlate, "", new Vector3(0, 0, -0.027f), 1.0f);
             _sumEquation.fontSize = 42;
             slot.SetPositionAndRotation(sum.position, sum.rotation);
             equationPlate.SetPositionAndRotation(equation.position, equation.rotation);
@@ -32,6 +32,7 @@ namespace CNNConvolution
 
         public Vector3 EquationPosition => _factory.LocalPoint(_equation.transform.position);
         public Vector3 AnswerPosition => _factory.LocalPoint(_sumLabel.transform.position);
+        public void SetAnswerVisible(bool visible) => _sumLabel.enabled = visible;
 
         public void ShowProduct(int channel, int input, int weight, int product)
         {

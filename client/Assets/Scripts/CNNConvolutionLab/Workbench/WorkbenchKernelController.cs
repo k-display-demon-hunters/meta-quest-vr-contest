@@ -13,6 +13,8 @@ namespace CNNConvolution
         private readonly Transform _kernel;
         private readonly Text _kernelTitle;
         private readonly Text[] _weights = new Text[9];
+        private readonly Transform[] _slices = new Transform[3];
+        private readonly Text[,] _channelWeights = new Text[3, 9];
         private readonly MeshRenderer[] _gripAccents;
         private readonly Transform _home;
         private readonly Transform _target;
@@ -22,6 +24,10 @@ namespace CNNConvolution
         private readonly Rigidbody _body;
         private readonly MaterialPropertyBlock _handleProperties = new MaterialPropertyBlock();
         private bool _cancellingSelection;
+        private bool _constrainedMove;
+        private Transform _grabAttach;
+        private Vector3 _handAtGrab;
+        private Vector3 _kernelAtGrab;
 
         public bool IsSelected => _grab.isSelected;
         public bool IsHovered => _grab.isHovered;
@@ -38,13 +44,26 @@ namespace CNNConvolution
             _placementPreviewMaterial = placementPreviewMaterial;
             _kernel = factory.Root("Fixed weight slice");
             _gripAccents = FilterFrame(factory, _kernel);
-            _kernelTitle = factory.Caption(_kernel, "3×3 필터", new Vector3(0, -0.36f, 0), 0.7f);
-            _kernelTitle.fontSize = 40;
+            _slices[0] = _kernel;
+            _kernelTitle = factory.Caption(_kernel, "필터 하나 · RGB 세 층", new Vector3(0, -0.36f, 0), 0.95f);
+            _kernelTitle.fontSize = 34;
             for (int i = 0; i < 9; i++)
             {
                 Transform tile = CreateWeightTile(_kernel, i);
                 _weights[i] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
                 _weights[i].fontSize = 32;
+                _channelWeights[0, i] = _weights[i];
+            }
+            for (int channel = 1; channel < 3; channel++)
+            {
+                Transform slice = CreateLinkedSlice(_kernel, channel);
+                _slices[channel] = slice;
+                for (int index = 0; index < 9; index++)
+                {
+                    Transform tile = CreateWeightTile(slice, index);
+                    _channelWeights[channel, index] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
+                    _channelWeights[channel, index].fontSize = 32;
+                }
             }
             BoxCollider collider = _kernel.gameObject.AddComponent<BoxCollider>();
             collider.size = new Vector3(0.60f, 0.54f, 0.04f);
@@ -71,6 +90,7 @@ namespace CNNConvolution
         public Pose TargetPose => new Pose(_target.position, _target.rotation);
         public Vector3 CellPosition(int index) => _factory.LocalPoint(_weights[index].transform.position);
         public Vector3 LocalPosition => _factory.LocalPoint(_kernel.position);
+        public Vector3 ChannelPosition(int channel) => _factory.LocalPoint(_slices[channel].position);
 
         public bool IsWithinTarget(float radius) =>
             _target.InverseTransformPoint(_kernel.position).sqrMagnitude <= radius * radius;
@@ -79,10 +99,46 @@ namespace CNNConvolution
 
         public void SetWeights(ConvolutionCalculation calculation)
         {
-            for (int i = 0; i < _weights.Length; i++) { _weights[i].text = calculation.Weight(i).ToString(); }
+            for (int channel = 0; channel < 3; channel++)
+            {
+                for (int index = 0; index < 9; index++)
+                {
+                    _channelWeights[channel, index].text = calculation.Weight(index).ToString();
+                }
+            }
+            ShowChannel(0);
             _kernel.gameObject.SetActive(true);
-            _kernelTitle.text = "3×3 필터";
+            _kernelTitle.text = "필터 하나 · RGB 세 층";
         }
+
+        public void ShowChannel(int channel)
+        {
+            for (int other = 0; other < 3; other++)
+            {
+                for (int index = 0; index < 9; index++)
+                {
+                    _channelWeights[other, index].transform.parent.parent.gameObject.SetActive(other == channel);
+                }
+            }
+        }
+
+        public void ConstrainToSegment(Pose start, Pose target)
+        {
+            Vector3 segment = target.position - start.position;
+            Vector3 requested = _kernelAtGrab + _grabAttach.position - _handAtGrab;
+            float amount = Mathf.Clamp01(Vector3.Dot(requested - start.position, segment) / segment.sqrMagnitude);
+            SetPose(new Pose(start.position + segment * amount, target.rotation));
+        }
+
+        public void SetConstrainedMove(bool constrained)
+        {
+            _constrainedMove = constrained;
+            // During the one-cell exercise this controller owns position. XR still owns selection,
+            // but its Dynamic/OnBeforeRender passes must not overwrite the constrained pose.
+            _grab.trackPosition = !constrained;
+        }
+
+        public float DistanceTo(Pose target) => _root.InverseTransformVector(_kernel.position - target.position).magnitude;
 
         public void AttachHighlight(Transform highlight, int index)
         {
@@ -103,6 +159,7 @@ namespace CNNConvolution
             Transform preview = _factory.Root("Filter placement preview");
             FilterFrame(_factory, preview);
             for (int i = 0; i < _weights.Length; i++) { CreateWeightTile(preview, i); }
+            for (int channel = 1; channel < 3; channel++) { CreateLinkedSlice(preview, channel); }
             foreach (MeshRenderer renderer in preview.GetComponentsInChildren<MeshRenderer>())
             {
                 renderer.sharedMaterial = _placementPreviewMaterial;
@@ -110,6 +167,21 @@ namespace CNNConvolution
             }
             preview.gameObject.SetActive(false);
             return preview;
+        }
+
+        private Transform CreateLinkedSlice(Transform parent, int channel)
+        {
+            Transform slice = _factory.Root("RGB filter slice " + channel);
+            slice.SetParent(parent, false);
+            slice.localPosition = InputGridController.ChannelOffset(channel);
+            _factory.Frame(slice, 0.57f, 0.51f, 0.026f, WorkbenchColors.Channel(channel), 0.012f);
+            // One connected filter, with only the front frame carrying a grab handle.
+            Vector3 offset = InputGridController.ChannelOffset(1);
+            Transform link = _factory.Tile(parent,
+                InputGridController.ChannelOffset(channel - 1) + offset * 0.5f + new Vector3(-0.285f, 0.255f, 0),
+                new Vector3(0.009f, 0.009f, offset.magnitude), new Color(0.47f, 0.38f, 0.24f));
+            link.localRotation = Quaternion.LookRotation(offset);
+            return slice;
         }
 
         private Transform CreateWeightTile(Transform parent, int index)
@@ -195,7 +267,16 @@ namespace CNNConvolution
             foreach (MeshRenderer groove in _gripAccents) { groove.SetPropertyBlock(_handleProperties); }
         }
 
-        private void HandleGrabbed(SelectEnterEventArgs args) { Grabbed?.Invoke(); }
+        private void HandleGrabbed(SelectEnterEventArgs args)
+        {
+            if (_constrainedMove)
+            {
+                _grabAttach = args.interactorObject.GetAttachTransform(_grab);
+                _handAtGrab = _grabAttach.position;
+                _kernelAtGrab = _kernel.position;
+            }
+            Grabbed?.Invoke();
+        }
         private void HandleReleased(SelectExitEventArgs args)
         {
             if (!_cancellingSelection) { Released?.Invoke(); }

@@ -5,8 +5,8 @@ namespace CNNConvolution
 {
     public sealed class WorkbenchBuilder : MonoBehaviour
     {
-        [SerializeField] private GameObject _workbenchVisuals;
         [SerializeField] private Transform _inputAnchor;
+        [SerializeField] private Transform _productsAnchor;
         [SerializeField] private Transform _kernelHome;
         [SerializeField] private Transform _kernelTarget;
         [SerializeField] private Transform _resultAnchor;
@@ -21,22 +21,21 @@ namespace CNNConvolution
         private WorkbenchKernelController _kernel;
 
         internal (WorkbenchPrimitiveFactory Factory, InputGridController Input, WorkbenchKernelController Kernel,
-            ResultGridController Result, EquationDisplayController Equations, FlyingNumberController Number) Build(Font font)
+            ResultGridController Products, ResultGridController Result, EquationDisplayController Equations, FlyingNumberController Number) Build(Font font)
         {
             _sideNumbers = new SideNumberController();
             _factory = new WorkbenchPrimitiveFactory(transform, font, _sideNumbers);
             InputGridController input = new InputGridController(_factory, _inputAnchor);
             _kernel = new WorkbenchKernelController(_factory, transform, _kernelHome, _kernelTarget, _placementPreviewMaterial);
-            ResultGridController result = new ResultGridController(_factory, _resultAnchor);
+            ResultGridController products = new ResultGridController(_factory, _productsAnchor, "중간 계산 · 아홉 곱");
+            ResultGridController result = new ResultGridController(_factory, _resultAnchor, "최종 출력 · 3×3");
             EquationDisplayController equations = new EquationDisplayController(_factory, _sumAnchor, _equationAnchor, _sumEquationAnchor);
             FlyingNumberController number = new FlyingNumberController(_factory, "Animated calculation copy", 0.9f);
-            return (_factory, input, _kernel, result, equations, number);
+            return (_factory, input, _kernel, products, result, equations, number);
         }
 
         internal Transform PlacementTarget => _kernelTarget;
         internal Text PlacementHint => _placementHint;
-
-        internal void Show() => _workbenchVisuals.SetActive(true);
 
         private void LateUpdate() => _sideNumbers?.Refresh();
 

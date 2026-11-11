@@ -9,6 +9,8 @@ namespace CNNConvolution
         private readonly Transform[] _layers = new Transform[3];
         private readonly Text[,] _values = new Text[3, 25];
         private readonly MeshRenderer[,] _inputFaces = new MeshRenderer[3, 25];
+        private readonly Transform[,] _tiles = new Transform[3, 25];
+        private readonly Transform[] _windows = new Transform[3];
         private readonly Transform _anchor;
         private readonly WorkbenchPrimitiveFactory _factory;
 
@@ -20,8 +22,10 @@ namespace CNNConvolution
             {
                 _layers[c] = factory.Root(Names[c] + " input slice");
                 factory.Frame(_layers[c], 0.97f, 0.86f, 0.055f, new Color(0.22f, 0.28f, 0.31f), 0.012f);
-                factory.Tile(_layers[c], new Vector3(0, 0, 0.07f), new Vector3(0.97f, 0.86f, 0.05f), new Color(0.035f, 0.045f, 0.055f));
-                Text heading = factory.Caption(_layers[c], Names[c] + " 입력 · 5×5", new Vector3(0, 0.49f, 0), 1.0f);
+                // Open frames preserve the channel depth without a solid plate hiding the next layer.
+                _windows[c] = factory.Highlight(Names[c] + " receptive field", 0.59f, 0.53f);
+                _windows[c].SetParent(_layers[c], false);
+                Text heading = factory.Caption(_layers[c], Names[c] + " 입력 · 5×5", new Vector3(0, 0.49f + c * 0.12f, 0), 1.0f);
                 heading.color = WorkbenchColors.Channel(c);
                 heading.fontSize = 44;
                 Text leftSide = factory.Caption(_layers[c], Names[c], new Vector3(-0.48f, 0.40f, 0), 0.16f);
@@ -31,6 +35,7 @@ namespace CNNConvolution
                 for (int i = 0; i < 25; i++)
                 {
                     Transform tile = factory.Tile(_layers[c], WorkbenchPrimitiveFactory.GridCellPosition(i, 5), new Vector3(0.17f, 0.15f, 0.12f), Color.gray);
+                    _tiles[c, i] = tile;
                     WorkbenchPrimitiveFactory.Tint(tile.Find("Tile mesh").GetComponent<MeshRenderer>(), new Color(0.08f, 0.10f, 0.12f));
                     Transform face = factory.Tile(tile, new Vector3(0, 0, -0.063f), new Vector3(0.158f, 0.138f, 0.012f), Color.gray);
                     _inputFaces[c, i] = face.Find("Tile mesh").GetComponent<MeshRenderer>();
@@ -55,17 +60,36 @@ namespace CNNConvolution
                     _values[c, i].color = Color.white;
                 }
             }
-            foreach (Transform layer in _layers)
+            for (int channel = 0; channel < _layers.Length; channel++)
             {
-                layer.SetPositionAndRotation(_anchor.position, _anchor.rotation);
-                layer.localScale = Vector3.one;
+                _layers[channel].SetPositionAndRotation(_anchor.TransformPoint(ChannelOffset(channel)), _anchor.rotation);
             }
             ShowChannel(0);
+            ShowWindow(0, 0);
         }
+
+        internal static Vector3 ChannelOffset(int channel) => new Vector3(-0.34f * channel, 0.06f * channel, 0.30f * channel);
 
         public void ShowChannel(int channel)
         {
-            for (int other = 0; other < _layers.Length; other++) { _layers[other].gameObject.SetActive(other == channel); }
+            for (int other = 0; other < _layers.Length; other++)
+            {
+                // Inactive channels retain their labeled frame and matching window; only the
+                // active channel has solid number tiles, so front layers cannot occlude it.
+                for (int index = 0; index < 25; index++)
+                {
+                    _tiles[other, index].gameObject.SetActive(other == channel);
+                }
+            }
+        }
+
+        public void ShowWindow(int row, int column)
+        {
+            foreach (Transform window in _windows)
+            {
+                window.localPosition = new Vector3((column - 1) * 0.19f, (1 - row) * 0.17f, -0.09f);
+                window.gameObject.SetActive(true);
+            }
         }
 
         public Vector3 CellPosition(int channel, int index) => _factory.LocalPoint(_values[channel, index].transform.position);

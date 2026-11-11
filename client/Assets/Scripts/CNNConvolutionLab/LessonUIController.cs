@@ -9,16 +9,13 @@ namespace CNNConvolution
     {
         private const float ActionGlowPeriod = 1.4f;
         [SerializeField] private GameObject _exerciseRoot;
-        [SerializeField] private GameObject _observationUi;
         [SerializeField] private GameObject _exerciseControls;
         [SerializeField] private Text _title, _explanation;
         [SerializeField] private Text _guideInstruction, _playbackLabel;
-        [SerializeField] private Text _summary;
-        [SerializeField] private Text[] _summaryOutputs;
-        [SerializeField] private Text _summaryFormula;
+        [SerializeField] private Text _stageProgress;
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
-        [SerializeField] private Button _next, _skip, _finish;
+        [SerializeField] private Button _next, _skip, _finish, _replay;
         [SerializeField] private Image _actionGlow;
         // Display history only; the lesson and quiz decide when a channel is complete.
         private readonly int?[] _completedChannelSums = new int?[3];
@@ -29,6 +26,7 @@ namespace CNNConvolution
         public event Action FinishRequested;
         public event Action PlaybackToggleRequested;
         public event Action RestartRequested;
+        public event Action ReplayRequested;
         public string Title { set => _title.text = value; }
         public string Explanation { set => _explanation.text = value; }
         public string Instruction { set => _guideInstruction.text = value; }
@@ -58,25 +56,37 @@ namespace CNNConvolution
         public void RequestFinish() { FinishRequested?.Invoke(); }
         public void RequestPlaybackToggle() { PlaybackToggleRequested?.Invoke(); }
         public void RequestRestart() { RestartRequested?.Invoke(); }
+        public void RequestReplay() { ReplayRequested?.Invoke(); }
 
         public void SetPaused(bool paused)
         {
             _playbackLabel.text = paused ? "체험 재개" : "체험 멈추기";
             _skip.interactable = !paused;
             _next.interactable = !paused;
+            _replay.interactable = !paused;
         }
 
-        public void ShowSkip(bool pendingKernel)
+        public void ShowSkip(bool pendingKernel, string label = "필터 자동 배치")
         {
             // Quiz answers are never bypassed: this assistance only finishes a physical action.
-            // The fixed label is already saved in PixelCalculationUI.prefab.
+            _skip.GetComponentInChildren<Text>(true).text = label;
             _skip.gameObject.SetActive(pendingKernel);
+        }
+        public void ShowReplay(bool visible) => _replay.gameObject.SetActive(visible);
+
+        public void SetStage(int active)
+        {
+            string[] labels = { "① 배치", "② 곱하기", "③ 더하기", "④ 출력" };
+            for (int index = 0; index < labels.Length; index++)
+            {
+                if (index == active) { labels[index] = "<color=#FFD582><b>" + labels[index] + "</b></color>"; }
+            }
+            _stageProgress.text = string.Join("   →   ", labels);
         }
         public void BeginCalculation()
         {
             gameObject.SetActive(true);
             _exerciseRoot.SetActive(true);
-            _observationUi.SetActive(false);
             _exerciseControls.SetActive(true);
             Array.Clear(_completedChannelSums, 0, _completedChannelSums.Length);
             _activeChannel = -1;
@@ -84,9 +94,12 @@ namespace CNNConvolution
             _next.gameObject.SetActive(false);
             _skip.gameObject.SetActive(false);
             _finish.gameObject.SetActive(false);
+            _replay.gameObject.SetActive(false);
+            SetStage(0);
         }
         public void BeginChannel(int channel)
         {
+            _completedChannelSums[channel] = null;
             _activeChannel = channel;
             RefreshChannelProgress();
         }
@@ -129,20 +142,15 @@ namespace CNNConvolution
         }
         public void ShowOutputSummary(int[] outputs, int[] firstSums)
         {
-            _exerciseRoot.SetActive(false);
-            _observationUi.SetActive(true);
+            _exerciseRoot.SetActive(true);
             _exerciseControls.SetActive(false);
             Instruction = "‘체험 마치기’를 눌러 다음 체험으로 이동하세요.";
             _finish.interactable = true;
             _finish.gameObject.SetActive(true);
-            _summary.text = "<size=48><b>필터가 지나간 자리</b></size>\n"
-                + "입력판 위를 이동하며 출력값 9개를 만들었어요.\n"
-                + "체험 마치기를 누르면 다음 체험으로 이동할 수 있어요.";
-            for (int index = 0; index < outputs.Length; index++)
-            {
-                _summaryOutputs[index].text = outputs[index].ToString();
-            }
-            _summaryFormula.text = $"<color=#FF666B>R {firstSums[0]}</color> + <color=#69EDA6>G {firstSums[1]}</color> + <color=#61ADFF>B {firstSums[2]}</color> = {outputs[0]}";
+            Title = "5×5 RGB 입력에서 3×3 출력이 완성됐어요";
+            Explanation = $"첫 위치: <color=#FF666B>R {firstSums[0]}</color> + <color=#69EDA6>G {firstSums[1]}</color> + <color=#61ADFF>B {firstSums[2]}</color> = {outputs[0]}\n같은 필터를 한 칸씩 옮겨 아홉 위치를 계산했어요.";
+            ResetChannelProgress();
+            for (int channel = 0; channel < firstSums.Length; channel++) { CompleteChannel(channel, firstSums[channel]); }
         }
         public void DisableFinish()
         {

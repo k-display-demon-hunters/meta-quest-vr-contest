@@ -5,16 +5,18 @@ namespace CNNConvolution
     internal sealed class ChannelSumController
     {
         private readonly InputGridController _input;
+        private readonly WorkbenchKernelController _kernel;
         private readonly ResultGridController _result;
         private readonly EquationDisplayController _equations;
         private readonly ChannelSumDisplayController _display;
         private readonly ChannelSumAnimationController _animation;
         private readonly LessonUIController _ui;
         private readonly LessonPlayback _playback;
-        public ChannelSumController(WorkbenchPrimitiveFactory factory, InputGridController input, ResultGridController result,
+        public ChannelSumController(WorkbenchPrimitiveFactory factory, InputGridController input, WorkbenchKernelController kernel, ResultGridController result,
             EquationDisplayController equations, FlyingNumberController number, LessonUIController ui, LessonPlayback playback)
         {
             _input = input;
+            _kernel = kernel;
             _result = result;
             _equations = equations;
             _ui = ui;
@@ -26,6 +28,8 @@ namespace CNNConvolution
         public void Cancel() => _display.Clear();
         public IEnumerator RunDetailed(ConvolutionCalculation calculation, int channel)
         {
+            _ui.SetStage(2);
+            _ui.BeginChannel(channel);
             _ui.Title = ChannelSumContent.DetailedTitle(channel);
             _ui.Explanation = ChannelSumContent.DetailedExplanation();
             _equations.Clear();
@@ -38,19 +42,18 @@ namespace CNNConvolution
             yield return _playback.Wait(0.9f);
         }
 
-        public IEnumerator RunCompact(ConvolutionCalculation calculation, int channel, bool showProducts)
+        public IEnumerator RunCompact(ConvolutionCalculation calculation, int channel)
         {
+            _ui.SetStage(2);
             _ui.BeginChannel(channel);
             _ui.Title = ChannelSumContent.CompactTitle(channel, calculation.Row, calculation.Column);
             _ui.Explanation = ChannelSumContent.CompactExplanation();
             _equations.Clear();
             _input.ShowChannel(channel);
-            if (showProducts) { _result.BeginProducts(); }
+            _kernel.ShowChannel(channel);
+            _result.Clear();
             yield return _playback.Wait(0.25f);
-            if (showProducts)
-            {
-                for (int i = 0; i < 9; i++) { _result.Record(i, calculation.Product(channel, i)); }
-            }
+            for (int i = 0; i < 9; i++) { _result.Record(i, calculation.Product(channel, i)); }
             _equations.ShowChannelSum(calculation.Sum(channel), ChannelSumContent.Equation(calculation, channel, false));
             _ui.CompleteChannel(channel, calculation.Sum(channel));
             yield return _playback.Wait(0.8f);

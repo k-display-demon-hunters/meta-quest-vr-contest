@@ -75,6 +75,10 @@ namespace FeatureMapCorridor
             _completed = context.Phase == LessonPhase.Complete;
             switch (context.Phase)
             {
+                case LessonPhase.AwaitInput:
+                _subtitle.Show("", LessonContent.InputPictureBody, false, null);
+                _hints.Show(LessonContent.InputPictureHint, context.HintPosition);
+                break;
                 case LessonPhase.AwaitRound:
                 _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map, context.Digit), context.CanGoBack, null);
                 _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map, context.Digit), context.HintPosition);

@@ -4,7 +4,7 @@ namespace FeatureMapCorridor
 {
     internal enum LessonPhase
     {
-        AwaitRound, Round, Recap, Complete
+        AwaitInput, AwaitRound, Round, Recap, Complete
     }
     internal struct LessonContext
     {

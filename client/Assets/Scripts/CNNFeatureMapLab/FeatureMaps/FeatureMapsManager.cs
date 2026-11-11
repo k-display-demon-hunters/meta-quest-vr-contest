@@ -23,6 +23,9 @@ namespace FeatureMapCorridor
         internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
         private bool _roundActive;
         internal event Action<int> DigitSelected;
+        internal event Action InputPictureSelected;
+        internal Vector3 InputPictureHint => _display.InputPictureHint;
+        internal void ShowInputChannels(bool expanded) => _display.ShowInputChannels(expanded);
         internal event Action<MapId> OperationSelected;
         internal event Action<int> OutputSelected;
         internal event Action FilterExpanded;
@@ -76,6 +79,7 @@ namespace FeatureMapCorridor
         internal void Enable()
         {
             _display.DigitSelected += OnDigit;
+            _display.InputPictureSelected += OnInputPicture;
             _display.OutputSelected += OnOutput;
             _display.ButtonPressed += OnButton;
             _round.FilterPressed += OnFilter;
@@ -94,12 +98,14 @@ namespace FeatureMapCorridor
             _display.InputClicked -= OnInputClicked;
             _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
+            _display.InputPictureSelected -= OnInputPicture;
             _display.OutputSelected -= OnOutput;
             _display.ButtonPressed -= OnButton;
             _round.FilterPressed -= OnFilter;
             _round.PresentationReady -= OnPresentationReady;
         }
 
+        private void OnInputPicture() => InputPictureSelected?.Invoke();
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
         private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);

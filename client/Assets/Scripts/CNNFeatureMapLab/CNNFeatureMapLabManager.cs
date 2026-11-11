@@ -34,13 +34,16 @@ namespace FeatureMapCorridor
             _featureMaps.Initialize(_snapshot);
             _lessonUI.Initialize();
             _environment.Initialize();
-            AwaitRound();
+            _featureMaps.ShowOperations(0, _state.RevealedMaps);
+            Highlight(0);
+            RenderLesson();
             _lessonUI.SetVisible(false);
         }
 
         private void OnEnable()
         {
             _featureMaps.DigitSelected += DigitSelected;
+            _featureMaps.InputPictureSelected += InputPictureSelected;
             _featureMaps.OperationSelected += OperationSelected;
             _featureMaps.OutputSelected += TinSelected;
             _featureMaps.FilterExpanded += OnFilterExpanded;
@@ -120,6 +123,14 @@ namespace FeatureMapCorridor
             }
         }
 
+        private void InputPictureSelected()
+        {
+            if (_state.Phase == LessonPhase.AwaitInput)
+            {
+                AwaitRound();
+            }
+        }
+
         private void AwaitRound()
         {
             MapId round = RequiredRound;
@@ -134,6 +145,7 @@ namespace FeatureMapCorridor
                     }
                 }
             }
+            _featureMaps.ShowInputChannels(round.Layer == 1);
             _featureMaps.ShowOperations(round.Layer, _state.RevealedMaps);
 
             Highlight(round.Layer);
@@ -166,6 +178,7 @@ namespace FeatureMapCorridor
         private void BeginRound(MapId round, bool mandatory, LessonStep step)
         {
             _state.Phase = LessonPhase.Round;
+            _featureMaps.ShowInputChannels(round.Layer == 1);
             _featureMaps.ShowOperations(0, _state.RevealedMaps);
             _state.ActiveRound = round;
             _state.MandatoryRound = mandatory;
@@ -345,6 +358,10 @@ namespace FeatureMapCorridor
                 context.Map = _state.ActiveRound.Map;
                 context.Pooling = _poolingCalculation;
             }
+            else if (_state.Phase == LessonPhase.AwaitInput)
+            {
+                context.HintPosition = _featureMaps.InputPictureHint;
+            }
             else if (_state.Phase == LessonPhase.AwaitRound)
             {
                 context.Layer = RequiredRound.Layer;
@@ -368,6 +385,7 @@ namespace FeatureMapCorridor
             _lessonUI.Disable();
             _environment.Disable();
             _featureMaps.DigitSelected -= DigitSelected;
+            _featureMaps.InputPictureSelected -= InputPictureSelected;
             _featureMaps.OperationSelected -= OperationSelected;
             _featureMaps.OutputSelected -= TinSelected;
             _featureMaps.FilterExpanded -= OnFilterExpanded;

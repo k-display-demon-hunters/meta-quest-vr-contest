@@ -18,6 +18,9 @@ namespace FeatureMapCorridor
         private FeatureMapPanelController[][] _maps;
         private CorridorRenderUtility _visuals;
         internal event Action<int> DigitSelected;
+        internal event Action InputPictureSelected;
+        internal Vector3 InputPictureHint => _input.Picture.Position + Vector3.up * 1.2f;
+        internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);
         private FeatureMapSnapshot _snapshot;
         private readonly List<int> _outputInputs = new List<int>();
         private float _outputRevealStarted;
@@ -30,11 +33,12 @@ namespace FeatureMapCorridor
         {
             get
             {
-                return _output.HoverName;
+                return _input.Picture.HoverName ?? _output.HoverName;
             }
         }
         internal void SetInputActive(bool active)
         {
+            _input.Picture.SetInputActive(active);
             _output.SetInputActive(active);
         }
         private void OnInputClicked(string name) => InputClicked?.Invoke(name);
@@ -43,7 +47,7 @@ namespace FeatureMapCorridor
         internal void Bind(CorridorRenderUtility visuals, FeatureMapSnapshot snapshot)
         {
             _visuals = visuals;
-            _input.Bind(visuals, digit => DigitSelected?.Invoke(digit));
+            _input.Bind(visuals, digit => DigitSelected?.Invoke(digit), () => InputPictureSelected?.Invoke());
             _maps = new FeatureMapPanelController[_layers.Length][];
             for (int l = 0;l<_layers.Length;l++)
             {
@@ -64,6 +68,7 @@ namespace FeatureMapCorridor
         {
             _input.ButtonPressed += OnButton;
             _input.Enable();
+            _input.Picture.InputClicked += OnInputClicked;
             _output.InputClicked += OnInputClicked;
         }
 
@@ -71,6 +76,7 @@ namespace FeatureMapCorridor
         {
             _input.ButtonPressed -= OnButton;
             _input.Disable();
+            _input.Picture.InputClicked -= OnInputClicked;
             _output.InputClicked -= OnInputClicked;
         }
 
@@ -145,10 +151,7 @@ namespace FeatureMapCorridor
         internal void ShowRound(RoundCalculationResult data, LessonStep step)
         {
             _input.MarkChannels(data.Layer == 1 && step != LessonStep.FilterIntro);
-            if (data.Layer == 1 && step != LessonStep.FilterIntro)
-            {
-                _input.SetExpanded(true);
-            }
+
             if (!data.IsOutput)
             {
                 Map(data.Layer, data.Map).Frame(_visuals.Theme.Amber);
@@ -186,10 +189,7 @@ namespace FeatureMapCorridor
         internal void CloseRound(RoundCalculationResult data)
         {
             _input.MarkChannels(false);
-            if (data.Layer == 1)
-            {
-                _input.SetExpanded(false);
-            }
+
             if (!data.IsOutput)
             {
                 Map(data.Layer, data.Map).ClearHighlight();

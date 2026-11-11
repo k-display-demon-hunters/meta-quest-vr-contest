@@ -27,6 +27,9 @@ namespace FeatureMapCorridor
         internal static string Template(int digit) => $"숫자 {digit}의 틀";
         internal static string OutputScore(int digit) => $"숫자 {digit} 점수";
         internal static string RoundHeader(int round) => $"[{round}/4 · {RoundNames[round - 1]}]";
+        internal const string InputPictureBody = "입력 이미지를 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
+        internal const string InputPictureHint = "입력 이미지 누르기";
+
         internal static string WaitingHint(int layer, int map, int digit) => layer == 4
             ? $"숫자 {digit} 통을 눌러 보세요"
             : $"{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요";

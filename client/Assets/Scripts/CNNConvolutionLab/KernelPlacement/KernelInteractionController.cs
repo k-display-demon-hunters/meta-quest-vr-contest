@@ -165,7 +165,7 @@ namespace CNNConvolution
                 case PlacementState.Hovered: message = "Grip을 누른 채 필터를 옮겨 주세요."; break;
                 case PlacementState.Moving: message = "점선 테두리 안으로 옮겨 주세요."; break;
                 case PlacementState.Ready: message = "여기에 놓으면 배치돼요."; break;
-                case PlacementState.Returning: message = "거치대로 돌아가요. 다시 잡아 주세요."; break;
+                case PlacementState.Returning: message = "시작 위치로 돌아가요. 다시 잡아 주세요."; break;
                 case PlacementState.Settling: message = "필터를 맞추고 있어요."; break;
                 case PlacementState.Complete: message = "배치 완료 · 같은 위치끼리 계산해요."; break;
                 default: return;

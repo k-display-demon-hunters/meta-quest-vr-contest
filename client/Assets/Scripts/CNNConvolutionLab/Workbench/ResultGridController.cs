@@ -15,18 +15,18 @@ namespace CNNConvolution
         private readonly MaterialPropertyBlock _highlightProperties = new MaterialPropertyBlock();
         private readonly WorkbenchPrimitiveFactory _factory;
 
-        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor)
+        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor, string title)
         {
             _factory = factory;
-            _result = factory.Root("Products at matching positions");
+            _result = factory.Root(title);
             _result.localPosition = new Vector3(0.45f, 0, 0.1f);
             factory.Frame(_result, 0.64f, 0.57f, 0.08f, new Color(0.28f, 0.31f, 0.32f));
             factory.Tile(_result, new Vector3(0, 0, 0.065f), new Vector3(0.60f, 0.53f, 0.035f), new Color(0.055f, 0.065f, 0.075f));
             Transform resultTitlePlate = factory.FormulaPlate("Result title plate", 0.82f);
             resultTitlePlate.SetParent(_result, false);
             resultTitlePlate.localPosition = new Vector3(0, 0.38f, -0.04f);
-            _resultTitle = factory.Caption(resultTitlePlate, "같은 위치의 곱", new Vector3(0, 0, -0.027f), 0.76f);
-            _resultTitle.fontSize = 48;
+            _resultTitle = factory.Caption(resultTitlePlate, title, new Vector3(0, 0, -0.027f), 0.76f);
+            _resultTitle.fontSize = 38;
             for (int i = 0; i < 9; i++)
             {
                 Transform productTile = factory.Tile(_result, WorkbenchPrimitiveFactory.GridCellPosition(i, 3), new Vector3(0.17f, 0.15f, 0.12f), new Color(0.16f, 0.18f, 0.22f));
@@ -50,6 +50,7 @@ namespace CNNConvolution
         }
 
         public Vector3 CellPosition(int index) => _factory.LocalPoint(_products[index].transform.position);
+        public void SetVisible(bool visible) => _result.gameObject.SetActive(visible);
         public bool HasRecordedValue(int index) => _productMarks[index].gameObject.activeSelf;
 
         // Bind the selection overlay during construction so it keeps the original canvas and hit plane.
@@ -58,20 +59,22 @@ namespace CNNConvolution
             bind((RectTransform)_products[index].transform.parent);
         }
 
-        public void BeginProducts() => Clear("같은 위치의 곱");
-        public void BeginOutputs() => Clear("합성곱 출력 · 3×3");
-
-        private void Clear(string title)
+        public void Clear()
         {
-            _resultTitle.text = title;
+            SetVisible(true);
             for (int i = 0; i < _products.Length; i++)
             {
-                _products[i].text = "·";
-                _products[i].color = WorkbenchColors.PendingValue;
-                _products[i].enabled = true;
-                _productMarks[i].gameObject.SetActive(false);
+                ClearCell(i);
             }
             HideHighlight();
+        }
+
+        public void ClearCell(int index)
+        {
+            _products[index].text = "·";
+            _products[index].color = WorkbenchColors.PendingValue;
+            _products[index].enabled = true;
+            _productMarks[index].gameObject.SetActive(false);
         }
 
         public void Record(int index, int value)

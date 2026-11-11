@@ -54,7 +54,13 @@ namespace CNNConvolution
 
         public void SubmitAnswer(int index)
         {
-            if (!Waiting || _answered || _playback.IsPaused || index != _expectedIndex) { return; }
+            if (!Waiting || _answered || _playback.IsPaused) { return; }
+            if (index != _expectedIndex)
+            {
+                _ui.Title = "다시 골라 볼까요?";
+                _ui.Explanation = $"선택한 곳은 {index / 3 + 1}행 {index % 3 + 1}열이에요.\n필터가 오른쪽 한 칸 이동했으니 출력도 같은 행에서 오른쪽 한 칸이에요.";
+                return;
+            }
             _answered = true;
             Waiting = false;
             _selection.SetEnabled(false);

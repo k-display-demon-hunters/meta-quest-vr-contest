@@ -93,8 +93,6 @@ namespace CinematicEditor
             }
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
             _content.Rewind=Audio("Rewind"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
-            _content.Credits="CNN 공장 · 체험 완료\n차세대디스플레이 경진대회\n\n숫자 하나가, 세상을 보는 눈이 되기까지";
-            _content.AudioCredits="공간 이미지 · OpenAI 이미지 생성 / 역사적 분위기 재구성\n효과음 · Codex 보조 합성 / 서체 · Pretendard (OFL)";
             EditorUtility.SetDirty(_content);
         }
         private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Archive"+name+".wav");
@@ -212,29 +210,42 @@ namespace CinematicEditor
             Image backing=ImageAt(captions.transform,"Caption backing",new Vector2(1500,245),new Color(0,0,0,.45f));
             Text text=TextAt(captions.transform,"Type line","",Vector2.zero,new Vector2(1450,240),48);
             Assign(type,"_line",text); Assign(type,"_backing",backing);
-            Canvas hints=CanvasAt(stage,"Skip hint",new Vector3(0,.4f,2.3f),new Vector2(1100,120),.0015f);
-            Text hint=TextAt(hints.transform,"Hold trigger",_content.Skip,new Vector2(0,15),new Vector2(1100,70),26);
-            hint.color=new Color(.55f,.59f,.57f);
+            Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,.4f,2.3f),new Vector2(1100,120),.0015f);
             Image bar=ImageAt(hints.transform,"Hold progress",new Vector2(500,5),new Color(.3f,.8f,.73f));
             bar.rectTransform.anchoredPosition=new Vector2(0,-35); bar.type=Image.Type.Filled; bar.fillMethod=Image.FillMethod.Horizontal; bar.fillAmount=0;
             bar.sprite=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            Assign(type,"_hint",hint); Assign(type,"_holdBar",bar);
-            if (!ending)
+            Assign(type,"_holdBar",bar);
+            if (ending)
+            {
+                Canvas completion = CanvasAt(stage, "Ending Completion Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(720, 370), .0018f);
+                TextAt(completion.transform, "Completion Title", "CNN 공장 · 체험 완료", new Vector2(0, 135), new Vector2(720, 110), 54);
+                Button restart = CreateCinematicButton(completion, "Restart Button", "처음부터 다시 시작", 660);
+                Assign(presentation, "_restartButton", restart);
+                completion.gameObject.SetActive(false);
+            }
+            else
             {
                 Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(420, 122), .0018f);
-                start.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-                Image face = ImageAt(start.transform, "Start Button", new Vector2(420, 122), new Color(.1f, .38f, .37f, 1));
-                face.raycastTarget = true;
-                Button button = face.gameObject.AddComponent<Button>();
-                button.targetGraphic = face;
-                TextAt(face.transform, "Start Label", "시작", Vector2.zero, new Vector2(400, 110), 48);
-                Assign(presentation, "_startButton", button);
+                Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420);
+                Assign(presentation, "_startButton", startButton);
             }
             BuildAudio(stage,audio);
             factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
             foreach(Transform t in boxes.Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}
             digit.gameObject.SetActive(false); portal.gameObject.SetActive(false); timeline.gameObject.SetActive(false);
             EditorSceneManager.SaveScene(scene,"Assets/Scenes/"+name+".unity");
+        }
+
+        private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width)
+        {
+            canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+            Image face = ImageAt(canvas.transform, name, new Vector2(width, 122), new Color(.1f, .38f, .37f, 1));
+            face.raycastTarget = true;
+            Button button = face.gameObject.AddComponent<Button>();
+            button.targetGraphic = face;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            TextAt(face.transform, "Button Label", label, Vector2.zero, new Vector2(width - 20, 110), 48);
+            return button;
         }
 
         private static void BuildEraProp(Transform root,int era)

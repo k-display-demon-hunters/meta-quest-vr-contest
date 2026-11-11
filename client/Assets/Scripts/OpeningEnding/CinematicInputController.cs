@@ -1,34 +1,34 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using Unity.XR.CoreUtils;
 using OpeningEnding;
+using XR;
 
 namespace Cinematic
 {
     public sealed class CinematicInputController : MonoBehaviour
     {
         [SerializeField] private CinematicMovementController _movementGate;
-        private readonly Dictionary<GameObject, bool> _visualStates = new Dictionary<GameObject, bool>();
+        private PersistentXRPlayerRig _playerRig;
+        private bool _controllersWereVisible;
+        private bool _tabletWasVisible;
         private InputAction _trigger;
         private float _held;
         private bool _latched;
         private bool _playing;
+        private bool _showRayOnRelease;
         public float HoldProgress => Mathf.Clamp01(_held / 2f);
         public event Action SkipRequested;
 
         public void Bind(XROrigin rig, bool waitingForStart)
         {
-            // Hide the grip visuals, including the wrist tablet, without disabling
-            // the tracked controller interactors or the independent skip action.
-            foreach (Transform target in rig.GetComponentsInChildren<Transform>(true))
-            {
-                if (target.name != "LeftHand Grip Visual" && target.name != "RightHand Grip Visual") { continue; }
-                _visualStates.Add(target.gameObject, target.gameObject.activeSelf);
-                target.gameObject.SetActive(false);
-            }
+            _playerRig = rig.GetComponent<PersistentXRPlayerRig>();
+            _controllersWereVisible = _playerRig.ControllerModelsVisible;
+            _tabletWasVisible = _playerRig.TabletVisible;
+            _playerRig.SetTabletVisible(false);
+            _playerRig.SetControllerModelsVisible(waitingForStart);
             _movementGate.Bind(rig);
             _movementGate.SetUIVisible(waitingForStart);
             _playing = !waitingForStart;
@@ -45,13 +45,34 @@ namespace Cinematic
         public void BeginPlayback()
         {
             _playing = true;
+            _playerRig.SetControllerModelsVisible(false);
             _movementGate.SetUIVisible(false);
+        }
+
+        public void ShowEndingControls()
+        {
+            _playerRig.SetControllerModelsVisible(true);
+            // A held trigger can finish playback. Wait for release before it can select Restart.
+            _held = 0;
+            _latched = _trigger.IsPressed();
+            _showRayOnRelease = _latched;
+            if (!_showRayOnRelease) { _movementGate.SetUIVisible(true); }
         }
 
         private void Update()
         {
             if (_trigger == null || !_playing) { return; }
-            if (!_trigger.IsPressed()) { _held = 0; _latched = false; return; }
+            if (!_trigger.IsPressed())
+            {
+                _held = 0;
+                _latched = false;
+                if (_showRayOnRelease)
+                {
+                    _showRayOnRelease = false;
+                    _movementGate.SetUIVisible(true);
+                }
+                return;
+            }
             if (_latched) { return; }
             _held += Time.unscaledDeltaTime;
             if (_held >= 2f) { _latched = true; SkipRequested?.Invoke(); }
@@ -72,12 +93,14 @@ namespace Cinematic
             _trigger?.Disable();
             _trigger?.Dispose();
             _trigger = null;
+            _showRayOnRelease = false;
             _movementGate.Release();
-            foreach (KeyValuePair<GameObject, bool> visual in _visualStates)
+            if (_playerRig != null)
             {
-                if (visual.Key != null) { visual.Key.SetActive(visual.Value); }
+                _playerRig.SetControllerModelsVisible(_controllersWereVisible);
+                _playerRig.SetTabletVisible(_tabletWasVisible);
             }
-            _visualStates.Clear();
+            _playerRig = null;
         }
         private void OnDisable() { Release(); }
     }

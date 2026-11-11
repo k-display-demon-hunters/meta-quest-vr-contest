@@ -26,6 +26,7 @@ namespace Cinematic
             _input.SkipRequested += Skip;
             _presentation.HapticRequested += _input.Pulse;
             _presentation.StartRequested += BeginOpening;
+            _presentation.RestartRequested += Restart;
         }
         private void Start()
         {
@@ -57,14 +58,20 @@ namespace Cinematic
         private void Skip()
         {
             if (!_ready || !_started || _loading) { return; }
-            if (_complete) { StartCoroutine(Leave()); }
+            if (_complete) { Restart(); }
             else { Elapsed = PlaybackDuration; Complete(); }
+        }
+        private void Restart()
+        {
+            if (!_complete || _loading) { return; }
+            StartCoroutine(Leave());
         }
         private void Complete()
         {
             _complete = true;
-            _presentation.Complete(_ending);
-            if (!_ending) { StartCoroutine(Leave()); }
+            _presentation.Complete();
+            if (_ending) { _input.ShowEndingControls(); }
+            else { StartCoroutine(Leave()); }
         }
         private IEnumerator Leave()
         {
@@ -76,7 +83,6 @@ namespace Cinematic
             overlay.transform.SetParent(_rig.transform, false);
             SceneTransitionController transition = overlay.AddComponent<SceneTransitionController>();
             transition.Initialize(_rig.Camera);
-            // Keep the rig visuals hidden until this scene actually unloads.
             transition.Load(_destination);
             while (transition != null && transition.IsLoading) { yield return null; }
             if (transition != null)
@@ -89,6 +95,7 @@ namespace Cinematic
         {
             _input.SkipRequested -= Skip; _presentation.HapticRequested -= _input.Pulse;
             _presentation.StartRequested -= BeginOpening;
+            _presentation.RestartRequested -= Restart;
             _input.Release();
         }
     }

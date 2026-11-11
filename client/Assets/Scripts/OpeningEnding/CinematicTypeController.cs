@@ -8,7 +8,6 @@ namespace Cinematic
     public sealed class CinematicTypeController : MonoBehaviour
     {
         [SerializeField] private Text _line;
-        [SerializeField] private Text _hint;
         [SerializeField] private Image _backing;
         [SerializeField] private Image _holdBar;
         private CinematicText.Line[] _lines;
@@ -86,8 +85,15 @@ namespace Cinematic
             _line.text = result + (cursor ? "▌" : "");
         }
 
-        public void SetHint(string text, float progress) { _hint.text = text; _holdBar.fillAmount = progress; }
-        public void ShowCredits(string text)
+        public void SetHoldProgress(float progress) => _holdBar.fillAmount = progress;
+
+        public void ClearLine()
+        {
+            _line.text = string.Empty;
+            _backing.enabled = false;
+        }
+
+        public void ShowMessage(string text)
         {
             _line.text = text; _line.fontSize = 26; _line.color = Color.white; _backing.enabled = false;
             _line.rectTransform.anchoredPosition = new Vector2(0, 220);

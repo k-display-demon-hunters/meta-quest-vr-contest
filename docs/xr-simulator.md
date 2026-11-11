@@ -101,7 +101,7 @@ CNNArchiveOpening에서는 오른손 레이로 시작 버튼을 가리키고 Tri
 
 ## 엔딩
 
-`CNNArchiveEnding`의 20초 연출이 끝나면 크레딧이 표시된다. Trigger 또는 에디터의 Space를 2초간 누르면 오프닝으로 돌아간다.
+`CNNArchiveEnding`의 20초 연출이 끝나거나 건너뛰면 완료 화면이 표시된다. 오른손 레이로 `처음부터 다시 시작` 버튼을 가리키고 Trigger(시뮬레이터는 T)를 누르면 오프닝 시작 화면으로 돌아간다. 양손 중 한쪽 Trigger 또는 에디터의 Space를 다시 2초간 눌러도 된다.
 
 ## XR 시뮬레이터의 머리·몸·손 이동
 

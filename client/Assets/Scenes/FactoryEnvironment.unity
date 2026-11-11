@@ -34205,7 +34205,7 @@ Transform:
   m_GameObject: {fileID: 980100006}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.70710677, z: 0, w: 0.70710677}
-  m_LocalPosition: {x: 23.18, y: 0.3, z: 12}
+  m_LocalPosition: {x: 22.6, y: 0.3, z: 12}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -81265,6 +81265,8 @@ GameObject:
   - component: {fileID: 908330004}
   - component: {fileID: 908330005}
   - component: {fileID: 908330006}
+  - component: {fileID: 908330010}
+  - component: {fileID: 908330011}
   m_Layer: 0
   m_Name: Room 03 raised laboratory floor
   m_TagString: Untagged
@@ -81286,6 +81288,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 908330008}
+  - {fileID: 908330013}
+  - {fileID: 908330016}
   m_Father: {fileID: 720000011}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &908330003
@@ -81347,8 +81351,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.14, y: 0.3, z: 11.4}
-  m_Center: {x: 1.81, y: 0.15, z: 0.88}
+  m_Size: {x: 5.3, y: 0.3, z: 8.21}
+  m_Center: {x: 1.23, y: 0.15, z: 0.945}
 --- !u!65 &908330006
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81368,8 +81372,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3, y: 0.3, z: 1.62}
-  m_Center: {x: 1.24, y: 0.15, z: -5.63}
+  m_Size: {x: 3.64, y: 0.3, z: 1.62}
+  m_Center: {x: 0.92, y: 0.15, z: -5.63}
 --- !u!1 &908330007
 GameObject:
   m_ObjectHideFlags: 0
@@ -81395,13 +81399,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 908330007}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.0892775, w: 0.99600679}
-  m_LocalPosition: {x: -1.09, y: 0.15, z: -1.875}
+  m_LocalRotation: {x: 0, y: 0, z: 0.17642454, w: 0.98431417}
+  m_LocalPosition: {x: -1.825, y: 0.15, z: 0.11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 908330002}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 10.24408745}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 20.32313683}
 --- !u!65 &908330009
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -81421,7 +81425,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.68689063, y: 0.15, z: 1.99}
+  m_Size: {x: 0.8637708, y: 0.15, z: 1.58}
   m_Center: {x: 0, y: -0.075, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -81430,3 +81434,189 @@ SceneRoots:
   - {fileID: 1261928859}
   - {fileID: 720000001}
   - {fileID: 980200001}
+--- !u!65 &908330010
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330001}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 4.78, y: 0.3, z: 1.66}
+  m_Center: {x: 1.49, y: 0.15, z: -3.99}
+--- !u!65 &908330011
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330001}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3.68, y: 0.3, z: 1.53}
+  m_Center: {x: 2.04, y: 0.15, z: 5.815}
+--- !u!1 &908330012
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 908330013}
+  - component: {fileID: 908330014}
+  m_Layer: 0
+  m_Name: Room 03 exit ramp collision
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 4
+  m_IsActive: 1
+--- !u!4 &908330013
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330012}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.0892775, y: 0, z: 0, w: 0.99600679}
+  m_LocalPosition: {x: -0.61, y: 0.15, z: 5.88}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 908330002}
+  m_LocalEulerAnglesHint: {x: 10.24408745, y: 0, z: 0}
+--- !u!65 &908330014
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330012}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.62, y: 0.15, z: 1.68689063}
+  m_Center: {x: 0, y: -0.075, z: 0}
+--- !u!1 &908330015
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 908330016}
+  - component: {fileID: 908330017}
+  - component: {fileID: 908330018}
+  m_Layer: 0
+  m_Name: Room 03 low glass railing
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &908330016
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330015}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 908330002}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &908330017
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330015}
+  m_Mesh: {fileID: 4300000, guid: 4e25668322594bb9be5da9d1c5f39fc5, type: 2}
+--- !u!23 &908330018
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908330015}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: bd8471c75bd54e9883974e87ba0197fc, type: 2}
+  - {fileID: 2100000, guid: 25d71861a6a54b31bb56b62e149e7613, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 0
+  m_ReceiveGI: 2
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}

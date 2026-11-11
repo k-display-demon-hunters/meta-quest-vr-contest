@@ -30,6 +30,14 @@ namespace ModelDesignScene.ControlPanel
             remove => _controller.OnInferenceRequested -= value;
         }
 
+        public event Action OnExampleRequested
+        {
+            add => _controller.OnExampleRequested += value;
+            remove => _controller.OnExampleRequested -= value;
+        }
+
+        public void SetExampleAvailable(bool available) => _controller.SetExampleAvailable(available);
+
         public event Action OnRealityRequested
         {
             add => _controller.OnRealityRequested += value;

@@ -46,8 +46,19 @@ namespace ModelDesignScene.ModelBuilder
             return true;
         }
 
+        internal ModelBlockController[] GetExampleBlocks()
+        {
+            ModelBlockController[] blocks = new ModelBlockController[_paletteBlocks.Length];
+            for (int index = 0; index < blocks.Length; index++)
+            {
+                blocks[index] = _paletteBlocks[index].Block;
+            }
+            return blocks;
+        }
+
         private void InitializeBlock(ModelBlockController block, PaletteBlock entry)
         {
+            entry.SetBlock(block);
             block.Initialize(_createLayer(entry.Type), true, entry.Nameplate, entry.ExampleCaption);
             _paletteSlots.Add(block, new Pose(block.transform.localPosition, block.transform.localRotation));
             OnBlockCreated?.Invoke(block);
@@ -64,6 +75,7 @@ namespace ModelDesignScene.ModelBuilder
 
             public LayerType Type => _type;
             public ModelBlockController Block => _block;
+            public void SetBlock(ModelBlockController block) => _block = block;
             public ModelBlockController Prefab => _prefab;
             public Text Nameplate => _nameplate;
             public Text ExampleCaption => _exampleCaption;

@@ -78,10 +78,18 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        internal void AlignBlock(int slot, ModelBlockController block)
+        internal Pose GetSlotPose(int slot)
         {
             Transform anchor = _blockAnchors[slot];
-            block.SetPose(anchor.position, anchor.rotation);
+            return new Pose(anchor.position, anchor.rotation);
+        }
+
+        internal Renderer GetSlotRenderer(int slot) => _slotRenderers[slot];
+
+        internal void AlignBlock(int slot, ModelBlockController block)
+        {
+            Pose pose = GetSlotPose(slot);
+            block.SetPose(pose.position, pose.rotation);
             RefreshSlot(slot);
         }
 

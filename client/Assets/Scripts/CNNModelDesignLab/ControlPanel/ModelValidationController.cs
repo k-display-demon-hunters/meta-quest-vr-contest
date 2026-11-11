@@ -10,6 +10,7 @@ namespace ModelDesignScene.ControlPanel
     public sealed class ModelValidationController : MonoBehaviour
     {
         [SerializeField] private Text _title;
+        [SerializeField] private GameObject _introInstructions;
         [SerializeField] private Text _reason;
         [SerializeField] private Text _action;
         [SerializeField] private Text _location;
@@ -73,6 +74,9 @@ namespace ModelDesignScene.ControlPanel
 
             bool showIntro = !_isDragging && !showProblem && occupiedCount == 0;
             bool showIssueNavigation = showProblem && _issues.Count > 1;
+            _introInstructions.SetActive(showIntro);
+            _title.gameObject.SetActive(!showIntro);
+            _reason.gameObject.SetActive(!showIntro);
             _location.gameObject.SetActive(!showIntro);
             _suggestedFix.SetActive(!showIntro);
             _diagnosticsTip.SetActive(showIssueNavigation);
@@ -85,9 +89,7 @@ namespace ModelDesignScene.ControlPanel
             if (showIntro)
             {
                 _statusAccent.color = _placingColor;
-                _title.text = "블록으로 모델을 만들어 보세요";
                 _issueCount.text = "처음 시작하기";
-                _reason.text = "1. 공급 책상에서 Grip으로 블록을 잡으세요.\n2. 빈 슬롯 위에서 Grip을 놓으세요.";
                 return;
             }
             if (_isDragging)

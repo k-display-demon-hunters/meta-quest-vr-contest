@@ -10,6 +10,10 @@ namespace ModelDesignScene.ModelBuilder
 
         public bool IsDragging => _controller.IsDragging;
 
+        public bool CanPlayPlacementExample => _controller.CanPlayPlacementExample;
+        public void PlayPlacementExample() => _controller.PlayPlacementExample();
+        public void CancelPlacementExample() => _controller.CancelPlacementExample();
+
         public event Action OnChanged;
         public event Action<LayerDefinition, Pose> OnSettingsRequested;
 

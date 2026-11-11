@@ -138,6 +138,7 @@ GameObject:
   - component: {fileID: 61004}
   - component: {fileID: 61005}
   - component: {fileID: 61006}
+  - component: {fileID: 61007}
   m_Layer: 0
   m_Name: CNN Model Design
   m_TagString: Untagged
@@ -906,7 +907,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.846667
+      value: 1.23
       objectReference: {fileID: 0}
     - target: {fileID: 1002, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: _placementHalfExtents.x
@@ -1265,6 +1266,7 @@ MonoBehaviour:
   _outputBlock: {fileID: 10102}
   _supply: {fileID: 1004}
   _conveyor: {fileID: 30002}
+  _placementExample: {fileID: 61007}
 --- !u!114 &61003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1416,6 +1418,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+--- !u!114 &61007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b0c59239f7145fe83a5402c3d8fac62, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.PlacementExampleController
+  _outlineMaterial: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
+  _ghostMaterial: {fileID: 2100000, guid: 25d71861a6a54b31bb56b62e149e7613, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

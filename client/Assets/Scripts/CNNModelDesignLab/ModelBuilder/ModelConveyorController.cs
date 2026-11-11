@@ -11,6 +11,7 @@ namespace ModelDesignScene.ModelBuilder
         [Header("Saved slot layout")]
         [SerializeField] private Transform[] _blockAnchors;
         [SerializeField] private Vector3 _placementHalfExtents = new Vector3(0.25f, 0.2f, 0.24f);
+        [SerializeField] private float _placementHeightAbove = 0.45f;
 
         [Header("Assembly line visuals")]
         [SerializeField] private Transform _slotVisualsRoot;
@@ -102,7 +103,7 @@ namespace ModelDesignScene.ModelBuilder
                 Transform anchor = _blockAnchors[index];
                 Vector3 offset = anchor.InverseTransformPoint(worldPosition);
                 if (Mathf.Abs(offset.x) > _placementHalfExtents.x ||
-                    Mathf.Abs(offset.y) > _placementHalfExtents.y ||
+                    offset.y < -_placementHalfExtents.y || offset.y > _placementHeightAbove ||
                     Mathf.Abs(offset.z) > _placementHalfExtents.z)
                 {
                     continue;

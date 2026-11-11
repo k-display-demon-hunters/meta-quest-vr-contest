@@ -922,6 +922,7 @@ MonoBehaviour:
   - {fileID: 4601}
   - {fileID: 4701}
   _placementHalfExtents: {x: 0.25, y: 0.2, z: 0.24}
+  _placementHeightAbove: 0.45
   _slotVisualsRoot: {fileID: 1201}
   _emptyColor: {r: 0.24, g: 0.3, b: 0.36, a: 1}
   _occupiedColor: {r: 0.15, g: 0.48, b: 0.38, a: 1}

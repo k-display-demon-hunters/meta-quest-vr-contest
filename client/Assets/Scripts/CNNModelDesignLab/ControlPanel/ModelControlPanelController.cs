@@ -29,6 +29,7 @@ namespace ModelDesignScene.ControlPanel
         [Header("Actions and request errors")]
         [SerializeField] private Button _realityButton;
         [SerializeField] private Button _startTrainingButton;
+        [SerializeField] private Outline _startTrainingOutline;
         [SerializeField] private Button _stopTrainingButton;
         [SerializeField] private Text _startTrainingLabel;
         [SerializeField] private GameObject _errorPanel;
@@ -50,6 +51,7 @@ namespace ModelDesignScene.ControlPanel
         private int _currentPage;
         private bool _showIntro;
         private bool _hasIssues;
+        private bool _hasPlacedBlock;
         private bool _isDragging;
         private bool _isBusy;
 
@@ -102,16 +104,16 @@ namespace ModelDesignScene.ControlPanel
             bool wasInvalid = _hasIssues && !_isDragging;
             _hasIssues = issues.Count > 0;
             _isDragging = isDragging;
-            bool hasBlocks = false;
+            _hasPlacedBlock = false;
             foreach (LayerDefinition layer in slotLayers)
             {
                 if (layer != null)
                 {
-                    hasBlocks = true;
+                    _hasPlacedBlock = true;
                     break;
                 }
             }
-            _showIntro = !isDragging && !_hasIssues && !hasBlocks;
+            _showIntro = !isDragging && !_hasIssues && !_hasPlacedBlock;
             RefreshHeader();
             _validation.ShowValidation(issues, slotLayers, isDragging, hasValidationResult);
             _statusText.text = isDragging ? "블록 배치 중"
@@ -141,6 +143,7 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = false;
             _isDragging = false;
             _hasIssues = false;
+            _hasPlacedBlock = false;
             _showIntro = true;
             _exampleButton.interactable = false;
             _statusText.text = "모델 만들기 안내";
@@ -241,7 +244,9 @@ namespace ModelDesignScene.ControlPanel
 
         private void RefreshStartButton()
         {
-            _startTrainingButton.interactable = !_isBusy && !_isDragging;
+            bool canStart = !_isBusy && !_isDragging;
+            _startTrainingButton.interactable = canStart;
+            _startTrainingOutline.enabled = canStart && _hasPlacedBlock;
             _startTrainingLabel.text = _isDragging ? "블록을 먼저 놓아 주세요" : _hasIssues ? "구성 문제 확인하기" : "학습 시작";
         }
 

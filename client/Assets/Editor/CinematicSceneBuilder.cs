@@ -50,25 +50,29 @@ namespace CinematicEditor
             Debug.Log("[Cinematic] Two documentary scenes saved with XR rig, media, sound and skip input.");
         }
 
-        private static CinematicText.Line Line(float start, float end, string text) => new CinematicText.Line { Start=start, End=end, Text=text };
+        private static CinematicText.Line Line(double start, double end, string text,
+            CinematicText.CaptionAnchor anchor = CinematicText.CaptionAnchor.Start)
+        {
+            return new CinematicText.Line { Anchor = anchor, Start = start, End = end, Text = text };
+        }
         private static void FillContent()
         {
             _content.Opening = new[] {
-                Line(0.5f,3.1f,"기계는 세상을 어떻게 볼까요?"),
-                Line(8.1f,12.55f,"최초의 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."),
-                Line(17.05f,20.78f,"사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다."),
-                Line(22.05f,25.9f,"그러나 기계가 보는 건\n밝고 어두운 점들입니다."),
-                Line(26.25f,30.55f,"기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?"),
-                Line(31.05f,34.65f,"공장 안에서 그 답을 직접 찾아보세요.") };
+                Line(0.5,3.1,"기계는 세상을 어떻게 볼까요?"),
+                Line(1.1,5.55,"최초의 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다.", CinematicText.CaptionAnchor.PostOffice),
+                Line(.25,3.98,"사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다.", CinematicText.CaptionAnchor.Envelope),
+                Line(.05,3.9,"그러나 기계가 보는 건\n밝고 어두운 점들입니다.", CinematicText.CaptionAnchor.Pixels),
+                Line(4.25,8.55,"기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?", CinematicText.CaptionAnchor.Pixels),
+                Line(.05,3.65,"공장 안에서 그 답을 직접 찾아보세요.", CinematicText.CaptionAnchor.Doors) };
             for (int i = 0; i < _content.Opening.Length; i++)
                 _content.Opening[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/OpeningEnding/OpeningNarration{i + 1:D2}.wav");
             _content.OpeningCrowd = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningCrowd.mp3");
             _content.OpeningScore = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningScore.wav");
             _content.Ending = new[] {
-                Line(.4f,2.8f,"1989년,\n숫자 하나를 읽던 눈은"),
-                Line(15,16.6f,"그리고 오늘,"),
-                Line(16.8f,18,"{A:당신이 만든 눈.}"),
-                Line(18.2f,20,"그 시선의 끝에,\n당신의 CNN이 있다.") };
+                Line(.4,2.8,"1989년,\n숫자 하나를 읽던 눈은"),
+                Line(0,1.6,"그리고 오늘,", CinematicText.CaptionAnchor.Recognition),
+                Line(.2,1.4,"{A:당신이 만든 눈.}", CinematicText.CaptionAnchor.Model),
+                Line(.2,2,"그 시선의 끝에,\n당신의 CNN이 있다.", CinematicText.CaptionAnchor.Closing) };
             Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice_US_1989.png");
             Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/EverydayVisionAtlas.png");
             _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_US_1989", Still=post, Source="OpenAI image_gen · 1989년 미국 우체국 분위기 재구성 · 실제 기록사진 아님" };
@@ -85,12 +89,27 @@ namespace CinematicEditor
                 Id = "PO_STAMPED_ENVELOPE",
                 Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampedEnvelope.png")
             };
-            _content.Montage = new CinematicText.ArchiveClip[8];
-            for (int i=0;i<8;i++)
+            string[] years = { "1998", "2012", "2015", "2018", "2020", "2022", "2024", "2026" };
+            string[] labels = { "725", "사진 분류", "얼굴", "12가 3456", "양말 · 전선", "표지판 30", "확인 필요", "고양이" };
+            double[] durations = { 1.8, 1.6, 1.4, 1.3, 1.2, 1.2, 1.2, 1.3 };
+            _content.EndingSchedule.Montage = new EndingSequenceData.MontageEntry[years.Length];
+            for (int i = 0; i < years.Length; i++)
             {
-                _content.Montage[i] = new CinematicText.ArchiveClip { Id="END_"+_content.Years[i], Still=montage,
-                    UV=new Rect((i%4)*.25f, i<4 ? .5f : 0, .25f,.5f), Duration=2,
-                    Source="OpenAI image_gen · 일상 속 시각 인식 재구성 · 연도는 연출용, 기술 최초 출시 연도가 아님" };
+                _content.EndingSchedule.Montage[i] = new EndingSequenceData.MontageEntry
+                {
+                    Year = years[i],
+                    Label = labels[i],
+                    PropIndex = i,
+                    Duration = durations[i],
+                    Clip = new CinematicText.ArchiveClip
+                    {
+                        Id = "END_" + years[i],
+                        Still = montage,
+                        UV = new Rect((i % 4) * .25f, i < 4 ? .5f : 0, .25f, .5f),
+                        Duration = 2,
+                        Source = "OpenAI image_gen · 일상 속 시각 인식 재구성 · 연도는 연출용, 기술 최초 출시 연도가 아님"
+                    }
+                };
             }
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
             _content.Rewind=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningTimelinePulse.wav"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
@@ -121,13 +140,19 @@ namespace CinematicEditor
             CinematicPresentationManager presentation=system.gameObject.AddComponent<CinematicPresentationManager>();
             CinematicInputController input=system.gameObject.AddComponent<CinematicInputController>();
             CinematicMovementController gate=system.gameObject.AddComponent<CinematicMovementController>();
-            CinematicWorldController world=system.gameObject.AddComponent<CinematicWorldController>();
+            CinematicInteractionManager interaction = system.gameObject.AddComponent<CinematicInteractionManager>();
+            CinematicControlsController controls = system.gameObject.AddComponent<CinematicControlsController>();
+            MonoBehaviour world = ending
+                ? (MonoBehaviour)system.gameObject.AddComponent<EndingVisualController>()
+                : system.gameObject.AddComponent<OpeningVisualController>();
             CinematicAudioController audio=system.gameObject.AddComponent<CinematicAudioController>();
             CinematicTypeController type=system.gameObject.AddComponent<CinematicTypeController>();
-            Assign(input,"_movementGate",gate);
-            Assign(sequence,"_presentation",presentation); Assign(sequence,"_input",input); Assign(sequence,"_content",_content); Assign(sequence,"_model",result);
+            Assign(interaction, "_input", input);
+            Assign(interaction, "_movement", gate);
+            Assign(interaction, "_controls", controls);
+            Assign(sequence,"_presentation",presentation); Assign(sequence,"_interaction",interaction); Assign(sequence,"_content",_content); Assign(sequence,"_model",result);
             Value(sequence,"_ending",ending); Value(sequence,"_destination",ending?"CNNArchiveOpening":"FactoryEnvironment");
-            Assign(presentation,"_world",world); Assign(presentation,"_audio",audio); Assign(presentation,"_type",type);
+            Assign(presentation, ending ? "_endingView" : "_openingView", world); Assign(presentation,"_audio",audio); Assign(presentation,"_type",type);
             Assign(world,"_world",stage);
             Transform portal=Primitive("Archive surface",stage,new Vector3(0,1.85f,3),new Vector3(1.6f,1.067f,1),_dark,PrimitiveType.Quad);
             Material film=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveFilm.mat");
@@ -137,7 +162,7 @@ namespace CinematicEditor
             video.playOnAwake=false; video.renderMode=VideoRenderMode.RenderTexture; video.audioOutputMode=VideoAudioOutputMode.None; video.waitForFirstFrame=true;
             CinematicArchiveController archive=system.gameObject.AddComponent<CinematicArchiveController>();
             Assign(archive,"_surface",portal.GetComponent<Renderer>()); Assign(archive,"_player",video);
-            Assign(world,"_archive",archive); Assign(world,"_portal",portal);
+            Assign(presentation,"_archive",archive); Assign(world,"_portal",portal);
             Canvas yearCanvas=CanvasAt(stage,"Year",new Vector3(0,1.9f,3),new Vector2(1000,260),.003f);
             Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),100);
             Assign(world,"_year",year);
@@ -174,8 +199,11 @@ namespace CinematicEditor
             Canvas handwritten=CanvasAt(digit,"Handwritten numeral",Vector3.zero,new Vector2(330,330),.008f);
             Text numeral=TextAt(handwritten.transform,"Numeral","2",Vector2.zero,new Vector2(330,330),280);
             numeral.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");
-            Assign(world,"_digit",digit); Assign(world,"_numeral",numeral); Array(world,"_pixels",pixels);
-            Assign(world,"_digitBox",Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2"));
+            Assign(world,"_digit",digit);
+            Array(world,"_pixels",pixels);
+            if (!ending) { Assign(world,"_numeral",numeral); }
+            Transform digitBox = Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2");
+            if (!ending) { Assign(world,"_digitBox",digitBox); }
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
             Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);
             Box("Door light",factory,new Vector3(0,1.5f,.15f),new Vector3(3.1f,3,.1f),_cyan);
@@ -186,11 +214,16 @@ namespace CinematicEditor
             Canvas titleCanvas=CanvasAt(factory,"Factory title",new Vector3(0,4.55f,-.1f),new Vector2(1200,220),.004f);
             TextAt(titleCanvas.transform,"Title",_content.FactoryTitle,Vector2.zero,new Vector2(1200,220),90);
             for(int i=0;i<22;i++) {Box("Path light",factory,new Vector3(0,.012f,-i*.5f),new Vector3(.8f,.015f,.045f),_cyan);}
-            Assign(world,"_factory",factory); Assign(world,"_leftDoor",left); Assign(world,"_rightDoor",right);
+            Assign(world,"_factory",factory);
+            if (!ending)
+            {
+                Assign(world,"_leftDoor",left);
+                Assign(world,"_rightDoor",right);
+            }
             List<Transform> eraProps=new List<Transform>();
             for(int i=0;i<8;i++)
             {
-                Transform prop=Root("Era prop "+_content.Years[i],stage); prop.localPosition=new Vector3(0,0,1.8f);
+                Transform prop=Root("Era prop "+_content.EndingSchedule.Montage.Single(entry => entry.PropIndex == i).Year,stage); prop.localPosition=new Vector3(0,0,1.8f);
                 BuildEraProp(prop,i); eraProps.Add(prop);
             }
             Array(world,"_eraProps",eraProps);
@@ -205,8 +238,14 @@ namespace CinematicEditor
                 labels.Add(TextAt(c.transform,"Layer name","",Vector2.zero,new Vector2(160,180),26));
             }
             Canvas note=CanvasAt(network,"Result status",new Vector3(0,.58f,0),new Vector2(1200,100),.0016f);
-            Assign(world,"_networkNote",TextAt(note.transform,"Note","",Vector2.zero,new Vector2(1200,100),26));
-            Assign(world,"_network",network); Array(world,"_networkLayers",layers); Array(world,"_layerLabels",labels);
+            Text networkNote = TextAt(note.transform,"Note","",Vector2.zero,new Vector2(1200,100),26);
+            Assign(world,"_network",network);
+            if (ending)
+            {
+                Assign(world,"_networkNote",networkNote);
+                Array(world,"_networkLayers",layers);
+                Array(world,"_layerLabels",labels);
+            }
             Canvas captions=CanvasAt(stage,"Narration",new Vector3(0,.99f,2.5f),new Vector2(1500,260),.0018f);
             Image backing=ImageAt(captions.transform,"Caption backing",new Vector2(1500,245),new Color(0,0,0,.45f));
             Text text=TextAt(captions.transform,"Type line","",Vector2.zero,new Vector2(1450,240),48);
@@ -215,20 +254,22 @@ namespace CinematicEditor
             Image bar=ImageAt(hints.transform,"Hold progress",new Vector2(500,5),new Color(.3f,.8f,.73f));
             bar.rectTransform.anchoredPosition=new Vector2(0,-35); bar.type=Image.Type.Filled; bar.fillMethod=Image.FillMethod.Horizontal; bar.fillAmount=0;
             bar.sprite=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            Assign(type,"_holdBar",bar);
+            Assign(controls,"_holdBar",bar);
+            Assign(controls,"_failureText",text);
+            Assign(controls,"_failureBacking",backing);
             if (ending)
             {
                 Canvas completion = CanvasAt(stage, "Ending Completion Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(720, 370), .0018f);
                 TextAt(completion.transform, "Completion Title", "CNN 공장 · 체험 완료", new Vector2(0, 135), new Vector2(720, 110), 54);
                 Button restart = CreateCinematicButton(completion, "Restart Button", "처음부터 다시 시작", 660);
-                Assign(presentation, "_restartButton", restart);
+                Assign(controls, "_restartButton", restart);
                 completion.gameObject.SetActive(false);
             }
             else
             {
                 Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(420, 122), .0018f);
                 Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420);
-                Assign(presentation, "_startButton", startButton);
+                Assign(controls, "_startButton", startButton);
             }
             BuildAudio(stage,audio);
             factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
@@ -255,7 +296,7 @@ namespace CinematicEditor
             for(int side=-1;side<=1;side+=2)
             {
                 int index=(era+(side<0?7:1))%8;
-                CinematicText.ArchiveClip clip=_content.Montage[index];
+                CinematicText.ArchiveClip clip=_content.EndingSchedule.Montage.Single(entry => entry.PropIndex == index).Clip;
                 string path="Assets/Materials/OpeningEnding/ArchiveMontage"+index+".mat";
                 Material m=AssetDatabase.LoadAssetAtPath<Material>(path);
                 if(m==null){m=new Material(Shader.Find("CNN/ArchivePhoto"));AssetDatabase.CreateAsset(m,path);}

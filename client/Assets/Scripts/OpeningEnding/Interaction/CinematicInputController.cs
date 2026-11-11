@@ -2,35 +2,23 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR;
-using Unity.XR.CoreUtils;
-using OpeningEnding;
-using XR;
 
 namespace Cinematic
 {
     public sealed class CinematicInputController : MonoBehaviour
     {
-        [SerializeField] private CinematicMovementController _movementGate;
-        private PersistentXRPlayerRig _playerRig;
-        private bool _controllersWereVisible;
-        private bool _tabletWasVisible;
         private InputAction _trigger;
         private float _held;
         private bool _latched;
         private bool _playing;
-        private bool _showRayOnRelease;
+        private bool _wasPressed;
         public float HoldProgress => Mathf.Clamp01(_held / 2f);
-        public event Action SkipRequested;
+        internal event Action OnHoldCompleted;
+        internal event Action OnReleased;
+        internal bool IsPressed => _trigger.IsPressed();
 
-        public void Bind(XROrigin rig, bool waitingForStart)
+        internal void Bind(bool waitingForStart)
         {
-            _playerRig = rig.GetComponent<PersistentXRPlayerRig>();
-            _controllersWereVisible = _playerRig.ControllerModelsVisible;
-            _tabletWasVisible = _playerRig.TabletVisible;
-            _playerRig.SetTabletVisible(false);
-            _playerRig.SetControllerModelsVisible(waitingForStart);
-            _movementGate.Bind(rig);
-            _movementGate.SetUIVisible(waitingForStart);
             _playing = !waitingForStart;
             _latched = waitingForStart;
             _trigger = new InputAction("Cinematic skip", InputActionType.Button);
@@ -42,21 +30,13 @@ namespace Cinematic
             _trigger.Enable();
         }
 
-        public void BeginPlayback()
-        {
-            _playing = true;
-            _playerRig.SetControllerModelsVisible(false);
-            _movementGate.SetUIVisible(false);
-        }
+        internal void BeginPlayback() => _playing = true;
 
-        public void ShowEndingControls()
+        internal void ResetHold()
         {
-            _playerRig.SetControllerModelsVisible(true);
-            // A held trigger can finish playback. Wait for release before it can select Restart.
             _held = 0;
-            _latched = _trigger.IsPressed();
-            _showRayOnRelease = _latched;
-            if (!_showRayOnRelease) { _movementGate.SetUIVisible(true); }
+            _latched = IsPressed;
+            _wasPressed = _latched;
         }
 
         private void Update()
@@ -66,16 +46,17 @@ namespace Cinematic
             {
                 _held = 0;
                 _latched = false;
-                if (_showRayOnRelease)
+                if (_wasPressed)
                 {
-                    _showRayOnRelease = false;
-                    _movementGate.SetUIVisible(true);
+                    _wasPressed = false;
+                    OnReleased?.Invoke();
                 }
                 return;
             }
+            _wasPressed = true;
             if (_latched) { return; }
             _held += Time.unscaledDeltaTime;
-            if (_held >= 2f) { _latched = true; SkipRequested?.Invoke(); }
+            if (_held >= 2f) { _latched = true; OnHoldCompleted?.Invoke(); }
         }
 
         public void Pulse(float amplitude, float duration)
@@ -93,14 +74,7 @@ namespace Cinematic
             _trigger?.Disable();
             _trigger?.Dispose();
             _trigger = null;
-            _showRayOnRelease = false;
-            _movementGate.Release();
-            if (_playerRig != null)
-            {
-                _playerRig.SetControllerModelsVisible(_controllersWereVisible);
-                _playerRig.SetTabletVisible(_tabletWasVisible);
-            }
-            _playerRig = null;
+            _playing = false;
         }
         private void OnDisable() { Release(); }
     }

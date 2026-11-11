@@ -16,40 +16,45 @@
 
 엔딩 완료 화면에는 `CNN 공장 · 체험 완료`와 `처음부터 다시 시작` 버튼이 표시된다. 오른손 레이로 버튼을 선택하거나 트리거를 다시 2초간 누르면 오프닝 시작 화면으로 돌아간다. 트리거를 누른 채 엔딩이 완료되면 컨트롤러 모델을 먼저 표시하고, 트리거를 놓을 때 레이를 켠다.
 
-컨트롤러 모델과 태블릿 표시는 공용 `PersistentXRPlayerRig.SetControllerModelsVisible()`, `SetTabletVisible()`로 요청한다. `CinematicInputController`는 리그의 표시 상태를 저장하고 씬 종료 시 복원한다. 공용 리그는 컨트롤러 모델 표시를 처리하고 태블릿 요청은 `TabletManager.SetAvailable()`로 전달한다. 태블릿 모듈이 자신의 표시와 입력 활성화를 관리하며, 표시를 숨긴 동안에도 양손 위치 추적은 계속 동작한다.
+컨트롤러 모델과 태블릿 표시는 공용 `PersistentXRPlayerRig.SetControllerModelsVisible()`, `SetTabletVisible()`로 요청한다. `CinematicMovementController`는 리그의 표시 상태를 저장하고 씬 종료 시 복원한다. 공용 리그는 컨트롤러 모델 표시를 처리하고 태블릿 요청은 `TabletManager.SetAvailable()`로 전달한다. 태블릿 모듈이 자신의 표시와 입력 활성화를 관리하며, 표시를 숨긴 동안에도 양손 위치 추적은 계속 동작한다.
 
 ## 책임과 파일
 
-연출 코드는 `Assets/Scripts/OpeningEnding/`에 둔다. 문구와 모델 결과 에셋은 `Assets/Data/OpeningEnding/`에 두고, 오디오·재질·메시·텍스처·셰이더도 각 에셋 종류의 `OpeningEnding/`에 둔다.
+연출 코드는 `Assets/Scripts/OpeningEnding/`에 둔다. `CinematicSequenceManager`가 씬의 시작 대기, 재생, 완료, 전환 및 재시도 상태를 소유하고 연출·조작 모듈의 이벤트를 연결한다. 오프닝이 완료되면 공장으로 전환하고, 엔딩이 완료되면 재시작 요청을 기다린다.
 
-| 파일 | 역할 |
+| 경로 | 책임 |
 | --- | --- |
-| CinematicSequenceManager.cs | 시작 대기, 오프닝 35초·엔딩 20초 재생·완료·건너뛰기·재시작·씬 전환, 모듈 이벤트 연결 |
-| CinematicPresentationManager.cs | 글자·시각·음향의 시점 조율, 햅틱 요청 |
-| CinematicWorldController.cs | 기록판 확장, 연표·봉투·인식 상자·픽셀·문·엔딩 모델 표시 |
-| CinematicTypeController.cs | 55ms/공백30ms 타이핑, 강조색, 커서, 자막 띠와 길게 누르기 진행 표시 |
-| CinematicInputController.cs | XR 트리거 연속 누름, 에디터 Space, 컨트롤러 모델·태블릿 표시, 이동 제한 연결, 햅틱 |
-| CinematicMovementController.cs | 연출 동안 이동·잡기·레이 상태를 제한하고 종료 시 복원 |
-| CinematicAudioController.cs | 위치별 소리, 정적, 음성 시작, 오프닝 음악·군중 음량 조절, 도장 접촉음 |
-| CinematicArchiveController.cs | 실제 VideoClip 또는 생성 정지 이미지 재생, 영상 오류 시 정지 이미지 유지 |
-| CinematicText.cs | ScriptableObject 문구·영상/음성/효과음 슬롯·출처 데이터 |
-| CinematicModelResult.cs | 이번 체험에서 학습을 마친 모델의 층 라벨만 보관하는 세션 데이터 |
-| Assets/Editor/CinematicSceneBuilder.cs | 오프닝·엔딩 씬 생성과 미디어·재질 연결 |
-| Assets/Shaders/OpeningEnding/ArchivePhoto.shader | 사진 색/흑백, 약한 필름 그레인·비네트, XR single-pass 대응 |
+| `Presentation/CinematicPresentationManager.cs` | 재생 시간 관리, 오프닝·엔딩 실행 선택, 자막·음성 연결과 재생 정리 |
+| `Presentation/Opening/OpeningSequence.cs` | 되감기, 우체국, 도장, 봉투, 숫자, 픽셀, 공장 문의 실행 시점 결정 |
+| `Presentation/Ending/EndingSequence.cs` | 몽타주, 정적, 인식 상자와 모델 표시 시점 결정 |
+| `Presentation/Opening/OpeningVisualController.cs` / `Presentation/Ending/EndingVisualController.cs` | 씬에 저장된 연출 오브젝트의 표시·배치·보간 |
+| `Presentation/CinematicArchiveController.cs` | 이미지·영상 표시와 영상 플레이어 자원 관리 |
+| `Presentation/CinematicAudioController.cs` | 재생 요청에 따른 음원·믹싱 처리 |
+| `Presentation/CinematicTypeController.cs` | 전달받은 자막의 타이핑·강조·커서·배경 표시 |
+| `Interaction/CinematicInteractionManager.cs` | 버튼과 트리거 요청, 조작 상태 연결 |
+| `Interaction/CinematicInputController.cs` | XR 트리거·에디터 Space 입력과 햅틱 |
+| `Interaction/CinematicMovementController.cs` | 이동·잡기·레이·컨트롤러·태블릿 상태 저장 및 복원 |
+| `Interaction/CinematicControlsController.cs` | 시작·재시작 버튼, 길게 누르기 막대와 기존 실패 안내 표시 |
+| `Assets/Scripts/Core/SceneTransitionController.cs` | 영속 XR 리그 아래에서 기존 암전·씬 로드·암전 해제를 실행 |
+| `Assets/Editor/CinematicSceneBuilder.cs` | 장면 생성과 컴포넌트 참조 연결 |
 
-`CNNModelDesignLabManager`가 학습 완료 시 INPUT → 사용자가 놓은 실제 층 → OUTPUT 라벨을 공용 결과 에셋에 기록한다. Conv2D의 필터 수·커널 크기, Dense의 노드 수도 표시한다. 기존 학습 엔진·모델 JSON·파일 저장 형식은 변경하지 않는다. 새 오프닝에서 결과를 초기화한다. 엔딩만 단독 실행하여 결과가 없으면 `구조 예시 · 설계실 결과 없음`을 명시한다. 데이터는 디스크에 저장하지 않는다.
+`CinematicModelResult.cs`는 세션의 모델 층 라벨을 보관한다. `CNNModelDesignLabManager`가 학습 완료 시 INPUT → 사용자가 놓은 실제 층 → OUTPUT 라벨을 기록한다. Conv2D의 필터 수·커널 크기와 Dense의 노드 수도 표시한다. 새 오프닝에서 결과를 초기화한다. 엔딩만 단독 실행하여 결과가 없으면 `구조 예시 · 설계실 결과 없음`을 표시한다.
+
+### 오프닝 진단 로그
+
+Quest Logcat에서 Unity 태그와 `[Opening]`을 검색한다. `run`은 같은 오프닝 실행의 상태·구간·영상·전환을 연결하고, `transition`은 공장 전환 시도를 구별한다. 정상 전환은 `LoadCheck → FadeOutCompleted → LoadStarted → SceneLoaded → LoadCompleted → FadeInCompleted` 순서로 확인한다. 로딩 중에는 진행률이 10%p 이상 변하거나 마지막 기록 이후 5초가 지나면 활성 씬, 카메라 활성 상태, 암전 알파를 함께 기록한다. 전환 로그는 오프닝 씬이 해제된 뒤에도 XR 리그에서 이어진다.
 
 오프닝에서 공장으로 실제 비동기 전환할 때 발견한 기존 오류도 수정했다. `FactoryEnvironmentManager`의 `SetActiveScene` 요청을 아직 로딩 중인 `OnEnable`에서 로딩 완료 후 `Start`로 옮겼다. 학습 단계·이동 코드는 변경하지 않았다. 음원 정리는 씬 루트 해제 순서에 따라 AudioSource가 먼저 파괴되는 경우를 처리한다.
 
 ## 슬롯 편집
 
-`Assets/Data/OpeningEnding/CinematicText.asset` Inspector에서 수정한다.
+`Assets/Data/OpeningEnding/CinematicText.asset` Inspector에서 문구, 미디어와 시간을 수정한다.
 
-- Opening / Ending: Start, End, Text와 선택적 Voice. `{C:강조}`와 `{A:강조}`는 각각 Cyan/Amber이다. 오프닝은 35초, 엔딩은 20초다. 음성은 각 줄의 시간 안에 맞춘다.
-- PostOffice / PostOfficeStamp / PostOfficeEnvelope: 미국 우체국 전경, 도장 동작 클립, 인식 표시가 있는 봉투 사진. OpeningCrowd와 OpeningScore는 오프닝의 군중 소리와 음악이다.
-- Montage: `END_1998`~`END_2026` 8개 슬롯. 얼굴 인식(2015)은 가상의 인물 사진을 전체 UV로 표시하고, 나머지 장면은 사진 아틀라스를 UV로 나누어 표시한다. Video를 넣으면 전체 영상 UV로 재생한다.
-- Source: 기록판의 출처를 적는다. 영상·음성·음악을 교체할 때 실제 출처와 사용 조건을 `docs/ASSET_CREDITS.md`에도 기록한다.
-- Type / Hit / BigHit / Rewind / Stamp / Beep / Pad: 선택적 AudioClip이다. 비어 있으면 해당 소리는 재생하지 않는다.
+- **Opening Schedule**의 길이 값을 수정하면 뒤쪽 구간의 시작 시점이 누적 길이를 따라 이동한다. 도장 소리와 픽셀의 회전·집결은 각 기준 구간의 오프셋으로 지정한다. 오프닝 연출의 실행 순서는 `OpeningSequence.cs`에서 확인할 수 있다.
+- **Opening / Ending**의 각 자막은 Anchor와 시작·종료 오프셋, 문구, 선택적 음성을 갖는다. Anchor가 Start이면 씬 재생 시작을 기준으로 한다. `{C:강조}`와 `{A:강조}`는 Cyan과 Amber 강조다.
+- **PostOffice / PostOfficeStamp / PostOfficeEnvelope**는 미국 우체국 전경, 도장 영상, 봉투 사진이다. **OpeningCrowd / OpeningScore**는 군중 소리와 음악이다.
+- **Ending Schedule → Montage** 항목에는 미디어, 연도, 설명, 재생 길이와 기존 소품 인덱스가 함께 있다. 소품 인덱스는 연결된 씬 오브젝트를 가리킨다. 몽타주 종료 이후의 인식·모델 시점은 같은 일정 데이터에서 조정한다.
+- 미디어 출처는 해당 슬롯의 Source와 `docs/ASSET_CREDITS.md`에서 관리한다.
 
 오프닝 내레이션은 사용자 녹화에서 대사별로 추출했다. 군중 소리는 우체국 사진이 나타날 때 파일의 0초부터 재생한다. 음악은 시작 버튼을 누른 뒤 재생하며 되감기와 도장 구간에 작아진다. 도장이 닿는 순간 기존 ArchiveStamp 효과음을 재생한다. 엔딩의 TTS와 전환 연출은 기존 경로를 사용한다.
 
@@ -64,3 +69,5 @@ Editor D3D11 배치 Play에서 주요 시점의 실제 카메라 렌더를 저�
 폴더 정리 이전의 검증 결과(2026-11-09): 위 기본 경로의 Play 검증 PASS ALL, 렌더 22장 확인, 런타임 예외 없음. 임시 검증 코드 삭제 후 배치 컴파일 exit 0. 가상 XR 트리거와 샘플 모델 결과를 사용했으며 Quest 실기기·모델 재학습은 실행하지 않았다.
 
 폴더 정리 후에는 Unity GUID와 씬·코드 참조를 정적으로 확인했다.
+
+이번 구조 이관에서는 씬 오브젝트와 미디어를 유지하고 스크립트 연결을 변경했다. Unity 실행·컴파일·빌드·Quest 재생 검증은 수행하지 않았다.

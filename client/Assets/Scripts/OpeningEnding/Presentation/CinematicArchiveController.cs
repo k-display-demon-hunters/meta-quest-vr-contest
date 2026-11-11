@@ -12,13 +12,16 @@ namespace Cinematic
         private CinematicText.ArchiveClip _clip;
         private float _elapsed;
         private bool _frameVideo;
+        private int? _openingRunId;
+
+        internal void SetOpeningRun(int? runId) => _openingRunId = runId;
 
         private void Awake()
         {
             _material = _surface.material;
             _videoTexture = new RenderTexture(1280, 720, 0);
             _player.targetTexture = _videoTexture;
-            _player.prepareCompleted += Prepared;
+            _player.prepareCompleted += HandlePrepareCompleted;
             _player.errorReceived += Failed;
         }
 
@@ -39,6 +42,7 @@ namespace Cinematic
         public void PrepareVideo(VideoClip video)
         {
             _player.clip = video;
+            Log($"VideoPrepareRequested clip={video?.name}");
             _player.Prepare();
         }
         public void SetFraming(Rect uv)
@@ -51,17 +55,25 @@ namespace Cinematic
 
         public void SetTone(float monochrome, float brightness)
         { _material.SetFloat("_Mono", monochrome); _material.SetFloat("_Brightness", brightness); }
+        private void HandlePrepareCompleted(VideoPlayer player)
+        {
+            Log($"VideoPrepared clip={player.clip?.name}");
+            Prepared(player);
+        }
+
         private void Prepared(VideoPlayer player)
         {
             if (_clip.Video != player.clip) { return; }
             player.time = _clip.StartSeconds;
             _material.mainTexture = _videoTexture;
             SetFraming(_frameVideo ? _clip.UV : new Rect(0, 0, 1, 1));
+            Log($"VideoPlaybackRequested clip={player.clip?.name}");
             player.Play();
         }
         private void Failed(VideoPlayer player, string message)
         {
-            Debug.LogWarning("Archive video unavailable; retaining the reconstruction still. " + message);
+            string prefix = _openingRunId.HasValue ? $"[Opening][run={_openingRunId.Value}] " : "";
+            Debug.LogWarning(prefix + "Archive video unavailable; retaining the reconstruction still. " + message, this);
             _material.mainTexture = _clip.Still;
         }
         private void Update()
@@ -71,9 +83,14 @@ namespace Cinematic
             if (_elapsed >= _clip.Duration) { _player.Pause(); }
         }
         public void Stop() { _player.Stop(); }
+        private void Log(string message)
+        {
+            if (_openingRunId.HasValue) { Debug.Log($"[Opening][run={_openingRunId.Value}] {message}", this); }
+        }
+
         private void OnDestroy()
         {
-            _player.prepareCompleted -= Prepared; _player.errorReceived -= Failed;
+            _player.prepareCompleted -= HandlePrepareCompleted; _player.errorReceived -= Failed;
             _videoTexture.Release(); Destroy(_videoTexture); Destroy(_material);
         }
     }

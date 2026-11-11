@@ -5835,6 +5835,8 @@ GameObject:
   - component: {fileID: 256708803}
   - component: {fileID: 256708802}
   - component: {fileID: 256708801}
+  - component: {fileID: 910100001}
+  - component: {fileID: 910100002}
   m_Layer: 0
   m_Name: Sequence
   m_TagString: Untagged
@@ -5906,7 +5908,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicTypeController
   _line: {fileID: 928633134}
   _backing: {fileID: 254863925}
-  _holdBar: {fileID: 355839130}
 --- !u!114 &256708804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5936,16 +5937,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 256708800}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bde87dfc8e79a914384ba31d2377ba23, type: 3}
+  m_Script: {fileID: 11500000, guid: db86202e8409406e81a68388faf72f13, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicWorldController
+  m_EditorClassIdentifier: Assembly-CSharp::Cinematic.EndingVisualController
   _world: {fileID: 1402666246}
   _portal: {fileID: 405755187}
   _timeline: {fileID: 1734257987}
   _digit: {fileID: 597316096}
   _factory: {fileID: 1906072919}
-  _leftDoor: {fileID: 1033041765}
-  _rightDoor: {fileID: 794506969}
   _network: {fileID: 1267464080}
   _boxes:
   - {fileID: 60603791}
@@ -6043,6 +6042,8 @@ MonoBehaviour:
   - {fileID: 2000037295}
   - {fileID: 131947331}
   - {fileID: 141523035}
+  _year: {fileID: 575686992}
+  _caption: {fileID: 391260488}
   _networkLayers:
   - {fileID: 435806907}
   - {fileID: 420449399}
@@ -6054,9 +6055,6 @@ MonoBehaviour:
   - {fileID: 276836492}
   - {fileID: 202694398}
   - {fileID: 1332233513}
-  _digitBox: {fileID: 2006387782}
-  _year: {fileID: 575686992}
-  _caption: {fileID: 391260488}
   _networkNote: {fileID: 518133423}
   _layerLabels:
   - {fileID: 658689172}
@@ -6069,7 +6067,6 @@ MonoBehaviour:
   - {fileID: 929756875}
   - {fileID: 1827210670}
   - {fileID: 1864530774}
-  _archive: {fileID: 256708801}
 --- !u!114 &256708806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6094,7 +6091,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 627651ef50398cf4c8a290c8fbbb8ff0, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicInputController
-  _movementGate: {fileID: 256708806}
 --- !u!114 &256708808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6107,10 +6103,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec8503039db4c1243adf66560b079853, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicPresentationManager
-  _world: {fileID: 256708805}
+  _endingView: {fileID: 256708805}
+  _archive: {fileID: 256708801}
   _audio: {fileID: 256708804}
   _type: {fileID: 256708803}
+--- !u!114 &910100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256708800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8350d76552e548bb88bea3fab4f7458d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicControlsController
   _restartButton: {fileID: 920000009}
+  _holdBar: {fileID: 355839130}
+  _failureText: {fileID: 928633134}
+  _failureBacking: {fileID: 254863925}
+--- !u!114 &910100002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256708800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 761d8f949f40408ebf0e87eb7c452d30, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicInteractionManager
+  _input: {fileID: 256708807}
+  _movement: {fileID: 256708806}
+  _controls: {fileID: 910100001}
 --- !u!114 &256708809
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6127,7 +6154,7 @@ MonoBehaviour:
   _content: {fileID: 11400000, guid: f7ce0151082217f439915191397c17e8, type: 2}
   _model: {fileID: 11400000, guid: 94c5e542fc41204449d556dac80949c1, type: 2}
   _presentation: {fileID: 256708808}
-  _input: {fileID: 256708807}
+  _interaction: {fileID: 910100002}
   _destination: CNNArchiveOpening
 --- !u!4 &256708810
 Transform:

@@ -2,13 +2,13 @@
 
 ## 실행 경로
 
-- `Assets/Scenes/CNNArchiveOpening.unity`: 새 시작 씬. 자동 재생 20초 후 기존 `FactoryEnvironment`로 진입한다. 기존 공장·튜토리얼·학습 순서는 유지한다.
+- `Assets/Scenes/CNNArchiveOpening.unity`: 시작 씬. 시작 버튼을 누르면 재생하고 35초 후 기존 `FactoryEnvironment`로 진입한다. 기존 공장·튜토리얼·학습 순서는 유지한다.
 - `Assets/Scenes/CNNArchiveEnding.unity`: 새 종료 씬. `LearningStageCatalog`의 Exit에서 로드한다. 20초 후 크레딧, 트리거 길게 누르기로 새 시작 씬으로 돌아간다.
 - Build Settings의 첫 씬을 `CNNArchiveOpening`으로 지정했다. 직접 열어 Play해도 기존 XRPlayerRig가 생성된다.
 
 ## 연출과 입력
 
-오프닝은 질문 → 2026에서 1989로 숫자 지우기/타이핑과 연표 이동 → 작은 우체국 사진판 → 6.7~7.0초 정적 → 7초 노출 번쩍임과 공간 음향 개방 → 봉투 인식 → 눈앞의 봉투와 큰 숫자 → 숫자 획의 16×16 격자 빛 조각 → 공장 문 열림이다. 정면 기록판은 0.6초 동안 커지고, 그 앞과 양옆·뒤에 3D 창구·분류 선반·전화·프린터·컨베이어·우편물이 배치된다. CRT 색은 모니터와 인식 상자에 집중하고 사진의 자연스러운 색을 남겼다.
+오프닝은 시작 버튼 → 질문 → 되감기 소리에 맞춘 2026~1989 연도 카운트다운 → 미국 우체국 사진의 등장과 확대 → 오른쪽 창구 줌인 → 2.8초 도장 컷 → 봉투 우편번호에서 숫자 2 확대 → 16×16 격자의 빛 조각 → 공장 문 열림 순이다. 연도 카운트다운은 1989에 가까워질수록 느려진다. 장소와 얀 르쿤 연구팀 표기는 화면에만 표시한다. 시작 버튼은 XR 레이 또는 에디터 마우스로 누른다.
 
 엔딩은 8개 연도/응용 장면을 짧게 통과한다. 중앙 사진판과 양옆 62° 사진판, 가까운 3D 소품을 함께 보여준다. 14~15초는 무음·검정, 주변 인식 상자가 정면에 모인 후 16.6초 실제 설계 결과의 층 구조가 나타난다. 마지막 문구는 `그 시선의 끝에, / 당신의 CNN이 있다.`로 바꿨다. 원안의 `60년`은 1989→2026 연표와 맞지 않아 사용하지 않는다. 몽타주 연도는 응용 분야를 보여주는 연출용이며 최초 발명·상용화 연도를 주장하지 않는다.
 
@@ -20,13 +20,13 @@
 
 | 파일 | 역할 |
 | --- | --- |
-| CinematicSequenceManager.cs | 20초 재생·완료·건너뛰기·씬 전환, 모듈 이벤트 연결 |
+| CinematicSequenceManager.cs | 시작 대기, 오프닝 35초·엔딩 20초 재생·완료·건너뛰기·씬 전환, 모듈 이벤트 연결 |
 | CinematicPresentationManager.cs | 글자·시각·음향의 시점 조율, 햅틱 요청 |
 | CinematicWorldController.cs | 기록판 확장, 연표·봉투·인식 상자·픽셀·문·엔딩 모델 표시 |
 | CinematicTypeController.cs | 55ms/공백30ms 타이핑, 강조색, 커서, 자막 띠와 길게 누르기 진행 표시 |
 | CinematicInputController.cs | XR 트리거 연속 누름, 에디터 Space, 기존 이동 잠금, 햅틱 |
 | CinematicMovementController.cs | 연출 동안 이동·잡기·레이 상태를 제한하고 종료 시 복원 |
-| CinematicAudioController.cs | 위치별 소리, 정적, 음성 시작, 내레이션 중 군중 −6dB, 12~14초 저역통과 |
+| CinematicAudioController.cs | 위치별 소리, 정적, 음성 시작, 오프닝 음악·군중 음량 조절, 도장 접촉음 |
 | CinematicArchiveController.cs | 실제 VideoClip 또는 생성 정지 이미지 재생, 영상 오류 시 정지 이미지 유지 |
 | CinematicText.cs | ScriptableObject 문구·영상/음성/효과음 슬롯·출처 데이터 |
 | CinematicModelResult.cs | 이번 체험에서 학습을 마친 모델의 층 라벨만 보관하는 세션 데이터 |
@@ -41,13 +41,13 @@
 
 `Assets/Data/OpeningEnding/CinematicText.asset` Inspector에서 수정한다.
 
-- Opening / Ending: Start, End, Text와 선택적 Voice. `{C:강조}`와 `{A:강조}`는 각각 Cyan/Amber이다. 기본 시퀀스는 20초이므로 녹음은 각 줄의 시간 안에 맞춘다.
-- PostOffice: `PO_1989_hall` 기록판. Video에 소유/사용 허가가 있는 영상 파일을 넣으면 Still 대신 재생한다. StartSeconds와 Duration을 설정한다.
+- Opening / Ending: Start, End, Text와 선택적 Voice. `{C:강조}`와 `{A:강조}`는 각각 Cyan/Amber이다. 오프닝은 35초, 엔딩은 20초다. 음성은 각 줄의 시간 안에 맞춘다.
+- PostOffice / PostOfficeStamp / PostOfficeEnvelope: 미국 우체국 전경, 도장 동작 클립, 인식 표시가 있는 봉투 사진. OpeningCrowd와 OpeningScore는 오프닝의 군중 소리와 음악이다.
 - Montage: `END_1998`~`END_2026` 8개 슬롯. 기본 Still은 하나의 사진 아틀라스를 UV로 나누어 쓰며 원본 비율을 유지한다. Video를 넣으면 전체 영상 UV로 재생한다.
 - Source / AudioCredits: 영상·음성·음악을 교체할 때 실제 출처와 사용 조건을 함께 적고 `docs/ASSET_CREDITS.md`도 갱신한다.
 - Type / Hit / BigHit / Rewind / Ring / Stamp / Machine / Printer / Crowd / Footsteps / Radio / Clerk / CRT / Beep / Pad: 선택적 AudioClip이다. 비어 있으면 해당 소리는 재생하지 않는다.
 
-실제 군중·프린터 녹음과 직접 합성한 기계·전환 효과음은 연결되어 있다. 내레이션, 직원 대사, 라디오 가요, 배경 음악은 제공된 녹음이 없어 비어 있다. 생성 사진은 실제 1989년 기록영상이 아니며, 사람 없는 공간 재구성이다. 이미지가 움직이는 사람/기계의 실사 영상으로 변환된 것은 아니다. 본문은 C# 시간 시퀀스로 평가하며 Unity Timeline 에셋을 사용하지 않는다.
+오프닝 내레이션은 사용자 녹화에서 대사별로 추출했다. 군중 소리는 우체국 사진이 나타날 때 파일의 0초부터 재생한다. 음악은 시작 버튼을 누른 뒤 재생하며 되감기와 도장 구간에 작아진다. 도장이 닿는 순간 기존 ArchiveStamp 효과음을 재생한다. 엔딩은 기존 연출을 사용한다.
 
 씬을 다시 만들 때는 `Tools > Factory > Create Documentary Opening and Ending`을 실행한다. 기존 데이터 에셋의 문구·미디어 설정은 유지하며, 새 두 씬의 수동 배치는 재생성된다. 기존 다른 씬은 다시 생성하지 않는다.
 

@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace CinematicEditor
 {
@@ -55,20 +56,36 @@ namespace CinematicEditor
         private static void FillContent()
         {
             _content.Opening = new[] {
-                Line(.5f,3,"기계는\n세상을 볼 수 있을까?"),
-                Line(7.6f,11.8f,"얀 르쿤의 CNN이\n손글씨 숫자를 읽기 시작했다."),
-                Line(12.6f,14.9f,"사람에게는 '2'.\n기계에게는 {C:작은 점 256개}."),
-                Line(15.2f,17.2f,"기계는 어떻게\n이 점들에서 '2'를 찾아냈을까?"),
-                Line(17.2f,18,"{C:CNN 공장}"),
-                Line(18,20,"그 답을, 직접 만들어 보세요.") };
+                Line(0.5f,3.1f,"기계는 세상을 어떻게 볼까요?"),
+                Line(8.1f,12.55f,"최초의 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."),
+                Line(17.05f,20.78f,"사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다."),
+                Line(22.05f,25.9f,"그러나 기계가 보는 건\n밝고 어두운 점들입니다."),
+                Line(26.25f,30.55f,"기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?"),
+                Line(31.05f,34.65f,"공장 안에서 그 답을 직접 찾아보세요.") };
+            for (int i = 0; i < _content.Opening.Length; i++)
+                _content.Opening[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/OpeningEnding/OpeningNarration{i + 1:D2}.wav");
+            _content.OpeningCrowd = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningCrowd.mp3");
+            _content.OpeningScore = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningScore.wav");
             _content.Ending = new[] {
                 Line(.4f,2.8f,"1989년,\n숫자 하나를 읽던 눈은"),
                 Line(15,16.6f,"그리고 오늘,"),
                 Line(16.8f,18,"{A:당신이 만든 눈.}"),
                 Line(18.2f,20,"그 시선의 끝에,\n당신의 CNN이 있다.") };
-            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice1989.png");
+            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice_US_1989.png");
             Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/EverydayVisionAtlas.png");
-            _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_1989_hall", Still=post, Source="OpenAI image_gen · 1989년 우체국 분위기 재구성 · 실제 기록사진 아님" };
+            _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_US_1989", Still=post, Source="OpenAI image_gen · 1989년 미국 우체국 분위기 재구성 · 실제 기록사진 아님" };
+            _content.PostOfficeStamp = new CinematicText.ArchiveClip
+            {
+                Id = "PO_STAMP",
+                Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampPlate.png"),
+                Video = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/Textures/OpeningEnding/PostOfficeStamp.mp4"),
+                Duration = 2.8f
+            };
+            _content.PostOfficeEnvelope = new CinematicText.ArchiveClip
+            {
+                Id = "PO_STAMPED_ENVELOPE",
+                Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampedEnvelope.png")
+            };
             _content.Montage = new CinematicText.ArchiveClip[8];
             for (int i=0;i<8;i++)
             {
@@ -119,8 +136,11 @@ namespace CinematicEditor
             Assign(presentation,"_world",world); Assign(presentation,"_audio",audio); Assign(presentation,"_type",type);
             Assign(world,"_world",stage);
             Transform room=Root("1989 Post office · spatial reconstruction",stage);
-            BuildRoom(room);
-            CombineRoom(room);
+            if (ending)
+            {
+                BuildRoom(room);
+                CombineRoom(room);
+            }
             Assign(world,"_room",room);
             Transform portal=Primitive("Archive surface",stage,new Vector3(0,1.85f,3),new Vector3(1.6f,1.067f,1),_dark,PrimitiveType.Quad);
             Material film=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveFilm.mat");
@@ -218,6 +238,18 @@ namespace CinematicEditor
             Assign(type,"_hint",hint); Assign(type,"_holdBar",bar);
             Canvas flashCanvas=CanvasAt(stage,"Arrival exposure",new Vector3(0,1.6f,.45f),new Vector2(4000,4000),.002f);
             Image flash=ImageAt(flashCanvas.transform,"Exposure",new Vector2(4000,4000),Color.clear); Assign(world,"_flash",flash);
+            if (!ending)
+            {
+                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(420, 122), .0018f);
+                start.gameObject.AddComponent<GraphicRaycaster>();
+                start.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+                Image face = ImageAt(start.transform, "Start Button", new Vector2(420, 122), new Color(.1f, .38f, .37f, 1));
+                face.raycastTarget = true;
+                Button button = face.gameObject.AddComponent<Button>();
+                button.targetGraphic = face;
+                TextAt(face.transform, "Start Label", "시작", Vector2.zero, new Vector2(400, 110), 48);
+                Assign(presentation, "_startButton", button);
+            }
             BuildAudio(stage,audio);
             room.gameObject.SetActive(false); factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
             foreach(Transform t in letters.Concat(boxes).Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}

@@ -15,10 +15,11 @@ namespace Cinematic
         private InputAction _trigger;
         private float _held;
         private bool _latched;
+        private bool _playing;
         public float HoldProgress => Mathf.Clamp01(_held / 2f);
         public event Action SkipRequested;
 
-        public void Bind(XROrigin rig)
+        public void Bind(XROrigin rig, bool waitingForStart)
         {
             // Hide the grip visuals, including the wrist tablet, without disabling
             // the tracked controller interactors or the independent skip action.
@@ -29,7 +30,9 @@ namespace Cinematic
                 target.gameObject.SetActive(false);
             }
             _movementGate.Bind(rig);
-            _movementGate.SetUIVisible(false);
+            _movementGate.SetUIVisible(waitingForStart);
+            _playing = !waitingForStart;
+            _latched = waitingForStart;
             _trigger = new InputAction("Cinematic skip", InputActionType.Button);
             _trigger.AddBinding("<XRController>{RightHand}/triggerPressed");
             _trigger.AddBinding("<XRController>{LeftHand}/triggerPressed");
@@ -39,9 +42,15 @@ namespace Cinematic
             _trigger.Enable();
         }
 
+        public void BeginPlayback()
+        {
+            _playing = true;
+            _movementGate.SetUIVisible(false);
+        }
+
         private void Update()
         {
-            if (_trigger == null) { return; }
+            if (_trigger == null || !_playing) { return; }
             if (!_trigger.IsPressed()) { _held = 0; _latched = false; return; }
             if (_latched) { return; }
             _held += Time.unscaledDeltaTime;

@@ -14,36 +14,51 @@ namespace Cinematic
         [SerializeField] private CinematicInputController _input;
         [SerializeField] private string _destination = "FactoryEnvironment";
         private XROrigin _rig;
-        private bool _ready, _complete, _loading;
+        private bool _ready, _started, _complete, _loading;
         public float Elapsed { get; private set; }
         public bool IsComplete => _complete;
         public bool IsEnding => _ending;
         public const float Duration = 20f;
+        private float PlaybackDuration => _ending ? Duration : OpeningTiming.Duration;
 
         private void OnEnable()
-        { _input.SkipRequested += Skip; _presentation.HapticRequested += _input.Pulse; }
+        {
+            _input.SkipRequested += Skip;
+            _presentation.HapticRequested += _input.Pulse;
+            _presentation.StartRequested += BeginOpening;
+        }
         private void Start()
         {
             _rig = FindFirstObjectByType<XROrigin>();
-            _input.Bind(_rig);
-            if (!_ending) { _model.Clear(); }
-            _presentation.Bind(_content, _model, _ending, _rig.Camera.transform);
+            _input.Bind(_rig, !_ending);
+            _presentation.Bind(_content, _model, _ending, _rig.Camera);
             _ready = true;
+            _started = _ending;
+            if (_ending) { _presentation.Evaluate(0, 0); }
+        }
+
+        private void BeginOpening()
+        {
+            if (!_ready || _started) { return; }
+            _model.Clear();
+            _started = true;
+            _input.BeginPlayback();
+            _presentation.BeginOpening();
             _presentation.Evaluate(0, 0);
         }
         private void Update()
         {
-            if (!_ready || _loading) { return; }
+            if (!_ready || !_started || _loading) { return; }
             if (_complete) { _presentation.SetCompletedHold(_input.HoldProgress); return; }
-            Elapsed = Mathf.Min(Duration, Elapsed + Time.deltaTime);
+            Elapsed = Mathf.Min(PlaybackDuration, Elapsed + Time.deltaTime);
             _presentation.Evaluate(Elapsed, _input.HoldProgress);
-            if (Elapsed >= Duration) { Complete(); }
+            if (Elapsed >= PlaybackDuration) { Complete(); }
         }
         private void Skip()
         {
-            if (!_ready || _loading) { return; }
+            if (!_ready || !_started || _loading) { return; }
             if (_complete) { StartCoroutine(Leave()); }
-            else { Elapsed = Duration; Complete(); }
+            else { Elapsed = PlaybackDuration; Complete(); }
         }
         private void Complete()
         {
@@ -73,6 +88,7 @@ namespace Cinematic
         private void OnDisable()
         {
             _input.SkipRequested -= Skip; _presentation.HapticRequested -= _input.Pulse;
+            _presentation.StartRequested -= BeginOpening;
             _input.Release();
         }
     }

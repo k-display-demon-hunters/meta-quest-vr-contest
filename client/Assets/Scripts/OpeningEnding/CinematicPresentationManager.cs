@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Cinematic
 {
@@ -8,9 +9,11 @@ namespace Cinematic
         [SerializeField] private CinematicWorldController _world;
         [SerializeField] private CinematicAudioController _audio;
         [SerializeField] private CinematicTypeController _type;
+        [SerializeField] private Button _startButton;
         private CinematicText _content;
         private bool _ending;
         public event Action<float, float> HapticRequested;
+        public event Action StartRequested;
 
         private void OnEnable()
         {
@@ -19,18 +22,35 @@ namespace Cinematic
             _type.VoiceRequested += _audio.Voice;
             _type.CharacterTyped += _audio.Type;
         }
-        public void Bind(CinematicText content, CinematicModelResult model, bool ending, Transform head)
+        public void Bind(CinematicText content, CinematicModelResult model, bool ending, Camera camera)
         {
             _content = content; _ending = ending;
             _audio.Bind(content, ending);
-            _world.Bind(content, model, ending, head);
+            _world.Bind(content, model, ending, camera.transform);
             _type.Bind(ending ? content.Ending : content.Opening, ending);
+            if (!ending)
+            {
+                _startButton.GetComponentInParent<Canvas>().worldCamera = camera;
+                _startButton.onClick.AddListener(RequestStart);
+                _world.Evaluate(0);
+                _type.SetHint("", 0);
+            }
+        }
+
+        private void RequestStart() => StartRequested?.Invoke();
+
+        public void BeginOpening()
+        {
+            _startButton.onClick.RemoveListener(RequestStart);
+            _startButton.GetComponentInParent<Canvas>().gameObject.SetActive(false);
+            _world.PrepareOpeningMedia();
+            _audio.BeginOpening();
         }
         public void Evaluate(float time, float held)
         {
             _audio.Evaluate(time);
             _world.Evaluate(time);
-            _type.Evaluate(time, !_ending && time >= 7 && time < 15);
+            _type.Evaluate(time, !_ending && time >= OpeningTiming.Arrival && time < OpeningTiming.Digit);
             _type.SetHint(_content.Skip, held);
         }
         public void Complete(bool credits)
@@ -51,6 +71,7 @@ namespace Cinematic
         private void OnDisable()
         {
             _world.Impact -= Impact; _world.Recognized -= Recognized;
+            if (_startButton != null) { _startButton.onClick.RemoveListener(RequestStart); }
             _type.VoiceRequested -= _audio.Voice; _type.CharacterTyped -= _audio.Type;
         }
     }

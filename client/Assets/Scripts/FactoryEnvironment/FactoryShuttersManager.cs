@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Learning;
+using Parchment;
 using UnityEngine;
 
 namespace FactoryEnvironment
@@ -21,41 +22,52 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         private readonly Dictionary<FactoryShutterId, AutoOpenState> _autoOpenStates =
             new Dictionary<FactoryShutterId, AutoOpenState>();
-        private Func<FactoryShutterId, bool> _canOpen;
+        private readonly HashSet<FactoryShutterId> _permittedShutters = new HashSet<FactoryShutterId>();
+        private readonly HashSet<LearningStageId> _availableStages = new HashSet<LearningStageId>();
+        private ParchmentManager _parchment;
 
-        public void Configure(Func<FactoryShutterId, bool> canOpen)
+        private void Awake()
         {
-            _canOpen = canOpen;
+            _parchment = FindFirstObjectByType<ParchmentManager>();
         }
 
         private void OnEnable()
         {
             _areaController.ShutterProximityChanged += HandleProximityChanged;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
+            _parchment.Collected += HandleParchmentCollected;
         }
 
         private void OnDisable()
         {
             _areaController.ShutterProximityChanged -= HandleProximityChanged;
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
+            _parchment.Collected -= HandleParchmentCollected;
         }
 
         private void HandleStageAvailabilityChanged(LearningStageId stage, bool available)
         {
-            if (!available) { return; }
-
-            FactoryShutterId exitShutter = _layoutData.GetStageSpace(stage).ExitShutter;
-            if (!_autoOpenStates.TryAdd(exitShutter, AutoOpenState.PendingPermission)) { return; }
-
-            RefreshShutter(GetShutter(exitShutter), _areaController.IsNearShutter(exitShutter));
+            if (available)
+            {
+                _availableStages.Add(stage);
+                FactoryShutterId exitShutter = _layoutData.GetStageSpace(stage).ExitShutter;
+                _autoOpenStates.TryAdd(exitShutter, AutoOpenState.PendingPermission);
+            }
+            else
+            {
+                _availableStages.Remove(stage);
+            }
+            RefreshConditions();
         }
+
+        private void HandleParchmentCollected(int documentId) => RefreshConditions();
 
         private void HandleProximityChanged(FactoryShutterId id, bool isNear)
         {
             RefreshShutter(GetShutter(id), isNear);
         }
 
-        public void RefreshConditions()
+        private void RefreshConditions()
         {
             foreach (FactoryShutterController shutter in _shutters)
             {
@@ -85,7 +97,7 @@ namespace FactoryEnvironment
             }
 
             bool pendingAutoOpen = hasAutoOpen && state == AutoOpenState.PendingPermission;
-            bool canOpen = (isNear || pendingAutoOpen) && _canOpen(id);
+            bool canOpen = (isNear || pendingAutoOpen) && CanOpenShutter(id);
             if (canOpen)
             {
                 shutter.Open();
@@ -100,6 +112,36 @@ namespace FactoryEnvironment
             }
 
             shutter.SetUnavailable(isNear && !canOpen);
+        }
+
+        private bool CanOpenShutter(FactoryShutterId id)
+        {
+            if (_permittedShutters.Contains(id)) { return true; }
+
+            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
+            {
+                if (space.ExitShutter == id && !_availableStages.Contains(space.Id)) { return false; }
+                if (space.EntryShutter == id && !CanEnterStage(space.Id)) { return false; }
+            }
+            // Keep an earned passage permission across closing, resets and scene reloads.
+            _permittedShutters.Add(id);
+            return true;
+        }
+
+        private bool CanEnterStage(LearningStageId stage)
+        {
+            LearningStageId previous = LearningStageId.None;
+            foreach (LearningStageDefinition definition in LearningStageCatalog.Stages)
+            {
+                if (definition.Id == stage)
+                {
+                    return (previous == LearningStageId.None || _availableStages.Contains(previous))
+                        && _parchment.HasCollectedAll(definition.EntranceParchmentIds);
+                }
+                previous = definition.Id;
+            }
+            // Exit follows the last learning stage and has no entrance parchment.
+            return stage == LearningStageId.Exit && _availableStages.Contains(previous);
         }
 
         private FactoryShutterController GetShutter(FactoryShutterId id) =>

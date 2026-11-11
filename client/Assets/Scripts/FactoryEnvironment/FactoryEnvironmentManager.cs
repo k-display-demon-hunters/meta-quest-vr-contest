@@ -1,14 +1,12 @@
 using System;
-using System.Collections.Generic;
 using Learning;
-using Parchment;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.SceneManagement;
 
 namespace FactoryEnvironment
 {
-    // Coordinates progression, passage conditions and route guidance.
+    // Coordinates the current stage and travel.
     public sealed class FactoryEnvironmentManager : MonoBehaviour
     {
         [FormerlySerializedAs("_navigationData")]
@@ -17,40 +15,26 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         [SerializeField] private LearningSessionManager _session;
         [SerializeField] private FactoryPlayerController _player;
-        [SerializeField] private FactoryRouteGuideController _routeGuide;
-        [SerializeField] private FactoryShuttersManager _shutters;
-        private ParchmentManager _parchment;
-        private LearningStageId _routeSource;
         private LearningStageId _travelStage;
-        private readonly HashSet<FactoryShutterId> _permittedShutters = new HashSet<FactoryShutterId>();
-        private readonly Dictionary<LearningStageId, bool> _availability = new Dictionary<LearningStageId, bool>();
+        private bool _tutorialAvailable;
 
         public LearningStageId CurrentStage { get; private set; }
         public event Action<LearningStageId> StageChanged;
         public event Action TravelStarted;
         public event Action<LearningStageId, bool> TravelFinished;
         public bool CanTravel => !_sceneLoader.IsBusy
-            && (CurrentStage != LearningStageId.Tutorial || IsStageAvailable(LearningStageId.Tutorial));
-
-        private void Awake()
-        {
-            _parchment = FindFirstObjectByType<ParchmentManager>();
-            _shutters.Configure(CanOpenShutter);
-        }
+            && (CurrentStage != LearningStageId.Tutorial || _tutorialAvailable);
 
         private void OnEnable()
         {
-            _parchment.Collected += HandleParchmentCollected;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
             _areaController.AreaChanged += HandleAreaChanged;
             _sceneLoader.StateChanged += HandleLoadingStateChanged;
             _sceneLoader.LoadFailed += HandleLoadFailed;
-
         }
 
         private void OnDisable()
         {
-            _parchment.Collected -= HandleParchmentCollected;
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
             _areaController.AreaChanged -= HandleAreaChanged;
             _sceneLoader.StateChanged -= HandleLoadingStateChanged;
@@ -61,17 +45,14 @@ namespace FactoryEnvironment
         {
             // OnEnable runs before an asynchronously loaded scene becomes available.
             SceneManager.SetActiveScene(gameObject.scene);
-            _routeGuide.SetDestination(LearningStageId.Tutorial);
         }
 
         private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            if (!_layoutData.TryGetAdjacentAreas(area, out var previous, out _)) { return; }
+            if (!_layoutData.TryGetAdjacentAreas(area, out _, out _)) { return; }
             LearningStageId stage = area.Stage ?? LearningStageId.None;
             CurrentStage = stage;
-            _routeSource = area.Stage ?? previous?.Stage ?? LearningStageId.None;
             StageChanged?.Invoke(stage);
-            RefreshShutterConditions();
         }
 
         private void HandleLoadingStateChanged()
@@ -79,76 +60,13 @@ namespace FactoryEnvironment
             if (_sceneLoader.IsBusy) { return; }
             if (_travelStage != LearningStageId.None)
                 FinishTravel(_travelStage, _sceneLoader.IsLoaded(_travelStage));
-            RefreshShutterConditions();
         }
-
-        private bool IsStageAvailable(LearningStageId stage) =>
-            _availability.TryGetValue(stage, out bool available) && available;
 
         private void HandleStageAvailabilityChanged(LearningStageId stage, bool available)
         {
-            _availability[stage] = available;
-            RefreshShutterConditions();
-        }
-
-        private void HandleParchmentCollected(int documentId) => RefreshShutterConditions();
-
-        private void RefreshShutterConditions()
-        {
-            _shutters.RefreshConditions();
-            RefreshRouteGuide();
-        }
-
-        private bool CanOpenShutter(FactoryShutterId id)
-        {
-            if (_sceneLoader.IsBusy) { return false; }
-            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
+            if (stage == LearningStageId.Tutorial)
             {
-                if (space.EntryShutter != id && space.ExitShutter != id) { continue; }
-                // The ending is loaded only after entering the rear court.
-                if (space.Id != LearningStageId.Exit && !_sceneLoader.IsLoaded(space.Id)) { return false; }
-            }
-            if (_permittedShutters.Contains(id)) { return true; }
-
-            foreach (FactoryLayoutData.StageSpace space in _layoutData.StageSpaces)
-            {
-                if (space.ExitShutter == id && !IsStageAvailable(space.Id)) { return false; }
-                if (space.EntryShutter == id && !CanEnterStage(space.Id)) { return false; }
-            }
-            // Keep an earned passage permission across closing, resets and scene reloads.
-            _permittedShutters.Add(id);
-            return true;
-        }
-
-        private bool CanEnterStage(LearningStageId stage)
-        {
-            LearningStageId previous = LearningStageId.None;
-            foreach (LearningStageDefinition definition in LearningStageCatalog.Stages)
-            {
-                if (definition.Id == stage)
-                {
-                    return (previous == LearningStageId.None || IsStageAvailable(previous))
-                        && _parchment.HasCollectedAll(definition.EntranceParchmentIds);
-                }
-                previous = definition.Id;
-            }
-            // Exit follows the last learning stage and has no entrance parchment.
-            return stage == LearningStageId.Exit && IsStageAvailable(previous);
-        }
-
-        private void RefreshRouteGuide()
-        {
-            if (!IsStageAvailable(_routeSource)) { return; }
-
-            IReadOnlyList<LearningStageDefinition> stages = LearningStageCatalog.Stages;
-            for (int index = 0; index < stages.Count; index++)
-            {
-                if (stages[index].Id != _routeSource) { continue; }
-                LearningStageId destination = index + 1 < stages.Count
-                    ? stages[index + 1].Id
-                    : LearningStageId.Exit;
-                _routeGuide.SetDestination(destination);
-                return;
+                _tutorialAvailable = available;
             }
         }
 
@@ -174,10 +92,6 @@ namespace FactoryEnvironment
         private void HandleLoadFailed(LearningStageId stage, string message)
         {
             if (_travelStage == stage) { FinishTravel(stage, false); }
-            if (stage == LearningStageId.Tutorial || stage == LearningStageId.Exit)
-            {
-                _routeGuide.SetDestination(stage);
-            }
         }
 
     }

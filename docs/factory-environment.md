@@ -2,7 +2,7 @@
 
 [FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 정문 앞마당, 튜토리얼실, 세 체험실, 연결 복도와 후문 하역 공간으로 구성한다. 중앙 복도를 공유하던 이전 구조를 순차적으로 통과하는 방 구조로 교체했다. 공장을 직접 실행하면 정문 앞에서 시작한다.
 
-공장 공간과 문·양피지 입장 조건은 FactoryEnvironmentManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
+현재 구역에 따른 학습 단계와 태블릿 이동은 FactoryEnvironmentManager가 조율한다. 셔터 통행 조건은 FactoryShuttersManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
 
 ## 공장 외형 보강
 
@@ -73,7 +73,7 @@ ROOM 1-2 북서쪽 사물함 두 개에는 기존 베이지색을 살린 광택 
 
 ROOM #1은 X[-32,-12], Z[-14,6]의 20×20m 공간이다. 동쪽 입구 (-12,0,0)를 고정하고 이전 16×16m 외곽에서 서쪽 4m·남북 각각 2m를 확장했다. 체험 위치와 내부 문을 보존하기 위해 중앙 벽은 X=-20을 유지하고 양 끝만 새 외곽까지 연장한다. 동쪽의 체험 1-1(CNNScreenLab) 공간은 명목상 8×20m, 서쪽의 체험 1-2(CNNConvolutionLab) 공간은 12×20m다. 통로 중심은 (-20, 0, -8.8)이며 폭 3.2m·최고 높이 3.2m의 아치다. 벽은 천장까지 이어지고 아치형 금속 셔터가 통로를 닫는다. 같은 FactoryShutterController로 기존 문과 동일하게 1.6초 동안 3.3m 상하 이동한다. 벽·아치 상부와 셔터에 충돌 영역을 저장한다.
 
-ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. FactorySceneLoadController가 지역 진입 이벤트에 반응해 씬을 전환하고, FactoryEnvironmentManager가 준비 결과와 양피지 수집 조건에 따라 문을 연다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. 내부 공유 문은 관찰 완료·콘텐츠 준비·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
+ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 선택·RGB 전개 관찰, 두 번째 공간은 R/G 계산 학습·B 퀴즈를 담당한다. FactorySceneLoadController가 지역 진입 이벤트에 반응해 씬을 전환하고, FactoryShuttersManager가 퇴장 가능 상태와 양피지 수집 조건에 따라 문을 연다. Screen과 Convolution의 입장 문서는 모두 ID 0(01)이다. 내부 공유 문은 관찰 완료·문서 수집 후 열린다. 태블릿은 두 체험을 별도 항목으로 제공한다. 상세 책임과 수명은 [픽셀 관찰과 합성곱 체험](pixel-inspection.md)을 따른다.
 
 ROOM #1 진입 경로는 오른쪽 체험으로 끝나고 다음 방 경로는 왼쪽에서 시작하며, 두 체험 사이에는 남쪽 아치를 지나는 별도 경로를 둔다. 외부 출구는 (-26,0,6)으로 옮기고 폭 3.2m를 유지한다. 복도2 세로 구간은 X[-27.8,-24.2], Z[6,10.2], 가로 구간은 X[-27.8,-12], Z[10.2,13.8]로 맞추어 기존 ROOM #2 입구 (-12,0,12)에 연결한다. 다음 방 안내선은 (-23,-1.5) → (-23,3) → (-26,3) → (-26,12)를 지나 고정 컨볼루션 표시를 우회하고 ROOM #2 서쪽 입구에서 끝난다.
 
@@ -270,27 +270,27 @@ ROOM #3의 두 번째 컨베이어 더미는 남쪽 빈 바닥에 놓인다. 짧
 
 ## 문과 안내선
 
-튜토리얼실과 세 체험실에 각각 입구·출구 셔터가 있고, 후문 공간에는 입구 셔터가 있다. ROOM #1 내부 아치 셔터를 포함해 총 10개다. 셔터 패널은 Collider와 함께 1.6초 동안 위아래로 3.3m 이동한다. 모든 셔터는 닫힌 상태로 시작하며 별도의 초기 열림 설정은 두지 않는다. Awake에서 씬에 저장된 패널 위치를 닫힘 기준점으로 저장하고, Open·Close 요청에 따라 이동 애니메이션으로 개폐한다. AreaController가 카메라 위치로 접근을 판정하고, ShutterController는 전달받은 명령과 접근 상태로 패널을 움직인다. ShuttersManager가 접근 이벤트를 받아 EnvironmentManager에서 제공한 조건 조회 함수로 개방 여부를 확인하고 해당 Controller를 제어한다. EnvironmentManager는 통행 조건을 제공하고 안내선을 RouteGuideController에 전달한다. ShuttersManager는 공장 씬의 Factory Environment 오브젝트에 배치하며 실제 셔터 Controller 10개를 한 번씩 등록한다. 공유 셔터는 다음 체험실의 입구 조건에 따라 열리도록 처리한다.
+튜토리얼실과 세 체험실에 각각 입구·출구 셔터가 있고, 후문 공간에는 입구 셔터가 있다. ROOM #1 내부 아치 셔터를 포함해 총 10개다. 셔터 패널은 Collider와 함께 1.6초 동안 위아래로 3.3m 이동한다. 모든 셔터는 닫힌 상태로 시작하며 별도의 초기 열림 설정은 두지 않는다. Awake에서 씬에 저장된 패널 위치를 닫힘 기준점으로 저장하고, Open·Close 요청에 따라 이동 애니메이션으로 개폐한다. AreaController가 카메라 위치로 접근을 판정하고, ShutterController는 전달받은 명령과 접근 상태로 패널을 움직인다. ShuttersManager가 접근 이벤트를 받아 통행 조건을 판단하고 해당 Controller를 제어한다. ShuttersManager는 공장 씬의 Factory Environment 오브젝트에 배치하며 실제 셔터 Controller 10개를 한 번씩 등록한다. 공유 셔터는 다음 체험실의 입구 조건에 따라 열리도록 처리한다.
 
 FactoryLayoutData의 Inspector에서 _shutters 배열에 FactoryLayoutData.Shutter 10개를 등록한다. 각 항목은 셔터 ID(_id), 고정 문틀 Transform(_frame), 접근 거리(_approachDistance)를 저장한다. ShutterController에는 대응하는 ID와 패널 이동 설정을 두며 접근 거리는 중복 저장하지 않는다. 접근 기준점에는 움직이는 _panel이 아닌 고정 문틀 Transform을 연결한다. 모든 셔터의 접근 거리는 6m다. AreaController는 문틀과 카메라의 XZ 거리로 접근 여부를 계산하므로 문틀을 이동하면 판정 기준도 따라간다. 접근용 Collider나 별도 위치 좌표는 추가하지 않는다. 방의 기존 바닥 Collider와 우선 볼륨 참조는 유지한다.
 
-AreaController는 Awake에서 같은 오브젝트의 FactoryLayoutData.Shutters를 직접 읽어 접근 판정 상태를 초기화한다. FactoryLayoutData.Shutter는 LayoutData 내부에 정의하고 직렬화하는 설정 객체이며 외부에는 읽기 전용 프로퍼티를 제공한다. EnvironmentManager는 ShuttersManager.Configure에 CanOpenShutter 조건 조회 함수만 전달한다. 셔터 설정 데이터를 전달하는 SetShutters·CreateShutterData·GetShutterData 경로는 제거했다. AreaController는 ID별 접근 상태를 소유하고 상태 변경 시 ShutterProximityChanged(id, isNear)를 발행한다. ShuttersManager는 씬에 연결한 AreaController 참조를 사용해 자신의 OnEnable/OnDisable에서 ShutterProximityChanged를 직접 구독·해제한다. EnvironmentManager는 이 이벤트 구독에 관여하지 않는다. 일반 근접 개폐에서는 가까워지면 조건을 조회해 열고, 멀어지면 로딩 상태나 통행 조건과 관계없이 닫는다. ShuttersManager는 재판정 시에도 AreaController.IsNearShutter를 직접 조회하며, EnvironmentManager 컴포넌트는 참조하지 않는다.
+AreaController는 Awake에서 같은 오브젝트의 FactoryLayoutData.Shutters를 직접 읽어 접근 판정 상태를 초기화한다. FactoryLayoutData.Shutter는 LayoutData 내부에 정의하고 직렬화하는 설정 객체이며 외부에는 읽기 전용 프로퍼티를 제공한다. AreaController는 ID별 접근 상태를 소유하고 상태 변경 시 ShutterProximityChanged(id, isNear)를 발행한다. ShuttersManager는 씬에 연결한 AreaController 참조를 사용해 자신의 OnEnable/OnDisable에서 ShutterProximityChanged를 직접 구독·해제한다. 일반 근접 개폐에서는 가까워지면 통행 조건을 확인해 열고, 멀어지면 닫는다. ShuttersManager는 재판정 시에도 AreaController.IsNearShutter를 직접 조회한다.
 
 AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 변경과 셔터 이벤트를 알린다. 구역이 바뀌지 않아도 접근 판정은 계속한다. 닫힘 보류도 같은 IsNear를 사용한다. ShutterController는 실행 순서 100의 LateUpdate에서 이동하므로 같은 프레임에 갱신된 접근 상태로 닫힘을 보류한다. 문턱 위에 있지 않아도 접근 범위 안이면 닫히지 않으며, 범위를 벗어나면 대기 중인 닫힘을 이어간다. ShutterController에는 카메라 참조나 플레이어 위치 탐색이 없다.
 
-1. 현재 목적지까지 고정된 청록색 바닥선과 화살표를 표시한다.
+1. FactoryRouteGuideController는 시작 시 튜토리얼 안내선을 켠다. LearningSessionManager의 StageAvailabilityChanged에서 퇴장이 가능하다는 알림을 받으면 LearningStageCatalog.Stages 순서에 따라 다음 체험의 안내선을 켠다. 마지막 체험 다음에는 후문을 안내한다. 목적지 씬이 로드되기 전에도 안내선을 표시한다.
 2. FactoryRouteGuideController는 AreaChanged를 직접 구독해 도착 구역의 Stage가 표시 중인 목적지와 일치할 때 안내선을 끄고 목적지를 None으로 비운다. 방 진입 자체로 셔터를 닫는 명령은 보내지 않는다.
 3. 셔터의 접근 범위를 벗어나면 닫고, 닫히는 중 다시 접근하면 닫힘을 보류한다. 개방 조건을 만족하면 다시 열린다. 정방향과 역방향 모두 동일한 셔터 ID·거리·개방 조건을 사용한다.
 4. AreaChanged를 받은 로더가 _areaOrder의 바로 이전·현재·다음 Stage 씬을 준비한다. sceneLoaded에서 로더가 콘텐츠를 배치한 뒤 ContentLoaded(stage, scene)를 발행하여 세션이 Start 전에 초기 데이터와 이벤트 구독을 적용한다.
-5. CanOpenShutter(id)는 현재 진행 방향 대신 StageSpace의 입출구 ID 관계로 해당 문에 연결된 체험을 확인한다. 로딩 중에는 새 개방을 보류하며 연결된 학습 씬이 로드되어야 한다. 최초 통행 허가는 출구라면 해당 체험의 퇴장 가능 상태, 입구라면 LearningStageCatalog.Stages의 이전 체험 퇴장 가능 상태와 해당 입장 양피지를 확인한다. 튜토리얼은 이전 체험·양피지 없이 로딩 완료로 허용하고, 후문은 마지막 체험의 퇴장 가능 상태를 확인하며 엔딩 씬의 사전 로드를 요구하지 않는다. 공유 아치 문은 Screen 출구와 Convolution 입구 조건을 함께 확인한다.
-6. 로딩 종료·체험 상태 변경·양피지 수집·구역 변경 시 EnvironmentManager가 ShuttersManager.RefreshConditions를 호출한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 조건 변경은 자동 개방을 대기 중인 출구도 재판정한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
+5. CanOpenShutter(id)는 현재 진행 방향 대신 StageSpace의 입출구 ID 관계로 해당 문에 연결된 체험을 확인한다. 개방 판단에는 로딩 중 여부나 씬 로드 여부를 사용하지 않는다. 최초 통행 허가는 출구라면 해당 체험의 퇴장 가능 상태, 입구라면 LearningStageCatalog.Stages의 이전 체험 퇴장 가능 상태와 해당 입장 양피지를 확인한다. 튜토리얼 입구는 접근하면 열리고, 후문은 마지막 체험의 퇴장 가능 상태를 확인한다. 공유 아치 문은 Screen 출구와 Convolution 입구 조건을 함께 확인한다.
+6. ShuttersManager는 LearningSessionManager의 StageAvailabilityChanged와 ParchmentManager의 Collected를 직접 구독해 개방 조건을 재판정한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 조건 변경은 자동 개방을 대기 중인 출구도 재판정한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
 7. 플레이어가 접근 범위 안에 있고 닫힌 셔터를 열 수 없으면 `FactoryShuttersManager`는 해당 `FactoryShutterController`에 안내판 표시를 요청한다. 안내판은 `Prefabs/FactoryEnvironment/ShutterUnavailableSign.prefab`에 저장한 양면 World Space UI이며 문구는 “체험을 완료하거나 양피지를 모두 수집해야 문을 열 수 있습니다”로 고정한다. 문이 열리거나 접근 범위를 벗어나면 안내판을 숨긴다. Manager는 기존 개방 가능 여부만 사용한다.
 8. FactoryShuttersManager는 LearningSessionManager의 StageAvailabilityChanged를 직접 구독한다. 체험에서 퇴장이 가능해지면 FactoryLayoutData.GetStageSpace(stage).ExitShutter로 출구를 조회하고 셔터당 한 번 자동 개방을 요청한다. 기존 개방 조건이 충족되면 접근 범위 밖에서도 출구를 열고 안내판을 숨긴다. 플레이어가 6m 안에 들어온 뒤 다시 밖으로 나가면 문을 닫고 일반 근접 개폐로 돌아간다. 개방 시 이미 6m 안에 있으면 접근한 것으로 처리한다. ShuttersManager는 출구마다 자동 개방 대기와 접근 여부를 관리한다.
 9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.
 
-통행을 처음 허용한 셔터 ID는 EnvironmentManager의 _permittedShutters에 현재 공장 세션 동안 보관한다. 실제 문은 이탈 시 닫히지만 통행 허가는 체험 초기화·씬 언로드 후에도 유지되므로 재접근과 역방향에서도 다시 열 수 있다. 이미 허가된 문도 연결된 학습 씬의 로딩 여부는 매번 확인한다. 공장 씬을 새로 시작하면 통행 허가는 초기화된다. 태블릿 이동 시에는 별도의 CloseAll을 호출하지 않고 이동 후 AreaController의 거리 판정으로 이전 문을 닫고 새 문을 처리한다. RefreshRouteGuide는 _routeSource 체험이 퇴장 가능하면 LearningStageCatalog.Stages 순서에서 다음 체험의 안내선을 켠다. 마지막 체험의 목적지는 Exit다. 안내선은 로딩 중이거나 목적지 씬이 로드되지 않았어도 표시한다. 목적지 Stage에 도착하면 RouteGuideController가 안내를 종료한다.
+통행을 처음 허용한 셔터 ID는 ShuttersManager의 _permittedShutters에 현재 공장 세션 동안 보관한다. 실제 문은 이탈 시 닫히지만 통행 허가는 체험 초기화·씬 언로드 후에도 유지되므로 재접근과 역방향에서도 다시 열 수 있다. 공장 씬을 새로 시작하면 통행 허가는 초기화된다. 태블릿 이동 시에는 별도의 CloseAll을 호출하지 않고 이동 후 AreaController의 거리 판정으로 이전 문을 닫고 새 문을 처리한다.
 
 바닥선은 폭 0.12m·두께 0.012m이며, 중심은 해당 발판이나 바닥보다 0.025m 위에 있다. 화살촉은 직전 크기의 0.75배로 줄여 날개 폭 0.0675m, 뒤쪽 길이 0.75m·좌우 폭 0.375m(각 날개 약 0.839m)다. 각 구간 시작에서 1.6m 뒤에 첫 화살표를 두고, 직전 간격 5.5m의 1.5배인 8.25m 간격으로 배치했다. 현재 목적지 경로 5개의 화살촉은 19개이고 ROOM #1 내부 경로에 4개가 더 있다. FactoryRoute.mat의 청록색 (0.08, 1, 0.8)과 그림자·프로브 설정은 유지한다.
 
@@ -316,12 +316,12 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 | [FactorySceneLoadController](../client/Assets/Scripts/FactoryEnvironment/FactorySceneLoadController.cs) | AreaChanged만 구독, 이전·현재·다음 씬 로드·언로드, 콘텐츠 배치·조명·Rigidbody 동기화, 로드된 씬 목록·처리 중 상태, 로딩 결과·해제 전 정리 알림과 종료 중 정리 |
 | [LearningStageCatalog](../client/Assets/Scripts/Core/Learning/LearningStageCatalog.cs) | 전체 다섯 단계의 순서·이름·씬 이름·입장 문서와 체험 소속 문서, 기존 태블릿 네 카드의 연결 목록 |
 | [LearningProgress](../client/Assets/Scripts/Core/Learning/LearningProgress.cs) / [LearningProgressSnapshot](../client/Assets/Scripts/Core/Learning/LearningProgressSnapshot.cs) | 체험별 최대 진행률과 완료 기록 / 외부에 전달할 읽기 전용 상태 복사 |
-| [FactoryEnvironmentManager](../client/Assets/Scripts/FactoryEnvironment/FactoryEnvironmentManager.cs) | 모듈 조회 함수·이벤트 연결, 셔터별 통행 조건과 세션 통행 허가 보관, 조건 변경 시 재판정 요청, 안내선·현재 단계·태블릿 이동 조율 |
+| [FactoryEnvironmentManager](../client/Assets/Scripts/FactoryEnvironment/FactoryEnvironmentManager.cs) | 현재 단계 갱신, 튜토리얼 퇴장 가능 상태와 로더 상태를 사용한 태블릿 이동 조율 |
 | [FactoryLayoutData](../client/Assets/Scripts/FactoryEnvironment/FactoryLayoutData.cs) | Area 데이터·Collider 참조·구역 순서·인접 구역 조회, 체험별 경로·콘텐츠 기준점·입출구 셔터 ID와 정문 기준점, 셔터 ID·문틀·접근 거리 목록 |
-| [FactoryShuttersManager](../client/Assets/Scripts/FactoryEnvironment/FactoryShuttersManager.cs) | 접근·퇴장 가능 여부 변경 이벤트 직접 구독, LayoutData에서 출구 조회, 조건에 따른 개방과 재판정, 자동 개방 후 접근·이탈 상태 관리 및 Controller 제어 |
+| [FactoryShuttersManager](../client/Assets/Scripts/FactoryEnvironment/FactoryShuttersManager.cs) | 접근·퇴장 가능 상태·양피지 수집 이벤트 직접 구독, 셔터별 개방 조건과 통행 허가 관리, 자동 개방 후 접근·이탈 상태 관리 및 Controller 제어 |
 | [FactoryShutterController](../client/Assets/Scripts/FactoryEnvironment/FactoryShutterController.cs) | 셔터 ID와 패널 이동 설정, 닫힘 기준점 저장, 셔터 패널과 Collider 이동, 전달받은 접근 상태에 따른 닫힘 보류 |
 | [FactoryAreaController](../client/Assets/Scripts/FactoryEnvironment/FactoryAreaController.cs) | 공용 XR 카메라 확보, LayoutData의 Area 데이터를 사용한 볼륨·바닥 포함 판정과 AreaChanged 발행, 셔터 접근 판정과 상태 조회·변경 이벤트 |
-| [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | 방별 고정 경로와 ROOM #1 내부 경로 표시, AreaChanged 직접 구독으로 목적지 도착 시 안내 종료 |
+| [FactoryRouteGuideController](../client/Assets/Scripts/FactoryEnvironment/FactoryRouteGuideController.cs) | StageAvailabilityChanged와 AreaChanged 직접 구독, 초기 튜토리얼과 다음 체험 안내선 표시, 목적지 도착 시 안내 종료 |
 | [FactoryPlayerController](../client/Assets/Scripts/FactoryEnvironment/FactoryPlayerController.cs) | Awake에서 XR 리그와 인터랙터 확보, Start에서 정문 배치·ray 준비, 단계별 도착점 보관·선택과 이동, ContentUnloading 직접 구독으로 언로드할 씬의 잡은 물체 해제, AreaChanged 직접 구독으로 후문 진입 시 로드된 체험의 잡은 물체 해제 |
 | [TabletMiniMapController](../client/Assets/Scripts/FactoryEnvironment/TabletMiniMapController.cs) | 태블릿 전용 지도. 공장 바닥·벽·양피지 위치에서 TabletMapData 생성, TabletManager에 직접 전달·해제 |
 
@@ -386,11 +386,11 @@ FactoryAreaController는 Start에서 공용 XROrigin의 카메라 Transform을 �
 
 _areaOrder에는 위 표 순서대로 방과 연결 통로를 등록한다. 통로 5개의 Stage는 직렬화 값 None이며 프로퍼티로는 null을 반환한다. 앞마당·Outside·휴게실·InspectionRoom은 순서 배열에서 제외한다. 튜토리얼이 다시 로드되면 안내와 입력 제어도 다시 시작한다. 첫 통로에서 튜토리얼을 활성화한다. 엔딩은 인접 Stage일 때 미리 로드하지 않으며 RearCourt 진입 시 Single로 전환해 공장·학습 씬을 종료한다.
 
-RefreshPreparedEntrance는 제거했다. 셔터 개폐는 접근 이벤트를 받는 ShuttersManager가 처리하고, CanOpenShutter는 접근 방향과 무관하게 셔터 ID에 연결된 체험·양피지·로딩 상태를 판단한다. 안내선의 _routeSource는 AreaChanged에서 현재 구역의 체험 또는 바로 이전 구역의 체험으로 정한다. 안내 목적지는 학습 단계 순서로 정하므로 사이에 복도가 있어도 다음 체험을 가리킨다. 첫 통로에서 준비한 튜토리얼은 로딩 완료 후 입구에 접근하면 열린다.
+튜토리얼 씬은 구역 진입으로 준비되며 튜토리얼 입구 셔터는 접근하면 열린다.
 
 진행 순서에 등록되지 않은 구역은 기존 씬을 유지한다. 등록된 구역의 Stage가 null이면 해당 항목의 씬만 생략하고 바로 이전·다음 항목의 Stage는 처리한다. 빈 Stage를 넘어 더 먼 항목을 탐색하지 않는다. 처리 중 새 체험 구역 이벤트가 오면 진행 중인 비동기 작업을 마친 뒤 최신 구역을 처리한다. 정상 처리 후에는 이전·현재·다음 체험만 남긴다. 로더는 LayoutData에서 조회한 이전·다음 Area와 전달된 현재 Area의 Stage로 required 목록을 만든다. None은 생략하고 이미 로드된 씬은 재사용하며 누락된 씬을 순서대로 로드한다. 필요한 씬 준비가 끝난 뒤 목록에 포함되지 않는 씬을 정리한다. UpdateScenes는 한 번의 목록 갱신만 수행한다. 처리 중 새 AreaChanged가 오면 최신 위치와 대기 플래그를 저장하며, 진행 중인 로드·해제가 끝나면 남은 이전 요청 작업을 생략한다. 대기 이벤트가 있는 경우에만 다음 UpdateScenes를 시작하고, 없으면 IsBusy를 해제하고 끝낸다. while 반복이나 자동 재시도는 없다.
 
-로더는 Stage와 Unity Scene을 저장한다. sceneLoaded에서 ILearningExperience가 있는 콘텐츠 루트를 찾고 다른 루트를 비활성화한 뒤 ContentAnchor의 위치·회전·배율을 적용한다. 콘텐츠 조명을 비활성화하고 Rigidbody 위치·회전을 동기화한 뒤 ContentLoaded(stage, scene)를 발행한다. 세션은 이 알림에서 ILearningExperience를 찾아 초기 데이터·진행률 구독을 연결한다. 이 작업은 Start 전에 끝난다. 로딩 처리가 끝나면 StateChanged로 IsBusy 변경을 알린다. 공장은 AreaChanged를 직접 구독해 현재 단계와 문·경로를 관리하고 접근·IsLoaded·퇴장 가능·양피지 조건을 조합한다. 체험 초기화로 진행 불가가 되어도 유지 범위 안 씬은 해제하지 않는다.
+로더는 Stage와 Unity Scene을 저장한다. sceneLoaded에서 ILearningExperience가 있는 콘텐츠 루트를 찾고 다른 루트를 비활성화한 뒤 ContentAnchor의 위치·회전·배율을 적용한다. 콘텐츠 조명을 비활성화하고 Rigidbody 위치·회전을 동기화한 뒤 ContentLoaded(stage, scene)를 발행한다. 세션은 이 알림에서 ILearningExperience를 찾아 초기 데이터·진행률 구독을 연결한다. 이 작업은 Start 전에 끝난다. 로딩 처리가 끝나면 StateChanged로 IsBusy 변경을 알린다. FactoryEnvironmentManager는 AreaChanged를 직접 구독해 현재 단계를 갱신한다. 체험 초기화로 진행 불가가 되어도 유지 범위 안 씬은 해제하지 않는다.
 
 Screen 구역 진입 시 로더가 Convolution을 미리 로드한다. 각 체험은 Start에서 자체 초기화하고 내부 사용자 입력에 따라 진행하며, 공장의 구역 진입·이탈 상태를 전달받지 않는다. 세션은 구체 체험 Manager를 참조하지 않고 ILearningExperience로 상태 구독·진행 기록·종료 요청만 처리한다. 두 씬 사이에 픽셀 데이터를 전달하지 않으며, Convolution은 항상 자체 고정 5×5 RGB 예제를 사용한다. Screen의 선택 변경이나 재시작은 Convolution의 입력·진행 상태를 초기화하지 않는다. 기존 문 개방 조건과 학습 순서는 유지한다.
 
@@ -426,7 +426,7 @@ ROOM #1 벽·아치 셔터·두 체험 기준점과 Screen/Convolution 전환 �
 
 캐비닛·선반·박스·연구 데스크 교체는 씬의 장식 참조와 가구 표시 경계, 체험·문·경로의 위치를 정적으로 대조했다. 기존 체험·문·경로·건축 오브젝트와 스크립트는 수정하지 않았다. 이 교체에 대한 Unity 실행·컴파일·Play·테스트·빌드는 수행하지 않았다.
 
-합성곱 진입문·콘텐츠 기준점·경로는 FactoryLayoutData의 ConvolutionLab 목적지에 연결하고, 영역 정의는 FactoryAreaController, 플레이어 도착점은 FactoryPlayerController에 연결한다. RouteGuide.SetDestination으로 해당 경로를 표시한다. 화면의 ROOM 번호와 기존 공간 오브젝트 배치는 유지한다.
+합성곱 진입문·콘텐츠 기준점·경로는 FactoryLayoutData의 ConvolutionLab 목적지에 연결하고, 영역 정의는 FactoryAreaController, 플레이어 도착점은 FactoryPlayerController에 연결한다. FactoryRouteGuideController는 픽셀 관찰 체험에서 퇴장이 가능해지면 해당 경로를 표시한다. 화면의 ROOM 번호와 기존 공간 오브젝트 배치는 유지한다.
 
 ## 태블릿 자유 이동
 

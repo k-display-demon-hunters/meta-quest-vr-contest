@@ -12633,6 +12633,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _areaController: {fileID: 980100011}
+  _session: {fileID: 720003511}
 --- !u!114 &720003516
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34220,8 +34221,6 @@ MonoBehaviour:
   _areaController: {fileID: 980100011}
   _session: {fileID: 720003511}
   _player: {fileID: 720003512}
-  _routeGuide: {fileID: 720003515}
-  _shutters: {fileID: 980100012}
 --- !u!114 &980100011
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -14,6 +14,8 @@
 
 ## 구조와 책임
 
+Unity에서 씬을 열면 Scene 뷰에서 촬영 화면과 결과 패널의 배치를 볼 수 있다. 모델방에서 AR에 진입하면 `CNNRealityLabManager`가 초기화하면서 촬영 화면을 켜고 결과 패널을 숨긴다.
+
 씬은 `client/Assets/Scenes/CNNRealityLab.unity`에 있다. 모델 제작의 하위 체험에 해당하는 AR 런타임 코드는 `client/Assets/Scripts/CNNModelDesignLab/Reality/` 아래에 두며 `RealityLab` 네임스페이스를 사용한다.
 
 | 경로 | 책임 |

@@ -8,6 +8,7 @@ namespace FactoryEnvironment
     {
         [SerializeField] private FactoryShutterId _id;
         [SerializeField] private Transform _panel;
+        [SerializeField] private GameObject _unavailableSign;
         [SerializeField] private float _travel = 3.3f;
         [SerializeField] private float _duration = 1.6f;
         private Vector3 _closedPosition;
@@ -25,6 +26,11 @@ namespace FactoryEnvironment
         public void Open() => _open = true;
         public void Close() => _open = false;
         public void SetNear(bool isNear) => _isNear = isNear;
+
+        public void SetUnavailable(bool unavailable)
+        {
+            _unavailableSign.SetActive(unavailable && !_open && _amount < 1f);
+        }
 
         // Run after the area controller's LateUpdate so closing uses this frame's proximity.
         private void LateUpdate()

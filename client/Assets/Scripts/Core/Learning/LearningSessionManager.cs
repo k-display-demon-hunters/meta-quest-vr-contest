@@ -29,6 +29,7 @@ namespace Learning
 
         public event Action<LearningProgressSnapshot> StateChanged;
         public event Action<LearningStageId, bool> StageAvailabilityChanged;
+        public event Action<LearningStageId> StageCompleted;
         public bool CanTravel => isActiveAndEnabled && _factory.CanTravel;
         public LearningProgressSnapshot GetSnapshot() => _progress.CreateSnapshot(_factory.CurrentStage, CanTravel);
 
@@ -122,13 +123,25 @@ namespace Learning
         private void HandleStageChanged(LearningStageId stage)
         {
             if (_experiences.TryGetValue(stage, out ExperienceSubscription subscription))
-                _progress.RecordProgress(stage, subscription.Experience.Progress);
+                RecordStageProgress(stage, subscription.Experience.Progress);
             PublishState();
         }
 
         private void HandleProgressChanged(LearningStageId stage, float progress)
         {
-            if (_progress.RecordProgress(stage, progress)) { PublishState(); }
+            if (RecordStageProgress(stage, progress)) { PublishState(); }
+        }
+
+        private bool RecordStageProgress(LearningStageId stage, float progress)
+        {
+            if (!_progress.RecordProgress(stage, progress)) { return false; }
+
+            // Recorded progress only increases, so this publishes completion once per stage.
+            if (_progress.IsCompleted(stage))
+            {
+                StageCompleted?.Invoke(stage);
+            }
+            return true;
         }
 
         // Document grants follow the request, even when travel is rejected or loading fails.

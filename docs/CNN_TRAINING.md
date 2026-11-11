@@ -165,4 +165,4 @@ Input(28×28×1)
 
 ## Reality 외부 이미지 연결
 
-ModelExecutionManager.InferExternalAsync는 정규화된 RGB float 배열과 reality: 요청 ID를 기존 학습 엔진에 전달한다. CNNModelDesignLabManager는 EnterRealityAsync/ExitRealityAsync 및 InferRealityAsync를 제공한다. ModelRealitySessionController가 CNNRealityLab을 Additive로 로드하고 기존 카메라를 연결한다. 모델은 이동하거나 복제하지 않는다. 기존 내부 샘플 UI는 reality: 결과를 표시하지 않는다. 공장 경유 실행은 지원하지 않으며 UI 버튼 연결도 추가하지 않았다. 상세 계약과 제한은 [CNNRealityLab](cnn-reality-lab.md)을 따른다. 컴파일·실행 검증은 수행하지 않았다.
+모델방에서 학습을 끝내면 제어 패널의 **현실 숫자 인식** 버튼으로 AR에 진입할 수 있다. `RealityLab.ModelRealitySessionController`가 `CNNRealityLab`을 Additive로 로드하고 기존 카메라를 연결한다. AR은 모델방에 유지한 학습 모델을 사용한다. `ModelExecutionManager.InferExternalAsync`는 정규화된 RGB 배열과 `reality:` 요청 ID를 기존 학습 엔진에 전달한다. 모델방의 내장 샘플 UI는 AR 결과를 건너뛴다. [CNNRealityLab 구현](cnn-reality-lab.md)

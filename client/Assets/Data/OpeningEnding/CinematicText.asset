@@ -14,32 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicText
   Opening:
   - Start: 0.5
-    End: 3
-    Text: "\uAE30\uACC4\uB294\n\uC138\uC0C1\uC744 \uBCFC \uC218 \uC788\uC744\uAE4C?"
-    Voice: {fileID: 0}
-  - Start: 7.6
-    End: 11.8
-    Text: "\uC580 \uB974\uCFE4\uC758 CNN\uC774\n\uC190\uAE00\uC528 \uC22B\uC790\uB97C
-      \uC77D\uAE30 \uC2DC\uC791\uD588\uB2E4."
-    Voice: {fileID: 0}
-  - Start: 12.6
-    End: 14.9
-    Text: "\uC0AC\uB78C\uC5D0\uAC8C\uB294 '2'.\n\uAE30\uACC4\uC5D0\uAC8C\uB294 {C:\uC791\uC740
-      \uC810 256\uAC1C}."
-    Voice: {fileID: 0}
-  - Start: 15.2
-    End: 17.2
-    Text: "\uAE30\uACC4\uB294 \uC5B4\uB5BB\uAC8C\n\uC774 \uC810\uB4E4\uC5D0\uC11C
-      '2'\uB97C \uCC3E\uC544\uB0C8\uC744\uAE4C?"
-    Voice: {fileID: 0}
-  - Start: 17.2
-    End: 18
-    Text: "{C:CNN \uACF5\uC7A5}"
-    Voice: {fileID: 0}
-  - Start: 18
-    End: 20
-    Text: "\uADF8 \uB2F5\uC744, \uC9C1\uC811 \uB9CC\uB4E4\uC5B4 \uBCF4\uC138\uC694."
-    Voice: {fileID: 0}
+    End: 3.1
+    Text: "기계는 세상을 어떻게 볼까요?"
+    Voice: {fileID: 8300000, guid: 4b38b14883df49b0ae352e3391734f77, type: 3}
+  - Start: 8.1
+    End: 12.55
+    Text: "최초의 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."
+    Voice: {fileID: 8300000, guid: 9994ff6ad9f646969af05d3a915fdde5, type: 3}
+  - Start: 17.05
+    End: 20.78
+    Text: "사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다."
+    Voice: {fileID: 8300000, guid: 79d8cdf088ce4a759352f3ab93461574, type: 3}
+  - Start: 22.05
+    End: 25.9
+    Text: "그러나 기계가 보는 건\n밝고 어두운 점들입니다."
+    Voice: {fileID: 8300000, guid: d4cd21470a064f8f91fce68305739db7, type: 3}
+  - Start: 26.25
+    End: 30.55
+    Text: "기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?"
+    Voice: {fileID: 8300000, guid: 827be9a2740c48fea07eb409fc6fa5d1, type: 3}
+  - Start: 31.05
+    End: 34.65
+    Text: "공장 안에서 그 답을 직접 찾아보세요."
+    Voice: {fileID: 8300000, guid: 2ddb076224ab47a1b210e73db78a4f91, type: 3}
   Ending:
   - Start: 0.4
     End: 2.8
@@ -59,9 +56,9 @@ MonoBehaviour:
       \uC788\uB2E4."
     Voice: {fileID: 0}
   PostOffice:
-    Id: PO_1989_hall
+    Id: PO_US_1989
     Video: {fileID: 0}
-    Still: {fileID: 2800000, guid: 24435c1a14cf6f448bd97543dfa30ab2, type: 3}
+    Still: {fileID: 2800000, guid: 80af45f3ccab42efa7a9b0ef74fc8b5f, type: 3}
     UV:
       serializedVersion: 2
       x: 0
@@ -69,9 +66,38 @@ MonoBehaviour:
       width: 1
       height: 1
     StartSeconds: 0
-    Duration: 20
-    Source: "OpenAI image_gen \xB7 1989\uB144 \uC6B0\uCCB4\uAD6D \uBD84\uC704\uAE30
-      \uC7AC\uAD6C\uC131 \xB7 \uC2E4\uC81C \uAE30\uB85D\uC0AC\uC9C4 \uC544\uB2D8"
+    Duration: 35
+    Source: "OpenAI image_gen · 1989년 미국 우체국의 가상 재구성"
+  PostOfficeStamp:
+    Id: PO_STAMP
+    Video: {fileID: 32900000, guid: ff7b900e87b84b5cb01071508644d17c, type: 3}
+    Still: {fileID: 2800000, guid: 2bd6b66b5fbb4c17b8f39f6078bf86b9, type: 3}
+    UV:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 1
+      height: 1
+    StartSeconds: 0
+    Duration: 2.8
+    Source: "OpenAI image_gen 이미지와 FFmpeg 합성"
+  PostOfficeEnvelope:
+    Id: PO_STAMPED_ENVELOPE
+    Video: {fileID: 0}
+    Still: {fileID: 2800000, guid: 37ac5de567db4374bba9ddc21cec3273, type: 3}
+    UV:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 1
+      height: 1
+    StartSeconds: 0
+    Duration: 4
+    Source: "도장 컷의 마지막 프레임과 인식 표시"
+  OpeningCrowd: {fileID: 8300000, guid: 1a5a2268713e469dbf509bf1a0cd2118, type: 3}
+  OpeningScore: {fileID: 8300000, guid: c88cd00a3fc945e5b6419fe93254bb64, type: 3}
+  OpeningLocation: "1989년, 미국의 한 우체국"
+  OpeningResearch: "1989 · 얀 르쿤 연구팀의 손글씨 우편번호 인식 연구"
   Montage:
   - Id: END_1998
     Video: {fileID: 0}
@@ -203,16 +229,9 @@ MonoBehaviour:
   - "\uD45C\uC9C0\uD310 30"
   - "\uD655\uC778 \uD544\uC694"
   - "\uACE0\uC591\uC774"
-  Skip: "\uD2B8\uB9AC\uAC70\uB97C \uAE38\uAC8C \uB20C\uB7EC \uAC74\uB108\uB6F0\uAE30"
-  Credits: "CNN \uACF5\uC7A5 \xB7 \uCCB4\uD5D8 \uC644\uB8CC\n\uCC28\uC138\uB300\uB514\uC2A4\uD50C\uB808\uC774
-    \uACBD\uC9C4\uB300\uD68C\n\n\uC22B\uC790 \uD558\uB098\uAC00, \uC138\uC0C1\uC744
-    \uBCF4\uB294 \uB208\uC774 \uB418\uAE30\uAE4C\uC9C0"
-  Replay: "\uD2B8\uB9AC\uAC70\uB97C \uAE38\uAC8C \uB20C\uB7EC \uB2E4\uC2DC \uC2DC\uC791"
   Example: "\uAD6C\uC870 \uC608\uC2DC \xB7 \uC124\uACC4\uC2E4 \uACB0\uACFC \uC5C6\uC74C"
   Provenance: "1989 \xB7 \uC6B0\uCCB4\uAD6D / \uC5ED\uC0AC\uC801 \uBD84\uC704\uAE30\uB97C
     \uC7AC\uAD6C\uC131\uD55C \uC774\uBBF8\uC9C0"
-  PostSign: "\uC6B0 \uD3B8 \xB7 \uC18C \uD3EC"
-  Calendar: "1989\n11\uC6D4"
   FactoryTitle: "CNN \uACF5\uC7A5"
   LoadFailure: "\uC7A5\uBA74\uC744 \uC5F4\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uD2B8\uB9AC\uAC70\uB97C
     \uAE38\uAC8C \uB20C\uB7EC \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694."
@@ -220,18 +239,6 @@ MonoBehaviour:
   Hit: {fileID: 8300000, guid: 93a3c78b1c54a5647a598a7f7268490e, type: 3}
   BigHit: {fileID: 8300000, guid: c3c72baa931f55b4bac44cc5571dba81, type: 3}
   Rewind: {fileID: 8300000, guid: e986208dc70dc4140b7ffaae1e58c846, type: 3}
-  Ring: {fileID: 8300000, guid: 62d6f0e098546ac4eb1f89ba1489e467, type: 3}
   Stamp: {fileID: 8300000, guid: 09e31ab8d07b0e144974085fd39accaa, type: 3}
-  Machine: {fileID: 8300000, guid: c838469056815114f8ae6a152cd6b0a3, type: 3}
-  Printer: {fileID: 8300000, guid: d95cc50594604e1409734c690b34ccdd, type: 3}
-  Crowd: {fileID: 8300000, guid: 904c214d0ec08e24c8929aa11ff3ad46, type: 3}
-  Footsteps: {fileID: 8300000, guid: a055efb2f71ff9c408e48f28dd39f579, type: 3}
-  Radio: {fileID: 0}
-  Clerk: {fileID: 0}
-  CRT: {fileID: 8300000, guid: 11bd2906083ffbf49b0bac474ab901c8, type: 3}
   Beep: {fileID: 8300000, guid: 7757b7b33b20ee34ead379dc7dfafc35, type: 3}
   Pad: {fileID: 0}
-  AudioCredits: "\uACF5\uAC04 \uC774\uBBF8\uC9C0 \xB7 OpenAI \uC774\uBBF8\uC9C0 \uC0DD\uC131
-    / \uC5ED\uC0AC\uC801 \uBD84\uC704\uAE30 \uC7AC\uAD6C\uC131\n\uAD70\uC911 \xB7
-    SpliceSound / \uD504\uB9B0\uD130 \xB7 viertelnachvier (Freesound, CC0)\n\uD6A8\uACFC\uC74C
-    \xB7 Codex \uBCF4\uC870 \uD569\uC131 / \uC11C\uCCB4 \xB7 Pretendard (OFL)"

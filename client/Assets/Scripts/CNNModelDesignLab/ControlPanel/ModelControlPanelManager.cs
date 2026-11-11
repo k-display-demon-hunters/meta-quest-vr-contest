@@ -30,6 +30,14 @@ namespace ModelDesignScene.ControlPanel
             remove => _controller.OnInferenceRequested -= value;
         }
 
+        public event Action OnRealityRequested
+        {
+            add => _controller.OnRealityRequested += value;
+            remove => _controller.OnRealityRequested -= value;
+        }
+
+        public void SetRealityAvailable(bool available) => _controller.SetRealityAvailable(available);
+
         public void Initialize(ModelDatasetManager dataset)
         {
             _controller.SetSamples(dataset.Samples);

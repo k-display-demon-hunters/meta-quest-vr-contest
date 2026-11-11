@@ -14,7 +14,7 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 
 `FactorySceneLoadController`는 인접 씬을 미리 로드한다. ScreenLab과 ConvolutionLab은 로드 후 각자의 `Start`에서 자체 초기화하며, 공장의 현재 구역이나 실제 입장 여부를 전달받지 않는다. ConvolutionLab은 고정 예제를 준비하고 필터 배치 입력을 기다린다. 공장 내 로드와 단독 실행은 같은 시작 경로를 사용한다. 로드된 상태에서는 구역 이동만으로 체험을 중단하거나 초기화하지 않는다.
 
-`LearningSessionManager`는 구체 체험 Manager를 참조하지 않고 `ILearningExperience`로 단계·진행률·출구 허용 상태를 조회하고 변경 이벤트를 구독한다. 언로드 전에는 같은 인터페이스의 `EndSession`으로 정리를 요청한다. 공장의 기존 문 개방 조건과 학습 순서는 유지한다.
+`LearningSessionManager`는 구체 체험 Manager를 참조하지 않고 `ILearningExperience`로 단계·진행률·출구 허용 상태를 조회하고 변경 이벤트를 구독한다. 언로드 전에는 같은 인터페이스의 `EndSession`으로 정리를 요청한다. 공장 셔터의 개방 조건은 [Factory Environment](factory-environment.md)의 셔터 동작을 따른다.
 
 두 체험의 UI 버튼은 공용 `XRPlayerRig`에 구성한 EventSystem·XRUIInputModule을 사용한다. `ScreenLabUIController`와 `CNNConvolutionLabManager`는 입력 환경을 생성하거나 해제하지 않으며, 버튼의 기존 On Click 연결로 각 체험의 요청을 처리한다. 체험 종료·언로드 시 공용 입력 환경은 유지된다. ScreenLab 단독 실행은 씬에 배치된 공용 리그를 사용하고, 자체 리그가 없는 ConvolutionLab의 XR 조작은 공장에 로드된 공용 리그를 사용한다.
 

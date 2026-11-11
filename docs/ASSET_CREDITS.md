@@ -167,7 +167,7 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
 | `FactoryLabPanelCream_*`, `FactoryLabPanelSlate_*` | 공장 작업 구역 실내 벽의 회백색 패널과 청회색 하부 마감 | Codex AI 보조로 Python·NumPy·Pillow에서 줄눈, 표면 결, 걸레받이의 알베도·노멀·금속성/매끄러움 맵 합성 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
-| `FaultyFanBearing.wav` | `Audio/FactoryEnvironment/`, 환풍기 3대의 재시동 마찰음 | Codex AI 보조로 Python·NumPy에서 철판이 맞긁힐 때의 고음 공명과 불규칙한 마찰을 합성. 주 음역 3–6 kHz, 0.96초, 24 kHz 모노 PCM | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 기존 합성음 교체 |
+| `FaultyFanBearing.wav` | `Audio/FactoryEnvironment/`, 환풍기 3대의 재시동 마찰음 | Codex AI 보조로 Python·NumPy에서 기존 음원에 칼날이 철판에 걸렸다 풀리는 짧은 마찰과 5–7 kHz 공명층을 합성. 0.96초, 24 kHz 모노 PCM | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 기존 합성음 수정 |
 
 키 큰 사물함 번호판에는 기존 `TutorialLockerCoating_*` 아틀라스의 번호 영역을, 합성곱 관찰 콘솔에는 기존 `FactoryDiagnosticDisplays.png`의 계산 표본 한 장을 재사용했다. 원본 이미지와 출처·권리 기록은 유지하고 Codex AI 보조로 메시 UV를 조정했다.
 
@@ -177,3 +177,14 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 | --- | --- | --- | --- | --- |
 | `FactoryLightOxidation_*` | `Textures/FactoryEnvironment/`, 공장의 `RustSteel` 표면 | Codex AI 보조로 Python·NumPy·Pillow에서 기존 브러시드 강철 `BrushedAlloy_*`와 `OxidizedSteel_*`를 좁은 산화 얼룩으로 합성해 알베도·노멀·금속성/매끄러움 맵 제작 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 원본은 위 표면 텍스처 기록 참조 | 신규 합성. 원본 PNG 유지 |
 | `FactoryFullMoon.jpg` | `Textures/FactoryEnvironment/`, 공장 야외 하늘 | [NASA SVS Moon Phase and Libration, 2026의 Full Moon 프레임](https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_full.1571_print.jpg) | NASA Scientific Visualization Studio, 시각화 Ernie Wright. [NASA SVS 사용 안내](https://svs.gsfc.nasa.gov/help/)의 공개 저작물 지침에 따라 출처 표기 | 원본 JPEG 유지. Unity 메시 UV로 달 표면만 표시 |
+
+## 휴게실 병 라벨과 표면 재사용
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| `LoungeBottleLabels.png` | 휴게실 와인병·소주병 라벨 | Codex AI 보조로 Python·Pillow에서 가상 상표를 조판. 기존 Noto Sans CJK KR Regular 사용 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 폰트는 위 **Noto Sans CJK KR Regular 2.004** 출처 및 SIL OFL 1.1을 따름 | 신규 합성. 폰트 원본 유지 |
+| `LoungeHandheldGameScreens.png` | 휴게실 바닥 휴대용 게임기 두 대의 LCD | Codex AI 보조로 Python·Pillow에서 서로 다른 게임 화면과 유리 균열을 합성. 기존 Noto Sans CJK KR Regular 사용 | 합성 이미지의 법적 권리자 미확인. 별도 공개 라이선스 지정 없음. 폰트는 위 **Noto Sans CJK KR Regular 2.004** 출처 및 SIL OFL 1.1을 따름 | 신규 합성. 폰트 원본 유지 |
+
+ROOM 1-2 사물함과 휴게실 가구는 기존 도장·직물·작업대 표면 텍스처와 사물함 번호판을 재사용한다. 원본 이미지와 위 출처·권리 기록을 유지했다. 첨부 사진은 형상 참고에 사용했다.
+
+ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 게임기 외장에는 `DarkIndustrialRubber_Normal.png`를 재사용했다. 원본 텍스처와 위 공장 표면 기록의 출처·권리 정보를 유지했다.

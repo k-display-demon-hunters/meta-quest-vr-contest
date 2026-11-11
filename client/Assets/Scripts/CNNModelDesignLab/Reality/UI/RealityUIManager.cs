@@ -65,7 +65,37 @@ namespace RealityLab
         internal void ShowInput(RealityRecognitionData input) => _results.ShowInput(input);
         internal void ShowPrediction(IReadOnlyList<double> scores) => _results.ShowPrediction(scores);
 
-        internal void ShowMessage(string message)
+        internal void ShowError(string context, Exception exception)
+        {
+            ShowMessage(context + GetErrorMessage(exception));
+        }
+
+        private static string GetErrorMessage(Exception exception)
+        {
+            switch (exception.Message)
+            {
+                case "선택 프레임을 정면에서 바라보세요.":
+                    return "선택 프레임을 정면에서 바라보세요.";
+                case "프레임 전체가 카메라 범위 안에 들어오도록 위치를 조정하세요.":
+                case "Selection must be inside the camera viewport.":
+                    return "프레임 전체가 카메라 범위 안에 들어오도록 위치를 조정하세요.";
+                case "Camera is not ready. Grant headset camera access first.":
+                    return "카메라가 준비되지 않았습니다. 헤드셋 카메라 권한을 확인하세요.";
+                case "Invalid camera image.":
+                    return "촬영한 영상을 읽을 수 없습니다. 다시 촬영하세요.";
+                case "The trained model is not available for inference.":
+                    return "현재 학습한 모델을 사용할 수 없습니다.";
+                case "숫자 0~3의 출력 네 개가 필요합니다.":
+                    return "모델의 숫자 0~3 예측 결과를 확인할 수 없습니다.";
+                case "Wait for the current transition.":
+                    return "화면 전환이 끝날 때까지 기다려 주세요.";
+                default:
+                    Debug.LogException(exception);
+                    return "알 수 없는 오류가 발생했습니다.";
+            }
+        }
+
+        private void ShowMessage(string message)
         {
             _message.text = message;
             _results.ShowMessage(message);

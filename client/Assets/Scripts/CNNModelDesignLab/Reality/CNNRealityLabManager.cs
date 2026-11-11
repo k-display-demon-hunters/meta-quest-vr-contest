@@ -69,7 +69,7 @@ namespace RealityLab
             }
             catch (Exception exception)
             {
-                _ui.ShowMessage("촬영하지 못했습니다. " + exception.Message);
+                _ui.ShowError("촬영하지 못했습니다. ", exception);
             }
         }
 
@@ -92,7 +92,7 @@ namespace RealityLab
             {
                 if (this == null || generation != _generation) { return; }
                 ShowStage(RealityStage.Captured);
-                _ui.ShowMessage("인식하지 못했습니다. " + exception.Message);
+                _ui.ShowError("인식하지 못했습니다. ", exception);
             }
         }
 
@@ -116,7 +116,7 @@ namespace RealityLab
             {
                 if (this == null) { return; }
                 _exiting = false;
-                _ui.ShowMessage("모델방으로 돌아가지 못했습니다. " + exception.Message);
+                _ui.ShowError("모델방으로 돌아가지 못했습니다. ", exception);
             }
         }
 

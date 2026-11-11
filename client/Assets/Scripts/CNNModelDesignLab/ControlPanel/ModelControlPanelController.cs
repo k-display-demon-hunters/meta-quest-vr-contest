@@ -14,6 +14,8 @@ namespace ModelDesignScene.ControlPanel
     {
         [Header("Saved screen")]
         [SerializeField] private Canvas _canvas;
+        [SerializeField] private Text _headerTitle;
+        [SerializeField] private Button _exampleButton;
         [SerializeField] private Text _stateText;
         [SerializeField] private Text _statusText;
         [SerializeField] private Image _statusAccent;
@@ -27,6 +29,7 @@ namespace ModelDesignScene.ControlPanel
         [Header("Actions and request errors")]
         [SerializeField] private Button _realityButton;
         [SerializeField] private Button _startTrainingButton;
+        [SerializeField] private Outline _startTrainingOutline;
         [SerializeField] private Button _stopTrainingButton;
         [SerializeField] private Text _startTrainingLabel;
         [SerializeField] private GameObject _errorPanel;
@@ -45,10 +48,14 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Color _problemColor = new Color(1f, 0.7f, 0.36f);
         [SerializeField] private Color _neutralColor = new Color(0.73f, 0.48f, 0.21f);
 
+        private int _currentPage;
+        private bool _showIntro;
         private bool _hasIssues;
+        private bool _hasPlacedBlock;
         private bool _isDragging;
         private bool _isBusy;
 
+        internal event Action OnExampleRequested;
         internal event Action OnRealityRequested;
         internal event Action OnStartRequested;
         internal event Action OnStopRequested;
@@ -60,6 +67,7 @@ namespace ModelDesignScene.ControlPanel
             _validationTab.onClick.AddListener(ShowValidationPage);
             _trainingTab.onClick.AddListener(ShowTrainingPage);
             _predictionTab.onClick.AddListener(ShowPredictionPage);
+            _exampleButton.onClick.AddListener(HandleExampleRequested);
             _realityButton.onClick.AddListener(HandleRealityRequested);
             _startTrainingButton.onClick.AddListener(HandleStartRequested);
             _stopTrainingButton.onClick.AddListener(HandleStopRequested);
@@ -71,6 +79,15 @@ namespace ModelDesignScene.ControlPanel
             _inference.OnError += ShowError;
             ResetSessionUI();
         }
+
+        private void HandleExampleRequested()
+        {
+            DismissError();
+            ShowValidationPage();
+            OnExampleRequested?.Invoke();
+        }
+
+        internal void SetExampleAvailable(bool available) => _exampleButton.interactable = available;
 
         private void HandleRealityRequested() => OnRealityRequested?.Invoke();
 
@@ -87,21 +104,22 @@ namespace ModelDesignScene.ControlPanel
             bool wasInvalid = _hasIssues && !_isDragging;
             _hasIssues = issues.Count > 0;
             _isDragging = isDragging;
-            bool hasBlocks = false;
+            _hasPlacedBlock = false;
             foreach (LayerDefinition layer in slotLayers)
             {
                 if (layer != null)
                 {
-                    hasBlocks = true;
+                    _hasPlacedBlock = true;
                     break;
                 }
             }
-            bool showIntro = !isDragging && !_hasIssues && !hasBlocks;
+            _showIntro = !isDragging && !_hasIssues && !_hasPlacedBlock;
+            RefreshHeader();
             _validation.ShowValidation(issues, slotLayers, isDragging, hasValidationResult);
             _statusText.text = isDragging ? "블록 배치 중"
                 : _hasIssues ? "수정 필요 · " + issues.Count + "곳"
-                : showIntro ? "모델 만들기 안내" : hasValidationResult ? "실행 전 검사 완료" : "실행 전 검사 대기";
-            _statusAccent.color = isDragging || showIntro || !hasValidationResult ? _neutralColor : _hasIssues ? _problemColor : _readyColor;
+                : _showIntro ? "모델 만들기 안내" : hasValidationResult ? "실행 전 검사 완료" : "실행 전 검사 대기";
+            _statusAccent.color = isDragging || _showIntro || !hasValidationResult ? _neutralColor : _hasIssues ? _problemColor : _readyColor;
             RefreshStartButton();
             if (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy))
             {
@@ -125,6 +143,9 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = false;
             _isDragging = false;
             _hasIssues = false;
+            _hasPlacedBlock = false;
+            _showIntro = true;
+            _exampleButton.interactable = false;
             _statusText.text = "모델 만들기 안내";
             _statusAccent.color = _neutralColor;
             _validation.ShowValidation(Array.Empty<ValidationIssue>(), Array.Empty<LayerDefinition>(), false, false);
@@ -223,7 +244,9 @@ namespace ModelDesignScene.ControlPanel
 
         private void RefreshStartButton()
         {
-            _startTrainingButton.interactable = !_isBusy && !_isDragging;
+            bool canStart = !_isBusy && !_isDragging;
+            _startTrainingButton.interactable = canStart;
+            _startTrainingOutline.enabled = canStart && _hasPlacedBlock;
             _startTrainingLabel.text = _isDragging ? "블록을 먼저 놓아 주세요" : _hasIssues ? "구성 문제 확인하기" : "학습 시작";
         }
 
@@ -263,6 +286,8 @@ namespace ModelDesignScene.ControlPanel
 
         private void ShowPage(int page)
         {
+            _currentPage = page;
+            RefreshHeader();
             for (int index = 0; index < _pages.Length; index++)
             {
                 _pages[index].SetActive(index == page);
@@ -270,11 +295,17 @@ namespace ModelDesignScene.ControlPanel
             }
         }
 
+        private void RefreshHeader()
+        {
+            _headerTitle.text = _currentPage == 0 && _showIntro ? "블록으로 모델을 만들어 보세요" : "모델 조립 콘솔";
+        }
+
         private void OnDestroy()
         {
             _validationTab.onClick.RemoveListener(ShowValidationPage);
             _trainingTab.onClick.RemoveListener(ShowTrainingPage);
             _predictionTab.onClick.RemoveListener(ShowPredictionPage);
+            _exampleButton.onClick.RemoveListener(HandleExampleRequested);
             _realityButton.onClick.RemoveListener(HandleRealityRequested);
             _startTrainingButton.onClick.RemoveListener(HandleStartRequested);
             _stopTrainingButton.onClick.RemoveListener(HandleStopRequested);

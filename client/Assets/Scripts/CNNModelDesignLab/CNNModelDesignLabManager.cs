@@ -25,11 +25,14 @@ namespace ModelDesignScene
         private ModelRealitySessionController _reality;
         private bool CanEnterReality => CanExit && _execution.HasTrainedModel && !_builder.IsDragging
             && !_reality.IsOpen && !_reality.IsTransitioning;
+        private bool CanPlayPlacementExample => _initialized && isActiveAndEnabled && !_execution.IsBusy
+            && !_reality.IsOpen && !_reality.IsTransitioning && _builder.CanPlayPlacementExample;
         public System.Threading.Tasks.Task EnterRealityAsync()
         {
             if (!CanEnterReality)
                 throw new System.InvalidOperationException("Finish training and release the block before entering Reality.");
             _settings.Close();
+            _builder.CancelPlacementExample();
             return _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
         }
         public System.Threading.Tasks.Task ExitRealityAsync() => _reality.ExitAsync();
@@ -76,6 +79,7 @@ namespace ModelDesignScene
         private void OnEnable()
         {
             _modelUIIsDirty = true;
+            _controlPanel.OnExampleRequested += HandleExampleRequested;
             _controlPanel.OnRealityRequested += HandleRealityRequested;
             if (_initialized)
             {
@@ -112,7 +116,11 @@ namespace ModelDesignScene
 
         private void LateUpdate()
         {
-            if (_initialized) { _controlPanel.SetRealityAvailable(CanEnterReality); }
+            if (_initialized)
+            {
+                _controlPanel.SetRealityAvailable(CanEnterReality);
+                _controlPanel.SetExampleAvailable(CanPlayPlacementExample);
+            }
             if (_initialized && _modelUIIsDirty)
             {
                 RefreshModelUI();
@@ -139,6 +147,15 @@ namespace ModelDesignScene
             _builder.DeleteLayer(layer);
         }
 
+        private void HandleExampleRequested()
+        {
+            if (CanPlayPlacementExample)
+            {
+                _settings.Close();
+                _builder.PlayPlacementExample();
+            }
+        }
+
         private async void HandleTrainingStartRequested()
         {
             if (!isActiveAndEnabled || _execution.IsBusy || _builder.IsDragging)
@@ -146,6 +163,7 @@ namespace ModelDesignScene
                 return;
             }
             _settings.Close();
+            _builder.CancelPlacementExample();
             await _execution.StartTrainingAsync(_model);
         }
 
@@ -161,6 +179,7 @@ namespace ModelDesignScene
         {
             if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
             {
+                _builder.CancelPlacementExample();
                 await _execution.InferAsync(imageId);
             }
         }
@@ -268,6 +287,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _controlPanel.OnExampleRequested -= HandleExampleRequested;
             _controlPanel.OnRealityRequested -= HandleRealityRequested;
             _trainingCompleted = false;
             SetProgress(0f);

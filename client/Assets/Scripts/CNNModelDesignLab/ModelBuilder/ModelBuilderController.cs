@@ -10,6 +10,7 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private ModelBlockController _outputBlock;
         [SerializeField] private ModelSupplyController _supply;
         [SerializeField] private ModelConveyorController _conveyor;
+        [SerializeField] private PlacementExampleController _placementExample;
 
         private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
         private ModelBuilderManager _manager;
@@ -20,6 +21,32 @@ namespace ModelDesignScene.ModelBuilder
         private bool _interactionEnabled;
 
         internal bool IsDragging => _grabbedBlock != null;
+
+        internal bool CanPlayPlacementExample
+        {
+            get
+            {
+                if (!_initialized || !_interactionEnabled || IsDragging || _placementExample.IsPlaying) { return false; }
+                for (int index = 0; index < _slots.Count; index++)
+                {
+                    if (_slots[index] == null) { return true; }
+                }
+                return false;
+            }
+        }
+
+        internal void PlayPlacementExample()
+        {
+            if (!CanPlayPlacementExample) { return; }
+            List<int> emptySlots = new List<int>();
+            for (int index = 0; index < _slots.Count; index++)
+            {
+                if (_slots[index] == null) { emptySlots.Add(index); }
+            }
+            _placementExample.Play(_supply.GetExampleBlocks(), emptySlots, _conveyor);
+        }
+
+        internal void CancelPlacementExample() => _placementExample.Cancel();
 
         internal void Initialize(ModelBuilderManager manager, ModelDefinition model)
         {
@@ -60,6 +87,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void EndInteraction()
         {
             _interactionEnabled = false;
+            _placementExample.Cancel();
             if (!_initialized)
             {
                 return;
@@ -208,6 +236,7 @@ namespace ModelDesignScene.ModelBuilder
             {
                 return;
             }
+            _placementExample.Cancel();
             if (block.IsPalette)
             {
                 _supply.TryTakeBlock(block);
@@ -246,6 +275,7 @@ namespace ModelDesignScene.ModelBuilder
             {
                 return;
             }
+            _placementExample.Cancel();
             Transform anchor = control.PopupAnchor;
             _manager.RequestSettings(control.Block.Layer, new Pose(anchor.position, anchor.rotation));
         }

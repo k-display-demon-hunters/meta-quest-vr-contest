@@ -15,7 +15,6 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Text _evaluationMetrics;
         [SerializeField] private Text _accuracyAxis;
         [SerializeField] private Text _lossAxis;
-        [SerializeField] private Text _learningHint;
         [SerializeField] private Image _epochBar;
         [SerializeField] private ModelMetricGraph _accuracyGraph;
         [SerializeField] private ModelMetricGraph _lossGraph;
@@ -40,7 +39,6 @@ namespace ModelDesignScene.ControlPanel
             _evaluationMetrics.text = "정확도 —\n손실 —";
             _accuracyAxis.text = "0–100% · 에포크 —";
             _lossAxis.text = "손실 범위 — · 에포크 —";
-            _learningHint.text = "정확도는 맞힌 비율, 손실은 예측 오차를 나타냅니다. 학습과 검증 곡선의 변화를 함께 살펴보세요.";
         }
 
         internal void ShowProgress(TrainingProgress progress)
@@ -62,10 +60,6 @@ namespace ModelDesignScene.ControlPanel
             ShowEpoch(result.Epoch, result.Epoch, result.Logs);
             _evaluationMetrics.text = "정확도 " + FormatMetric(result.Evaluation, "accuracy", true)
                 + "\n손실 " + FormatMetric(result.Evaluation, "loss", false);
-            double? accuracy = ReadMetric(result.Evaluation, "accuracy");
-            _learningHint.text = accuracy.HasValue
-                ? "테스트 이미지에서 " + FormatPercentage(accuracy.Value) + "를 맞혔습니다. 샘플 예측도 확인하고, 필터 수나 뉴런 수를 한 항목씩 바꿔 재학습 결과를 비교해 보세요."
-                : "학습이 끝났지만 테스트 정확도를 받지 못했습니다. 수신한 학습·검증 곡선과 샘플 예측을 확인하세요.";
         }
 
         private void ShowEpoch(int epoch, int totalEpochs, IReadOnlyDictionary<string, double> logs)
@@ -76,26 +70,11 @@ namespace ModelDesignScene.ControlPanel
                 + "\n손실 " + FormatMetric(logs, "loss", false);
             _validationMetrics.text = "정확도 " + FormatMetric(logs, "val_accuracy", true)
                 + "\n손실 " + FormatMetric(logs, "val_loss", false);
-            double? training = ReadMetric(logs, "accuracy");
-            double? validation = ReadMetric(logs, "val_accuracy");
-            _accuracyGraph.AddPoint(epoch, totalEpochs, training, validation);
+            _accuracyGraph.AddPoint(epoch, totalEpochs, ReadMetric(logs, "accuracy"), ReadMetric(logs, "val_accuracy"));
             _lossGraph.AddPoint(epoch, totalEpochs, ReadMetric(logs, "loss"), ReadMetric(logs, "val_loss"));
             _accuracyAxis.text = "0–100% · 가로축 에포크 0–" + totalEpochs;
             _lossAxis.text = FormatNumber(_lossGraph.Minimum) + "–" + FormatNumber(_lossGraph.Maximum)
                 + " · 가로축 에포크 0–" + totalEpochs;
-            if (training.HasValue && validation.HasValue)
-            {
-                double gap = (training.Value - validation.Value) * 100;
-                string comparison = gap == 0 ? "학습과 검증 정확도가 같습니다."
-                    : "학습 정확도가 검증보다 " + Math.Abs(gap).ToString("0.0", CultureInfo.InvariantCulture)
-                        + "%p " + (gap > 0 ? "높습니다." : "낮습니다.");
-                _learningHint.text = "현재 에포크: " + comparison
-                    + " 한 시점의 차이만으로 원인을 단정할 수 없습니다. 검증 정확도와 손실의 추이를 함께 비교하세요.";
-            }
-            else
-            {
-                _learningHint.text = "수신한 지표만 표시합니다. 학습과 검증 지표가 함께 있어야 두 결과를 비교할 수 있습니다.";
-            }
         }
 
         private static void SetProgress(Image bar, float value)

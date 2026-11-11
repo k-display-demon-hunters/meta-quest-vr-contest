@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Learning;
+using RealityLab;
 using ModelDesignScene.ModelBuilder;
 using ModelDesignScene.BlockSettings;
 using ModelDesignScene.Model;
@@ -22,16 +23,18 @@ namespace ModelDesignScene
         [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
 
         private ModelRealitySessionController _reality;
-        public RealityLab.CNNRealityLabManager Reality => _reality.Reality;
+        private bool CanEnterReality => CanExit && _execution.HasTrainedModel && !_builder.IsDragging
+            && !_reality.IsOpen && !_reality.IsTransitioning;
         public System.Threading.Tasks.Task EnterRealityAsync()
         {
-            if (!_execution.HasTrainedModel || _execution.IsBusy || _builder.IsDragging)
+            if (!CanEnterReality)
                 throw new System.InvalidOperationException("Finish training and release the block before entering Reality.");
-            return _reality.EnterAsync(this, Camera.main);
+            _settings.Close();
+            return _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
         }
         public System.Threading.Tasks.Task ExitRealityAsync() => _reality.ExitAsync();
         public System.Threading.Tasks.Task<InferenceResult> InferRealityAsync(float[] input, string requestId)
-            {
+        {
             if (!_reality.IsOpen || !requestId.StartsWith("reality:", System.StringComparison.Ordinal))
                 throw new System.InvalidOperationException("Use an input captured by the active Reality session.");
             return _execution.InferExternalAsync(input, requestId);
@@ -73,6 +76,7 @@ namespace ModelDesignScene
         private void OnEnable()
         {
             _modelUIIsDirty = true;
+            _controlPanel.OnRealityRequested += HandleRealityRequested;
             if (_initialized)
             {
                 _builder.BeginInteraction();
@@ -108,6 +112,7 @@ namespace ModelDesignScene
 
         private void LateUpdate()
         {
+            if (_initialized) { _controlPanel.SetRealityAvailable(CanEnterReality); }
             if (_initialized && _modelUIIsDirty)
             {
                 RefreshModelUI();
@@ -157,6 +162,19 @@ namespace ModelDesignScene
             if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
             {
                 await _execution.InferAsync(imageId);
+            }
+        }
+
+        private async void HandleRealityRequested()
+        {
+            if (!CanEnterReality) { return; }
+            try
+            {
+                await EnterRealityAsync();
+            }
+            catch (System.Exception exception)
+            {
+                if (this != null) { _controlPanel.ShowError(exception.Message); }
             }
         }
 
@@ -250,6 +268,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _controlPanel.OnRealityRequested -= HandleRealityRequested;
             _trainingCompleted = false;
             SetProgress(0f);
             PublishProgressionState();

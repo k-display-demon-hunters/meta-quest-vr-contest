@@ -10,7 +10,7 @@ namespace RealityLab
         private RealityCameraController _camera;
         private void Awake() { _camera = gameObject.AddComponent<RealityCameraController>(); }
         public bool IsReady => _camera.IsReady;
-        public Rect GetSelectionRegion()
+        private Rect GetSelectionRegion()
         {
             _selectionFrame.GetWorldCorners(_corners);
             Camera view = _selectionCanvas.worldCamera;
@@ -33,8 +33,9 @@ namespace RealityLab
             }
             return Rect.MinMaxRect(minimum.x, minimum.y, maximum.x, maximum.y);
         }
-        public RealityRecognitionData Capture(Rect cameraViewportRegion)
+        internal RealityRecognitionData CaptureSelection()
         {
+            Rect cameraViewportRegion = GetSelectionRegion();
             Texture2D image = _camera.Capture();
             try
             {
@@ -43,6 +44,5 @@ namespace RealityLab
             }
             finally { Destroy(image); }
         }
-        public Vector2 WorldToImage(Vector3 point) => _camera.WorldToImage(point);
     }
 }

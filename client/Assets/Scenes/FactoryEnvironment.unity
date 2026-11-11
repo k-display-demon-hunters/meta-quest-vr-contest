@@ -12586,6 +12586,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sceneLoader: {fileID: 720003513}
   _areaController: {fileID: 980100011}
+  _modelDesignRoomFloor: {fileID: 720000589}
+  _modelDesignWalkSurface: {fileID: 908330005}
   _stageArrivals:
   - Stage: 6
     Arrival: {fileID: 980100001}
@@ -81264,9 +81266,6 @@ GameObject:
   - component: {fileID: 908330003}
   - component: {fileID: 908330004}
   - component: {fileID: 908330005}
-  - component: {fileID: 908330006}
-  - component: {fileID: 908330010}
-  - component: {fileID: 908330011}
   m_Layer: 0
   m_Name: Room 03 raised laboratory floor
   m_TagString: Untagged
@@ -81287,8 +81286,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 908330008}
-  - {fileID: 908330013}
   - {fileID: 908330016}
   m_Father: {fileID: 720000011}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -81332,8 +81329,8 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!65 &908330005
-BoxCollider:
+--- !u!64 &908330005
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -81350,185 +81347,10 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 5.3, y: 0.3, z: 8.21}
-  m_Center: {x: 1.23, y: 0.15, z: 0.945}
---- !u!65 &908330006
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330001}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 3.64, y: 0.3, z: 1.62}
-  m_Center: {x: 0.92, y: 0.15, z: -5.63}
---- !u!1 &908330007
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 908330008}
-  - component: {fileID: 908330009}
-  m_Layer: 0
-  m_Name: Room 03 approach ramp collision
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4
-  m_IsActive: 1
---- !u!4 &908330008
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330007}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.17642454, w: 0.98431417}
-  m_LocalPosition: {x: -1.825, y: 0.15, z: 0.11}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 908330002}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 20.32313683}
---- !u!65 &908330009
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330007}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.8637708, y: 0.15, z: 1.58}
-  m_Center: {x: 0, y: -0.075, z: 0}
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 1261928859}
-  - {fileID: 720000001}
-  - {fileID: 980200001}
---- !u!65 &908330010
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330001}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 4.78, y: 0.3, z: 1.66}
-  m_Center: {x: 1.49, y: 0.15, z: -3.99}
---- !u!65 &908330011
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330001}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 3.68, y: 0.3, z: 1.53}
-  m_Center: {x: 2.04, y: 0.15, z: 5.815}
---- !u!1 &908330012
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 908330013}
-  - component: {fileID: 908330014}
-  m_Layer: 0
-  m_Name: Room 03 exit ramp collision
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4
-  m_IsActive: 1
---- !u!4 &908330013
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330012}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.0892775, y: 0, z: 0, w: 0.99600679}
-  m_LocalPosition: {x: -0.61, y: 0.15, z: 5.88}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 908330002}
-  m_LocalEulerAnglesHint: {x: 10.24408745, y: 0, z: 0}
---- !u!65 &908330014
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 908330012}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1.62, y: 0.15, z: 1.68689063}
-  m_Center: {x: 0, y: -0.075, z: 0}
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: de81ad6c70584563ae45a28af7614063, type: 2}
 --- !u!1 &908330015
 GameObject:
   m_ObjectHideFlags: 0
@@ -81620,3 +81442,10 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 1261928859}
+  - {fileID: 720000001}
+  - {fileID: 980200001}

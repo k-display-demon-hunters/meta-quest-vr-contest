@@ -41,20 +41,20 @@ MonoBehaviour:
   - Start: 0.4
     End: 2.8
     Text: "1989\uB144,\n\uC22B\uC790 \uD558\uB098\uB97C \uC77D\uB358 \uB208\uC740"
-    Voice: {fileID: 0}
+    Voice: {fileID: 8300000, guid: fecb20acac4b43e08f1de7af252461e1, type: 3}
   - Start: 15
     End: 16.6
     Text: "\uADF8\uB9AC\uACE0 \uC624\uB298,"
-    Voice: {fileID: 0}
+    Voice: {fileID: 8300000, guid: d42ec87bf9df4823bab72979fc244b1c, type: 3}
   - Start: 16.8
     End: 18
     Text: "{A:\uB2F9\uC2E0\uC774 \uB9CC\uB4E0 \uB208.}"
-    Voice: {fileID: 0}
+    Voice: {fileID: 8300000, guid: 7fb17bb37bb64f67bbbbe2ae83d5d2c2, type: 3}
   - Start: 18.2
     End: 20
     Text: "\uADF8 \uC2DC\uC120\uC758 \uB05D\uC5D0,\n\uB2F9\uC2E0\uC758 CNN\uC774
       \uC788\uB2E4."
-    Voice: {fileID: 0}
+    Voice: {fileID: 8300000, guid: d745555f3a1b4a5dabd5b0d999ebefdc, type: 3}
   PostOffice:
     Id: PO_US_1989
     Video: {fileID: 0}
@@ -74,10 +74,10 @@ MonoBehaviour:
     Still: {fileID: 2800000, guid: 2bd6b66b5fbb4c17b8f39f6078bf86b9, type: 3}
     UV:
       serializedVersion: 2
-      x: 0
-      y: 0
-      width: 1
-      height: 1
+      x: 0.10
+      y: 0.035
+      width: 0.89
+      height: 0.89
     StartSeconds: 0
     Duration: 2.8
     Source: "OpenAI image_gen 이미지와 FFmpeg 합성"
@@ -129,18 +129,16 @@ MonoBehaviour:
       \uCD5C\uCD08 \uCD9C\uC2DC \uC5F0\uB3C4\uAC00 \uC544\uB2D8"
   - Id: END_2015
     Video: {fileID: 0}
-    Still: {fileID: 2800000, guid: dc078747835e5a949b68b9b818cf6ec0, type: 3}
+    Still: {fileID: 2800000, guid: 34e6eb94e5044fad8ebe56858b464628, type: 3}
     UV:
       serializedVersion: 2
-      x: 0.5
-      y: 0.5
-      width: 0.25
-      height: 0.5
+      x: 0
+      y: 0
+      width: 1
+      height: 1
     StartSeconds: 0
     Duration: 2
-    Source: "OpenAI image_gen \xB7 \uC77C\uC0C1 \uC18D \uC2DC\uAC01 \uC778\uC2DD
-      \uC7AC\uAD6C\uC131 \xB7 \uC5F0\uB3C4\uB294 \uC5F0\uCD9C\uC6A9, \uAE30\uC220
-      \uCD5C\uCD08 \uCD9C\uC2DC \uC5F0\uB3C4\uAC00 \uC544\uB2D8"
+    Source: "OpenAI image_gen - fictional portrait for the face recognition vignette"
   - Id: END_2018
     Video: {fileID: 0}
     Still: {fileID: 2800000, guid: dc078747835e5a949b68b9b818cf6ec0, type: 3}
@@ -238,7 +236,7 @@ MonoBehaviour:
   Type: {fileID: 8300000, guid: 0b72b9477ee450c44970368e4ef83c54, type: 3}
   Hit: {fileID: 8300000, guid: 93a3c78b1c54a5647a598a7f7268490e, type: 3}
   BigHit: {fileID: 8300000, guid: c3c72baa931f55b4bac44cc5571dba81, type: 3}
-  Rewind: {fileID: 8300000, guid: e986208dc70dc4140b7ffaae1e58c846, type: 3}
+  Rewind: {fileID: 8300000, guid: 7dd8856281a44fd1a6075228e4b0aae3, type: 3}
   Stamp: {fileID: 8300000, guid: 09e31ab8d07b0e144974085fd39accaa, type: 3}
   Beep: {fileID: 8300000, guid: 7757b7b33b20ee34ead379dc7dfafc35, type: 3}
   Pad: {fileID: 0}

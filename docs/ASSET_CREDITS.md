@@ -117,6 +117,14 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 
 EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 오프닝에서 사용하는 내레이션과 음악은 아래 미국 우체국 오프닝 항목에 기록했다.
 
+### 오프닝·엔딩 인물 이미지와 내레이션
+
+| 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
+| --- | --- | --- | --- | --- |
+| PostOffice1989WithClerks.png | Textures/OpeningEnding, 이전 오프닝 기록판 | Codex 보조, OpenAI 내장 image_gen. 1989년 한국 우체국에서 봉투를 정리하는 가상의 직원과 손님을 실사 다큐멘터리 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본, 실제 기록사진 아님 |
+| FaceRecognition2015Portrait.png | Textures/OpeningEnding, 엔딩 얼굴 인식 기록판 | Codex 보조, OpenAI 내장 image_gen. 2010년대 실내에서 카메라를 바라보는 가상의 인물을 실사 사진 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본 |
+| ArchiveVoiceEnding01–04.wav | Audio/OpeningEnding, 엔딩 자막별 Voice | Codex 보조, Windows System.Speech의 Microsoft Heami Desktop(ko-KR)으로 프로젝트 대사를 22.05 kHz 16-bit 모노 WAV로 합성 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 대사 구간에 맞춰 무음·속도 조정, 일부 긴 구절은 축약 |
+
 ## 미국 우체국 오프닝
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
@@ -126,6 +134,7 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 | OpeningCrowd.mp3 | 오프닝 우체국 군중 소리 | [Pixabay의 Group Talking](https://pixabay.com/sound-effects/people-group-talking-68823/), 사용자 제공 파일. [Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/) | 4177569399, Pixabay Content License 표시, Freesound 원본 CC0 | 원본 파일 그대로, 0초부터 재생 |
 | OpeningNarration01–06.wav | 오프닝 대사 | 사용자 화면 녹화에서 오디오 추출. 녹음·합성 방식과 음성 제공 서비스 미확인 | 제작자·권리자·배포 조건 미확인 | 대사별 절단, 모노 WAV 변환 및 게인 조절 |
 | OpeningScore.wav | 오프닝 음악 | 사용자가 Suno에서 생성한 [Vintage Electro Swing](https://suno.com/s/X1UheAwttpqtFZhR)의 화면 녹화에서 오디오 추출 | Suno 생성. 계정의 사용 조건 및 공개 배포 권한 미확인 | 앞 무음 절단, 35초 편집, 페이드 및 게인 조절 |
+| OpeningTimelinePulse.wav | 오프닝 연도표 3.5초 | Codex 보조 Python PCM 합성. 낮은 사인파 펄스와 짧은 감쇠를 연도 카운트다운 속도에 맞춰 합성 | 프로젝트 제작, 별도 공개 라이선스 지정 없음 | 사용자가 고른 C 시안, 24kHz 모노 WAV |
 
 ## 공장 환경 표면 텍스처 (2026-11-09)
 

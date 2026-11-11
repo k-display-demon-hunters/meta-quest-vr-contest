@@ -11,6 +11,7 @@ namespace Cinematic
         private RenderTexture _videoTexture;
         private CinematicText.ArchiveClip _clip;
         private float _elapsed;
+        private bool _frameVideo;
 
         private void Awake()
         {
@@ -21,14 +22,16 @@ namespace Cinematic
             _player.errorReceived += Failed;
         }
 
-        public void Show(CinematicText.ArchiveClip clip)
+        public void Show(CinematicText.ArchiveClip clip, bool frameVideo = false)
         {
             bool ready = clip.Video != null && _player.clip == clip.Video && _player.isPrepared;
             if (!ready && _player.clip != clip.Video) { _player.Stop(); }
             _clip = clip;
+            _frameVideo = frameVideo;
             _elapsed = 0;
             _material.mainTexture = clip.Still;
             SetFraming(clip.UV);
+            SetPeopleMotion(0f);
             if (ready) { Prepared(_player); }
             else if (clip.Video != null) { PrepareVideo(clip.Video); }
         }
@@ -44,6 +47,8 @@ namespace Cinematic
             _material.mainTextureOffset = uv.position;
         }
 
+        public void SetPeopleMotion(float time) => _material.SetFloat("_PeopleMotionTime", time);
+
         public void SetTone(float monochrome, float brightness)
         { _material.SetFloat("_Mono", monochrome); _material.SetFloat("_Brightness", brightness); }
         private void Prepared(VideoPlayer player)
@@ -51,7 +56,7 @@ namespace Cinematic
             if (_clip.Video != player.clip) { return; }
             player.time = _clip.StartSeconds;
             _material.mainTexture = _videoTexture;
-            _material.mainTextureScale = Vector2.one; _material.mainTextureOffset = Vector2.zero;
+            SetFraming(_frameVideo ? _clip.UV : new Rect(0, 0, 1, 1));
             player.Play();
         }
         private void Failed(VideoPlayer player, string message)

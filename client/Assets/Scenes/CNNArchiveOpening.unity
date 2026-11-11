@@ -27645,6 +27645,7 @@ MonoBehaviour:
   - {fileID: 689596388}
   - {fileID: 2072761550}
   _digitBox: {fileID: 1171776061}
+  _numeral: {fileID: 1537718251}
   _year: {fileID: 1840185266}
   _caption: {fileID: 1915542180}
   _networkNote: {fileID: 627457865}

@@ -77,6 +77,7 @@ namespace CinematicEditor
                 Id = "PO_STAMP",
                 Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampPlate.png"),
                 Video = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/Textures/OpeningEnding/PostOfficeStamp.mp4"),
+                UV = new Rect(.10f, .035f, .89f, .89f),
                 Duration = 2.8f
             };
             _content.PostOfficeEnvelope = new CinematicText.ArchiveClip
@@ -92,7 +93,7 @@ namespace CinematicEditor
                     Source="OpenAI image_gen · 일상 속 시각 인식 재구성 · 연도는 연출용, 기술 최초 출시 연도가 아님" };
             }
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
-            _content.Rewind=Audio("Rewind"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
+            _content.Rewind=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningTimelinePulse.wav"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
             EditorUtility.SetDirty(_content);
         }
         private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Archive"+name+".wav");
@@ -173,7 +174,7 @@ namespace CinematicEditor
             Canvas handwritten=CanvasAt(digit,"Handwritten numeral",Vector3.zero,new Vector2(330,330),.008f);
             Text numeral=TextAt(handwritten.transform,"Numeral","2",Vector2.zero,new Vector2(330,330),280);
             numeral.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");
-            Assign(world,"_digit",digit); Array(world,"_pixels",pixels);
+            Assign(world,"_digit",digit); Assign(world,"_numeral",numeral); Array(world,"_pixels",pixels);
             Assign(world,"_digitBox",Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2"));
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
             Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);

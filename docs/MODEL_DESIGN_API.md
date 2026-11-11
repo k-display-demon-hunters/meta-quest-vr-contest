@@ -26,7 +26,7 @@
 
 EventSystem과 XRUIInputModule은 공용 `XRPlayerRig.prefab`의 자식으로 유지된다. 모델 씬은 UI 입력 환경을 생성·삭제하지 않는다. 제어 패널·팝업의 버튼은 기존 Button.onClick 연결로 요청을 받는다.
 
-3D 슬롯 설정 기기는 `SlotSettingsController`가 `XRSimpleInteractable.activated`를 직접 받는다. 활성 상태의 점유된 슬롯에서 오른손 `XRRayInteractor`가 보낸 입력만 허용하고, ray가 물체를 잡고 있거나 UI가 가장 가까운 적중 대상이면 차단한다. 입력 조건을 통과하면 슬롯의 로컬 이벤트를 Builder 내부로 전달한다. Builder는 상호작용 활성 상태와 블록 이동 여부를 확인한 뒤 레이어와 팝업 위치를 씬 Manager에 알린다. 씬 Manager는 Settings 모듈에 팝업 열기를 요청하며, 별도 입력 Controller나 적중 조회 콜백을 거치지 않는다.
+슬롯 판 앞쪽 설정 영역은 `SlotSettingsController`가 `XRSimpleInteractable.activated`를 직접 받는다. 활성 상태의 점유된 슬롯에서 오른손 `XRRayInteractor`가 보낸 입력만 허용하고, ray가 물체를 잡고 있거나 UI가 가장 가까운 적중 대상이면 차단한다. 입력 조건을 통과하면 슬롯의 로컬 이벤트를 Builder 내부로 전달한다. Builder는 상호작용 활성 상태와 블록 이동 여부를 확인한 뒤 레이어와 팝업 위치를 씬 Manager에 알린다. 씬 Manager는 Settings 모듈에 팝업 열기를 요청하며, 별도 입력 Controller나 적중 조회 콜백을 거치지 않는다.
 
 | 상향 이벤트 | 씬 Manager의 처리 |
 | --- | --- |
@@ -49,7 +49,7 @@ EventSystem과 XRUIInputModule은 공용 `XRPlayerRig.prefab`의 자식으로 �
 4. 슬롯 밖·점유 슬롯에 놓거나 잡기가 취소되면 블록을 등록 해제하고 파괴한다. 상호작용 종료 시 아직 손에 들린 임시 블록도 정리한다.
 5. 실행 정의를 만들 때 빈 슬롯을 건너뛰고 슬롯 순서대로 레이어를 복사한 뒤 고정 Output(Dense 4·Softmax)을 붙인다.
 
-설정 입력은 Builder 내부에서 잡기 여부와 오른손 레이 적중을 확인한다. 선택한 슬롯의 `Popup Anchor` 위치를 Settings 모듈에 전달하며, 팝업은 하나만 열린다. 값 변경은 `LayerDefinition.SetFilters/SetKernelSize/SetPoolSize/SetUnits/SetActivation`을 사용한다. 삭제 요청은 씬 Manager를 거쳐 Builder에 돌아오므로 Settings가 실제 블록이나 컨베이어를 직접 조작하지 않는다.
+점유된 슬롯 판 앞쪽의 설정 글씨를 오른손 레이로 가리키고 Trigger를 누른다. Builder 내부에서 잡기 여부와 오른손 레이 적중을 확인한다. 선택한 슬롯의 `Popup Anchor` 위치를 Settings 모듈에 전달하며, 팝업은 하나만 열린다. 값 변경은 `LayerDefinition.SetFilters/SetKernelSize/SetPoolSize/SetUnits/SetActivation`을 사용한다. 삭제 요청은 씬 Manager를 거쳐 Builder에 돌아오므로 Settings가 실제 블록이나 컨베이어를 직접 조작하지 않는다.
 
 ### 단계별 출력과 연결
 
@@ -65,7 +65,7 @@ Builder가 인접한 배치 블록의 연결 지점 쌍을 모아 Conveyor에 �
 
 ### 바닥 조립 슬롯과 공급 책상
 
-조립 행은 씬 루트 기준 Y=0, Z=0.62에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.62에 둔다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 판 앞쪽 윗면에는 슬롯 번호와 빈 상태 또는 설정 가능 상태를 표시하고 블록은 뒤쪽에 안착한다. 판 앞의 설정 기기는 점유된 슬롯에서 오른손 Trigger로 팝업을 연다.
+조립 행은 씬 루트 기준 Y=0, Z=0.82에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.82에 둔다. 공장에서는 콘텐츠 기준점이 월드 Y=0.30에 놓여 조립 행과 공급 책상, 제어 패널이 높은 연구실 바닥을 기준으로 정렬된다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 빈 슬롯의 글씨는 판 가운데에 배치한다. 블록이 놓이면 슬롯 번호와 설정 글씨를 판 앞쪽에 표시하고, 글씨 위의 얇은 Trigger Collider로 오른손 레이 입력을 받는다.
 
 공급 책상은 조립 행과 동쪽 벽 사이에 두고 방 중앙을 향한다. 씬 루트 기준 위치는 (0.333333, 0.9696, 2.05)이고 공급대 그룹의 균일 배율은 0.8이다. 흰색 둥근 상판 아래에 얇은 테두리와 바깥으로 벌어지는 다리 네 개를 둔다. 책상은 그룹 안에서 긴 축 배율 1.7을 사용한다. Conv·Pooling·Flatten·Dense 공급 블록과 보충 블록은 이 부모 아래 X=-1.6575, -0.5525, 0.5525, 1.6575, Y=Z=0에서 네 패드에 정렬된다. 블록을 슬롯에 놓으면 고정 Input·Output과 같은 루트 기준 배율 1로 정렬된다.
 
@@ -97,7 +97,7 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 | --- | --- |
 | 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset` |
 | `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어 |
-| `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 표시와 설정 기기. 자식 순서는 슬롯 순서와 대응한다. |
+| `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 판과 설정 입력 영역. 자식 순서는 슬롯 순서와 대응한다. |
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
 | `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 화면 요소는 프리팹에, 패널 기준점은 씬에 저장한다. |

@@ -74,9 +74,10 @@ namespace FactoryEnvironment
         private void Update()
         {
             FactoryAreaId area = _areaController.CurrentArea.Id;
-            if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom)
+            if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom ||
+                area == FactoryAreaId.ModelDesignRoom)
             {
-                // Follow the lower treads even when the shared rig has no thumbstick input.
+                // Follow the treads and ramps even when the shared rig has no thumbstick input.
                 Vector3 descent = Vector3.down * (FloorDescentSpeed * Time.deltaTime);
                 _bodyTransformer.constrainedBodyManipulator.MoveBody(descent);
             }

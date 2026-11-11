@@ -42,7 +42,7 @@ namespace ModelDesignScene.ControlPanel
         [Header("Status colors")]
         [SerializeField] private Color _readyColor = new Color(0.25f, 0.84f, 0.69f);
         [SerializeField] private Color _problemColor = new Color(1f, 0.7f, 0.36f);
-        [SerializeField] private Color _neutralColor = new Color(0.39f, 0.73f, 0.95f);
+        [SerializeField] private Color _neutralColor = new Color(0.73f, 0.48f, 0.21f);
 
         private bool _hasIssues;
         private bool _isDragging;

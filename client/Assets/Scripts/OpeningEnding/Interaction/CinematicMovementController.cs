@@ -15,6 +15,9 @@ namespace OpeningEnding
         private readonly XRInputButtonReader _blockedGripInput = new XRInputButtonReader(
             "Cinematic Grip Lock", inputSourceMode: XRInputButtonReader.InputSourceMode.Unused);
 
+        private PersistentXRPlayerRig _rig;
+        private bool _controllersWereVisible;
+        private bool _tabletWasVisible;
         private ContinuousMoveProvider _moveProvider;
         private XRPlayerInputController _playerInput;
         private XRRayInteractor _rightRay;
@@ -46,14 +49,14 @@ namespace OpeningEnding
             }
         }
 
-        public void Bind(XROrigin rig)
+        internal void Bind(XROrigin rig, bool waitingForStart)
         {
             Release();
-            if (rig == null)
-            {
-                Debug.LogError("[Cinematic] An XR rig is required to control story input.", this);
-                return;
-            }
+            _rig = rig.GetComponent<PersistentXRPlayerRig>();
+            _controllersWereVisible = _rig.ControllerModelsVisible;
+            _tabletWasVisible = _rig.TabletVisible;
+            _rig.SetTabletVisible(false);
+            _rig.SetControllerModelsVisible(waitingForStart);
 
             _moveProvider = rig.GetComponentInChildren<ContinuousMoveProvider>(true);
             _playerInput = rig.GetComponentInChildren<XRPlayerInputController>(true);
@@ -100,7 +103,9 @@ namespace OpeningEnding
             if (_rightRay != null) _rightRay.selectInput = _blockedGripInput;
         }
 
-        public void SetUIVisible(bool visible)
+        internal void SetControllersVisible(bool visible) => _rig.SetControllerModelsVisible(visible);
+
+        internal void SetUIVisible(bool visible)
         {
             if (!IsBound)
             {
@@ -152,6 +157,13 @@ namespace OpeningEnding
                 _line.enabled = _lineWasEnabled;
             }
 
+            if (_rig != null)
+            {
+                _rig.SetControllerModelsVisible(_controllersWereVisible);
+                _rig.SetTabletVisible(_tabletWasVisible);
+            }
+
+            _rig = null;
             _moveProvider = null;
             _playerInput = null;
             _rightRay = null;

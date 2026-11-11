@@ -8,12 +8,10 @@ namespace Cinematic
         [SerializeField] private AudioSource _stamp, _beep;
         private const float OpeningScoreVolume = .95f;
         private CinematicText _content;
-        private float _last = -1;
-        private bool _ending;
 
         public void Bind(CinematicText content, bool ending)
         {
-            _content = content; _ending = ending;
+            _content = content;
             _screen.clip = content.OpeningCrowd;
             _rewind.clip = content.Rewind;
             _pad.clip = ending ? content.Pad : content.OpeningScore;
@@ -37,36 +35,26 @@ namespace Cinematic
         public void Hit(bool large) { Play(_impact, large ? _content.BigHit : _content.Hit, large ? .55f : .4f); }
         public void Beep(Vector3 position) { _beep.transform.position = position; Play(_beep, _content.Beep, .25f); }
 
-        public void Evaluate(float time)
-        {
-            if (!_ending)
-            {
-                if (Crossed(OpeningTiming.Rewind, time)) { _rewind.Play(); }
-                if (Crossed(OpeningTiming.Arrival, time))
-                {
-                    _rewind.Stop();
-                    _screen.time = 0;
-                    _screen.Play();
-                }
-                if (Crossed(OpeningTiming.StampContact, time)) { Play(_stamp, _content.Stamp, .7f); }
-                if (Crossed(OpeningTiming.Pixels, time)) { _screen.Stop(); }
+        internal void StartRewind() => _rewind.Play();
 
-                bool underNarration = _voice.isPlaying;
-                float crowdFade = 1f - Mathf.InverseLerp(OpeningTiming.Digit, OpeningTiming.Pixels, time);
-                _screen.volume = (underNarration ? .12f : .28f) * crowdFade;
-                bool quietCue = (time >= OpeningTiming.Rewind && time < OpeningTiming.Arrival)
-                    || (time >= OpeningTiming.StampShot && time < OpeningTiming.Envelope);
-                float scoreLevel = quietCue ? .18f : underNarration ? .55f : OpeningScoreVolume;
-                _pad.volume = Mathf.MoveTowards(_pad.volume, scoreLevel, Time.deltaTime * 2f);
-            }
-            else
-            {
-                if (Crossed(14f, time)) { StopAll(); }
-            }
-            _last = time;
+        internal void StartCrowd()
+        {
+            _rewind.Stop();
+            _screen.time = 0;
+            _screen.Play();
         }
 
-        private bool Crossed(float cue, float time) => _last < cue && time >= cue;
+        internal void PlayStamp() => Play(_stamp, _content.Stamp, .7f);
+        internal void StopCrowd() => _screen.Stop();
+
+        internal void MixOpening(float crowdFade, bool quietCue)
+        {
+            bool underNarration = _voice.isPlaying;
+            _screen.volume = (underNarration ? .12f : .28f) * crowdFade;
+            float scoreLevel = quietCue ? .18f : underNarration ? .55f : OpeningScoreVolume;
+            _pad.volume = Mathf.MoveTowards(_pad.volume, scoreLevel, Time.deltaTime * 2f);
+        }
+
         private static void Play(AudioSource source, AudioClip clip, float volume)
         { if (clip != null) { source.PlayOneShot(clip, volume); } }
         public void StopAll()

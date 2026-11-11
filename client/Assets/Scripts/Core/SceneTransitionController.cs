@@ -14,10 +14,33 @@ namespace UI
     public sealed class SceneTransitionController : MonoBehaviour
     {
         private Image _blackout;
-        public bool IsLoading { get; private set; }
+        private Camera _camera;
+        private string _destination;
+        private AsyncOperation _operation;
+        private int? _openingRunId;
+        private float _reportedProgress;
+        private float _nextWaitReport;
 
-        public void Initialize(Camera camera)
+        internal static SceneTransitionController Begin(Camera camera, Transform rig, string destination, int? openingRunId)
         {
+            GameObject overlay = new GameObject("Archive transition", typeof(RectTransform));
+            overlay.transform.SetParent(rig, false);
+            SceneTransitionController transition = overlay.AddComponent<SceneTransitionController>();
+            transition._openingRunId = openingRunId;
+            transition._destination = destination;
+            transition.Initialize(camera);
+            if (openingRunId.HasValue) { SceneManager.sceneLoaded += transition.HandleSceneLoaded; }
+            transition.Log("FadeOutStarted");
+            transition.StartCoroutine(transition.LoadWithFade(destination));
+            return transition;
+        }
+
+        internal bool IsLoading { get; private set; }
+        internal bool Succeeded { get; private set; }
+
+        private void Initialize(Camera camera)
+        {
+            _camera = camera;
             Canvas canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = camera;
@@ -46,18 +69,12 @@ namespace UI
             return Application.CanStreamedLevelBeLoaded(sceneName);
         }
 
-        public void Load(string sceneName)
-        {
-            if (!IsLoading && CanLoad(sceneName))
-            {
-                StartCoroutine(LoadWithFade(sceneName));
-            }
-        }
-
         private IEnumerator LoadWithFade(string sceneName)
         {
             IsLoading = true;
             yield return Fade(0f, 1f);
+            Log("FadeOutCompleted");
+            Log($"LoadStarted destination={sceneName}");
             AsyncOperation operation = null;
             try
             {
@@ -79,14 +96,66 @@ namespace UI
             }
             if (operation != null)
             {
+                _operation = operation;
+                _nextWaitReport = Time.realtimeSinceStartup + 5f;
                 yield return operation;
+                _operation = null;
+                Log($"LoadCompleted activeScene={SceneManager.GetActiveScene().name}");
                 yield return null;
             }
+            else
+            {
+                Log($"LoadFailed destination={sceneName}");
+            }
             yield return Fade(1f, 0f);
+            Succeeded = operation != null;
+            LogViewState($"FadeInCompleted success={Succeeded}");
             IsLoading = false;
-            if (operation != null)
+            if (Succeeded)
             {
                 Destroy(gameObject);
+            }
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == _destination)
+            {
+                Log($"SceneLoaded scene={scene.name} mode={mode}");
+            }
+        }
+
+        private void Update()
+        {
+            if (!_openingRunId.HasValue || _operation == null) { return; }
+            float progress = _operation.progress;
+            float now = Time.realtimeSinceStartup;
+            if (progress - _reportedProgress < .1f && now < _nextWaitReport) { return; }
+            _reportedProgress = progress;
+            _nextWaitReport = now + 5f;
+            LogViewState($"Loading progress={progress:F2}");
+        }
+
+        private void OnDestroy()
+        {
+            if (!_openingRunId.HasValue) { return; }
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            if (IsLoading) { Log($"DestroyedDuringTransition destination={_destination}"); }
+        }
+
+        private void LogViewState(string message)
+        {
+            if (!_openingRunId.HasValue) { return; }
+            bool cameraActive = _camera != null && _camera.isActiveAndEnabled;
+            Log($"{message} activeScene={SceneManager.GetActiveScene().name} " +
+                $"cameraActive={cameraActive} blackout={_blackout.color.a:F2}");
+        }
+
+        private void Log(string message)
+        {
+            if (_openingRunId.HasValue)
+            {
+                Debug.Log($"[Opening][run={_openingRunId.Value}][transition={GetInstanceID()}] {message}", this);
             }
         }
 

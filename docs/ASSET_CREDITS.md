@@ -167,7 +167,7 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
 | `FactoryLabPanelCream_*`, `FactoryLabPanelSlate_*` | 공장 작업 구역 실내 벽의 회백색 패널과 청회색 하부 마감 | Codex AI 보조로 Python·NumPy·Pillow에서 줄눈, 표면 결, 걸레받이의 알베도·노멀·금속성/매끄러움 맵 합성 | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 신규 합성 |
-| `FaultyFanBearing.wav` | `Audio/FactoryEnvironment/`, 환풍기 3대의 재시동 마찰음 | Codex AI 보조로 Python·NumPy에서 기존 음원에 칼날이 철판에 걸렸다 풀리는 짧은 마찰과 5–7 kHz 공명층을 합성. 0.96초, 24 kHz 모노 PCM | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 기존 합성음 수정 |
+| `FaultyFanBearing.wav` | `Audio/FactoryEnvironment/`, 환풍기 3대의 재시동 마찰음 | Codex AI 보조로 Python·NumPy에서 칼날이 철판에 걸렸다가 튕기는 마찰, 불규칙한 고음과 금속 잔향을 합성. 1.13초, 24 kHz 모노 PCM | 법적 권리자 미확인. 별도 공개 라이선스 지정 없음 | 기존 합성음 교체 |
 
 키 큰 사물함 번호판에는 기존 `TutorialLockerCoating_*` 아틀라스의 번호 영역을, 합성곱 관찰 콘솔에는 기존 `FactoryDiagnosticDisplays.png`의 계산 표본 한 장을 재사용했다. 원본 이미지와 출처·권리 기록은 유지하고 Codex AI 보조로 메시 UV를 조정했다.
 

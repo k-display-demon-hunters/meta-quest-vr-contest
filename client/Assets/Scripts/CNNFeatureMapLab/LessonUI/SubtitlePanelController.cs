@@ -49,11 +49,15 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal void Show(string header, string body, bool previous, string next)
+        internal void Show(string header, string body, bool previous, string next, string previousLabel = LessonContent.Previous)
         {
             _header.text = header;
             _body.text = body;
             _previous.gameObject.SetActive(previous);
+            if (previous)
+            {
+                _previous.SetText(previousLabel);
+            }
             _next.gameObject.SetActive(next != null);
             if (next != null)
             {

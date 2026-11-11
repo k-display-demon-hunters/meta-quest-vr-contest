@@ -8,6 +8,7 @@ namespace FeatureMapCorridor
         internal int Digit { get; set; } = 2;
         internal int RequiredRoundIndex { get; set; }
         internal bool MandatoryRound { get; set; }
+        internal bool ShowingOutputDetails { get; set; }
         internal MapId ActiveRound { get; set; }
         internal LessonStep Step { get; set; }
         internal float Progress { get; set; }

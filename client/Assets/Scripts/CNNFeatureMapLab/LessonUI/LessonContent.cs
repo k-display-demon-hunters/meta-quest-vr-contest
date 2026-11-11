@@ -5,7 +5,9 @@ namespace FeatureMapCorridor
     internal static class LessonContent
     {
         internal const string FilterHint = "필터를 눌러 펼쳐 보세요";
-        internal const string OutputDone = "출력까지 모두 계산했어요!";
+        internal const string OutputDone = "판정을 마쳤어요. 점수가 어떻게 만들어졌는지 더 살펴볼 수 있어요.";
+        internal const string ViewScore = "점수 계산 보기";
+        internal const string BackToVerdict = "판정 결과로";
         internal const string InputLabel = "입력 · 16×16";
         internal const string Filter = "필터";
         internal const string OutputLabel = "출력 · 100%를 점수대로 나눠 담아요";
@@ -30,12 +32,11 @@ namespace FeatureMapCorridor
         internal const string InputPictureBody = "입력 이미지를 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
         internal const string InputPictureHint = "입력 이미지 누르기";
 
-        internal static string WaitingHint(int layer, int map, int digit) => layer == 4
-            ? $"숫자 {digit} 통을 눌러 보세요"
-            : $"{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요";
+        internal static string WaitingHint(int layer, int map) =>
+            $"{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요";
 
-        internal static string WaitingBody(int layer, int map, int digit) => layer == 4
-            ? $"출력의 숫자 {digit} 통을 눌러 보세요."
+        internal static string WaitingBody(int layer, int map) => layer == 4
+            ? "이 이미지에서 찾은 특징으로 어떤 숫자인지 알아볼까요? 가운데 판정 시작 버튼을 누르세요."
             : layer == 2
                 ? "<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling 장치를 눌러 강한 반응이 어떻게 남는지 살펴보세요."
                 : $"<b>필터는 특징을 추출합니다.</b>\n{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 피처맵을 만들어 보세요.";
@@ -80,7 +81,7 @@ namespace FeatureMapCorridor
 
         internal static string MatchTemplates(int count) => $"마지막 Conv의 피처맵 {count}장을 <b>한 덩어리로 쌓았어요</b>. 통 위에는 숫자마다 \"이 숫자라면 이렇게 생겨야 해\" 하는 <b>틀</b>이 있어요.\n덩어리를 틀마다 겹쳐 보고, <b>잘 맞을수록 틀이 빛나고 점수(빛 기둥)가 높아져요</b>.";
         internal static string ShareLight(int winner, int percent) => string.Format("이제 위의 <b>빛 탱크에 담긴 100%</b>를 점수에 따라 세 통에 나눠 담아요.\n점수가 조금만 높아도 <b>훨씬 많이</b> 가져가요. 숫자 {0} 통이 <b>{1}%</b>까지 차올라요.", winner, percent);
-        internal static string FlyAnswer(int winner) => string.Format("가장 많이 차오른 통이 <b>AI의 답</b>이에요.\n입력 그림이 날아가 앉은 곳 → <b>이 그림은 숫자 {0}!</b>", winner);
+        internal static string FlyAnswer(int winner) => string.Format("가장 많이 차오른 통이 <b>AI의 답</b>이에요.\n<b>AI의 판정 · 숫자 {0}</b>", winner);
         internal static string Recap(int layer, int map, bool mandatory)
         {
             if (layer == 4)

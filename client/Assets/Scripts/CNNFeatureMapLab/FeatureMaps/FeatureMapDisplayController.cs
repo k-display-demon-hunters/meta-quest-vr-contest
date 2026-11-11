@@ -26,21 +26,17 @@ namespace FeatureMapCorridor
         private float _outputRevealStarted;
         private int _outputCellsShown;
         internal bool RevealingOutputInputs => _outputInputs.Count != 0;
-        internal event Action<int> OutputSelected;
+        internal event Action OutputStarted;
         internal event Action<string> ButtonPressed;
         internal event Action<string> InputClicked;
         internal string HoverName
         {
             get
             {
-                return _input.Picture.HoverName ?? _output.HoverName;
+                return _input.Picture.HoverName;
             }
         }
-        internal void SetInputActive(bool active)
-        {
-            _input.Picture.SetInputActive(active);
-            _output.SetInputActive(active);
-        }
+        internal void SetInputActive(bool active) => _input.Picture.SetInputActive(active);
         private void OnInputClicked(string name) => InputClicked?.Invoke(name);
         internal int Winner => _output.Winner;
         internal int WinnerPercent => _output.WinnerPercent;
@@ -59,7 +55,7 @@ namespace FeatureMapCorridor
                     _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, _input, _maps[2], digit => OutputSelected?.Invoke(digit));
+            _output.Bind(visuals, _input, _maps[2], () => OutputStarted?.Invoke());
             ShowSnapshot(snapshot);
             RestoreResults(new HashSet<MapId>());
         }
@@ -69,7 +65,7 @@ namespace FeatureMapCorridor
             _input.ButtonPressed += OnButton;
             _input.Enable();
             _input.Picture.InputClicked += OnInputClicked;
-            _output.InputClicked += OnInputClicked;
+            _output.Enable();
         }
 
         internal void Disable()
@@ -77,7 +73,7 @@ namespace FeatureMapCorridor
             _input.ButtonPressed -= OnButton;
             _input.Disable();
             _input.Picture.InputClicked -= OnInputClicked;
-            _output.InputClicked -= OnInputClicked;
+            _output.Disable();
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);
@@ -139,7 +135,7 @@ namespace FeatureMapCorridor
         }
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
-        internal Vector3 OutputHintPosition(int digit) => _output.Tin(digit) + Vector3.up * .9f;
+        internal void SetOutputStartAvailable(bool available) => _output.SetStartAvailable(available);
         internal void HighlightLayer(int zone)
         {
             for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])

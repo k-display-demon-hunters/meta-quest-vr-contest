@@ -25,6 +25,7 @@ namespace Tablet
         private int _inputResumeFrame = -1;
         private bool _interactionBeforeReader;
         private int _focusBeforeReader;
+        public bool IsAvailable => gameObject.activeSelf;
         public event Action<LearningStageId> StageMoveRequested;
 
         private TabletInputController.FocusGroup ActiveGroup => _detail.IsOpen
@@ -102,6 +103,13 @@ namespace Tablet
             _input.Disable();
         }
         private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); } }
+
+        public void SetAvailable(bool available)
+        {
+            // OnEnable/OnDisable manage input and subscriptions together with the visible hierarchy.
+            gameObject.SetActive(available);
+        }
+
         public void SetLearningState(LearningProgressSnapshot snapshot) => _learning.Refresh(snapshot);
         public void ShowTravelStarted() => _learning.ShowTravelStarted();
         public void ShowTravelFailed() => _learning.ShowTravelFailed();

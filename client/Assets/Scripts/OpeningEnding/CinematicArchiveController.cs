@@ -23,16 +23,32 @@ namespace Cinematic
 
         public void Show(CinematicText.ArchiveClip clip)
         {
-            _player.Stop(); _clip = clip; _elapsed = 0;
+            bool ready = clip.Video != null && _player.clip == clip.Video && _player.isPrepared;
+            if (!ready && _player.clip != clip.Video) { _player.Stop(); }
+            _clip = clip;
+            _elapsed = 0;
             _material.mainTexture = clip.Still;
-            _material.mainTextureScale = clip.UV.size;
-            _material.mainTextureOffset = clip.UV.position;
-            if (clip.Video != null) { _player.clip = clip.Video; _player.Prepare(); }
+            SetFraming(clip.UV);
+            if (ready) { Prepared(_player); }
+            else if (clip.Video != null) { PrepareVideo(clip.Video); }
         }
+
+        public void PrepareVideo(VideoClip video)
+        {
+            _player.clip = video;
+            _player.Prepare();
+        }
+        public void SetFraming(Rect uv)
+        {
+            _material.mainTextureScale = uv.size;
+            _material.mainTextureOffset = uv.position;
+        }
+
         public void SetTone(float monochrome, float brightness)
         { _material.SetFloat("_Mono", monochrome); _material.SetFloat("_Brightness", brightness); }
         private void Prepared(VideoPlayer player)
         {
+            if (_clip.Video != player.clip) { return; }
             player.time = _clip.StartSeconds;
             _material.mainTexture = _videoTexture;
             _material.mainTextureScale = Vector2.one; _material.mainTextureOffset = Vector2.zero;

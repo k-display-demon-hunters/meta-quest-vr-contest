@@ -16,29 +16,22 @@ namespace ModelDesignScene.ModelBuilder
             return count > 8 ? $"8 shown / {count - 8} omitted" : "All shown";
         }
 
-        internal static Mesh CreateOutput(int height, int width, int elements, bool spatial, bool layFlat)
+        internal static Mesh CreateOutput(int height, int width, int elements, bool spatial, bool enlargedExample)
         {
             VectorBlockMesh builder = new VectorBlockMesh();
-            float spacing = layFlat ? 0.05f : 0.025f;
+            float spacing = enlargedExample ? 0.05f : 0.025f;
             float frameWidth = spatial ? Mathf.Max(0.12f, width * spacing + 0.04f) : 0.16f;
             float frameHeight = spatial ? Mathf.Max(0.12f, height * spacing + 0.04f) : 0.7f;
             float centerY = -0.08f + frameHeight * 0.5f;
-            Vector3 frameCenter = new Vector3(0f, layFlat ? -0.078f : centerY, 0f);
-            Quaternion frameRotation = layFlat ? Quaternion.Euler(90f, 0f, 0f) : Quaternion.identity;
             builder.AddBox(new Vector3(0f, -0.105f, 0f),
-                new Vector3(Mathf.Max(0.4f, frameWidth + 0.06f), 0.03f, layFlat ? 0.28f : 0.24f), 0);
-            if (!layFlat)
-            {
-                builder.AddBox(new Vector3(0f, -0.075f, -0.12f), new Vector3(0.38f, 0.06f, 0.012f), 0);
-            }
+                new Vector3(Mathf.Max(0.4f, frameWidth + 0.06f), 0.03f, 0.24f), 0);
+            builder.AddBox(new Vector3(0f, -0.075f, -0.12f), new Vector3(0.38f, 0.06f, 0.012f), 0);
             for (int side = -1; side <= 1; side += 2)
             {
-                Vector3 verticalEdge = new Vector3(side * frameWidth * 0.5f, 0f, 0f);
-                Vector3 horizontalEdge = new Vector3(0f, side * frameHeight * 0.5f, 0f);
-                builder.AddBox(frameCenter + frameRotation * verticalEdge,
-                    new Vector3(0.014f, frameHeight, 0.014f), Primary, frameRotation);
-                builder.AddBox(frameCenter + frameRotation * horizontalEdge,
-                    new Vector3(frameWidth, 0.014f, 0.014f), Primary, frameRotation);
+                builder.AddBox(new Vector3(side * frameWidth * 0.5f, centerY, 0f),
+                    new Vector3(0.014f, frameHeight, 0.014f), Primary);
+                builder.AddBox(new Vector3(0f, centerY + side * frameHeight * 0.5f, 0f),
+                    new Vector3(frameWidth, 0.014f, 0.014f), Primary);
             }
             if (spatial)
             {
@@ -47,8 +40,8 @@ namespace ModelDesignScene.ModelBuilder
                     for (int column = 0; column < width; column++)
                     {
                         Vector3 cell = new Vector3((column - (width - 1) * 0.5f) * spacing,
-                            ((height - 1) * 0.5f - row) * spacing, 0f);
-                        builder.AddSphere(frameCenter + frameRotation * cell, layFlat ? 0.012f : 0.008f);
+                            centerY + ((height - 1) * 0.5f - row) * spacing, 0f);
+                        builder.AddSphere(cell, enlargedExample ? 0.012f : 0.008f);
                     }
                 }
             }

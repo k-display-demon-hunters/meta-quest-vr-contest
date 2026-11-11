@@ -8,7 +8,7 @@ namespace ModelDesignScene.ModelBuilder
     public sealed class PlacementExampleController : MonoBehaviour
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-        private static readonly Color OutlineColor = new Color(1.55f, 1.08f, 0.27f, 1f);
+        private static readonly Color OutlineColor = new Color(0.73f, 0.48f, 0.21f, 1f);
         private static readonly Color GhostColor = new Color(0.30f, 0.84f, 1f, 0.46f);
 
         [SerializeField] private Material _outlineMaterial;
@@ -43,7 +43,7 @@ namespace ModelDesignScene.ModelBuilder
             ModelBlockController selected = blocks[0];
             foreach (ModelBlockController block in blocks)
             {
-                Outline(block.transform, block.ExampleMesh.bounds, block.IsFlatOnSupply);
+                Outline(block.transform, block.ExampleMesh.bounds, false);
                 if (block.ExampleMesh.bounds.size.x > selected.ExampleMesh.bounds.size.x)
                 {
                     selected = block;
@@ -51,7 +51,7 @@ namespace ModelDesignScene.ModelBuilder
                 yield return new WaitForSecondsRealtime(0.24f);
             }
 
-            Outline(selected.transform, selected.ExampleMesh.bounds, selected.IsFlatOnSupply);
+            Outline(selected.transform, selected.ExampleMesh.bounds, false);
             yield return new WaitForSecondsRealtime(0.42f);
 
             CreateGhost(selected);

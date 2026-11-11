@@ -10,12 +10,14 @@ namespace Cinematic
         [SerializeField] private Transform[] _letters, _boxes, _pixels, _eraProps, _networkLayers, _fragments;
         [SerializeField] private Transform _digitBox;
         [SerializeField] private Text _year, _caption, _networkNote;
+        [SerializeField] private Text _numeral;
         [SerializeField] private Text[] _layerLabels;
         [SerializeField] private Image _flash;
         [SerializeField] private CinematicArchiveController _archive;
         private CinematicText _content;
         private bool _ending;
         private int _era = -1;
+        private const float PixelTransitionStart = OpeningTiming.Pixels - .65f;
         private int _openingShot;
         private Vector3[] _pixelOrigins;
         public event Action<Vector3> Recognized;
@@ -98,6 +100,10 @@ namespace Cinematic
             _digitBox.gameObject.SetActive(t >= OpeningTiming.Digit && t < OpeningTiming.Pixels);
             float digitReveal = Smooth((t - OpeningTiming.Digit) / .65f);
             _digit.localScale = Vector3.one * Mathf.Lerp(.5f, 1, digitReveal);
+            float pixelTransition = Smooth(Mathf.InverseLerp(PixelTransitionStart, OpeningTiming.Pixels, t));
+            Color digitColor = Color.Lerp(Color.white, new Color(.39f, .89f, .85f), pixelTransition);
+            digitColor.a = 1f - pixelTransition;
+            _numeral.color = digitColor;
             if (Crossed(OpeningTiming.Digit, t)) { Recognized?.Invoke(_digit.position); }
 
             AnimatePixels(t);
@@ -113,13 +119,14 @@ namespace Cinematic
             if (shot != _openingShot)
             {
                 _openingShot = shot;
-                _archive.Show(shot == 1 ? _content.PostOfficeStamp : _content.PostOfficeEnvelope);
+                _archive.Show(shot == 1 ? _content.PostOfficeStamp : _content.PostOfficeEnvelope, frameVideo: shot == 1);
             }
 
             float expand = Smooth((t - OpeningTiming.Arrival - .18f) / .65f);
             _portal.localPosition = Vector3.Lerp(new Vector3(0, 1.85f, 3), new Vector3(0, 2.2f, 4.6f), expand);
             _portal.localScale = Vector3.Lerp(new Vector3(1.6f, .9f, 1), new Vector3(6.8f, 3.825f, 1), expand);
             _archive.SetTone(shot == 0 ? .55f * (1 - expand) : 0, 1);
+            _archive.SetPeopleMotion(shot == 0 ? t - OpeningTiming.Arrival : 0f);
             if (shot == 0)
             {
                 float zoom = Smooth(Mathf.InverseLerp(OpeningTiming.Zoom, OpeningTiming.StampShot, t));
@@ -128,7 +135,10 @@ namespace Cinematic
             else if (shot == 2)
             {
                 float zoom = Smooth(Mathf.InverseLerp(OpeningTiming.Digit - 1.15f, OpeningTiming.Digit, t));
-                _archive.SetFraming(new Rect(.64f * zoom, .33f * zoom, 1 - .78f * zoom, 1 - .78f * zoom));
+                Rect stampFraming = _content.PostOfficeStamp.UV;
+                Vector2 offset = Vector2.Lerp(stampFraming.position, new Vector2(.64f, .33f), zoom);
+                Vector2 size = Vector2.Lerp(stampFraming.size, Vector2.one * .22f, zoom);
+                _archive.SetFraming(new Rect(offset, size));
             }
         }
 
@@ -136,14 +146,18 @@ namespace Cinematic
         {
             for (int i = 0; i < _pixels.Length; i++)
             {
-                _pixels[i].gameObject.SetActive(t >= OpeningTiming.Pixels && t < OpeningTiming.Doors);
+                Vector3 origin = _pixelOrigins[i];
+                float rowDelay = .17f * Mathf.InverseLerp(2.55f, 1.25f, origin.y);
+                float separation = Smooth(Mathf.InverseLerp(PixelTransitionStart + rowDelay, OpeningTiming.Pixels, t));
+                _pixels[i].gameObject.SetActive(separation > 0f && t < OpeningTiming.Doors);
                 float angle = i * 2.39996f + (t - OpeningTiming.Pixels) * .18f;
                 float radius = 1.2f + (i % 7) * .22f;
                 Vector3 orbit = new Vector3(Mathf.Sin(angle) * radius, .45f + (i % 13) * .18f, Mathf.Cos(angle) * radius);
-                Vector3 point = Vector3.Lerp(_pixelOrigins[i], orbit, Smooth((t - 24.2f) / 1.1f));
+                Vector3 assembled = Vector3.Lerp(_digit.localPosition, origin, Mathf.Lerp(.82f, 1f, separation));
+                Vector3 point = Vector3.Lerp(assembled, orbit, Smooth((t - 24.2f) / 1.1f));
                 float gather = Smooth((t - 29.8f) / 1.2f);
                 _pixels[i].localPosition = Vector3.Lerp(point, new Vector3((i % 9 - 4) * .15f, 1.5f, 12), gather);
-                _pixels[i].localScale = Vector3.one * Mathf.Lerp(.085f, .025f, gather);
+                _pixels[i].localScale = Vector3.one * (Mathf.Lerp(.085f, .025f, gather) * separation);
             }
         }
 

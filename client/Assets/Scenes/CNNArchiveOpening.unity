@@ -39161,6 +39161,7 @@ MonoBehaviour:
   - {fileID: 1855987751}
   - {fileID: 1805206475}
   _digitBox: {fileID: 1171776061}
+  _numeral: {fileID: 1537718251}
   _year: {fileID: 1840185266}
   _caption: {fileID: 1915542180}
   _networkNote: {fileID: 627457865}

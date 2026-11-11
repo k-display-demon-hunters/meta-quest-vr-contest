@@ -7,6 +7,8 @@ namespace Cinematic
         [SerializeField] private AudioSource _screen, _voice, _type, _impact, _rewind, _pad;
         [SerializeField] private AudioSource[] _room;
         [SerializeField] private AudioSource _stamp, _ring, _printer, _beep;
+        private const float OpeningScoreVolume = .95f;
+
         private CinematicText _content;
         private float _last = -1;
         private bool _ending;
@@ -23,8 +25,9 @@ namespace Cinematic
         public void BeginOpening()
         {
             _pad.loop = false;
-            _pad.volume = .27f;
+            _pad.volume = OpeningScoreVolume;
             _pad.Play();
+            Play(_impact, _content.Beep, .7f);
         }
 
         public void Voice(AudioClip clip)
@@ -55,7 +58,7 @@ namespace Cinematic
                 _screen.volume = (underNarration ? .12f : .28f) * crowdFade;
                 bool quietCue = (time >= OpeningTiming.Rewind && time < OpeningTiming.Arrival)
                     || (time >= OpeningTiming.StampShot && time < OpeningTiming.Envelope);
-                float scoreLevel = quietCue ? .055f : underNarration ? .17f : .32f;
+                float scoreLevel = quietCue ? .18f : underNarration ? .55f : OpeningScoreVolume;
                 _pad.volume = Mathf.MoveTowards(_pad.volume, scoreLevel, Time.deltaTime * 2f);
             }
             else

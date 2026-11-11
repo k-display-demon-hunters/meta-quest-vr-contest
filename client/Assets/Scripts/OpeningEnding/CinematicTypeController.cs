@@ -19,16 +19,37 @@ namespace Cinematic
         private float[] _times;
         private bool _cursor;
         private bool _ending;
+        private Vector3 _captionScale;
         public event Action<AudioClip> VoiceRequested;
         public event Action CharacterTyped;
 
-        public void Bind(CinematicText.Line[] lines, bool ending) { _lines = lines; _ending = ending; _line.text = ""; }
+        public void Bind(CinematicText.Line[] lines, bool ending)
+        {
+            _lines = lines;
+            _ending = ending;
+            _captionScale = _line.transform.parent.localScale;
+            _line.text = "";
+        }
 
         public void Evaluate(float time, bool inWorld)
         {
-            _line.transform.parent.localPosition = new Vector3(0, inWorld ? (time >= 12.6f ? .85f : .99f) : 1.6f, 2.5f);
-            if (_ending && time >= 16.6f && time < 18f)
-            { _line.transform.parent.localPosition = new Vector3(0, .95f, 2.5f); }
+            Transform caption = _line.transform.parent;
+            bool showInFront = !_ending && time >= OpeningTiming.Digit && time < OpeningTiming.Doors;
+            if (showInFront)
+            {
+                // Keep the subtitle in front of the number and the moving pixels at the same apparent size.
+                const float foregroundDistance = .85f;
+                const float subtitleDistance = 2.5f;
+                caption.localPosition = new Vector3(0, 1.36f, foregroundDistance);
+                caption.localScale = _captionScale * (foregroundDistance / subtitleDistance);
+            }
+            else
+            {
+                float height = inWorld ? (time >= 12.6f ? .85f : .99f) : 1.6f;
+                if (_ending && time >= 16.6f && time < 18f) { height = .95f; }
+                caption.localPosition = new Vector3(0, height, 2.5f);
+                caption.localScale = _captionScale;
+            }
             int next = -1;
             for (int i = 0; i < _lines.Length; i++)
             {
@@ -59,7 +80,7 @@ namespace Cinematic
                 && Mathf.FloorToInt((elapsed - typedDuration) / .2f) % 2 == 0;
             float alpha = Mathf.Clamp01((_lines[next].End - time) / .25f);
             _line.color = new Color(.96f, .96f, .94f, alpha);
-            _backing.enabled = inWorld;
+            _backing.enabled = inWorld || showInFront;
             _backing.color = new Color(0, 0, 0, .45f * alpha);
             if (count == _visible && cursor == _cursor) { return; }
             _cursor = cursor;

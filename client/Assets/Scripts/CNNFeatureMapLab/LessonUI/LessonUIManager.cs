@@ -75,16 +75,24 @@ namespace FeatureMapCorridor
             _completed = context.Phase == LessonPhase.Complete;
             switch (context.Phase)
             {
+                case LessonPhase.AwaitInput:
+                _subtitle.Show("", LessonContent.InputPictureBody, false, null);
+                _hints.Show(LessonContent.InputPictureHint, context.HintPosition);
+                break;
                 case LessonPhase.AwaitRound:
-                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map, context.Digit), context.CanGoBack, null);
-                _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map, context.Digit), context.HintPosition);
+                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
+                if (context.Layer != 4)
+                {
+                    _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map), context.HintPosition);
+                }
                 break;
                 case LessonPhase.Round:
                 ShowRound(context);
                 break;
                 case LessonPhase.Recap:
                 _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true,
-                    context.Layer == 4 ? LessonContent.Complete : LessonContent.Next);
+                    context.Layer == 4 ? LessonContent.Complete : LessonContent.Next,
+                    context.Layer == 4 ? LessonContent.ViewScore : LessonContent.Previous);
                 break;
                 case LessonPhase.Complete:
                 _subtitle.SetVisible(false);
@@ -107,8 +115,12 @@ namespace FeatureMapCorridor
             }
             string next = context.WaitingForFilter || context.FilterPending
                 ? null
-                : context.IsLastStep ? LessonContent.Understood : LessonContent.Next;
-            _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next);
+                : context.IsLastStep
+                    ? (context.ShowingOutputDetails ? LessonContent.BackToVerdict : LessonContent.Understood)
+                    : LessonContent.Next;
+            string previous = context.ShowingOutputDetails && context.WaitingForFilter
+                ? LessonContent.BackToVerdict : LessonContent.Previous;
+            _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next, previous);
         }
 
         private static string RoundBody(LessonContext context)

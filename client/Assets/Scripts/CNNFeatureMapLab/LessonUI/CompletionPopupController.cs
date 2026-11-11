@@ -47,7 +47,9 @@ namespace FeatureMapCorridor
         internal void Open(Camera camera)
         {
             Transform view = camera.transform;
-            _popup.transform.SetPositionAndRotation(view.position+view.forward*1.5f, view.rotation);
+            Quaternion facing = Quaternion.Euler(0f, view.eulerAngles.y, 0f);
+            Vector3 position = view.position + facing * Vector3.forward * 1.5f;
+            _popup.transform.SetPositionAndRotation(position, facing);
             _time = 0;
             _popup.Show();
             Tick(0);

@@ -23,22 +23,25 @@ namespace FeatureMapCorridor
         internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
         private bool _roundActive;
         internal event Action<int> DigitSelected;
+        internal event Action InputPictureSelected;
+        internal Vector3 InputPictureHint => _display.InputPictureHint;
+        internal void ShowInputChannels(bool expanded) => _display.ShowInputChannels(expanded);
         internal event Action<MapId> OperationSelected;
-        internal event Action<int> OutputSelected;
+        internal event Action OutputStarted;
         internal event Action FilterExpanded;
         internal event Action PresentationReady;
         internal event Action<string> ButtonPressed;
         internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
-        internal Vector3 WaitingHint(int layer, int map, int digit) => layer == 4
-            ? _display.OutputHintPosition(digit)
-            : _display.Map(layer, map).Root.parent.InverseTransformPoint(_devices[layer - 1][map].Position) + Vector3.up * .35f;
+        internal Vector3 WaitingHint(int layer, int map) =>
+            _display.Map(layer, map).Root.parent.InverseTransformPoint(_devices[layer - 1][map].Position) + Vector3.up * .35f;
 
         internal void ShowOperations(int layer, IReadOnlyCollection<MapId> revealed)
         {
             _availableLayer = layer;
             _revealed = revealed;
+            UpdateOutputStart();
             UpdateDevices();
         }
 
@@ -76,7 +79,8 @@ namespace FeatureMapCorridor
         internal void Enable()
         {
             _display.DigitSelected += OnDigit;
-            _display.OutputSelected += OnOutput;
+            _display.InputPictureSelected += OnInputPicture;
+            _display.OutputStarted += OnOutputStarted;
             _display.ButtonPressed += OnButton;
             _round.FilterPressed += OnFilter;
             _round.PresentationReady += OnPresentationReady;
@@ -94,14 +98,16 @@ namespace FeatureMapCorridor
             _display.InputClicked -= OnInputClicked;
             _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
-            _display.OutputSelected -= OnOutput;
+            _display.InputPictureSelected -= OnInputPicture;
+            _display.OutputStarted -= OnOutputStarted;
             _display.ButtonPressed -= OnButton;
             _round.FilterPressed -= OnFilter;
             _round.PresentationReady -= OnPresentationReady;
         }
 
+        private void OnInputPicture() => InputPictureSelected?.Invoke();
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
-        private void OnOutput(int digit) => OutputSelected?.Invoke(digit);
+        private void OnOutputStarted() => OutputStarted?.Invoke();
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
         private void OnPresentationReady() => PresentationReady?.Invoke();
         private void OnFilter(bool expanded)
@@ -112,22 +118,26 @@ namespace FeatureMapCorridor
             }
         }
 
-        private static RoundStepSequence RulesFor(MapId round) => round.Layer switch
+        private static RoundStepSequence RulesFor(MapId round, bool outputDetails = false) => round.Layer switch
         {
             2 => PoolingRoundRules.Sequence,
-            4 => OutputRoundRules.Sequence,
+            4 => outputDetails ? OutputRoundRules.Details : OutputRoundRules.Sequence,
             _ => ConvRoundRules.ForMap(round)
         };
 
-        internal LessonStep FirstStep(MapId round) => RulesFor(round).First;
-        internal LessonStep LastStep(MapId round) => RulesFor(round).Last;
-        internal RoundTransition EvaluateTransition(MapId round, LessonStep step, RoundRequest request) =>
-            RulesFor(round).Evaluate(step, request, _round.PresentationPending);
+        internal LessonStep FirstStep(MapId round, bool outputDetails = false) => RulesFor(round, outputDetails).First;
+        internal LessonStep LastStep(MapId round, bool outputDetails = false) => RulesFor(round, outputDetails).Last;
+        internal RoundTransition EvaluateTransition(MapId round, LessonStep step, RoundRequest request, bool outputDetails) =>
+            RulesFor(round, outputDetails).Evaluate(step, request, _round.PresentationPending);
+
+        private void UpdateOutputStart() =>
+            _display.SetOutputStartAvailable(_visible && _availableLayer == 4 && !RevealingOutputInputs);
 
         private void SetInputActive(bool active)
         {
             _visible = active;
             _display.SetInputActive(active);
+            UpdateOutputStart();
             UpdateFilterInput();
             UpdateDevices();
         }
@@ -148,6 +158,7 @@ namespace FeatureMapCorridor
         internal void Tick(float now)
         {
             _display.Tick(now);
+            UpdateOutputStart();
             _visuals.UpdateBillboards(_camera);
             _pooling.Tick(now);
             if (!_roundActive)
@@ -190,6 +201,10 @@ namespace FeatureMapCorridor
             }
 
             ClosePresentation();
+            if (round.Layer == 4)
+            {
+                _display.ResetOutput();
+            }
         }
 
         private void ClosePresentation()
@@ -221,13 +236,13 @@ namespace FeatureMapCorridor
             return recap;
         }
 
-        internal LessonContext DescribeRound(MapId round, LessonStep step)
+        internal LessonContext DescribeRound(MapId round, LessonStep step, bool outputDetails)
         {
             return new LessonContext
             {
                 WaitingForFilter = RoundStepSequence.WaitsForFilter(step),
                 FilterPending = _round.PresentationPending,
-                IsLastStep = step == LastStep(round),
+                IsLastStep = step == LastStep(round, outputDetails),
                 HintPosition = _round.FilterPosition + Vector3.up * .8f,
                 Calculation = _round.Data,
                 Winner = _display.Winner,

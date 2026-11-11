@@ -18,9 +18,9 @@ namespace FeatureMapCorridor
         internal FeatureMapPanelController Channel(int index) => _channels[index];
         [SerializeField] private UI.WorldUIButtonController[] _digitButtons = new UI.WorldUIButtonController[3];
         [SerializeField] private Transform[] _expandedAnchors = new Transform[3];
-        internal void Bind(CorridorRenderUtility visuals, Action<int> digit)
+        internal void Bind(CorridorRenderUtility visuals, Action<int> digit, Action pictureSelected)
         {
-            Picture.Bind(visuals);
+            Picture.Bind(visuals, pictureSelected);
             for (int i = 0; i < 3; i++)
             {
                 int number = i + 1;

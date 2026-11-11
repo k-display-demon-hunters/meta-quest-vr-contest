@@ -16,6 +16,8 @@ namespace FeatureMapCorridor
         private CorridorRenderUtility _visuals;
         private Action _selected;
         private bool _active;
+        private bool _hovered;
+        private Color _tint;
 
         internal Transform CalculationAnchor => _calculationAnchor;
         internal Vector3 Position => _hit.transform.position;
@@ -28,9 +30,9 @@ namespace FeatureMapCorridor
 
         internal void SetAvailable(bool available, bool completed)
         {
-            Color tint = completed ? _visuals.Theme.Cyan :
-                available ? _visuals.Theme.Amber : _visuals.Theme.Dim;
-            _visuals.Paint(_face, new Color(tint.r * .38f, tint.g * .38f, tint.b * .38f));
+            _tint = completed ? _visuals.Theme.Cyan :
+                available ? new Color32(156, 164, 170, 255) : new Color32(100, 106, 111, 255);
+            RefreshFace();
         }
 
         internal void SetInputActive(bool active)
@@ -40,18 +42,40 @@ namespace FeatureMapCorridor
             if (active)
             {
                 _hit.selectFilters.Add(this);
+                _hit.hoverEntered.AddListener(OnHoverEntered);
+                _hit.hoverExited.AddListener(OnHoverExited);
                 _hit.activated.AddListener(OnActivated);
             }
             else
             {
                 _hit.activated.RemoveListener(OnActivated);
+                _hit.hoverEntered.RemoveListener(OnHoverEntered);
+                _hit.hoverExited.RemoveListener(OnHoverExited);
                 _hit.selectFilters.Remove(this);
+                _hovered = false;
+                RefreshFace();
             }
             _hit.enabled = active;
         }
 
         public bool canProcess => true;
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable) => false;
+
+        private void OnHoverEntered(HoverEnterEventArgs args) => SetHovered(args.interactorObject, true);
+        private void OnHoverExited(HoverExitEventArgs args) => SetHovered(args.interactorObject, false);
+
+        private void SetHovered(IXRHoverInteractor interactor, bool hovered)
+        {
+            if (interactor is not XRRayInteractor { handedness: InteractorHandedness.Right }) return;
+            _hovered = hovered;
+            RefreshFace();
+        }
+
+        private void RefreshFace()
+        {
+            float brightness = _hovered ? .8f : .38f;
+            _visuals.Paint(_face, new Color(_tint.r * brightness, _tint.g * brightness, _tint.b * brightness));
+        }
 
         private void OnActivated(ActivateEventArgs args)
         {

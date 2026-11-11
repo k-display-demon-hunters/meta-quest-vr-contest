@@ -103,12 +103,12 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리·수정 |
 | --- | --- | --- | --- |
-| PostOffice1989.png | `Textures/OpeningEnding`, CNNArchiveOpening 기록판 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 사람 없는 1989년 한국 우체국, 눈높이 1.6m 정면 다큐멘터리 사진, 오래된 목재 창구·우편 선반·CRT·형광등·테라조, 자연광과 실사 질감. | AI 생성 재구성, 실제 기록사진 아님. 생성 도구를 권리자로 단정하지 않음; 권리자 미확인, 별도 공개 라이선스 지정 없음. 생성 PNG 원본 저장, Unity 셰이더로 흑백/밝기/그레인 표시. |
+| PostOffice1989.png | 삭제됨, 제출 대상 제외. 이전 사용 위치는 CNNArchiveOpening 기록판. | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 사람 없는 1989년 한국 우체국, 눈높이 1.6m 정면 다큐멘터리 사진, 오래된 목재 창구·우편 선반·CRT·형광등·테라조, 자연광과 실사 질감. | AI 생성 재구성, 실제 기록사진 아님. 생성 도구를 권리자로 단정하지 않음; 권리자 미확인, 별도 공개 라이선스 지정 없음. 생성 PNG 원본 저장, Unity 셰이더로 흑백/밝기/그레인 표시. |
 | EverydayVisionAtlas.png | `Textures/OpeningEnding`, 8개 엔딩 기록판 및 사진 소품 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
-| ArchiveMaterials.png | `Textures/OpeningEnding`, 우체국 목재·바닥·벽·봉투 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 2×2 정사영 재질 아틀라스, 낡은 꿀색 참나무·회색 베이지 테라조·상아색 회벽·크림색 종이, 균일 조명, 글자 없음. | AI 생성 재질. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 그대로, 재질별 UV 선택·색 곱셈. |
-| ArchiveCrowd.mp3 | `Audio/OpeningEnding`, 앞왼쪽·뒤오른쪽·후면의 군중 공간 음향 | [Indoor adult murmur, large group.wav](https://freesound.org/people/SpliceSound/sounds/260123/), 공개 HQ MP3 미리듣기 파일. 라이선스 원문 확인: 2026-11-09. | **SpliceSound**, **CC0 1.0**. 원본 파일 내용 변경 없음. Unity에서 위치별 재생 시작 시점·음량·필터 조절. 한국어/1989년 우체국 실녹음이라고 주장하지 않음. |
-| ArchivePrinter.mp3 | `Audio/OpeningEnding`, 오른쪽 책상 프린터 | [old dot-matrix printer](https://freesound.org/people/viertelnachvier/sounds/181420/), Epson LX-400 실제 녹음의 공개 HQ MP3. 라이선스 원문 확인: 2026-11-09. | **viertelnachvier**, **CC0 1.0**. 원본 파일 수정 없음; 장면에서는 일부 구간만 재생. |
-| ArchiveType/Stamp/Ring/CRT/Machine/Footsteps/Beep/Hit/BigHit/Rewind.wav | `Audio/OpeningEnding`, 오프닝·엔딩 3D 효과음 | Codex 보조 Node.js PCM 합성. 사인파·필터 없는 제한 난수·지수 감쇠·충격 반복을 조합, 44.1kHz mono PCM16. 외부 녹음·음악 샘플 사용 없음. | 프로젝트용 합성 효과음, 별도 공개 라이선스 지정 없음. 실제 피아노·현악·사람 발소리 녹음이 아닌 합성 근사음. |
+| ArchiveMaterials.png | `Textures/OpeningEnding`, 엔딩 소품의 목재·종이 재질 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 2×2 정사영 재질 아틀라스, 낡은 꿀색 참나무·회색 베이지 테라조·상아색 회벽·크림색 종이, 균일 조명, 글자 없음. | AI 생성 재질. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 그대로, 재질별 UV 선택·색 곱셈. |
+| ArchiveCrowd.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 군중 공간 음향. | [Indoor adult murmur, large group.wav](https://freesound.org/people/SpliceSound/sounds/260123/), 공개 HQ MP3 미리듣기 파일. 라이선스 원문 확인: 2026-11-09. | **SpliceSound**, **CC0 1.0**. 원본 파일 내용 변경 없음. Unity에서 위치별 재생 시작 시점·음량·필터 조절. 한국어/1989년 우체국 실녹음이라고 주장하지 않음. |
+| ArchivePrinter.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 프린터. | [old dot-matrix printer](https://freesound.org/people/viertelnachvier/sounds/181420/), Epson LX-400 실제 녹음의 공개 HQ MP3. 라이선스 원문 확인: 2026-11-09. | **viertelnachvier**, **CC0 1.0**. 원본 파일 수정 없음; 장면에서는 일부 구간만 재생. |
+| ArchiveType/Stamp/Beep/Hit/BigHit/Rewind.wav, ArchiveRing/CRT/Machine/Footsteps.wav | 오프닝·엔딩 3D 효과음. Ring·CRT·Machine·Footsteps는 삭제되어 제출 대상 제외. | Codex 보조 Node.js PCM 합성. 사인파·필터 없는 제한 난수·지수 감쇠·충격 반복을 조합, 44.1kHz mono PCM16. 외부 녹음·음악 샘플 사용 없음. | 프로젝트용 합성 효과음, 별도 공개 라이선스 지정 없음. 실제 피아노·현악·사람 발소리 녹음이 아닌 합성 근사음. |
 | Pretendard SemiBold / Nanum Pen Script | 신규 씬 자막·표지·숫자 라벨 | 프로젝트에 있는 원본 폰트 재사용; 위 기존 폰트 출처 및 동봉 OFL 유지. | 원본 변경 없음. |
 
 EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·음성을 다운로드하여 프로젝트에 삽입하지 않았다. 오프닝에서 사용하는 내레이션과 음악은 아래 미국 우체국 오프닝 항목에 기록했다.

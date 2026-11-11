@@ -5,8 +5,7 @@ namespace Cinematic
     public sealed class CinematicAudioController : MonoBehaviour
     {
         [SerializeField] private AudioSource _screen, _voice, _type, _impact, _rewind, _pad;
-        [SerializeField] private AudioSource[] _room;
-        [SerializeField] private AudioSource _stamp, _ring, _printer, _beep;
+        [SerializeField] private AudioSource _stamp, _beep;
         private CinematicText _content;
         private float _last = -1;
         private bool _ending;
@@ -68,13 +67,18 @@ namespace Cinematic
         private bool Crossed(float cue, float time) => _last < cue && time >= cue;
         private static void Play(AudioSource source, AudioClip clip, float volume)
         { if (clip != null) { source.PlayOneShot(clip, volume); } }
-        private void StopRoom()
-        {
-            foreach (AudioSource source in _room) { Stop(source); }
-            Stop(_screen); Stop(_stamp); Stop(_ring); Stop(_printer);
-        }
         public void StopAll()
-        { StopRoom(); Stop(_voice); Stop(_type); Stop(_impact); Stop(_pad); Stop(_rewind); Stop(_beep); }
+        {
+            Stop(_screen);
+            Stop(_stamp);
+            Stop(_voice);
+            Stop(_type);
+            Stop(_impact);
+            Stop(_pad);
+            Stop(_rewind);
+            Stop(_beep);
+        }
+
         // Scene roots may be destroyed before this controller during single-scene loading.
         private static void Stop(AudioSource source) { if (source != null) { source.Stop(); } }
         private void OnDisable() { StopAll(); }

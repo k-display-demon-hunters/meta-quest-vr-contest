@@ -6,12 +6,11 @@ namespace Cinematic
 {
     public sealed class CinematicWorldController : MonoBehaviour
     {
-        [SerializeField] private Transform _world, _room, _portal, _timeline, _envelope, _digit, _factory, _leftDoor, _rightDoor, _network;
-        [SerializeField] private Transform[] _letters, _boxes, _pixels, _eraProps, _networkLayers, _fragments;
+        [SerializeField] private Transform _world, _portal, _timeline, _digit, _factory, _leftDoor, _rightDoor, _network;
+        [SerializeField] private Transform[] _boxes, _pixels, _eraProps, _networkLayers;
         [SerializeField] private Transform _digitBox;
         [SerializeField] private Text _year, _caption, _networkNote;
         [SerializeField] private Text[] _layerLabels;
-        [SerializeField] private Image _flash;
         [SerializeField] private CinematicArchiveController _archive;
         private CinematicText _content;
         private bool _ending;
@@ -36,13 +35,8 @@ namespace Cinematic
             _caption.text = content.Provenance;
             if (!ending)
             {
-                _room.gameObject.SetActive(false);
-                _envelope.gameObject.SetActive(false);
                 _network.gameObject.SetActive(false);
-                _flash.color = Color.clear;
-                foreach (Transform item in _letters) { item.gameObject.SetActive(false); }
                 foreach (Transform item in _boxes) { item.gameObject.SetActive(false); }
-                foreach (Transform item in _fragments) { item.gameObject.SetActive(false); }
                 foreach (Transform item in _eraProps) { item.gameObject.SetActive(false); }
             }
             int count = result.Layers.Count;
@@ -149,12 +143,9 @@ namespace Cinematic
 
         private void Ending(float t)
         {
-            _room.gameObject.SetActive(false); _factory.gameObject.SetActive(false);
-            _envelope.gameObject.SetActive(false); _digit.gameObject.SetActive(false); _timeline.gameObject.SetActive(false);
-            foreach (Transform letter in _letters) { letter.gameObject.SetActive(false); }
+            _factory.gameObject.SetActive(false);
+            _digit.gameObject.SetActive(false); _timeline.gameObject.SetActive(false);
             foreach (Transform pixel in _pixels) { pixel.gameObject.SetActive(false); }
-            foreach (Transform fragment in _fragments) { fragment.gameObject.SetActive(false); }
-            _flash.color = Color.clear;
             bool montage = t >= 3f && t < 14f;
             _portal.gameObject.SetActive(montage);
             _year.gameObject.SetActive(montage);
@@ -202,14 +193,12 @@ namespace Cinematic
         public void Finish()
         {
             _archive.Stop();
-            foreach (Transform target in new[] { _room, _portal, _timeline, _envelope, _digit, _factory, _network })
+            foreach (Transform target in new[] { _portal, _timeline, _digit, _factory, _network })
             { target.gameObject.SetActive(false); }
-            _year.gameObject.SetActive(false); _caption.gameObject.SetActive(false); _flash.color = Color.clear;
-            foreach (Transform target in _letters) { target.gameObject.SetActive(false); }
+            _year.gameObject.SetActive(false); _caption.gameObject.SetActive(false);
             foreach (Transform target in _boxes) { target.gameObject.SetActive(false); }
             foreach (Transform target in _pixels) { target.gameObject.SetActive(false); }
             foreach (Transform target in _eraProps) { target.gameObject.SetActive(false); }
-            foreach (Transform target in _fragments) { target.gameObject.SetActive(false); }
         }
     }
 }

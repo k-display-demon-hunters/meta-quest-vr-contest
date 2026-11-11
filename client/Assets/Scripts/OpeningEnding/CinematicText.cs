@@ -44,11 +44,9 @@ namespace Cinematic
         public string Replay = "트리거를 길게 눌러 다시 시작";
         public string Example = "구조 예시 · 설계실 결과 없음";
         public string Provenance = "1989 · 우체국 / 역사적 분위기를 재구성한 이미지";
-        public string PostSign = "우 편 · 소 포";
-        public string Calendar = "1989\n11월";
         public string FactoryTitle = "CNN 공장";
         public string LoadFailure = "장면을 열지 못했습니다. 트리거를 길게 눌러 다시 시도하세요.";
-        public AudioClip Type, Hit, BigHit, Rewind, Ring, Stamp, Machine, Printer, Crowd, Footsteps, Radio, Clerk, CRT, Beep, Pad;
+        public AudioClip Type, Hit, BigHit, Rewind, Stamp, Beep, Pad;
         [TextArea] public string AudioCredits;
     }
 

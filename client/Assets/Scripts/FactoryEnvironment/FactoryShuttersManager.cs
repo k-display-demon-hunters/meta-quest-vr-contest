@@ -11,7 +11,8 @@ namespace FactoryEnvironment
         {
             PendingPermission,
             WaitingForApproach,
-            WaitingForExit
+            WaitingForExit,
+            Finished
         }
 
         [SerializeField] private FactoryShutterController[] _shutters;
@@ -30,19 +31,22 @@ namespace FactoryEnvironment
         private void OnEnable()
         {
             _areaController.ShutterProximityChanged += HandleProximityChanged;
-            _session.StageCompleted += HandleStageCompleted;
+            _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
         }
 
         private void OnDisable()
         {
             _areaController.ShutterProximityChanged -= HandleProximityChanged;
-            _session.StageCompleted -= HandleStageCompleted;
+            _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
         }
 
-        private void HandleStageCompleted(LearningStageId stage)
+        private void HandleStageAvailabilityChanged(LearningStageId stage, bool available)
         {
+            if (!available) { return; }
+
             FactoryShutterId exitShutter = _layoutData.GetStageSpace(stage).ExitShutter;
-            _autoOpenStates.Add(exitShutter, AutoOpenState.PendingPermission);
+            if (!_autoOpenStates.TryAdd(exitShutter, AutoOpenState.PendingPermission)) { return; }
+
             RefreshShutter(GetShutter(exitShutter), _areaController.IsNearShutter(exitShutter));
         }
 
@@ -77,15 +81,15 @@ namespace FactoryEnvironment
             {
                 if (isNear) { return; }
 
-                _autoOpenStates.Remove(id);
-                hasAutoOpen = false;
+                _autoOpenStates[id] = AutoOpenState.Finished;
             }
 
-            bool canOpen = (isNear || hasAutoOpen) && _canOpen(id);
+            bool pendingAutoOpen = hasAutoOpen && state == AutoOpenState.PendingPermission;
+            bool canOpen = (isNear || pendingAutoOpen) && _canOpen(id);
             if (canOpen)
             {
                 shutter.Open();
-                if (hasAutoOpen)
+                if (pendingAutoOpen)
                 {
                     _autoOpenStates[id] = isNear ? AutoOpenState.WaitingForExit : AutoOpenState.WaitingForApproach;
                 }

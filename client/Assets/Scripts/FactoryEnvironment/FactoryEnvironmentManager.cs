@@ -20,7 +20,6 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryRouteGuideController _routeGuide;
         [SerializeField] private FactoryShuttersManager _shutters;
         private ParchmentManager _parchment;
-        private LearningStageId _routeDestination;
         private LearningStageId _routeSource;
         private LearningStageId _travelStage;
         private readonly HashSet<FactoryShutterId> _permittedShutters = new HashSet<FactoryShutterId>();
@@ -67,11 +66,10 @@ namespace FactoryEnvironment
 
         private void HandleAreaChanged(FactoryLayoutData.Area area)
         {
-            if (!_layoutData.TryGetAdjacentAreas(area, out var previous, out var next)) { return; }
+            if (!_layoutData.TryGetAdjacentAreas(area, out var previous, out _)) { return; }
             LearningStageId stage = area.Stage ?? LearningStageId.None;
             CurrentStage = stage;
             _routeSource = area.Stage ?? previous?.Stage ?? LearningStageId.None;
-            _routeDestination = next?.Stage ?? LearningStageId.None;
             StageChanged?.Invoke(stage);
             RefreshShutterConditions();
         }
@@ -140,11 +138,18 @@ namespace FactoryEnvironment
 
         private void RefreshRouteGuide()
         {
-            if (_sceneLoader.IsBusy || _routeSource == LearningStageId.None
-                || _routeSource == LearningStageId.Exit || _routeDestination == LearningStageId.None) { return; }
-            if (!_sceneLoader.IsLoaded(_routeSource) || !IsStageAvailable(_routeSource)) { return; }
-            if (_routeDestination != LearningStageId.Exit && !_sceneLoader.IsLoaded(_routeDestination)) { return; }
-            _routeGuide.SetDestination(_routeDestination);
+            if (!IsStageAvailable(_routeSource)) { return; }
+
+            IReadOnlyList<LearningStageDefinition> stages = LearningStageCatalog.Stages;
+            for (int index = 0; index < stages.Count; index++)
+            {
+                if (stages[index].Id != _routeSource) { continue; }
+                LearningStageId destination = index + 1 < stages.Count
+                    ? stages[index + 1].Id
+                    : LearningStageId.Exit;
+                _routeGuide.SetDestination(destination);
+                return;
+            }
         }
 
         private void HandleStageMoveRequested(LearningStageId stage)

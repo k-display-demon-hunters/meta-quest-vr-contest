@@ -55,7 +55,7 @@ namespace CNNConvolution
                 {
                     float deltaTime = _playback.DeltaTime;
                     UpdatePlacement(deltaTime);
-                    if (IsWaitingForGrab) { _display.UpdatePreview(deltaTime); }
+                    _display.UpdateGhost(deltaTime);
                 }
                 yield return null;
             }

@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace Parchment
@@ -17,7 +16,7 @@ namespace Parchment
         [SerializeField] private Light _glowLight;
         [SerializeField] private float _floatPhase;
         private XRSimpleInteractable _interactable;
-        private Canvas _labelCanvas;
+        [SerializeField] private Canvas _labelCanvas;
         private Vector3 _restPosition;
         private Color _paperColor;
         private SpriteRenderer _rightRoller;
@@ -63,7 +62,7 @@ namespace Parchment
             _rightRoller.enabled = visible;
             _glowRenderer.enabled = false;
             _glowLight.enabled = visible;
-            if (_labelCanvas != null) { _labelCanvas.enabled = visible; }
+            _labelCanvas.enabled = visible;
         }
 
         private IEnumerator HideAfterInteraction()
@@ -108,47 +107,6 @@ namespace Parchment
             _glowLight.color = HologramColor;
             _glowLight.range = 1.5f;
             GetComponent<BoxCollider>().size = new Vector3(OpenWidth * RollerFraction * 2f, ScrollHeight, 0.08f);
-        }
-
-        public void ConfigureLesson(ParchmentLesson lesson)
-        {
-            // Use the scene placement as the resting position when an unfinished scroll returns.
-            _restPosition = transform.localPosition;
-            _labelCanvas = GetComponentInChildren<Canvas>(true);
-            if (_labelCanvas == null)
-            {
-                return;
-            }
-
-            _labelCanvas.transform.localPosition = new Vector3(0f, -0.45f, -0.03f);
-
-            foreach (Text text in _labelCanvas.GetComponentsInChildren<Text>(true))
-            {
-                text.color = Color.white;
-                switch (text.gameObject.name)
-                {
-                    case "Document number":
-                        text.text = "양피지 " + (lesson.Id + 1).ToString("00");
-                        text.rectTransform.anchoredPosition = new Vector2(0f, 18f);
-                        text.fontSize = 18;
-                        break;
-                    case "Lesson title":
-                        text.text = lesson.Title;
-                        text.rectTransform.anchoredPosition = new Vector2(0f, -16f);
-                        text.rectTransform.sizeDelta = new Vector2(500f, 40f);
-                        text.fontSize = 26;
-                        text.fontStyle = FontStyle.Bold;
-                        break;
-                    case "Collect instruction":
-                        text.text = "Trigger / Grip으로 펼쳐서 학습";
-                        text.rectTransform.anchoredPosition = new Vector2(0f, -51f);
-                        text.fontSize = 17;
-                        break;
-                    default:
-                        text.gameObject.SetActive(false);
-                        break;
-                }
-            }
         }
 
         private void OnDestroy()

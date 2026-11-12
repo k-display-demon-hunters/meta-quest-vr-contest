@@ -19,7 +19,9 @@ namespace Education.Editor
                     {
                         case "Document number": label.text = "양피지 " + (pickup.LessonIndex + 1).ToString("00"); break;
                         case "Lesson title": label.text = ParchmentCatalog.Get(pickup.LessonIndex).Title; break;
-                        case "Collect instruction": label.text = "Trigger / Grip으로 수집하고 읽기"; break;
+                        case "Collect instruction":
+                            label.text = pickup.LessonIndex == 0 ? "홀로그램 두루마리를 클릭해주세요" : "트리거로 펼치기";
+                            break;
                     }
                 }
             }

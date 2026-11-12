@@ -294,6 +294,8 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 6. ShuttersManager는 LearningSessionManager의 StageAvailabilityChanged와 ParchmentManager의 Collected를 직접 구독해 개방 조건을 재판정한다. ShuttersManager가 현재 접근 상태를 조회해 가까운 문을 재판정하므로 문 앞에서 기다리다가 조건이 충족되어도 열린다. 조건 변경은 자동 개방을 대기 중인 출구도 재판정한다. 로더는 기존처럼 AreaChanged로 필요한 씬을 준비하고 유지 범위 밖 씬을 정리한다.
 7. 플레이어가 접근 범위 안에 있고 닫힌 셔터를 열 수 없으면 `FactoryShuttersManager`는 해당 `FactoryShutterController`에 안내판 표시를 요청한다. 안내판은 `Prefabs/FactoryEnvironment/ShutterUnavailableSign.prefab`에 저장한 양면 World Space UI이며 문구는 “체험을 완료하거나 양피지를 모두 수집해야 문을 열 수 있습니다”로 고정한다. 문이 열리거나 접근 범위를 벗어나면 안내판을 숨긴다. Manager는 기존 개방 가능 여부만 사용한다.
 8. FactoryShuttersManager는 LearningSessionManager의 StageAvailabilityChanged를 직접 구독한다. 체험에서 퇴장이 가능해지면 FactoryLayoutData.GetStageSpace(stage).ExitShutter로 출구를 조회하고 셔터당 한 번 자동 개방을 요청한다. 기존 개방 조건이 충족되면 접근 범위 밖에서도 출구를 열고 안내판을 숨긴다. 플레이어가 6m 안에 들어온 뒤 다시 밖으로 나가면 문을 닫고 일반 근접 개폐로 돌아간다. 개방 시 이미 6m 안에 있으면 접근한 것으로 처리한다. ShuttersManager는 출구마다 자동 개방 대기와 접근 여부를 관리한다.
+
+ROOM #1과 ROOM #2 입구의 개방 불가 안내는 `ShutterFloorHologram.prefab`을 사용한다. 각 `FactoryShutterController`가 해당 인스턴스의 투사 표시, 패널과 스캔 라인을 참조하고 펼침·접힘을 갱신한다. 다른 셔터는 기존 안내판을 표시한다.
 9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.

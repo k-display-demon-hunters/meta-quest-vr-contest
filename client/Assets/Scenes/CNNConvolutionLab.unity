@@ -245,7 +245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48dda6ef379e497a834553e6ca908f4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CNNConvolution.CNNConvolutionLabManager
-  _font: {fileID: 12800000, guid: 3b49809bfb0f47a1a73a7ca17dbe86db, type: 3}
+  _font: {fileID: 12800000, guid: 021114b488884867ac97d95c9c3d1dee, type: 3}
   _ui: {fileID: 820000023}
   _spatial: {fileID: 820000042}
 --- !u!1660057539 &9223372036854775807

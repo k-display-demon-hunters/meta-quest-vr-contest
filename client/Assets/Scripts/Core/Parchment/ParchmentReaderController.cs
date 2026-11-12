@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.UI;
@@ -11,7 +12,7 @@ namespace Parchment
     {
         [SerializeField] private Text _source;
         [SerializeField] private Text _title;
-        [SerializeField] private Text _body;
+        [SerializeField] private TextMeshProUGUI _body;
         [SerializeField] private Text _pageLabel;
         [SerializeField] private Button _previous;
         [SerializeField] private Button _next;
@@ -29,6 +30,7 @@ namespace Parchment
         private Vector2 _scrollSize;
         private IReadOnlyList<ParchmentPage> _pages;
         private int _page;
+        private string _lessonTitle;
         public event Action Completed;
         public event Action CloseRequested;
 
@@ -95,9 +97,9 @@ namespace Parchment
             _pages = lesson.Pages;
             _page = 0;
             _source.text = "양피지 " + (index + 1).ToString("00") + "  /  " + lesson.Department;
-            _title.text = lesson.Title;
+            _lessonTitle = lesson.Title;
             GetComponent<Canvas>().worldCamera = camera;
-            RefreshPage();
+            RefreshPage(animateIllustration: false);
             StartCoroutine(Expand(camera, origin));
         }
         private IEnumerator Expand(Camera camera, Pose origin)
@@ -133,6 +135,7 @@ namespace Parchment
             _content.interactable = true;
             _content.blocksRaycasts = true;
             _raycaster.enabled = true;
+            _illustration.Play();
         }
         private void SetUnfoldProgress(float progress)
         {
@@ -147,10 +150,13 @@ namespace Parchment
         private void Next() { _page = Mathf.Min(_pages.Count - 1, _page + 1); RefreshPage(); }
         private void Complete() { if (_page == _pages.Count - 1) { Completed?.Invoke(); } }
         private void RequestClose() => CloseRequested?.Invoke();
-        private void RefreshPage()
+        private void RefreshPage(bool animateIllustration = true)
         {
-            _body.text = _pages[_page].Body;
-            _illustration.Show(_pages[_page].Illustration);
+            ParchmentPage page = _pages[_page];
+            _title.text = page.Title ?? _lessonTitle;
+            _body.text = page.Body;
+
+            _illustration.Show(page.Illustration, animateIllustration);
             _pageLabel.text = (_page + 1) + " / " + _pages.Count;
             _previous.interactable = _page > 0;
             _next.gameObject.SetActive(_page < _pages.Count - 1);

@@ -6,13 +6,23 @@ namespace Parchment
     public sealed class ParchmentIllustrationController : MonoBehaviour
     {
         [SerializeField] private GameObject[] _panels;
+        [SerializeField] private ParchmentDigitIllustration _digits;
 
-        public void Show(ParchmentIllustrationType illustration)
+        internal void Play()
+        {
+            if (_digits.isActiveAndEnabled) _digits.Play();
+        }
+
+        public void Show(ParchmentIllustrationType illustration, bool animate)
         {
             int index;
             switch (illustration)
             {
-                case ParchmentIllustrationType.PixelGrid: index = 0; break;
+                case ParchmentIllustrationType.PixelDigit:
+                case ParchmentIllustrationType.GrayscaleDigit:
+                case ParchmentIllustrationType.RgbDigit:
+                    index = 0;
+                    break;
                 case ParchmentIllustrationType.PaddingGrid: index = 1; break;
                 case ParchmentIllustrationType.VerticalEdgeFilter: index = 2; break;
                 case ParchmentIllustrationType.FeatureMaps: index = 3; break;
@@ -23,6 +33,8 @@ namespace Parchment
             {
                 _panels[i].SetActive(i == index);
             }
+
+            if (index == 0) _digits.Show(illustration, animate);
         }
     }
 }

@@ -15,8 +15,8 @@ namespace CNNConvolution
             _factory = factory;
             Transform slot = factory.Root("Answer destination");
             slot.localPosition = new Vector3(0.8f, -0.45f, 0.1f);
-            factory.Tile(slot, Vector3.zero, new Vector3(0.64f, 0.16f, 0.045f), new Color(0.055f, 0.065f, 0.075f));
-            factory.Frame(slot, 0.67f, 0.19f, 0.05f, new Color(0.47f, 0.38f, 0.24f));
+            factory.Tile(slot, Vector3.zero, new Vector3(0.64f, 0.16f, 0.045f), WorkbenchColors.PanelFace);
+            factory.Frame(slot, 0.67f, 0.19f, 0.05f, WorkbenchColors.PanelFrame);
             _sumLabel = factory.Caption(slot, "합: —", new Vector3(0, 0, -0.03f), 0.61f);
             _sumLabel.fontSize = 42;
             Transform equationPlate = factory.FormulaPlate("One cell multiplication plate", 0.82f);

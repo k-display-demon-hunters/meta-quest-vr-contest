@@ -420,7 +420,17 @@ ContentUnloading은 모든 구독자의 정리 코루틴을 기다린다. 세션
 
 EscapeLayout_*.asset 74개는 이 공간의 기본 도형을 부모·재질별로 결합한 Unity 메시다. 동일한 셔터 형태는 같은 메시 에셋을 참조한다. 구조물 Collider는 별도 오브젝트로 보존하고, 움직이는 패널의 메시와 Collider는 같은 이동 루트 아래에 둔다. ROOM #1 벽·아치 프레임·셔터·셔터 슬랫·내부 경로 메시 5개와 새 가구 메시 33개를 사용한다. 이전 장식 22개와 전기함 전용 20개 Renderer를 제거해 추가 연구실 배경과 현재 양피지 Renderer를 포함해 외곽·휴게실 보강까지 포함한 씬에는 MeshRenderer 415개와 간판·안내용 World Space Canvas와 uGUI Text가 저장되어 있다. 실제 Quest 성능 측정값은 아니다.
 
-기존 FactoryDecoration_*.asset는 삭제하지 않았으며 새 씬에서는 참조하지 않는다. 기존 ParchmentSceneSetup은 이전 공장 계층·좌표를 대상으로 하는 도구이므로 새 공간의 배치 도구가 아니다.
+기존 FactoryDecoration_*.asset 148개와 참조되지 않는 EscapeLayout 메시 7개(011, 016, 057~061), FactorySurroundings_Room03 메시 3개(AgedSteel, RustSteel, WornBlue)를 해당 .meta와 함께 제거했다. 현재 EscapeLayout 메시는 67개, FactorySurroundings 메시는 60개다. 기존 ParchmentSceneSetup은 이전 공장 계층·좌표를 대상으로 하는 도구이므로 새 공간의 배치 도구가 아니다.
+
+### 2026-11-12 미사용 에셋 정리와 정적 규모 확인
+
+Assets·ProjectSettings·Packages의 직렬화 GUID 참조, FactoryLightingData의 바이너리 GUID 및 코드의 이름·경로 사용을 확인해 미사용 메시 158개, 재질 6개, 텍스처 14개를 해당 .meta와 함께 정리했다. 제거한 텍스처에는 이전 출입문 표지 3장과 `Roomreflection0~4.exr`가 포함된다. 공장 씬은 `ShutterUnavailableSign` 프리팹을 참조하고, 바이너리 `FactoryLightingData`는 현재 라이트맵과 `ReflectionProbe-0~4.exr`를 참조한다.
+
+현재 FactoryEnvironment 씬 파일에 직접 직렬화된 MeshRenderer는 453개다. 공장 전용 메시를 참조하는 MeshFilter 428개의 배치별 메시 데이터를 합산하면 삼각형 1,080,978개, 정점 1,306,712개다. 이 수치는 카메라 가시성·활성 상태를 적용한 프레임당 렌더링 수치가 아니며, 프리팹 내부와 Additive 체험 씬의 형상은 포함하지 않는다. 위의 415개 Renderer 기록은 이전 배치 당시 수치다.
+
+씬에 저장된 Light 97개 중 베이크 면광원 75개와 혼합 스폿 5개가 활성화되어 있다. 실시간 점광원 16개 중 14개는 비활성화되어 있고 2개가 활성화되어 있으며, 실시간 방향광 1개가 활성화되어 있다. 씬의 OcclusionCullingData 참조는 비어 있다. 가장 큰 단일 배치 메시인 StaffLoungeFurnitureDetails는 삼각형 86,367개다.
+
+미사용 에셋 삭제는 프로젝트 정리이며 FPS 개선 측정 결과가 아니다. Quest의 실행 가능 여부와 병목은 이 정적 집계만으로 확정하지 않는다. 이번 작업에서 Unity 실행·컴파일·테스트·빌드와 기기 성능 측정은 수행하지 않았다.
 
 ## 확인 범위
 

@@ -15,13 +15,13 @@ namespace CNNConvolution
         private readonly MaterialPropertyBlock _highlightProperties = new MaterialPropertyBlock();
         private readonly WorkbenchPrimitiveFactory _factory;
 
-        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor, string title, bool hasOutputStatus = false)
+        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor, string title, bool hasEquationArea)
         {
             _factory = factory;
             _result = factory.Root(title);
             factory.Frame(_result, 0.64f, 0.57f, 0.08f, WorkbenchColors.PanelFrame);
-            float bottom = hasOutputStatus ? -0.74f : -0.82f;
-            float width = hasOutputStatus ? 0.92f : 1.08f;
+            float bottom = hasEquationArea ? -0.82f : -0.33f;
+            float width = hasEquationArea ? 1.08f : 0.92f;
             const float top = 0.31f;
             Transform panel = factory.Root("Integrated panel backing");
             panel.SetParent(_result, false);

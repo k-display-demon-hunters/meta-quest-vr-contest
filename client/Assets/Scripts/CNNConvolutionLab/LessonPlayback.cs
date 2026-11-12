@@ -5,9 +5,11 @@ namespace CNNConvolution
 {
     internal sealed class LessonPlayback
     {
+        private const float AnimationSpeedMultiplier = 1.5f;
+
         public bool IsPaused { get; set; }
         public float Speed { get; set; } = 1f;
-        public float DeltaTime => IsPaused ? 0f : Time.unscaledDeltaTime * Speed;
+        public float DeltaTime => IsPaused ? 0f : Time.unscaledDeltaTime * AnimationSpeedMultiplier * Speed;
 
         public IEnumerator Wait(float seconds)
         {

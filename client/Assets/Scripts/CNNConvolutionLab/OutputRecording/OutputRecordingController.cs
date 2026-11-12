@@ -27,7 +27,6 @@ namespace CNNConvolution
         }
         public IEnumerator Run(ConvolutionCalculation calculation, bool firstOutput)
         {
-            _ui.SetStage(3);
             if (firstOutput)
             {
                 _ui.Title = OutputRecordingContent.FirstTitle();

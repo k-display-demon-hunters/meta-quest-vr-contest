@@ -8,12 +8,11 @@ namespace CNNConvolution
     {
         private readonly Mesh _mesh;
 
-        public WorkbenchHologramBackdrop(Transform parent, Material material, Vector3 center,
-            float panelRadius, float panelSpacing)
+        public WorkbenchHologramBackdrop(Transform parent, Material material)
         {
             GameObject backdrop = new GameObject("Curved hologram backdrop", typeof(MeshFilter), typeof(MeshRenderer));
             backdrop.transform.SetParent(parent, false);
-            _mesh = CreateArc(center, panelRadius + 0.75f, (1.5f * panelSpacing + 21f) * Mathf.Deg2Rad);
+            _mesh = CreateArc();
             backdrop.GetComponent<MeshFilter>().sharedMesh = _mesh;
             MeshRenderer renderer = backdrop.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
@@ -23,11 +22,14 @@ namespace CNNConvolution
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
 
-        private static Mesh CreateArc(Vector3 center, float radius, float halfAngle)
+        private static Mesh CreateArc()
         {
             const int segments = 36;
+            const float centerDepth = -3.03f;
+            const float radius = 4.62f;
+            const float halfAngle = 68f * Mathf.Deg2Rad;
             const float bottom = -1.13f;
-            const float top = 1.50f;
+            const float top = 1.88f;
             var vertices = new Vector3[(segments + 1) * 2];
             var uv = new Vector2[vertices.Length];
             var triangles = new int[segments * 6];
@@ -35,8 +37,8 @@ namespace CNNConvolution
             {
                 float fraction = index / (float)segments;
                 float angle = Mathf.Lerp(-halfAngle, halfAngle, fraction);
-                float x = center.x + Mathf.Sin(angle) * radius;
-                float z = center.z + Mathf.Cos(angle) * radius;
+                float x = Mathf.Sin(angle) * radius;
+                float z = centerDepth + Mathf.Cos(angle) * radius;
                 int vertex = index * 2;
                 vertices[vertex] = new Vector3(x, bottom, z);
                 vertices[vertex + 1] = new Vector3(x, top, z);

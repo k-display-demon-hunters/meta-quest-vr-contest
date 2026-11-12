@@ -17,11 +17,6 @@ namespace CNNConvolution
         [SerializeField] private Material _placementPreviewMaterial;
         [SerializeField, Min(0.1f)] private float _placementGhostPeriod = 1f;
 
-        [Header("Panel arc (workbench local units)")]
-        [SerializeField] private Vector3 _arcViewCenter = new Vector3(0f, 0.22f, -3.03f);
-        [SerializeField, Min(1f)] private float _arcRadius = 3.2f;
-        [SerializeField, Range(18f, 28f)] private float _arcPanelSpacing = 24f;
-
         [SerializeField] private Material _hologramBackdropMaterial;
 
         private WorkbenchHologramBackdrop _backdrop;
@@ -34,12 +29,11 @@ namespace CNNConvolution
         {
             _sideNumbers = new SideNumberController();
             _factory = new WorkbenchPrimitiveFactory(transform, font, _sideNumbers);
-            _backdrop = new WorkbenchHologramBackdrop(transform, _hologramBackdropMaterial,
-                _arcViewCenter, _arcRadius, _arcPanelSpacing);
+            _backdrop = new WorkbenchHologramBackdrop(transform, _hologramBackdropMaterial);
             InputGridController input = new InputGridController(_factory, _inputAnchor);
             _kernel = new WorkbenchKernelController(_factory, transform, _kernelHome, _kernelTarget, _placementPreviewMaterial, _placementGhostPeriod);
-            ResultGridController products = new ResultGridController(_factory, _productsAnchor, "중간 계산 · 아홉 곱");
-            ResultGridController result = new ResultGridController(_factory, _resultAnchor, "최종 출력 · 3×3", hasOutputStatus: true);
+            ResultGridController products = new ResultGridController(_factory, _productsAnchor, "중간 계산 · 아홉 곱", hasEquationArea: true);
+            ResultGridController result = new ResultGridController(_factory, _resultAnchor, "최종 출력 · 3×3", hasEquationArea: false);
             EquationDisplayController equations = new EquationDisplayController(_factory, _sumAnchor, _equationAnchor, _sumEquationAnchor);
             FlyingNumberController number = new FlyingNumberController(_factory, "Animated calculation copy", 0.9f);
             return (_factory, input, _kernel, products, result, equations, number);
@@ -47,12 +41,10 @@ namespace CNNConvolution
 
         internal Transform PlacementTarget => _kernelTarget;
         internal Text PlacementHint => _placementHint;
-        internal Pose OutputStatusPose => new Pose(
-            _resultAnchor.TransformPoint(new Vector3(0f, -0.53f, -0.012f)), _resultAnchor.rotation);
 
 #if UNITY_EDITOR
-        [ContextMenu("Apply Panel Arc Layout")]
-        private void ApplyPanelArcLayout()
+        [ContextMenu("Apply Workbench Panel Layout")]
+        private void ApplyPanelLayout()
         {
             Transform hint = _placementHint.rectTransform;
             Transform[] anchors =
@@ -60,12 +52,13 @@ namespace CNNConvolution
                 _kernelHome, _inputAnchor, _kernelTarget, _productsAnchor, _resultAnchor,
                 _equationAnchor, _sumAnchor, _sumEquationAnchor, hint
             };
-            UnityEditor.Undo.RecordObjects(anchors, "Apply Convolution Panel Arc");
+            UnityEditor.Undo.RecordObjects(anchors, "Apply Convolution Panel Layout");
 
-            PlacePanel(_kernelHome, -1.5f);
-            PlacePanel(_inputAnchor, -0.5f);
-            PlacePanel(_productsAnchor, 0.5f);
-            PlacePanel(_resultAnchor, 1.5f);
+            Quaternion leftWing = Quaternion.Euler(0f, -40f, 0f);
+            _kernelHome.SetLocalPositionAndRotation(new Vector3(-2.91f, -0.20f, -1.30f), leftWing);
+            _inputAnchor.SetLocalPositionAndRotation(new Vector3(-1.79f, 0.04f, -0.27f), leftWing);
+            _productsAnchor.SetLocalPositionAndRotation(new Vector3(-0.67f, 0.04f, 0.10f), Quaternion.identity);
+            _resultAnchor.SetLocalPositionAndRotation(new Vector3(0.67f, 0.04f, 0.10f), Quaternion.identity);
 
             PlaceRelative(_kernelTarget, _inputAnchor, InputGridController.WindowOffset(0, 0));
             PlaceRelative(_equationAnchor, _productsAnchor, new Vector3(0f, -0.39f, -0.035f));
@@ -77,14 +70,6 @@ namespace CNNConvolution
             {
                 UnityEditor.PrefabUtility.RecordPrefabInstancePropertyModifications(anchor);
             }
-        }
-
-        private void PlacePanel(Transform anchor, float slot)
-        {
-            float rise = Mathf.Clamp((0.04f - _arcViewCenter.y) / _arcRadius, -0.8f, 0.8f);
-            float pitch = -Mathf.Asin(rise) * Mathf.Rad2Deg;
-            Quaternion rotation = Quaternion.Euler(pitch, slot * _arcPanelSpacing, 0f);
-            anchor.SetLocalPositionAndRotation(_arcViewCenter + rotation * Vector3.forward * _arcRadius, rotation);
         }
 
         private static void PlaceRelative(Transform anchor, Transform panel, Vector3 offset) =>

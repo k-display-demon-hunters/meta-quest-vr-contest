@@ -71,10 +71,12 @@ namespace Cinematic
 
         internal void GetCaptionLayout(float time, out float height, out bool foreground, out bool backing)
         {
-            foreground = time >= _schedule.Digit && time < _schedule.Doors;
+            foreground = false;
+            bool inDigitAndPixels = time >= _schedule.Digit && time < _schedule.Doors;
             bool inArchive = time >= _schedule.Arrival && time < _schedule.Digit;
-            backing = foreground || inArchive;
-            height = foreground ? 1.36f : inArchive ? (time >= _schedule.Zoom ? .85f : .99f) : 1.6f;
+            bool inFactory = time >= _schedule.Doors;
+            backing = inDigitAndPixels || inArchive || inFactory;
+            height = inDigitAndPixels ? 1.27f : inArchive ? 1.04f : inFactory ? 1.30f : 1.6f;
         }
 
         private void EvaluateAudio(float time)

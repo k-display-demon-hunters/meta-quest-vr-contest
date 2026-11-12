@@ -19,7 +19,7 @@ namespace Cinematic
         {
             // Move the stage around the viewer once; never move the camera or chase head rotation.
             Vector3 forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
-            _world.position = new Vector3(head.position.x, head.position.y - 1.6f, head.position.z);
+            _world.position = new Vector3(head.position.x, head.position.y - 1.15f, head.position.z);
             _world.rotation = Quaternion.LookRotation(forward.sqrMagnitude > .01f ? forward : Vector3.forward);
             _pixelOrigins = new Vector3[_pixels.Length];
             for (int i = 0; i < _pixels.Length; i++) { _pixelOrigins[i] = _pixels[i].localPosition; }
@@ -37,13 +37,13 @@ namespace Cinematic
             _year.gameObject.SetActive(year);
             float yearsElapsed = 37 * (1 - Mathf.Pow(1 - rewind, 1.55f));
             _year.text = (2026 - Mathf.FloorToInt(yearsElapsed)).ToString();
-            _timeline.localPosition = new Vector3(Mathf.Lerp(0, 12, rewind), .28f, 3.3f);
-            _year.transform.parent.localPosition = new Vector3(0, 2.45f, 2.9f);
+            _timeline.localPosition = new Vector3(Mathf.Lerp(0, 12, rewind), 1f, 3.3f);
+            _year.transform.parent.localPosition = new Vector3(0, 2.25f, 2.9f);
         }
 
         internal void ShowLocation(bool visible, float elapsed, string location, string research)
         {
-            _caption.gameObject.SetActive(visible);
+            _caption.transform.parent.gameObject.SetActive(visible);
             if (!visible) { return; }
             int characters = Mathf.Min(location.Length, (int)(elapsed * 20f) + 1);
             _caption.text = location.Substring(0, characters);
@@ -65,8 +65,8 @@ namespace Cinematic
         {
             _factory.gameObject.SetActive(visible);
             float doorOpen = Smooth(elapsed / 1.4f);
-            _leftDoor.localPosition = new Vector3(-.7f - 1.4f * doorOpen, 1.5f, 0);
-            _rightDoor.localPosition = new Vector3(.7f + 1.4f * doorOpen, 1.5f, 0);
+            _leftDoor.localPosition = new Vector3(-.8f - 1.65f * doorOpen, 1.3f, .12f);
+            _rightDoor.localPosition = new Vector3(.8f + 1.65f * doorOpen, 1.3f, .12f);
         }
 
         internal void FrameArchive(float expansion)
@@ -80,7 +80,7 @@ namespace Cinematic
             for (int i = 0; i < _pixels.Length; i++)
             {
                 Vector3 origin = _pixelOrigins[i];
-                float rowDelay = .17f * Mathf.InverseLerp(2.55f, 1.25f, origin.y);
+                float rowDelay = .17f * Mathf.InverseLerp(.65f, -.65f, origin.y - _digit.localPosition.y);
                 float separation = Smooth(Mathf.InverseLerp(rowDelay, .65f, transitionElapsed));
                 _pixels[i].gameObject.SetActive(separation > 0f && visible);
                 float angle = i * 2.39996f + pixelElapsed * .18f;
@@ -99,7 +99,7 @@ namespace Cinematic
         {
             foreach (Transform target in new[] { _portal, _timeline, _digit, _factory, _network })
             { target.gameObject.SetActive(false); }
-            _year.gameObject.SetActive(false); _caption.gameObject.SetActive(false);
+            _year.gameObject.SetActive(false); _caption.transform.parent.gameObject.SetActive(false);
             foreach (Transform target in _boxes) { target.gameObject.SetActive(false); }
             foreach (Transform target in _pixels) { target.gameObject.SetActive(false); }
             foreach (Transform target in _eraProps) { target.gameObject.SetActive(false); }

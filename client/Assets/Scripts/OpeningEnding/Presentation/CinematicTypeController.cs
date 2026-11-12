@@ -16,11 +16,13 @@ namespace Cinematic
         private float[] _times;
         private bool _cursor;
         private Vector3 _captionScale;
+        private float _backingOpacity;
         public event Action CharacterTyped;
 
         internal void Bind()
         {
             _captionScale = _line.transform.parent.localScale;
+            _backingOpacity = _backing.color.a;
             ClearLine();
         }
 
@@ -58,7 +60,7 @@ namespace Cinematic
             float alpha = Mathf.Clamp01(remaining / .25f);
             _line.color = new Color(.96f, .96f, .94f, alpha);
             _backing.enabled = backing;
-            _backing.color = new Color(0, 0, 0, .45f * alpha);
+            _backing.color = new Color(0, 0, 0, _backingOpacity * alpha);
             if (count == _visible && cursor == _cursor) { return; }
             _cursor = cursor;
             if (count != _visible)

@@ -31,6 +31,7 @@ namespace Parchment
         private IReadOnlyList<ParchmentPage> _pages;
         private int _page;
         private string _lessonTitle;
+        private string _lessonSource;
         public event Action Completed;
         public event Action CloseRequested;
 
@@ -96,7 +97,7 @@ namespace Parchment
             ParchmentLesson lesson = ParchmentCatalog.Get(index);
             _pages = lesson.Pages;
             _page = 0;
-            _source.text = "양피지 " + (index + 1).ToString("00") + "  /  " + lesson.Department;
+            _lessonSource = "양피지 " + (index + 1).ToString("00") + "  /  " + lesson.Department;
             _lessonTitle = lesson.Title;
             GetComponent<Canvas>().worldCamera = camera;
             RefreshPage(animateIllustration: false);
@@ -153,6 +154,7 @@ namespace Parchment
         private void RefreshPage(bool animateIllustration = true)
         {
             ParchmentPage page = _pages[_page];
+            _source.text = page.Source ?? _lessonSource;
             _title.text = page.Title ?? _lessonTitle;
             _body.text = page.Body;
 

@@ -9627,7 +9627,10 @@ MonoBehaviour:
   _id: 3
   _panel: {fileID: 720001782}
   _unavailableSign: {fileID: 989210011}
-  _unavailableHologram: {fileID: 975430000000000103}
+  _hologramProjector: {fileID: 975430000000000104}
+  _hologramPanel: {fileID: 975430000000000105}
+  _hologramPanelOpacity: {fileID: 975430000000000106}
+  _hologramScanLine: {fileID: 975430000000000107}
   _travel: 3.3
   _duration: 1.6
 --- !u!1 &720001889
@@ -10391,7 +10394,10 @@ MonoBehaviour:
   _id: 6
   _panel: {fileID: 720002104}
   _unavailableSign: {fileID: 989210020}
-  _unavailableHologram: {fileID: 985260000000000103}
+  _hologramProjector: {fileID: 985260000000000104}
+  _hologramPanel: {fileID: 985260000000000105}
+  _hologramPanelOpacity: {fileID: 985260000000000106}
+  _hologramScanLine: {fileID: 985260000000000107}
   _travel: 3.3
   _duration: 1.6
 --- !u!1 &720002211
@@ -35521,8 +35527,6 @@ MonoBehaviour:
   _glowRenderer: {fileID: 990100029}
   _glowLight: {fileID: 990100016}
   _labelCanvas: {fileID: 990100010}
-  _faceLabelToViewer: 1
-  _labelGap: 0.075
   _floatPhase: 0
 --- !u!114 &990200001
 MonoBehaviour:
@@ -80025,17 +80029,26 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1001, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
   m_PrefabInstance: {fileID: 975430000000000101}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &975430000000000103 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1002, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+--- !u!225 &975430000000000104 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 1103, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
   m_PrefabInstance: {fileID: 975430000000000101}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0fd3952bef04556913d2b674036bb4a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+--- !u!224 &975430000000000105 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1201, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 975430000000000101}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &975430000000000106 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 1203, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 975430000000000101}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &975430000000000107 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1361, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 975430000000000101}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &985260000000000101
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -80086,14 +80099,23 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1001, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
   m_PrefabInstance: {fileID: 985260000000000101}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &985260000000000103 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1002, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+--- !u!225 &985260000000000104 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 1103, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
   m_PrefabInstance: {fileID: 985260000000000101}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0fd3952bef04556913d2b674036bb4a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+--- !u!224 &985260000000000105 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1201, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 985260000000000101}
+  m_PrefabAsset: {fileID: 0}
+--- !u!225 &985260000000000106 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 1203, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 985260000000000101}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &985260000000000107 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1361, guid: 9c20cb86d5104da993a07de8b9f2747a, type: 3}
+  m_PrefabInstance: {fileID: 985260000000000101}
+  m_PrefabAsset: {fileID: 0}

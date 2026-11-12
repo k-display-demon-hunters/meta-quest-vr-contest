@@ -17,8 +17,6 @@ namespace Parchment
         [SerializeField] private float _floatPhase;
         private XRSimpleInteractable _interactable;
         [SerializeField] private Canvas _labelCanvas;
-        [SerializeField] private bool _faceLabelToViewer;
-        [SerializeField, Min(0f)] private float _labelGap = 0.075f;
         private Vector3 _restPosition;
         private Color _paperColor;
         private SpriteRenderer _rightRoller;
@@ -32,13 +30,6 @@ namespace Parchment
             _restPosition = transform.localPosition;
             _paperColor = _paperRenderer.color;
             ConfigureAppearance();
-            if (_faceLabelToViewer)
-            {
-                RectTransform label = (RectTransform)_labelCanvas.transform;
-                Vector3 position = label.localPosition;
-                position.y = -ScrollHeight * 0.5f - _labelGap - label.rect.height * label.localScale.y * 0.5f;
-                label.localPosition = position;
-            }
         }
 
         private void OnEnable()
@@ -56,20 +47,6 @@ namespace Parchment
             _glowLight.intensity = Mathf.Lerp(0.3f, 0.45f, pulse);
             _paperRenderer.color = Color.Lerp(_paperColor * 0.97f, _paperColor, pulse);
             _rightRoller.color = _paperRenderer.color;
-        }
-
-        private void LateUpdate()
-        {
-            if (!_faceLabelToViewer || _hidden) { return; }
-            Camera viewer = Camera.main;
-            if (viewer == null) { return; }
-
-            Transform label = _labelCanvas.transform;
-            Vector3 facing = Vector3.ProjectOnPlane(label.position - viewer.transform.position, Vector3.up);
-            if (facing.sqrMagnitude > 0.0001f)
-            {
-                label.rotation = Quaternion.LookRotation(facing, Vector3.up);
-            }
         }
 
         public void ShowCollected()

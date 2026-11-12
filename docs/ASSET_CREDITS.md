@@ -129,8 +129,8 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| PostOffice_US_1989.png | 오프닝 우체국 전경 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. Unity에서 전체 확대와 창구 줌인 |
-| PostOfficeStamp.mp4, PostOfficeStampPlate.png, PostOfficeStampedEnvelope.png | 오프닝 도장 동작 및 우편번호 인식 | Codex 보조. OpenAI 내장 image_gen으로 우체국 전경을 참고한 봉투 사진과 도장을 쥔 손을 생성하고 FFmpeg로 손동작, 도장 자국, 인식 표시 합성 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | 무음 H.264 컷 및 정지 프레임 |
+| PostOffice_US_1989.png | 이전 오프닝 우체국 전경. 현재 오프닝은 3D로 대체, 원본·데이터 슬롯 보존 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |
+| PostOfficeStamp.mp4, PostOfficeStampPlate.png, PostOfficeStampedEnvelope.png | 이전 오프닝 도장 동작 및 우편번호 인식. 현재 오프닝은 3D로 대체, 원본·데이터 슬롯 보존 | Codex 보조. OpenAI 내장 image_gen으로 우체국 전경을 참고한 봉투 사진과 도장을 쥔 손을 생성하고 FFmpeg로 손동작, 도장 자국, 인식 표시 합성 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | 무음 H.264 컷 및 정지 프레임 |
 | OpeningCrowd.mp3 | 오프닝 우체국 군중 소리 | [Pixabay의 Group Talking](https://pixabay.com/sound-effects/people-group-talking-68823/), 사용자 제공 파일. [Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/) | 4177569399, Pixabay Content License 표시, Freesound 원본 CC0 | 원본 파일 그대로, 0초부터 재생 |
 | OpeningNarration01–06.wav | 오프닝 대사 | 사용자 화면 녹화에서 오디오 추출. 녹음·합성 방식과 음성 제공 서비스 미확인 | 제작자·권리자·배포 조건 미확인 | 대사별 절단, 모노 WAV 변환 및 게인 조절 |
 | OpeningScore.wav | 오프닝 음악 | 사용자가 Suno에서 생성한 [Vintage Electro Swing](https://suno.com/s/X1UheAwttpqtFZhR)의 화면 녹화에서 오디오 추출 | Suno 생성. 계정의 사용 조건 및 공개 배포 권한 미확인 | 앞 무음 절단, 35초 편집, 페이드 및 게인 조절 |

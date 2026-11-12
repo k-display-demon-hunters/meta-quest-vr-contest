@@ -13,6 +13,7 @@ namespace CNNConvolution
         [SerializeField] private Text _title, _explanation;
         [SerializeField] private Text _guideInstruction, _playbackLabel;
         [SerializeField] private Text _stageProgress;
+        [SerializeField] private RectTransform _outputStatus;
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
         [SerializeField] private Button _next, _skip, _finish, _replay;
@@ -51,6 +52,9 @@ namespace CNNConvolution
         {
             foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true)) { canvas.worldCamera = Camera.main; }
         }
+        internal void PlaceOutputStatus(Pose pose) =>
+            _outputStatus.SetPositionAndRotation(pose.position, pose.rotation);
+
         public void RequestNext() { NextRequested?.Invoke(); }
         public void RequestSkip() { SkipRequested?.Invoke(); }
         public void RequestFinish() { FinishRequested?.Invoke(); }

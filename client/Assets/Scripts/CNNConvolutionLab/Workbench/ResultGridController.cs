@@ -15,21 +15,25 @@ namespace CNNConvolution
         private readonly MaterialPropertyBlock _highlightProperties = new MaterialPropertyBlock();
         private readonly WorkbenchPrimitiveFactory _factory;
 
-        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor, string title)
+        public ResultGridController(WorkbenchPrimitiveFactory factory, Transform anchor, string title, bool hasOutputStatus = false)
         {
             _factory = factory;
             _result = factory.Root(title);
-            _result.localPosition = new Vector3(0.45f, 0, 0.1f);
-            factory.Frame(_result, 0.64f, 0.57f, 0.08f, new Color(0.28f, 0.31f, 0.32f));
-            factory.Tile(_result, new Vector3(0, 0, 0.065f), new Vector3(0.60f, 0.53f, 0.035f), new Color(0.055f, 0.065f, 0.075f));
-            Transform resultTitlePlate = factory.FormulaPlate("Result title plate", 0.82f);
-            resultTitlePlate.SetParent(_result, false);
-            resultTitlePlate.localPosition = new Vector3(0, 0.38f, -0.04f);
-            _resultTitle = factory.Caption(resultTitlePlate, title, new Vector3(0, 0, -0.027f), 0.76f);
-            _resultTitle.fontSize = 38;
+            factory.Frame(_result, 0.64f, 0.57f, 0.08f, WorkbenchColors.PanelFrame);
+            float bottom = hasOutputStatus ? -0.74f : -0.82f;
+            float width = hasOutputStatus ? 0.92f : 1.08f;
+            const float top = 0.31f;
+            Transform panel = factory.Root("Integrated panel backing");
+            panel.SetParent(_result, false);
+            panel.localPosition = new Vector3(0, (top + bottom) * 0.5f, 0.081f);
+            factory.Tile(panel, Vector3.zero, new Vector3(width, top - bottom, 0.026f), WorkbenchColors.PanelFace);
+            factory.Frame(panel, width, top - bottom, 0.03f, WorkbenchColors.PanelFrame, 0.008f);
+            Transform resultTitlePlate = factory.PanelHeading(_result);
+            _resultTitle = factory.Caption(resultTitlePlate, title, new Vector3(0, 0, -0.027f), 0.88f);
+            _resultTitle.fontSize = WorkbenchColors.HeadingFontSize;
             for (int i = 0; i < 9; i++)
             {
-                Transform productTile = factory.Tile(_result, WorkbenchPrimitiveFactory.GridCellPosition(i, 3), new Vector3(0.17f, 0.15f, 0.12f), new Color(0.16f, 0.18f, 0.22f));
+                Transform productTile = factory.Tile(_result, WorkbenchPrimitiveFactory.GridCellPosition(i, 3), new Vector3(0.17f, 0.15f, 0.12f), WorkbenchColors.PanelFace);
                 _products[i] = factory.Caption(productTile, "·", new Vector3(0, 0, -0.066f), 0.17f);
                 _products[i].color = WorkbenchColors.PendingValue;
                 Transform mark = factory.Root("Recorded product " + i);

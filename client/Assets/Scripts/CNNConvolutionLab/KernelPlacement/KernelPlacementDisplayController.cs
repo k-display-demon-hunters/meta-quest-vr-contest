@@ -5,26 +5,27 @@ namespace CNNConvolution
 {
     internal sealed class KernelPlacementDisplayController
     {
-        private const float PreviewTravelDuration = 1.35f;
-        private const float PreviewHoldDuration = 0.45f;
-        private const float PreviewPauseDuration = 0.5f;
-        private const float PreviewFrontOffset = 0.045f;
+        private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        private readonly MaterialPropertyBlock _ghostProperties = new MaterialPropertyBlock();
 
         private readonly WorkbenchKernelController _kernel;
         private readonly Text _hint;
-        private readonly Transform _preview;
+        private readonly Transform _ghost;
+        private readonly MeshRenderer[] _ghostTiles;
+        private bool _ghostReady;
         private readonly Transform _gripArrow;
         private readonly Transform _dropTarget;
         private readonly Transform _placementDashed;
         private readonly Transform _placementSolid;
         private readonly Transform _placementCheck;
-        private float _previewTime;
+        private float _ghostTime;
 
         public KernelPlacementDisplayController(WorkbenchPrimitiveFactory factory, WorkbenchKernelController kernel, Transform target, Text hint)
         {
             _kernel = kernel;
             _hint = hint;
-            _preview = kernel.CreatePlacementPreview();
+            _ghost = kernel.CreatePlacementGhost();
+            _ghostTiles = _ghost.GetComponentsInChildren<MeshRenderer>(true);
             _gripArrow = factory.Root("Grip arrow");
             kernel.AttachGripArrow(_gripArrow);
             factory.Tile(_gripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
@@ -41,7 +42,7 @@ namespace CNNConvolution
             _placementSolid.SetParent(_dropTarget, false);
             _placementCheck = factory.Root("Placement complete check");
             _placementCheck.SetParent(_dropTarget, false);
-            Color waiting = new Color(0.35f, 0.78f, 0.85f);
+            Color waiting = WorkbenchColors.PlacementMint;
             Color ready = new Color(1f, 0.86f, 0.57f);
             // A fixed silhouette shows the actual destination; it never pulses in size.
             for (int side = -1; side <= 1; side += 2)
@@ -75,49 +76,45 @@ namespace CNNConvolution
             _placementSolid.gameObject.SetActive(ready);
             _placementCheck.gameObject.SetActive(completed);
             _gripArrow.gameObject.SetActive(showGrip);
-            if (!showGrip) { HidePreview(); }
+            _ghostReady = ready;
+            _ghost.gameObject.SetActive(!completed);
+            if (!completed)
+            {
+                UpdateGhost(0f);
+            }
             _kernel.SetTitleVisible(showGrip);
             _hint.gameObject.SetActive(true);
             _hint.text = message;
-            Color accent = ready ? new Color(1f, 0.86f, 0.57f) : new Color(0.35f, 0.78f, 0.85f);
+            Color accent = ready ? new Color(1f, 0.86f, 0.57f) : WorkbenchColors.PlacementMint;
             _hint.color = ready ? accent : Color.white;
             _kernel.TintHandle(accent, emphasize ? 0.35f : 0.12f);
         }
 
-        public void UpdatePreview(float deltaTime)
+        public void UpdateGhost(float deltaTime)
         {
-            float visibleDuration = PreviewTravelDuration + PreviewHoldDuration;
-            _previewTime = Mathf.Repeat(_previewTime + deltaTime, visibleDuration + PreviewPauseDuration);
-            if (_previewTime >= visibleDuration)
-            {
-                _preview.gameObject.SetActive(false);
-                return;
-            }
+            if (!_ghost.gameObject.activeSelf) { return; }
 
-            float progress = Mathf.SmoothStep(0, 1, _previewTime / PreviewTravelDuration);
-            Pose home = _kernel.HomePose;
-            Pose target = _kernel.TargetPose;
-            // Keep the preview just in front of the real filter at the start of each loop.
-            Vector3 offset = _preview.parent.TransformVector(Vector3.back * PreviewFrontOffset);
-            _preview.SetPositionAndRotation(
-                Vector3.Lerp(home.position, target.position, progress) + offset,
-                Quaternion.Slerp(home.rotation, target.rotation, progress));
-            _preview.gameObject.SetActive(true);
+            float period = _kernel.PlacementGhostPeriod;
+            _ghostTime = Mathf.Repeat(_ghostTime + deltaTime, period);
+            float pulse = (1f - Mathf.Cos(_ghostTime / period * 2f * Mathf.PI)) * 0.5f;
+            Color color = WorkbenchColors.PlacementMint;
+            color.a = _ghostReady ? 0.9f : Mathf.Lerp(0.25f, 0.7f, pulse);
+            _ghostProperties.SetColor(BaseColor, color);
+            foreach (MeshRenderer tile in _ghostTiles)
+            {
+                tile.SetPropertyBlock(_ghostProperties);
+            }
         }
 
         public void HidePlacement()
         {
-            HidePreview();
+            _ghostTime = 0f;
+            _ghost.gameObject.SetActive(false);
             _dropTarget.gameObject.SetActive(false);
             _gripArrow.gameObject.SetActive(false);
             _hint.gameObject.SetActive(false);
-            _kernel.TintHandle(new Color(0.47f, 0.38f, 0.24f), 0);
+            _kernel.TintHandle(WorkbenchColors.PanelFrame, 0);
         }
 
-        private void HidePreview()
-        {
-            _previewTime = 0;
-            _preview.gameObject.SetActive(false);
-        }
     }
 }

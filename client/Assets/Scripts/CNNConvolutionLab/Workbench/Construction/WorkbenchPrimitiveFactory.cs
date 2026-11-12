@@ -142,11 +142,21 @@ namespace CNNConvolution
             }
         }
 
+        public Transform PanelHeading(Transform parent)
+        {
+            Transform plate = FormulaPlate("Panel heading", 0.92f);
+            plate.SetParent(parent, false);
+            plate.localPosition = new Vector3(0f, WorkbenchColors.HeadingHeight, -0.025f);
+            Tile(plate, new Vector3(0f, 0.069f, -0.024f), new Vector3(0.88f, 0.006f, 0.003f),
+                WorkbenchColors.PlacementMint);
+            return plate;
+        }
+
         public Transform FormulaPlate(string name, float width)
         {
             Transform plate = Root(name);
-            Tile(plate, Vector3.zero, new Vector3(width, 0.14f, 0.04f), new Color(0.025f, 0.035f, 0.045f));
-            Frame(plate, width, 0.14f, 0.043f, new Color(0.44f, 0.37f, 0.25f), 0.008f);
+            Tile(plate, Vector3.zero, new Vector3(width, 0.14f, 0.04f), WorkbenchColors.PanelFace);
+            Frame(plate, width, 0.14f, 0.043f, WorkbenchColors.PanelFrame, 0.008f);
             return plate;
         }
 

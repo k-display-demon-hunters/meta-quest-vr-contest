@@ -740,6 +740,8 @@ GameObject:
   - component: {fileID: 712224471}
   - component: {fileID: 712224470}
   - component: {fileID: 2024448788}
+  - component: {fileID: 865480000000000001}
+  - component: {fileID: 865480000000000002}
   m_Layer: 0
   m_Name: Low resolution image
   m_TagString: Untagged
@@ -1297,6 +1299,8 @@ GameObject:
   - component: {fileID: 1241807120}
   - component: {fileID: 1241807119}
   - component: {fileID: 1241807121}
+  - component: {fileID: 865470000000000001}
+  - component: {fileID: 865470000000000002}
   m_Layer: 0
   m_Name: Grab the filter
   m_TagString: Untagged
@@ -1312,8 +1316,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1241807117}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.70710678, y: 0, z: 0, w: 0.70710678}
-  m_LocalPosition: {x: -1.2, y: 0.13, z: -0.6}
+  m_LocalRotation: {x: 0.53729961, y: 0, z: 0, w: 0.84339145}
+  m_LocalPosition: {x: -0.95, y: 1.175, z: -0.7}
   m_LocalScale: {x: 1.3, y: 1.3, z: 1.3}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1328,7 +1332,7 @@ Transform:
   - {fileID: 460071063}
   - {fileID: 353728554}
   m_Father: {fileID: 810000002}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 65, y: 0, z: 0}
 --- !u!65 &1241807119
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2336,6 +2340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.CNNScreenLabManager
   _imageFactory: {fileID: 2024448787}
+  _pixelGrid: {fileID: 865480000000000001}
   _board: {fileID: 2024448788}
   _selection: {fileID: 2024448789}
   _revealStage: {fileID: 300000022}
@@ -2374,7 +2379,7 @@ MonoBehaviour:
   _filter: {fileID: 1241807121}
   _volume: {fileID: 300000002}
   _selectionFrame: {fileID: 145947523}
-  _pickupBoundary: {fileID: 830000000}
+  _magnifierDock: {fileID: 864200000000000003}
 --- !u!114 &2024448786
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2404,6 +2409,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 830000001}
+  - {fileID: 864200000000000002}
   - {fileID: 300000011}
   - {fileID: 1902821098}
   - {fileID: 810000002}
@@ -2569,7 +2575,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68743328071a4699a27bc2fa8f1caf04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelImageFactory
-  _sourceImage: {fileID: 2800000, guid: 67b08e27b4d8dd94a9828493264db320, type: 3}
+  _sourceImage: {fileID: 2800000, guid: 1b977e083dd14ef8ada760223a39ce70, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2892,7 +2898,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &830000001
 Transform:
   m_ObjectHideFlags: 0
@@ -7302,3 +7308,122 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1001 &864200000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2024448783}
+    m_Modifications: []
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 622ed506094c43f59f494ac398c480d2, type: 3}
+--- !u!4 &864200000000000002 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1001, guid: 622ed506094c43f59f494ac398c480d2, type: 3}
+  m_PrefabInstance: {fileID: 864200000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &864200000000000003 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1051, guid: 622ed506094c43f59f494ac398c480d2, type: 3}
+  m_PrefabInstance: {fileID: 864200000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &865470000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1241807117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cee1ea3bf0c746e29375ab50c68199fd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.MagnifierIdleFloat
+  rotateSpeed: 30
+  bobAmplitude: 0.03
+  bobFrequency: 0.5
+  _dock: {fileID: 864200000000000003}
+  _ui: {fileID: 2024448786}
+--- !u!23 &865470000000000003 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1043, guid: 622ed506094c43f59f494ac398c480d2, type: 3}
+  m_PrefabInstance: {fileID: 864200000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &865470000000000004 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1023, guid: 622ed506094c43f59f494ac398c480d2, type: 3}
+  m_PrefabInstance: {fileID: 864200000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &865470000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1241807117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab38e69d22ce4773940f65c7af4ed521, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.MagnifierPickupFX
+  fadeDuration: 0.4
+  particleColor: {r: 0.39, g: 0.82, b: 1, a: 1}
+  volume: 0.75
+  pickupClip: {fileID: 0}
+  _beam: {fileID: 865470000000000003}
+  _rim: {fileID: 865470000000000004}
+  _lens: {fileID: 865470000000000005}
+  _sparkMaterial: {fileID: 2100000, guid: 547706b13c7c45b990098388c019c3e8, type: 2}
+  _ui: {fileID: 2024448786}
+--- !u!23 &865470000000000005 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 200513, guid: 60c12e803953442988a35dae83ab85f9, type: 3}
+  m_PrefabInstance: {fileID: 300000000}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &865480000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712224469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7dc6260b354418e867a849f88ce4ea1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelGridData
+  _sourceTexture: {fileID: 2800000, guid: 1b977e083dd14ef8ada760223a39ce70, type: 3}
+  gridWidth: 48
+  gridHeight: 27
+--- !u!114 &865480000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712224469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb26b334187e4d3f962a853380212588, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CNNScreen.PixelShatter
+  cubeSize: 1
+  gap: 0.012
+  thickness: 0.075
+  _cubeMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _cubeMaterial: {fileID: 2100000, guid: 69a6ccb8e5164cbfa23782bedacacb24, type: 2}
+  imageFadeDuration: 0.3
+  burstDuration: 1
+  returnDuration: 1
+  burstDistance: {x: 0.1, y: 0.6}
+  selectedDistance: 0.8
+  bobAmplitude: 0.018
+  highlightColor: {r: 0.28, g: 0.9, b: 1, a: 1}
+  _imageFadeShader: {fileID: 4800000, guid: 6bbec2226a6c43d59eb87c05ee15965a, type: 3}
+  _selection: {fileID: 2024448789}
+  _revealStage: {fileID: 300000022}
+  _ui: {fileID: 2024448786}

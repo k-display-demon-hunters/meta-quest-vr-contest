@@ -8,7 +8,7 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 
 ## 독립적인 관찰과 합성곱 입력
 
-`CNNScreenLab`은 사진에서 선택한 3×3 원본 RGB 0~255 관찰을 담당한다. `PixelImageFactory`는 기존 사진에서 128×72 축소·5×5 블러·32×18 샘플링 결과를 만든다. `PixelImageData.CapturePatch`가 만든 `PixelPatchData`는 관찰 내부에서만 사용하며 `Scripts/CNNScreenLab/PixelPatchData.cs`에 둔다. 외부로 선택 데이터를 공개하거나 전달하지 않는다.
+`CNNScreenLab`은 숫자 2 색점판에서 선택한 3×3 RGB 0~255 관찰을 담당한다. 첫 화면에는 원본 텍스처를 표시한다. `PixelImageFactory`는 같은 원본을 128×72로 축소하고 5×5 블러를 적용한 뒤 32×18로 샘플링해 픽셀 관찰에 사용한다. `PixelImageData.CapturePatch`가 만든 `PixelPatchData`는 관찰 내부에서만 사용하며 `Scripts/CNNScreenLab/PixelPatchData.cs`에 둔다. 외부로 선택 데이터를 공개하거나 전달하지 않는다.
 
 `CNNConvolutionLab`은 `Scripts/CNNConvolutionLab/ConvolutionCalculation.cs`의 `CreateExample()`에 저장된 0~3 값의 고정 5×5 RGB 배열로 시작한다. 순차 입장, 태블릿 직접 이동, 단독 실행 모두 같은 예제를 사용한다. 1-1의 선택 여부나 완료 상태로 입력을 바꾸지 않는다. 계산 결과는 이 배열과 필터로 매번 계산한다.
 
@@ -17,6 +17,20 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 `LearningSessionManager`는 구체 체험 Manager를 참조하지 않고 `ILearningExperience`로 단계·진행률·출구 허용 상태를 조회하고 변경 이벤트를 구독한다. 언로드 전에는 같은 인터페이스의 `EndSession`으로 정리를 요청한다. 공장 셔터의 개방 조건은 [Factory Environment](factory-environment.md)의 셔터 동작을 따른다.
 
 두 체험의 UI 버튼은 공용 `XRPlayerRig`에 구성한 EventSystem·XRUIInputModule을 사용한다. `ScreenLabUIController`와 `CNNConvolutionLabManager`는 입력 환경을 생성하거나 해제하지 않으며, 버튼의 기존 On Click 연결로 각 체험의 요청을 처리한다. 체험 종료·언로드 시 공용 입력 환경은 유지된다. ScreenLab 단독 실행은 씬에 배치된 공용 리그를 사용하고, 자체 리그가 없는 ConvolutionLab의 XR 조작은 공장에 로드된 공용 리그를 사용한다.
+
+## ROOM #1-1 픽셀 큐브 미리보기
+
+`Floating image board/Low resolution image`의 `PixelGridData`는 색점판 원본을 칸별 면적 평균으로 48×27 RGB 배열에 저장한다. `GetColor(x, y)`와 `TryWorldToGrid`는 왼쪽 아래 칸을 (0, 0)으로 사용한다. 원본 텍스처의 Read/Write가 필요하다.
+
+같은 오브젝트의 `PixelShatter`는 단위 Cube 메시와 `PixelGridCubes` 재질을 사용한다. 기본 상태는 숨김이다. Inspector 컴포넌트 메뉴의 `ShowGrid`와 `HideGrid`로 전환한다. 표시 중에만 원본 렌더러를 가리고, 숨길 때 기존 상태로 복구한다. 큐브는 최대 250개씩 인스턴싱해 그린다. Play 중에는 돋보기의 기존 `SelectionChanged`가 처음으로 유효한 3×3 선택을 알릴 때 0.3초 이미지 페이드와 1초 큐브 전개를 시작한다. 기존 선택 중심을 48×27 좌표로 변환해 해당 3×3을 강조한다. RGB 확대도 같은 중심의 9개 색을 `PixelGridData.GetColor()`로 읽어 채널 표시와 숫자판에 전달한다. 확대를 시작할 때 9개 좌표와 RGB를 Console에 한 번 기록한다. 다시 놓으면 강조 위치만 갱신한다. 첫 `NextRequested`로 픽셀 2/2에 들어가면 선택된 3×3을 제외한 큐브가 현재 위치에서 1초 동안 이미지 면으로 돌아간다. 이미지가 다시 나타나면 큐브 그리기를 중단하고 3×3 외곽선만 남긴다. RGB 펼침 시작과 ‘처음으로’는 기존 이벤트를 통해 연출을 중단하고 원본 렌더러 상태를 복구한다.
+
+## ROOM #1-1 돋보기 전시대
+
+`CNNScreenLab` 씬의 `CNN Screen Lab/MagnifierPedestal` Transform이 전시대 위치를 정한다. 받침대 윗면은 지름 0.56m, 바닥 기준 높이 1.0m에 있고 `MagnifierDock`은 윗면에서 0.175m 위에 있다. 시작하거나 선택을 초기화하면 돋보기는 이 기준점으로 돌아온다. 전시대에는 충돌 영역을 두지 않으며 기존 파란 바닥 표시는 비활성 상태로 보존한다.
+
+전시대 위 돋보기의 `MagnifierIdleFloat`는 초당 30° 회전하고 0.5Hz로 ±3cm 움직인다. 기존 `XRGrabInteractable.selectEntered`에서 멈추고 ‘처음으로’의 `ScreenLabUIController.ResetRequested`에서 다시 시작한다. 잡힌 상태의 리셋 요청은 기존 동작과 같이 무시한다.
+
+돋보기에는 짙은 금속 테두리와 반투명 렌즈가 있다. 같은 잡기 이벤트에서 `MagnifierPickupFX`가 렌즈 가장자리의 하늘색 띠를 먼저 반짝인다. 0.14초 뒤에 빛기둥이 0.4초에 걸쳐 꺼지기 시작하고, 전시대 링은 기존 밝기의 22%로 낮아진다. 돋보기 위치에서 최대 0.5초 동안 하늘색 파티클을 표시한다. Inspector의 `pickupClip`에 클립을 연결하면 공간 효과음을 재생한다. ‘처음으로’는 조명을 복구하고 다음 첫 잡기 연출을 준비한다.
 
 ## 공중 합성곱 구성
 

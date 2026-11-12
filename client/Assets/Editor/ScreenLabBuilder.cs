@@ -49,6 +49,7 @@ namespace CNNScreen.Editor
             board.localScale = Vector3.one * 3f;
             MeshRenderer image = Quad(board, "Low resolution image", Vector3.zero, new Vector2(2.4f, 1.35f), _white);
             PixelBoardController boardController = image.gameObject.AddComponent<PixelBoardController>();
+            PixelGridData pixelGrid = image.gameObject.AddComponent<PixelGridData>();
             Transform selection = new GameObject("Selected source pixels").transform;
             selection.SetParent(board, false);
             Frame(selection, "Selection", 0.225f, 0.225f, 0.006f, _amber);
@@ -85,7 +86,12 @@ namespace CNNScreen.Editor
             SerializedObject fields = new SerializedObject(controller);
             Assign(fields, "_imageFactory", imageFactory);
             SerializedObject factoryFields = new SerializedObject(imageFactory);
-            Assign(factoryFields, "_sourceImage", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNScreenLab/OpeningBroadcast.png"));
+            Texture2D sourceImage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNScreenLab/ColorDotPlate2.png");
+            Assign(factoryFields, "_sourceImage", sourceImage);
+            SerializedObject gridFields = new SerializedObject(pixelGrid);
+            Assign(gridFields, "_sourceTexture", sourceImage);
+            gridFields.ApplyModifiedPropertiesWithoutUndo();
+            Assign(fields, "_pixelGrid", pixelGrid);
             factoryFields.ApplyModifiedPropertiesWithoutUndo();
             Assign(fields, "_board", boardController);
             Assign(fields, "_selection", selectionController);

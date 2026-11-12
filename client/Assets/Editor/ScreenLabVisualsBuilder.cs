@@ -79,7 +79,7 @@ namespace CNNScreen.Editor
                 caption.rectTransform.offsetMax = new Vector2(-10, -5);
                 if (reset) { caption.text = "처음으로"; }
             }
-            InstallBoundary(lab, selection);
+            InstallMagnifierPedestal(lab, selection, filter, volume.transform.parent, ui);
             Transform background = controls.Find("Instruction panel background");
             if (background == null)
             {
@@ -93,24 +93,35 @@ namespace CNNScreen.Editor
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
         }
 
-        private static void InstallBoundary(CNNScreenLabManager lab, PixelSelectionController selection)
+        private static void InstallMagnifierPedestal(CNNScreenLabManager lab,
+            PixelSelectionController selection, XRGrabInteractable filter, Transform display, ScreenLabUIController ui)
         {
             Transform boundary = lab.transform.Find("Blue magnifier boundary");
-            if (boundary == null)
+            if (boundary != null) { boundary.gameObject.SetActive(false); }
+
+            Transform pedestal = lab.transform.Find("MagnifierPedestal");
+            if (pedestal == null)
             {
-                boundary = Child(lab.transform, "Blue magnifier boundary");
-                boundary.localPosition = new Vector3(-1.2f, 0.045f, -0.6f);
-                Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>("Assets/Meshes/CNNScreenLab/PixelBlock.asset");
-                Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/CNNScreenLab/MagnifierBoundary.mat");
-                for (int i = 0; i < 48; i++)
-                {
-                    float angle = i * Mathf.PI * 2 / 48;
-                    MeshRenderer segment = PixelBlockMeshBuilder.Add(boundary, "Cyan boundary " + i, mesh, material,
-                        new Vector3(Mathf.Cos(angle) * 0.94f, 0, Mathf.Sin(angle) * 0.94f), new Vector3(0.13f, 0.018f, 0.028f));
-                    segment.transform.localRotation = Quaternion.Euler(0, -angle * Mathf.Rad2Deg - 90, 0);
-                }
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Prefabs + "MagnifierPedestal.prefab");
+                pedestal = ((GameObject)PrefabUtility.InstantiatePrefab(prefab, lab.transform)).transform;
             }
-            Bind(selection, "_pickupBoundary", boundary.gameObject);
+
+            Transform dock = pedestal.Find("MagnifierDock");
+            filter.transform.SetPositionAndRotation(dock.position, dock.rotation);
+            Bind(selection, "_magnifierDock", dock);
+            MagnifierIdleFloat idleFloat = filter.GetComponent<MagnifierIdleFloat>();
+            if (idleFloat == null) { idleFloat = filter.gameObject.AddComponent<MagnifierIdleFloat>(); }
+            Bind(idleFloat, "_dock", dock);
+            Bind(idleFloat, "_ui", ui);
+
+            MagnifierPickupFX pickupFX = filter.GetComponent<MagnifierPickupFX>();
+            if (pickupFX == null) { pickupFX = filter.gameObject.AddComponent<MagnifierPickupFX>(); }
+            Bind(pickupFX, "_beam", pedestal.Find("Hologram beam").GetComponent<MeshRenderer>());
+            Bind(pickupFX, "_rim", pedestal.Find("Cyan rim").GetComponent<MeshRenderer>());
+            Bind(pickupFX, "_lens", display.Find("Magnifier lens").GetComponent<MeshRenderer>());
+            Bind(pickupFX, "_sparkMaterial",
+                AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/CNNScreenLab/MagnifierPickupSparks.mat"));
+            Bind(pickupFX, "_ui", ui);
         }
 
         private static T Instance<T>(string name, Transform parent) where T : Component

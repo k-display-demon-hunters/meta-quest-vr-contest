@@ -31,7 +31,7 @@ namespace CNNScreen
         }
         public void ResetControls()
         {
-            Present("푸른 원 안의 돋보기를 찾아보세요.\nGrip으로 잡아 이미지 위에 놓으세요.", false, false);
+            Present("전시대 위의 돋보기를 Grip으로 잡아보세요.", false, false);
         }
         public void ShowFilterGrabbed()
         {

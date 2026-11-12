@@ -58,12 +58,12 @@ namespace FeatureMapCorridor
         private Vector3[] _columnScale = new Vector3[3];
         private Vector3 _tankPosition;
         private Vector3 _tankScale;
-        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, Action start)
+        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, Action onStartRequested)
         {
             _visuals = visuals;
             _input = input;
             _last = last;
-            _buttons.Add(_startButton.GetComponent<Button>(), start);
+            _buttons.Add(_startButton.GetComponent<Button>(), onStartRequested);
             _startButton.Hide();
             for (int i = 0; i < 3; i++)
             {

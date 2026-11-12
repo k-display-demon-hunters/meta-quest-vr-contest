@@ -63,7 +63,7 @@ namespace CinematicEditor
                 Line(.25,3.98,"사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다.", CinematicText.CaptionAnchor.Envelope),
                 Line(.05,3.9,"그러나 기계가 보는 건\n밝고 어두운 점들입니다.", CinematicText.CaptionAnchor.Pixels),
                 Line(4.25,8.55,"기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?", CinematicText.CaptionAnchor.Pixels),
-                Line(.05,3.65,"공장 안에서 그 답을 직접 찾아보세요.", CinematicText.CaptionAnchor.Doors) };
+                Line(.05,3.65,"{C:공장 안에서} 그 답을 직접 찾아보세요.", CinematicText.CaptionAnchor.Doors) };
             for (int i = 0; i < _content.Opening.Length; i++)
                 _content.Opening[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/OpeningEnding/OpeningNarration{i + 1:D2}.wav");
             _content.OpeningCrowd = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningCrowd.mp3");
@@ -132,7 +132,10 @@ namespace CinematicEditor
             light.type=LightType.Directional; light.intensity=.9f; light.color=new Color(1,.87f,.67f);
             light.transform.rotation=Quaternion.Euler(45,-40,0); light.shadows=LightShadows.None;
             Transform stage=Root("Documentary stage",null);
+            float stageLift = ending ? 0f : .45f;
+            stage.localPosition = Vector3.up * stageLift;
             LineRenderer platform=Root("Quiet standing marker",stage).gameObject.AddComponent<LineRenderer>();
+            platform.transform.localPosition = Vector3.down * stageLift;
             platform.useWorldSpace=false;platform.loop=true;platform.positionCount=64;platform.startWidth=platform.endWidth=.006f;platform.sharedMaterial=_metal;
             for(int i=0;i<64;i++){float a=i*Mathf.PI*2/64;platform.SetPosition(i,new Vector3(Mathf.Sin(a)*.65f,.015f,Mathf.Cos(a)*.65f));}
             Transform system=Root("Sequence",null);
@@ -164,18 +167,24 @@ namespace CinematicEditor
             Assign(archive,"_surface",portal.GetComponent<Renderer>()); Assign(archive,"_player",video);
             Assign(presentation,"_archive",archive); Assign(world,"_portal",portal);
             Canvas yearCanvas=CanvasAt(stage,"Year",new Vector3(0,1.9f,3),new Vector2(1000,260),.003f);
-            Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),100);
+            Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),ending ? 100 : 110);
             Assign(world,"_year",year);
-            Canvas captionCanvas=CanvasAt(stage,"Archive caption",new Vector3(0,.45f,3),new Vector2(1500,100),.002f);
-            Text caption=TextAt(captionCanvas.transform,"Provenance",_content.Provenance,Vector2.zero,new Vector2(1500,100),21);
-            caption.color=new Color(.75f,.72f,.63f); Assign(world,"_caption",caption);
+            Vector2 archiveCaptionSize = ending ? new Vector2(1500,100) : new Vector2(1680,190);
+            Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.59f,2.7f),archiveCaptionSize,.002f);
+            if (!ending)
+            {
+                ImageAt(captionCanvas.transform,"Archive caption backing",archiveCaptionSize,new Color(0,0,0,.75f));
+                captionCanvas.gameObject.SetActive(false);
+            }
+            Text caption=TextAt(captionCanvas.transform,"Provenance",_content.Provenance,Vector2.zero,ending ? archiveCaptionSize : new Vector2(1600,175),ending ? 21 : 54);
+            caption.color=ending ? new Color(.75f,.72f,.63f) : new Color(.98f,.95f,.87f); Assign(world,"_caption",caption);
             Transform timeline=Root("Rewinding history",stage);
             for(int i=0;i<15;i++)
             {
                 float x=-i*.85f;
                 Box("Timeline rule",timeline,new Vector3(x,.02f,0),new Vector3(.81f,.009f,.015f),_amber);
                 Canvas c=CanvasAt(timeline,"Year marker",new Vector3(x,.15f,0),new Vector2(250,90),.002f);
-                TextAt(c.transform,"Year",(2026-i*3).ToString(),Vector2.zero,new Vector2(250,90),32);
+                TextAt(c.transform,"Year",(2026-i*3).ToString(),Vector2.zero,new Vector2(250,90),ending ? 32 : 62);
             }
             Assign(world,"_timeline",timeline);
             List<Transform> boxes=new List<Transform>();
@@ -185,7 +194,8 @@ namespace CinematicEditor
                 Transform box=Recognition(stage,"Recognition "+i,p+new Vector3(0,0,-.03f),new Vector2(.45f,.27f),_green,i==0?"12345":(12000+i*173).ToString()); boxes.Add(box);
             }
             Array(world,"_boxes",boxes);
-            Transform digit=Root("Handwritten digit",stage); digit.localPosition=new Vector3(0,1.9f,2.4f);
+            Vector3 digitPosition = new Vector3(0, ending ? 1.9f : 2.35f, 2.4f);
+            Transform digit=Root("Handwritten digit",stage); digit.localPosition=digitPosition;
             List<Transform> pixels=new List<Transform>();
             for(int row=0;row<16;row++) for(int col=0;col<16;col++)
             {
@@ -194,7 +204,7 @@ namespace CinematicEditor
                     ||(row>=6&&row<=11&&Mathf.Abs(col-(17-row))<2)||(row>=11&&row<=13&&col>=3&&col<=12);
                 if(!ink) {continue;}
                 Vector3 local=new Vector3(x*.8f,-y*.8f,0);
-                pixels.Add(Box("Light pixel",stage,local+new Vector3(0,1.9f,2.4f),Vector3.one*.085f,_cyan));
+                pixels.Add(Box("Light pixel",stage,local+digitPosition,Vector3.one*.085f,_cyan));
             }
             Canvas handwritten=CanvasAt(digit,"Handwritten numeral",Vector3.zero,new Vector2(330,330),.008f);
             Text numeral=TextAt(handwritten.transform,"Numeral","2",Vector2.zero,new Vector2(330,330),280);
@@ -202,24 +212,26 @@ namespace CinematicEditor
             Assign(world,"_digit",digit);
             Array(world,"_pixels",pixels);
             if (!ending) { Assign(world,"_numeral",numeral); }
-            Transform digitBox = Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2");
+            Transform digitBox = Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2",ending ? 25 : 56);
             if (!ending) { Assign(world,"_digitBox",digitBox); }
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
-            Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);
-            Box("Door light",factory,new Vector3(0,1.5f,.15f),new Vector3(3.1f,3,.1f),_cyan);
-            Transform left=Box("Left door",factory,new Vector3(-.7f,1.5f,0),new Vector3(1.4f,3,.18f),_metal);
-            Transform right=Box("Right door",factory,new Vector3(.7f,1.5f,0),new Vector3(1.4f,3,.18f),_metal);
-            for(int i=0;i<18;i++)
-            { float x=(i%9-4)*1.05f; float y=3.5f+(i/9)*.6f; Box("Circuit",factory,new Vector3(x,y,-.02f),new Vector3(.7f,.018f,.02f),_cyan); }
-            Canvas titleCanvas=CanvasAt(factory,"Factory title",new Vector3(0,4.55f,-.1f),new Vector2(1200,220),.004f);
-            TextAt(titleCanvas.transform,"Title",_content.FactoryTitle,Vector2.zero,new Vector2(1200,220),90);
-            for(int i=0;i<22;i++) {Box("Path light",factory,new Vector3(0,.012f,-i*.5f),new Vector3(.8f,.015f,.045f),_cyan);}
-            Assign(world,"_factory",factory);
-            if (!ending)
+            if (ending)
             {
-                Assign(world,"_leftDoor",left);
-                Assign(world,"_rightDoor",right);
+                Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);
+                Box("Door light",factory,new Vector3(0,1.5f,.15f),new Vector3(3.1f,3,.1f),_cyan);
+                Box("Left door",factory,new Vector3(-.7f,1.5f,0),new Vector3(1.4f,3,.18f),_metal);
+                Box("Right door",factory,new Vector3(.7f,1.5f,0),new Vector3(1.4f,3,.18f),_metal);
+                for(int i=0;i<18;i++)
+                { float x=(i%9-4)*1.05f; float y=3.5f+(i/9)*.6f; Box("Circuit",factory,new Vector3(x,y,-.02f),new Vector3(.7f,.018f,.02f),_cyan); }
+                Canvas titleCanvas=CanvasAt(factory,"Factory title",new Vector3(0,4.55f,-.1f),new Vector2(1200,220),.004f);
+                TextAt(titleCanvas.transform,"Title",_content.FactoryTitle,Vector2.zero,new Vector2(1200,220),90);
+                for(int i=0;i<22;i++) {Box("Path light",factory,new Vector3(0,.012f,-i*.5f),new Vector3(.8f,.015f,.045f),_cyan);}
             }
+            else
+            {
+                BuildOpeningEntrance(factory, world);
+            }
+            Assign(world,"_factory",factory);
             List<Transform> eraProps=new List<Transform>();
             for(int i=0;i<8;i++)
             {
@@ -246,11 +258,16 @@ namespace CinematicEditor
                 Array(world,"_networkLayers",layers);
                 Array(world,"_layerLabels",labels);
             }
-            Canvas captions=CanvasAt(stage,"Narration",new Vector3(0,.99f,2.5f),new Vector2(1500,260),.0018f);
-            Image backing=ImageAt(captions.transform,"Caption backing",new Vector2(1500,245),new Color(0,0,0,.45f));
-            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,new Vector2(1450,240),48);
+            Canvas captions=CanvasAt(stage,"Narration",new Vector3(0,ending ? .99f : 1.04f,2.5f),ending ? new Vector2(1500,260) : new Vector2(1740,260),.0018f);
+            if (!ending)
+            {
+                captions.overrideSorting = true;
+                captions.sortingOrder = 10;
+            }
+            Image backing=ImageAt(captions.transform,"Caption backing",ending ? new Vector2(1500,245) : new Vector2(1740,245),new Color(0,0,0,ending ? .45f : .88f));
+            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,ending ? new Vector2(1450,240) : new Vector2(1660,240),ending ? 48 : 80);
             Assign(type,"_line",text); Assign(type,"_backing",backing);
-            Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,.4f,2.3f),new Vector2(1100,120),.0015f);
+            Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,ending ? .4f : .64f,2.3f),new Vector2(1100,120),.0015f);
             Image bar=ImageAt(hints.transform,"Hold progress",new Vector2(500,5),new Color(.3f,.8f,.73f));
             bar.rectTransform.anchoredPosition=new Vector2(0,-35); bar.type=Image.Type.Filled; bar.fillMethod=Image.FillMethod.Horizontal; bar.fillAmount=0;
             bar.sprite=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -267,8 +284,8 @@ namespace CinematicEditor
             }
             else
             {
-                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(420, 122), .0018f);
-                Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420);
+                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.45f, 2.15f), new Vector2(420, 122), .0018f);
+                Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420, 76);
                 Assign(controls, "_startButton", startButton);
             }
             BuildAudio(stage,audio);
@@ -278,7 +295,80 @@ namespace CinematicEditor
             EditorSceneManager.SaveScene(scene,"Assets/Scenes/"+name+".unity");
         }
 
-        private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width)
+        private static void BuildOpeningEntrance(Transform factory, MonoBehaviour world)
+        {
+            Material concrete = FactoryMaterial("DarkConcrete");
+            Material steel = FactoryMaterial("AgedSteel");
+            Material shutter = FactoryMaterial("GalvanizedShutter");
+            Material sign = FactoryMaterial("RoomSignSurface");
+            Material floor = FactoryMaterial("SealedConcreteFloor");
+            Material grate = FactoryMaterial("SteelGrate");
+            Material amber = FactoryMaterial("HazardAmber");
+
+            Box("Left concrete wing", factory, new Vector3(-3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), concrete);
+            Box("Right concrete wing", factory, new Vector3(3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), concrete);
+            Box("Concrete lintel", factory, new Vector3(0, 3.75f, .48f), new Vector3(3.2f, 1.1f, 1.56f), concrete);
+            Box("Entrance canopy", factory, new Vector3(0, 3.38f, -.93f), new Vector3(6.1f, .23f, 1.64f), steel);
+            Box("Canopy signal strip", factory, new Vector3(0, 3.38f, -1.758f), new Vector3(4.8f, .036f, .022f), _cyan);
+            Box("Sign frame", factory, new Vector3(0, 4.06f, -.46f), new Vector3(4.4f, .9f, .28f), steel);
+            Box("Sign face", factory, new Vector3(0, 4.06f, -.617f), new Vector3(4.18f, .72f, .036f), sign);
+
+            Box("Approach and tunnel floor", factory, new Vector3(0, -.43f, -2.45f), new Vector3(5.6f, .26f, 14.7f), floor);
+            Box("Recessed threshold", factory, new Vector3(0, -.285f, .08f), new Vector3(3.2f, .03f, .68f), grate);
+            Box("Threshold safety strip", factory, new Vector3(0, -.28f, -.27f), new Vector3(3.14f, .032f, .065f), amber);
+            Box("Tunnel end wall", factory, new Vector3(0, 1.34f, 4.9f), new Vector3(3.52f, 3.28f, .25f), concrete);
+            Box("Tunnel ceiling", factory, new Vector3(0, 3.01f, 2.77f), new Vector3(3.56f, .22f, 4.35f), concrete);
+            Box("Tunnel end equipment plate", factory, new Vector3(0, 1.32f, 4.735f), new Vector3(1.32f, 1.55f, .06f), sign);
+            Box("Tunnel end indicator", factory, new Vector3(0, 1.67f, 4.697f), new Vector3(.77f, .065f, .026f), _cyan);
+
+            Canvas titleCanvas = CanvasAt(factory, "Factory title", new Vector3(0, 4.06f, -.65f), new Vector2(1040, 180), .004f);
+            Color signLettering = new Color(.28f, .95f, .91f);
+            Text title = TextAt(titleCanvas.transform, "Title", _content.FactoryTitle, new Vector2(0, 34), new Vector2(1000, 100), 108);
+            title.color = signLettering;
+            Text entrance = TextAt(titleCanvas.transform, "Entrance label", "체험실 입구", new Vector2(0, -48), new Vector2(1000, 70), 70);
+            entrance.color = signLettering;
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Box("Steel door jamb", factory, new Vector3(side * 1.71f, 1.34f, -.48f), new Vector3(.31f, 3.28f, .55f), steel);
+                Box("Jamb signal channel", factory, new Vector3(side * 1.72f, 1.72f, -.777f), new Vector3(.135f, 1.88f, .052f), sign);
+                Box("Jamb signal", factory, new Vector3(side * 1.72f, 1.72f, -.812f), new Vector3(.046f, 1.6f, .022f), _cyan);
+                Box("Jamb impact guard", factory, new Vector3(side * 1.72f, .085f, -.775f), new Vector3(.27f, .57f, .17f), amber);
+                Box("Facade stiffener", factory, new Vector3(side * 4.64f, 1.76f, -.43f), new Vector3(.22f, 4.12f, .29f), steel);
+                Box("Canopy bracket", factory, new Vector3(side * 2.74f, 3.13f, -.93f), new Vector3(.26f, .28f, 1.28f), steel);
+                Box("Tunnel side wall", factory, new Vector3(side * 1.73f, 1.32f, 2.94f), new Vector3(.26f, 3.24f, 3.95f), concrete);
+                Box("Guide rail bed", factory, new Vector3(side * .99f, -.29f, -4.82f), new Vector3(.14f, .046f, 9.1f), steel);
+                Box("Recessed guide rail", factory, new Vector3(side * .99f, -.264f, -4.82f), new Vector3(.036f, .018f, 8.96f), _cyan);
+
+                Transform door = Root(side < 0 ? "Left door" : "Right door", factory);
+                door.localPosition = new Vector3(side * .8f, 1.3f, .12f);
+                Box("Shutter panel", door, Vector3.zero, new Vector3(1.59f, 3.2f, .15f), shutter);
+                for (int i = 0; i < 9; i++)
+                {
+                    Box("Pressed shutter rib", door, new Vector3(0, -1.36f + i * .34f, -.11f), new Vector3(1.55f, .065f, .085f), shutter);
+                }
+                Box("Shutter leading edge", door, new Vector3(-side * .75f, 0, -.112f), new Vector3(.095f, 3.17f, .09f), steel);
+                Box("Shutter safety plate", door, new Vector3(0, -1.41f, -.16f), new Vector3(1.38f, .1f, .035f), amber);
+                Assign(world, side < 0 ? "_leftDoor" : "_rightDoor", door);
+
+                for (int i = 0; i < 5; i++)
+                {
+                    Transform chevron = Box("Route chevron", factory, new Vector3(side * .215f, -.278f, -8.4f + i * 1.7f), new Vector3(.51f, .028f, .082f), _cyan);
+                    chevron.localRotation = Quaternion.Euler(0, side * 32f, 0);
+                }
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                float z = 1.35f + i * 1.35f;
+                Box("Tunnel lamp housing", factory, new Vector3(0, 2.87f, z), new Vector3(1.32f, .16f, .26f), steel);
+                Box("Tunnel lamp diffuser", factory, new Vector3(0, 2.775f, z), new Vector3(1.14f, .045f, .13f), _cyan);
+            }
+        }
+
+        private static Material FactoryMaterial(string name)
+            => AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/FactoryEnvironment/{name}.mat");
+
+        private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width, int fontSize = 48)
         {
             canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
             Image face = ImageAt(canvas.transform, name, new Vector2(width, 122), new Color(.1f, .38f, .37f, 1));
@@ -286,7 +376,7 @@ namespace CinematicEditor
             Button button = face.gameObject.AddComponent<Button>();
             button.targetGraphic = face;
             button.navigation = new Navigation { mode = Navigation.Mode.None };
-            TextAt(face.transform, "Button Label", label, Vector2.zero, new Vector2(width - 20, 110), 48);
+            TextAt(face.transform, "Button Label", label, Vector2.zero, new Vector2(width - 20, 110), fontSize);
             return button;
         }
 
@@ -354,7 +444,7 @@ namespace CinematicEditor
             Text text=TextAt(c.transform,"Handwritten code","12345",Vector2.zero,new Vector2(300,80),36);text.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");text.color=new Color(.13f,.17f,.2f);
             return root;
         }
-        private static Transform Recognition(Transform parent,string name,Vector3 position,Vector2 size,Material material,string label)
+        private static Transform Recognition(Transform parent,string name,Vector3 position,Vector2 size,Material material,string label,int fontSize = 25)
         {
             Transform root=Root(name,parent);root.localPosition=position;
             for(int x=-1;x<=1;x+=2)for(int y=-1;y<=1;y+=2)
@@ -363,7 +453,7 @@ namespace CinematicEditor
                 Box("Corner v",root,new Vector3(x*size.x*.5f,y*(size.y*.5f-.035f),0),new Vector3(.004f,.07f,.004f),material);
             }
             if(label.Length>0)
-            {Canvas c=CanvasAt(root,"Label",new Vector3(-size.x*.2f,size.y*.5f+.04f,0),new Vector2(250,65),.0007f);TextAt(c.transform,"Code",label,Vector2.zero,new Vector2(250,65),25);}
+            {Canvas c=CanvasAt(root,"Label",new Vector3(-size.x*.2f,size.y*.5f+.04f,0),new Vector2(250,65),.0007f);TextAt(c.transform,"Code",label,Vector2.zero,new Vector2(250,65),fontSize);}
             return root;
         }
         private static Material Material(string name,Color color,bool unlit=false)

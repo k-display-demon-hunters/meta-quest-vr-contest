@@ -28,7 +28,6 @@ namespace CNNConvolution
         public void Cancel() => _display.Clear();
         public IEnumerator RunDetailed(ConvolutionCalculation calculation, int channel)
         {
-            _ui.SetStage(2);
             _ui.BeginChannel(channel);
             _ui.Title = ChannelSumContent.DetailedTitle(channel);
             _ui.Explanation = ChannelSumContent.DetailedExplanation();
@@ -44,7 +43,6 @@ namespace CNNConvolution
 
         public IEnumerator RunCompact(ConvolutionCalculation calculation, int channel)
         {
-            _ui.SetStage(2);
             _ui.BeginChannel(channel);
             _ui.Title = ChannelSumContent.CompactTitle(channel, calculation.Row, calculation.Column);
             _ui.Explanation = ChannelSumContent.CompactExplanation();

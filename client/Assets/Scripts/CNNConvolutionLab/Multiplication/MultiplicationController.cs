@@ -32,10 +32,7 @@ namespace CNNConvolution
             _ui.BeginChannel(channel);
             _input.ShowChannel(channel);
             _kernel.ShowChannel(channel);
-            _ui.SetStage(1);
-            // Include both weights and a nonzero product before presenting the full grid.
-            int[] examples = { 0, 1, 4 };
-            foreach (int index in examples)
+            for (int index = 0; index < 9; index++)
             {
                 int weight = calculation.Weight(index);
                 int product = calculation.Product(channel, index);
@@ -44,7 +41,6 @@ namespace CNNConvolution
                 yield return _animation.MultiplyAndRecord(channel, index, calculation.InputIndex(index), calculation.Input(channel, index), weight, product, 0.75f);
                 yield return _playback.Wait(0.15f);
             }
-            for (int index = 0; index < 9; index++) { _products.Record(index, calculation.Product(channel, index)); }
             _ui.Title = "같은 위치끼리 곱하면 아홉 개의 곱이 생겨요";
             _ui.Explanation = "가중치 0인 칸도 곱해요. 지금은 곱한 결과이며, 아직 출력 한 칸이 아니에요.";
         }

@@ -12,15 +12,16 @@ namespace CNNConvolution
         [SerializeField] private GameObject _exerciseControls;
         [SerializeField] private Text _title, _explanation;
         [SerializeField] private Text _guideInstruction, _playbackLabel;
-        [SerializeField] private Text _stageProgress;
-        [SerializeField] private RectTransform _outputStatus;
         [SerializeField] private Text[] _channelProgress;
         [SerializeField] private Image[] _channelProgressBackgrounds;
         [SerializeField] private Button _next, _skip, _finish, _replay;
+        [SerializeField] private Button _playbackButton;
         [SerializeField] private Image _actionGlow;
         // Display history only; the lesson and quiz decide when a channel is complete.
         private readonly int?[] _completedChannelSums = new int?[3];
         private int _activeChannel = -1;
+        private bool _paused;
+        private Button _glowingAction;
         private float _actionGlowStartTime;
         public event Action NextRequested;
         public event Action SkipRequested;
@@ -34,27 +35,41 @@ namespace CNNConvolution
 
         private void LateUpdate()
         {
-            bool showGlow = (_next.isActiveAndEnabled && _next.IsInteractable())
-                || (_finish.isActiveAndEnabled && _finish.IsInteractable());
-            if (_actionGlow.gameObject.activeSelf != showGlow)
+            Button action = ActiveProgressionButton();
+            if (_glowingAction != action)
             {
-                _actionGlow.gameObject.SetActive(showGlow);
+                _glowingAction = action;
+                _actionGlow.gameObject.SetActive(action != null);
+                if (action == null) { return; }
+
+                RectTransform glow = _actionGlow.rectTransform;
+                RectTransform button = (RectTransform)action.transform;
+                Vector3 center = glow.parent.InverseTransformPoint(button.TransformPoint(button.rect.center));
+                center.z = glow.localPosition.z;
+                glow.localPosition = center;
                 _actionGlowStartTime = Time.unscaledTime;
             }
-            if (!showGlow) { return; }
+            if (action == null) { return; }
 
             float cycle = (Time.unscaledTime - _actionGlowStartTime) / ActionGlowPeriod;
             float pulse = (Mathf.Cos(cycle * 2f * Mathf.PI) + 1f) * 0.5f;
-            _actionGlow.canvasRenderer.SetAlpha(Mathf.Lerp(0.2f, 1f, pulse));
+            _actionGlow.canvasRenderer.SetAlpha(Mathf.Lerp(0.45f, 1f, pulse));
         }
+
+        private Button ActiveProgressionButton()
+        {
+            if (_paused) { return CanPress(_playbackButton) ? _playbackButton : null; }
+            if (CanPress(_next)) { return _next; }
+            if (CanPress(_skip)) { return _skip; }
+            return CanPress(_finish) ? _finish : null;
+        }
+
+        private static bool CanPress(Button button) => button.isActiveAndEnabled && button.IsInteractable();
 
         public void Initialize()
         {
             foreach (Canvas canvas in GetComponentsInChildren<Canvas>(true)) { canvas.worldCamera = Camera.main; }
         }
-        internal void PlaceOutputStatus(Pose pose) =>
-            _outputStatus.SetPositionAndRotation(pose.position, pose.rotation);
-
         public void RequestNext() { NextRequested?.Invoke(); }
         public void RequestSkip() { SkipRequested?.Invoke(); }
         public void RequestFinish() { FinishRequested?.Invoke(); }
@@ -64,6 +79,7 @@ namespace CNNConvolution
 
         public void SetPaused(bool paused)
         {
+            _paused = paused;
             _playbackLabel.text = paused ? "체험 재개" : "체험 멈추기";
             _skip.interactable = !paused;
             _next.interactable = !paused;
@@ -78,15 +94,6 @@ namespace CNNConvolution
         }
         public void ShowReplay(bool visible) => _replay.gameObject.SetActive(visible);
 
-        public void SetStage(int active)
-        {
-            string[] labels = { "① 배치", "② 곱하기", "③ 더하기", "④ 출력" };
-            for (int index = 0; index < labels.Length; index++)
-            {
-                if (index == active) { labels[index] = "<color=#FFD582><b>" + labels[index] + "</b></color>"; }
-            }
-            _stageProgress.text = string.Join("   →   ", labels);
-        }
         public void BeginCalculation()
         {
             gameObject.SetActive(true);
@@ -99,7 +106,6 @@ namespace CNNConvolution
             _skip.gameObject.SetActive(false);
             _finish.gameObject.SetActive(false);
             _replay.gameObject.SetActive(false);
-            SetStage(0);
         }
         public void BeginChannel(int channel)
         {

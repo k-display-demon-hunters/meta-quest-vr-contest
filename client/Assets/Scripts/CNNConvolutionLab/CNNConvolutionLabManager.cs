@@ -130,7 +130,6 @@ namespace CNNConvolution
         private void InitializeWorkbench()
         {
             var workbench = _spatial.Build(_font);
-            _ui.PlaceOutputStatus(_spatial.OutputStatusPose);
             _input = workbench.Input;
             _kernel = workbench.Kernel;
             _result = workbench.Result;

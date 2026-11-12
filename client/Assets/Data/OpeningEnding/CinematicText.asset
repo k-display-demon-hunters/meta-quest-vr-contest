@@ -41,7 +41,7 @@ MonoBehaviour:
   - Anchor: 4
     Start: 0.05
     End: 3.65
-    Text: "공장 안에서 그 답을 직접 찾아보세요."
+    Text: "{C:공장 안에서} 그 답을 직접 찾아보세요."
     Voice: {fileID: 8300000, guid: 2ddb076224ab47a1b210e73db78a4f91, type: 3}
   Ending:
   - Anchor: 0

@@ -29,7 +29,7 @@ namespace Cinematic
         {
             _archive.SetOpeningRun(ending ? (int?)null : runId);
             _audio.Bind(content, ending);
-            _archive.Show(content.PostOffice);
+            if (ending) { _archive.Show(content.PostOffice); }
             _type.Bind();
             CinematicText.Line[] lines = ending ? content.Ending : content.Opening;
             _lines = new (CinematicText.Line, float, float)[lines.Length];
@@ -50,7 +50,7 @@ namespace Cinematic
             {
                 _duration = content.OpeningSchedule.Duration;
                 _openingView.Bind(content.Provenance, head);
-                _opening = new OpeningSequence(content, _openingView, _archive, _audio, Recognize, runId);
+                _opening = new OpeningSequence(content, _openingView, _audio, Recognize, runId);
                 _opening.PrepareStage();
             }
         }

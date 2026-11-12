@@ -11,8 +11,8 @@ namespace Learning
                 new LearningStageDefinition(LearningStageId.Tutorial, "튜토리얼", Array.Empty<int>()),
                 new LearningStageDefinition(LearningStageId.ScreenLab, "픽셀 관찰", new[] { 0 }),
                 new LearningStageDefinition(LearningStageId.ConvolutionLab, "합성곱", new[] { 0 }),
-                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", new[] { 1, 2 }),
-                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", new[] { 1, 2 })
+                new LearningStageDefinition(LearningStageId.FeatureMap, "특징 맵", new[] { 1 }),
+                new LearningStageDefinition(LearningStageId.ModelDesign, "모델 제작", new[] { 1 })
             });
 
         // Preserve the existing tablet card order. Overall progress uses all Stages.

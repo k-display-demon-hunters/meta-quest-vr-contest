@@ -9,6 +9,7 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryShutterId _id;
         [SerializeField] private Transform _panel;
         [SerializeField] private GameObject _unavailableSign;
+        [SerializeField] private ShutterFloorHologram _unavailableHologram;
         [SerializeField] private float _travel = 3.3f;
         [SerializeField] private float _duration = 1.6f;
         private Vector3 _closedPosition;
@@ -29,7 +30,15 @@ namespace FactoryEnvironment
 
         public void SetUnavailable(bool unavailable)
         {
-            _unavailableSign.SetActive(unavailable && !_open && _amount < 1f);
+            bool visible = unavailable && !_open && _amount < 1f;
+            if (_unavailableHologram != null)
+            {
+                _unavailableHologram.SetVisible(visible);
+            }
+            else
+            {
+                _unavailableSign.SetActive(visible);
+            }
         }
 
         // Run after the area controller's LateUpdate so closing uses this frame's proximity.

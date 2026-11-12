@@ -73,7 +73,8 @@ namespace Cinematic
             bool inArchive = time >= _schedule.Arrival && time < _schedule.Digit;
             bool inFactory = time >= _schedule.Doors;
             backing = inDigitAndPixels || inArchive || inFactory;
-            height = inDigitAndPixels ? .45f : inArchive ? 1.04f : inFactory ? 1.30f : 1.6f;
+            // Keep captions below the postal props, digit and factory entrance at a stable reading height.
+            height = inDigitAndPixels || inArchive || inFactory ? .43f : 1.45f;
         }
 
         private void EvaluateAudio(float time)

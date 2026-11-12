@@ -175,13 +175,13 @@ namespace CinematicEditor
             Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),ending ? 100 : 110);
             Assign(world,"_year",year);
             Vector2 archiveCaptionSize = ending ? new Vector2(1500,100) : new Vector2(1680,190);
-            Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.59f,2.7f),archiveCaptionSize,.002f);
+            Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.345556f,1.2f),archiveCaptionSize,ending ? .002f : .0008888889f);
             if (!ending)
             {
                 ImageAt(captionCanvas.transform,"Archive caption backing",archiveCaptionSize,new Color(0,0,0,.75f));
                 captionCanvas.gameObject.SetActive(false);
             }
-            Text caption=TextAt(captionCanvas.transform,"Provenance",_content.Provenance,Vector2.zero,ending ? archiveCaptionSize : new Vector2(1600,175),ending ? 21 : 54);
+            Text caption=TextAt(captionCanvas.transform,"Provenance",_content.Provenance,Vector2.zero,ending ? archiveCaptionSize : new Vector2(1600,175),ending ? 21 : 42);
             caption.color=ending ? new Color(.75f,.72f,.63f) : new Color(.98f,.95f,.87f); Assign(world,"_caption",caption);
             Transform timeline=Root("Rewinding history",stage);
             for(int i=0;i<15;i++)
@@ -220,6 +220,7 @@ namespace CinematicEditor
             Transform digitBox = Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2",ending ? 25 : 56);
             if (!ending) { Assign(world,"_digitBox",digitBox); }
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
+            if (!ending) { factory.localPosition = new Vector3(0, 0, 8.5f); }
             if (ending)
             {
                 Box("Facade",factory,new Vector3(0,2.5f,.7f),new Vector3(12,5,.7f),_dark);
@@ -270,7 +271,8 @@ namespace CinematicEditor
                 captions.sortingOrder = 10;
             }
             Image backing=ImageAt(captions.transform,"Caption backing",ending ? new Vector2(1500,245) : new Vector2(1740,245),new Color(0,0,0,ending ? .45f : .88f));
-            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,ending ? new Vector2(1450,240) : new Vector2(1660,240),ending ? 48 : 80);
+            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,ending ? new Vector2(1450,240) : new Vector2(1660,240),ending ? 48 : 62);
+            Value(type, "_drawOverScene", !ending);
             Assign(type,"_line",text); Assign(type,"_backing",backing);
             Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,ending ? .4f : .64f,2.3f),new Vector2(1100,120),.0015f);
             Image bar=ImageAt(hints.transform,"Hold progress",new Vector2(500,5),new Color(.3f,.8f,.73f));
@@ -574,21 +576,22 @@ namespace CinematicEditor
 
         private static void BuildOpeningEntrance(Transform factory, MonoBehaviour world)
         {
+            BuildOpeningFacadeDetails(factory);
             Material concrete = FactoryMaterial("DarkConcrete");
             Material steel = FactoryMaterial("AgedSteel");
             Material shutter = FactoryMaterial("GalvanizedShutter");
             Material sign = FactoryMaterial("RoomSignSurface");
             Material floor = FactoryMaterial("SealedConcreteFloor");
-            Material grate = FactoryMaterial("SteelGrate");
-            Material amber = FactoryMaterial("HazardAmber");
+            Material grate = FactoryMaterial("AgedSteel");
+            Material amber = FactoryMaterial("SafetyYellow");
 
-            Box("Left concrete wing", factory, new Vector3(-3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), concrete);
-            Box("Right concrete wing", factory, new Vector3(3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), concrete);
+            Box("Left concrete wing", factory, new Vector3(-3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), FactoryMaterial("FactoryLabPanelSlate"));
+            Box("Right concrete wing", factory, new Vector3(3.42f, 1.82f, .48f), new Vector3(3.64f, 4.24f, 1.56f), FactoryMaterial("FactoryLabPanelSlate"));
             Box("Concrete lintel", factory, new Vector3(0, 3.75f, .48f), new Vector3(3.2f, 1.1f, 1.56f), concrete);
-            Box("Entrance canopy", factory, new Vector3(0, 3.38f, -.93f), new Vector3(6.1f, .23f, 1.64f), steel);
-            Box("Canopy signal strip", factory, new Vector3(0, 3.38f, -1.758f), new Vector3(4.8f, .036f, .022f), _cyan);
-            Box("Sign frame", factory, new Vector3(0, 4.06f, -.46f), new Vector3(4.4f, .9f, .28f), steel);
-            Box("Sign face", factory, new Vector3(0, 4.06f, -.617f), new Vector3(4.18f, .72f, .036f), sign);
+            Box("Entrance canopy", factory, new Vector3(0, 3.16f, -.93f), new Vector3(6.1f, .23f, 1.64f), steel);
+            Box("Canopy signal strip", factory, new Vector3(0, 3.16f, -1.758f), new Vector3(4.8f, .036f, .022f), FactoryMaterial("ArchiveCyan"));
+            Box("Sign frame", factory, new Vector3(0, 4.06f, -.46f), new Vector3(5.6f, .9f, .28f), steel);
+            Box("Sign face", factory, new Vector3(0, 4.06f, -.617f), new Vector3(5.36f, .72f, .036f), sign);
 
             Box("Approach and tunnel floor", factory, new Vector3(0, -.43f, -2.45f), new Vector3(5.6f, .26f, 14.7f), floor);
             Box("Recessed threshold", factory, new Vector3(0, -.285f, .08f), new Vector3(3.2f, .03f, .68f), grate);
@@ -596,26 +599,26 @@ namespace CinematicEditor
             Box("Tunnel end wall", factory, new Vector3(0, 1.34f, 4.9f), new Vector3(3.52f, 3.28f, .25f), concrete);
             Box("Tunnel ceiling", factory, new Vector3(0, 3.01f, 2.77f), new Vector3(3.56f, .22f, 4.35f), concrete);
             Box("Tunnel end equipment plate", factory, new Vector3(0, 1.32f, 4.735f), new Vector3(1.32f, 1.55f, .06f), sign);
-            Box("Tunnel end indicator", factory, new Vector3(0, 1.67f, 4.697f), new Vector3(.77f, .065f, .026f), _cyan);
+            Box("Tunnel end indicator", factory, new Vector3(0, 1.67f, 4.697f), new Vector3(.77f, .065f, .026f), FactoryMaterial("ArchiveCyan"));
 
-            Canvas titleCanvas = CanvasAt(factory, "Factory title", new Vector3(0, 4.06f, -.65f), new Vector2(1040, 180), .004f);
-            Color signLettering = new Color(.28f, .95f, .91f);
-            Text title = TextAt(titleCanvas.transform, "Title", _content.FactoryTitle, new Vector2(0, 34), new Vector2(1000, 100), 108);
+            Canvas titleCanvas = CanvasAt(factory, "Factory title", new Vector3(0, 4.06f, -.65f), new Vector2(1320, 180), .004f);
+            Color signLettering = new Color(.94f, .97f, .96f);
+            Text title = TextAt(titleCanvas.transform, "Title", "CNN FACTORY", new Vector2(0, 34), new Vector2(1280, 110), 100);
             title.color = signLettering;
-            Text entrance = TextAt(titleCanvas.transform, "Entrance label", "체험실 입구", new Vector2(0, -48), new Vector2(1000, 70), 70);
-            entrance.color = signLettering;
+            Text entrance = TextAt(titleCanvas.transform, "Entrance label", "LEARN  /  BUILD  /  EXPLORE", new Vector2(0, -48), new Vector2(1000, 70), 36);
+            entrance.color = new Color(.45f, .76f, .77f);
 
             for (int side = -1; side <= 1; side += 2)
             {
                 Box("Steel door jamb", factory, new Vector3(side * 1.71f, 1.34f, -.48f), new Vector3(.31f, 3.28f, .55f), steel);
                 Box("Jamb signal channel", factory, new Vector3(side * 1.72f, 1.72f, -.777f), new Vector3(.135f, 1.88f, .052f), sign);
-                Box("Jamb signal", factory, new Vector3(side * 1.72f, 1.72f, -.812f), new Vector3(.046f, 1.6f, .022f), _cyan);
+                Box("Jamb signal", factory, new Vector3(side * 1.72f, 1.72f, -.812f), new Vector3(.046f, 1.6f, .022f), FactoryMaterial("ArchiveCyan"));
                 Box("Jamb impact guard", factory, new Vector3(side * 1.72f, .085f, -.775f), new Vector3(.27f, .57f, .17f), amber);
                 Box("Facade stiffener", factory, new Vector3(side * 4.64f, 1.76f, -.43f), new Vector3(.22f, 4.12f, .29f), steel);
-                Box("Canopy bracket", factory, new Vector3(side * 2.74f, 3.13f, -.93f), new Vector3(.26f, .28f, 1.28f), steel);
+                Box("Canopy bracket", factory, new Vector3(side * 2.74f, 2.91f, -.93f), new Vector3(.26f, .28f, 1.28f), steel);
                 Box("Tunnel side wall", factory, new Vector3(side * 1.73f, 1.32f, 2.94f), new Vector3(.26f, 3.24f, 3.95f), concrete);
                 Box("Guide rail bed", factory, new Vector3(side * .99f, -.29f, -4.82f), new Vector3(.14f, .046f, 9.1f), steel);
-                Box("Recessed guide rail", factory, new Vector3(side * .99f, -.264f, -4.82f), new Vector3(.036f, .018f, 8.96f), _cyan);
+                Box("Recessed guide rail", factory, new Vector3(side * .99f, -.264f, -4.82f), new Vector3(.036f, .018f, 8.96f), FactoryMaterial("ArchiveCyan"));
 
                 Transform door = Root(side < 0 ? "Left door" : "Right door", factory);
                 door.localPosition = new Vector3(side * .8f, 1.3f, .12f);
@@ -626,11 +629,12 @@ namespace CinematicEditor
                 }
                 Box("Shutter leading edge", door, new Vector3(-side * .75f, 0, -.112f), new Vector3(.095f, 3.17f, .09f), steel);
                 Box("Shutter safety plate", door, new Vector3(0, -1.41f, -.16f), new Vector3(1.38f, .1f, .035f), amber);
+                BuildOpeningDoorDetails(door, side);
                 Assign(world, side < 0 ? "_leftDoor" : "_rightDoor", door);
 
                 for (int i = 0; i < 5; i++)
                 {
-                    Transform chevron = Box("Route chevron", factory, new Vector3(side * .215f, -.278f, -8.4f + i * 1.7f), new Vector3(.51f, .028f, .082f), _cyan);
+                    Transform chevron = Box("Route chevron", factory, new Vector3(side * .215f, -.278f, -8.4f + i * 1.7f), new Vector3(.51f, .028f, .082f), FactoryMaterial("ArchiveCyan"));
                     chevron.localRotation = Quaternion.Euler(0, side * 32f, 0);
                 }
             }
@@ -638,12 +642,143 @@ namespace CinematicEditor
             {
                 float z = 1.35f + i * 1.35f;
                 Box("Tunnel lamp housing", factory, new Vector3(0, 2.87f, z), new Vector3(1.32f, .16f, .26f), steel);
-                Box("Tunnel lamp diffuser", factory, new Vector3(0, 2.775f, z), new Vector3(1.14f, .045f, .13f), _cyan);
+                Box("Tunnel lamp diffuser", factory, new Vector3(0, 2.775f, z), new Vector3(1.14f, .045f, .13f), FactoryMaterial("ArchiveCyan"));
             }
         }
 
+        private static void BuildOpeningFacadeDetails(Transform factory)
+        {
+            Material amber = FactoryMaterial("SafetyYellow");
+            Material cream = FactoryMaterial("FactoryLabPanelCream");
+            Material cyan = FactoryMaterial("ArchiveCyan");
+            Material dark = FactoryMaterial("ArchiveCharcoal");
+            Material slate = FactoryMaterial("FactoryLabPanelSlate");
+            Material steel = FactoryMaterial("AgedSteel");
+            Box("Roof perimeter cap", factory, new Vector3(0f, 4.39f, 0.12f), new Vector3(10.65f, 0.18f, 2.1f), steel);
+            Box("Roof reveal shadow", factory, new Vector3(0f, 4.25f, -0.355f), new Vector3(10.3f, 0.07f, 0.12f), dark);
+            Box("Canopy fascia", factory, new Vector3(0f, 3.16f, -1.78f), new Vector3(6.25f, 0.25f, 0.09f), dark);
+            Box("Canopy upper lip", factory, new Vector3(0f, 3.31f, -1.75f), new Vector3(6.32f, 0.055f, 0.16f), steel);
+            Box("Header lower trim", factory, new Vector3(0f, 3.57f, -0.65f), new Vector3(5.58f, 0.055f, 0.1f), steel);
+            Box("Sign accent rule", factory, new Vector3(0f, 3.69f, -0.65f), new Vector3(4.8f, 0.018f, 0.02f), cyan);
+            Box("Entry drain", factory, new Vector3(0f, -0.285f, -0.95f), new Vector3(3.25f, 0.025f, 0.32f), steel);
+            Box("Facade inset shadow", factory, new Vector3(-3.44f, 1.75f, -0.331f), new Vector3(2.95f, 3.9f, 0.08f), dark);
+            Box("Architectural cladding", factory, new Vector3(-2.49f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(-2.49f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Architectural cladding", factory, new Vector3(-3.44f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(-3.44f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Architectural cladding", factory, new Vector3(-4.39f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(-4.39f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Observation window frame", factory, new Vector3(-3.44f, 2.5f, -0.49f), new Vector3(2.54f, 1.13f, 0.2f), steel);
+            Box("Observation window recess", factory, new Vector3(-3.44f, 2.5f, -0.603f), new Vector3(2.36f, 0.95f, 0.045f), dark);
+            Box("Window interior light", factory, new Vector3(-4.3025f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(-4.3025f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(-4.015f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(-3.7275f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(-3.7275f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(-3.44f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(-3.1525f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(-3.1525f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(-2.865f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(-2.5775f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(-2.5775f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window sill", factory, new Vector3(-3.44f, 1.99f, -0.64f), new Vector3(2.66f, 0.075f, 0.38f), steel);
+            Box("Vent surround", factory, new Vector3(-3.44f, 0.93f, -0.49f), new Vector3(2.08f, 0.9f, 0.18f), steel);
+            Box("Vent recess", factory, new Vector3(-3.44f, 0.93f, -0.59f), new Vector3(1.91f, 0.73f, 0.04f), dark);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 0.65f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 0.74f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 0.83f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 0.92f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 1.01f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 1.1f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(-3.44f, 1.19f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent captive fastener", factory, new Vector3(-4.35f, 0.58f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(-4.35f, 1.28f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(-2.53f, 0.58f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(-2.53f, 1.28f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Exterior service riser", factory, new Vector3(-4.95f, 1.64f, -0.54f), new Vector3(0.065f, 3.65f, 0.075f), steel);
+            Box("Riser clamp", factory, new Vector3(-4.95f, 0.2f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(-4.95f, 1.35f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(-4.95f, 2.5f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(-4.95f, 3.35f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Wall light housing", factory, new Vector3(-2.08f, 2.65f, -0.65f), new Vector3(0.12f, 0.63f, 0.15f), dark);
+            Box("Wall light diffuser", factory, new Vector3(-2.08f, 2.65f, -0.735f), new Vector3(0.055f, 0.48f, 0.024f), cyan);
+            Box("Impact bollard footing", factory, new Vector3(-2.1f, -0.27f, -1.52f), new Vector3(0.39f, 0.08f, 0.39f), steel);
+            Box("Impact bollard", factory, new Vector3(-2.1f, 0.13f, -1.52f), new Vector3(0.18f, 0.76f, 0.18f), amber);
+            Box("Bollard black band", factory, new Vector3(-2.1f, -0.07f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Bollard black band", factory, new Vector3(-2.1f, 0.18f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Bollard black band", factory, new Vector3(-2.1f, 0.43f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Facade inset shadow", factory, new Vector3(3.44f, 1.75f, -0.331f), new Vector3(2.95f, 3.9f, 0.08f), dark);
+            Box("Architectural cladding", factory, new Vector3(2.49f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(2.49f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Architectural cladding", factory, new Vector3(3.44f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(3.44f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Architectural cladding", factory, new Vector3(4.39f, 1.77f, -0.39f), new Vector3(0.91f, 3.73f, 0.12f), cream);
+            Box("Cladding lower plinth", factory, new Vector3(4.39f, -0.05f, -0.49f), new Vector3(0.91f, 0.27f, 0.16f), steel);
+            Box("Observation window frame", factory, new Vector3(3.44f, 2.5f, -0.49f), new Vector3(2.54f, 1.13f, 0.2f), steel);
+            Box("Observation window recess", factory, new Vector3(3.44f, 2.5f, -0.603f), new Vector3(2.36f, 0.95f, 0.045f), dark);
+            Box("Window interior light", factory, new Vector3(2.5775f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(2.5775f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(2.865f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(3.1525f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(3.1525f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(3.44f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(3.7275f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(3.7275f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window mullion", factory, new Vector3(4.015f, 2.5f, -0.66f), new Vector3(0.026f, 0.94f, 0.065f), steel);
+            Box("Window interior light", factory, new Vector3(4.3025f, 2.69f, -0.635f), new Vector3(0.52f, 0.045f, 0.012f), cyan);
+            Box("Window lower reflection", factory, new Vector3(4.3025f, 2.24f, -0.635f), new Vector3(0.52f, 0.016f, 0.012f), cyan);
+            Box("Window sill", factory, new Vector3(3.44f, 1.99f, -0.64f), new Vector3(2.66f, 0.075f, 0.38f), steel);
+            Box("Vent surround", factory, new Vector3(3.44f, 0.93f, -0.49f), new Vector3(2.08f, 0.9f, 0.18f), steel);
+            Box("Vent recess", factory, new Vector3(3.44f, 0.93f, -0.59f), new Vector3(1.91f, 0.73f, 0.04f), dark);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 0.65f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 0.74f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 0.83f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 0.92f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 1.01f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 1.1f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent horizontal louvre", factory, new Vector3(3.44f, 1.19f, -0.635f), new Vector3(1.84f, 0.037f, 0.075f), slate);
+            Box("Vent captive fastener", factory, new Vector3(2.53f, 0.58f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(2.53f, 1.28f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(4.35f, 0.58f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Vent captive fastener", factory, new Vector3(4.35f, 1.28f, -0.65f), new Vector3(0.038f, 0.038f, 0.018f), cream);
+            Box("Exterior service riser", factory, new Vector3(4.95f, 1.64f, -0.54f), new Vector3(0.065f, 3.65f, 0.075f), steel);
+            Box("Riser clamp", factory, new Vector3(4.95f, 0.2f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(4.95f, 1.35f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(4.95f, 2.5f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Riser clamp", factory, new Vector3(4.95f, 3.35f, -0.59f), new Vector3(0.15f, 0.05f, 0.12f), steel);
+            Box("Wall light housing", factory, new Vector3(2.08f, 2.65f, -0.65f), new Vector3(0.12f, 0.63f, 0.15f), dark);
+            Box("Wall light diffuser", factory, new Vector3(2.08f, 2.65f, -0.735f), new Vector3(0.055f, 0.48f, 0.024f), cyan);
+            Box("Impact bollard footing", factory, new Vector3(2.1f, -0.27f, -1.52f), new Vector3(0.39f, 0.08f, 0.39f), steel);
+            Box("Impact bollard", factory, new Vector3(2.1f, 0.13f, -1.52f), new Vector3(0.18f, 0.76f, 0.18f), amber);
+            Box("Bollard black band", factory, new Vector3(2.1f, -0.07f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Bollard black band", factory, new Vector3(2.1f, 0.18f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Bollard black band", factory, new Vector3(2.1f, 0.43f, -1.52f), new Vector3(0.19f, 0.09f, 0.19f), dark);
+            Box("Sign mounting bolt", factory, new Vector3(-2.58f, 3.79f, -0.66f), new Vector3(0.045f, 0.045f, 0.025f), cream);
+            Box("Sign mounting bolt", factory, new Vector3(-2.58f, 4.33f, -0.66f), new Vector3(0.045f, 0.045f, 0.025f), cream);
+            Box("Sign mounting bolt", factory, new Vector3(2.58f, 3.79f, -0.66f), new Vector3(0.045f, 0.045f, 0.025f), cream);
+            Box("Sign mounting bolt", factory, new Vector3(2.58f, 4.33f, -0.66f), new Vector3(0.045f, 0.045f, 0.025f), cream);
+            Box("Access panel enclosure", factory, new Vector3(2.08f, 1.3f, -0.68f), new Vector3(0.25f, 0.46f, 0.22f), steel);
+            Box("Access panel face", factory, new Vector3(2.08f, 1.3f, -0.8f), new Vector3(0.2f, 0.38f, 0.028f), dark);
+            Box("Access status light", factory, new Vector3(2.08f, 1.42f, -0.82f), new Vector3(0.12f, 0.024f, 0.012f), cyan);
+            Box("Access reader", factory, new Vector3(2.08f, 1.25f, -0.82f), new Vector3(0.1f, 0.12f, 0.018f), slate);
+        }
+
+        private static void BuildOpeningDoorDetails(Transform door, int side)
+        {
+            Material cyan = FactoryMaterial("ArchiveCyan");
+            Material dark = FactoryMaterial("ArchiveCharcoal");
+            Material steel = FactoryMaterial("AgedSteel");
+            Box("Door inspection frame", door, new Vector3(0f, 0.55f, -0.19f), new Vector3(1.09f, 0.61f, 0.1f), steel);
+            Box("Door inspection glass", door, new Vector3(0f, 0.55f, -0.248f), new Vector3(0.91f, 0.43f, 0.022f), dark);
+            Box("Door inspection highlight", door, new Vector3(0f, 0.67f, -0.263f), new Vector3(0.81f, 0.026f, 0.01f), cyan);
+            Box("Door handle pocket", door, new Vector3(-side * .48f, -.27f, -0.21f), new Vector3(0.17f, 0.47f, 0.06f), dark);
+            Box("Door pull handle", door, new Vector3(-side * .48f, -.27f, -0.27f), new Vector3(0.045f, 0.31f, 0.07f), steel);
+            Box("Door reinforced rail", door, new Vector3(0f, -1.23f, -0.19f), new Vector3(1.5f, 0.1f, 0.08f), steel);
+            Box("Door reinforced rail", door, new Vector3(0f, 1.31f, -0.19f), new Vector3(1.5f, 0.1f, 0.08f), steel);
+        }
+
         private static Material FactoryMaterial(string name)
-            => AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/FactoryEnvironment/{name}.mat");
+            => AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/CNNArchiveOpening/Entrance{name}.mat");
 
         private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width, int fontSize = 48)
         {

@@ -9,6 +9,8 @@ namespace Cinematic
     {
         [SerializeField] private Text _line;
         [SerializeField] private Image _backing;
+        [SerializeField] private bool _drawOverScene;
+        private Material _captionMaterial;
         private CinematicText.Line _active;
         private int _visible;
         private string _rich;
@@ -21,6 +23,18 @@ namespace Cinematic
 
         internal void Bind()
         {
+            if (_drawOverScene)
+            {
+                // The font's GUI/Text Shader draws glyphs with ZTest Always.
+                // UI/Default instead takes its depth test from the world-space canvas.
+                _captionMaterial = new Material(_line.font.material);
+                _captionMaterial.name = "Opening caption overlay";
+                // Text supplies its atlas through CanvasRenderer; the plain backing needs a white texture.
+                _captionMaterial.mainTexture = Texture2D.whiteTexture;
+                _captionMaterial.renderQueue = 4000;
+                _line.material = _captionMaterial;
+                _backing.material = _captionMaterial;
+            }
             _captionScale = _line.transform.parent.localScale;
             _backingOpacity = _backing.color.a;
             ClearLine();
@@ -90,6 +104,11 @@ namespace Cinematic
         {
             _line.text = string.Empty;
             _backing.enabled = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (_captionMaterial != null) { Destroy(_captionMaterial); }
         }
     }
 }

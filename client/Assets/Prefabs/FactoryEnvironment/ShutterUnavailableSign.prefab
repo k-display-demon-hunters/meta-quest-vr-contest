@@ -227,7 +227,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 체험을 완료하거나 양피지를 모두 수집해야 문을 열 수 있습니다
+  m_Text: 체험을 완료해야 문을 열 수 있습니다
 --- !u!1 &1200
 GameObject:
   m_ObjectHideFlags: 0
@@ -420,4 +420,4 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 체험을 완료하거나 양피지를 모두 수집해야 문을 열 수 있습니다
+  m_Text: 체험을 완료해야 문을 열 수 있습니다

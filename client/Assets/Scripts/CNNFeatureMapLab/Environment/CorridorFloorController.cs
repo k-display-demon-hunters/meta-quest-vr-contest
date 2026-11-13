@@ -29,15 +29,6 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal void HideLessonLabels()
-        {
-            _outputLabel.gameObject.SetActive(false);
-            foreach (TMP_Text label in _names)
-            {
-                label.gameObject.SetActive(false);
-            }
-        }
-
         internal void Highlight(int zone)
         {
             _outputLabel.gameObject.SetActive(zone < 0 || zone >= 4);

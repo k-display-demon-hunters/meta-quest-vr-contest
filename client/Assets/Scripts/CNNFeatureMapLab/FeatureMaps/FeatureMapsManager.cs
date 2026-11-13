@@ -206,7 +206,6 @@ namespace FeatureMapCorridor
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
         internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
-        internal void HidePresentation() => _display.HidePresentation();
         internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
             LessonStep step, IReadOnlyCollection<MapId> revealed) =>
             _pooling.Show(snapshot, channel, data, step, revealed, _poolingDevices[channel].CalculationAnchor);

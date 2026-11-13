@@ -21,7 +21,7 @@
 | **MNIST 숫자 이미지·정답** / 데이터 및 표시 이미지 | 기존 `Textures/CNNModelDesignLab/mnist-test-*.png` (보존, 현재 모델 제작 콘솔에서 미사용). 이전 흑백 런타임 데이터는 아래 컬러 데이터로 교체 | [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [Keras 공식 배포·권리 표기](https://keras.io/api/datasets/mnist/), [Keras 공식 로더](https://github.com/keras-team/keras/blob/v3.15.1/keras/src/datasets/mnist.py); 배포 URL: [mnist.npz](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz). 확인: 2026-10-24 | Keras 공식 문서 표기: **Yann LeCun, Corinna Cortes**, 원본 NIST 데이터의 파생 데이터. [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). 이 프로젝트의 MNIST 부분집합 데이터도 같은 조건으로 제공 | Codex 보조로 원본 training에서 숫자별 첫 50장(500장), test에서 숫자별 첫 20장(200장)을 추출하고 원본 인덱스·정답·픽셀을 `.bytes`로 포장. 생성·합성 이미지 아님. 픽셀 수정 없음. 기존 표시 PNG는 원본 test에서 숫자별 첫 이미지이며 이번 작업에서 변경 없음 |
 | **MNIST 컬러 통합 데이터 600장·미리보기** | `mnist-color-data/images.npy`, `labels.npy`, `source_indices.npy`, `style_seeds.npy`, `MnistColor.bytes`, `MnistTraining.bytes`, `MnistTest.bytes`, `preview.png` | [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [CVDF 공식 배포](https://github.com/cvdfoundation/mnist), [권리 근거](https://keras.io/api/datasets/mnist/). 2026-11-07 확인 | Keras 표기 권리자 Yann LeCun, Corinna Cortes. 원본 및 컬러 파생 데이터·미리보기 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). 합성 부분 별도 권리자 미확인 | Codex 보조 Python/NumPy/Pillow 제작. 원본 0~3 서로 다른 손글씨 각 150장에 RGB 색·점무늬 합성, 정답·형태 보존. 생성형 이미지 AI 미사용. 통합 600장을 training 480장·test 120장으로 분리한 RGB CMNT v2 파일도 제공. `client/Assets/Data/CNNModelDesignLab/MnistTraining.bytes`, `MnistTest.bytes`로 런타임 연결. 모델 제작 콘솔의 평가 120장 미리보기는 동일 RGB 픽셀에서 실행 중 생성하며 픽셀 내용 변경 없음. 추출 URL·시드·방법은 전용 폴더 README 참조 |
 
-셔터 개방 불가 안내판(`ShutterUnavailableSign.prefab`)과 ROOM #1 입구 바닥 홀로그램(`ShutterFloorHologram.prefab`)은 위 Noto Sans CJK KR Regular를 재사용합니다. 폰트 원본 수정은 없습니다.
+ROOM #1 내부 아치 문과 ROOM #1-2·#2·#3 출구의 개방 불가 안내판(`ShutterUnavailableSign.prefab`), ROOM #1·#2 입구 바닥 홀로그램(`ShutterFloorHologram.prefab`)은 위 Noto Sans CJK KR Regular를 재사용합니다. 폰트 원본 수정은 없습니다.
 
 공용 리그와 안내는 Meta XR Core SDK의 공식 프리팹을 직접 참조합니다. Codex 보조로 생성 인스턴스의 Touch Plus 본체 재질을 같은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat` 공유 참조로 연결했습니다. 모델·텍스처·재질·애니메이션 패키지 원본 수정이나 복제는 없습니다. 이전 추출본과 그 라이선스 사본 폴더는 삭제했습니다. 현재 사용하는 SDK 패키지의 `LICENSE.md`와 `NOTICE.txt` 원본은 유지합니다.
 
@@ -178,9 +178,15 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 
 두 이미지의 한글·영문 조판에 기존 `Fonts/NotoSansCJKkr-Regular.otf`를 재사용했다. 폰트 원본은 수정·복제하지 않았으며 원출처·권리자·SIL OFL 1.1은 위 **Noto Sans CJK KR Regular 2.004** 기록을 따른다. 기존 배포 라이선스 고지를 유지한다. 사용자 첨부 참고 이미지 자체는 런타임 에셋으로 복제하지 않았다.
 
+정문 아치형 간판에는 기존 Noto Sans CJK KR Regular를 굵게 표시하고, 녹색 프레임과 크림색 에나멜판에 기존 `FactoryPowderCoat_*` 텍스처를 재사용한다. 폰트·텍스처 원본은 그대로 사용하며, 출처와 라이선스는 위 폰트 및 공장 표면 텍스처 기록을 따른다.
+
+정문 왼쪽 벽의 대형 쓰레기통 두 개에는 기존 녹색·청색 도장, 철제 손잡이와 고무 재질을 사용했다. 재질이 참조하는 기존 `FactoryPowderCoat_*`, `BrushedAlloy_*`, `DarkIndustrialRubber_*` 텍스처의 원본과 출처·권리 정보는 위 표면 텍스처 기록을 따른다.
+
 ## 공장 조명 베이크
 
 `client/Assets/Textures/FactoryEnvironment/`의 `Lightmap-*_comp_*`와 `ReflectionProbe-*.exr`는 공장 씬의 고정 표면 조명, 그림자와 방별 반사에 사용한다. Codex AI 보조로 씬의 광원과 메시를 설정하고 Unity Progressive CPU Lightmapper와 반사 프로브로 다시 생성했다. 베이크 과정에서 외부 미디어를 추가하지 않았다. 제작자·법적 권리자는 미확인이며 별도 공개 라이선스를 지정하지 않았다.
+
+`client/Assets/Audio/FactoryEnvironment/ElectricalCrackle.wav`는 정문 벽등과 연결 복도등의 합선 효과음이다. Codex 보조로 JavaScript에서 사인파, 필터링한 난수, 짧은 감쇠 펄스를 조합해 24 kHz 모노 PCM16으로 신규 합성했다. 외부 샘플 사용 없음. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
 
 ## 튜토리얼 사물함과 공장 선반 상자
 

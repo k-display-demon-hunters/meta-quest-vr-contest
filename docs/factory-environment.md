@@ -438,7 +438,7 @@ Assets·ProjectSettings·Packages의 직렬화 GUID 참조, FactoryLightingData�
 
 현재 FactoryEnvironment 씬 파일에 직접 직렬화된 MeshRenderer는 453개다. 공장 전용 메시를 참조하는 MeshFilter 428개의 배치별 메시 데이터를 합산하면 삼각형 505,246개, 정점 803,837개다. 이 집계는 프리팹 내부와 Additive 체험 씬을 제외한 씬 배치 기준이다. 위의 415개 Renderer 기록은 이전 배치 당시 수치다.
 
-씬에 저장된 Light 97개 중 베이크 면광원 75개와 혼합 스폿 5개가 활성화되어 있다. 실시간 점광원 16개 중 14개는 비활성화되어 있고 2개가 활성화되어 있으며, 실시간 방향광 1개가 활성화되어 있다. 씬의 OcclusionCullingData 참조는 비어 있다.
+씬에 저장된 Light 97개 중 베이크 면광원 75개와 혼합 스폿 5개가 활성화되어 있다. 실시간 점광원 16개 중 14개는 비활성화되어 있고 2개가 활성화되어 있으며, 실시간 방향광 1개가 활성화되어 있다. 오클루전 구성은 아래의 현재 적용 내용을 따른다.
 
 휴게실 가구의 1차 정리 후, 가구·소품 표시 메시 7개를 재질별로 단순화해 삼각형을 348,513개에서 62,098개로 줄였다. 남은 정점의 위치·노멀·탄젠트·텍스처 UV·라이트맵 UV와 각 서브메시의 외곽 범위를 원본 데이터와 대조했다. 휴게실 경고 테이프의 노란색·검은색 재질에 해당하는 두 서브메시는 기존 형상을 사용한다. 충돌 영역은 기존 씬의 별도 오브젝트가 담당한다. 실제 화면과 기기 성능은 미확인이다.
 
@@ -475,6 +475,18 @@ Assets·ProjectSettings·Packages의 직렬화 GUID 참조, FactoryLightingData�
 | 셔터 9곳의 프레임·이동 패널 | 44,820 | 23,112 |
 
 미사용 에셋 삭제는 프로젝트 정리이며 FPS 개선 측정 결과가 아니다. Quest의 실행 가능 여부와 병목은 이 정적 집계만으로 확정하지 않는다. 이번 작업에서 Unity 실행·컴파일·테스트·빌드와 기기 성능 측정은 수행하지 않았다.
+
+## 공장 오클루전 컬링
+
+FactoryEnvironment의 고정 배경에 Unity 내장 베이크 오클루전 컬링을 적용한다. 기존 XRPlayerRig 카메라의 Occlusion Culling 활성 설정을 사용하며, 씬은 `Assets/Settings/FactoryOcclusionCullingData.asset`을 참조한다. 기존 GI·배칭·반사 프로브 Static 플래그는 유지하고, 고정 MeshRenderer 413개에 Occludee Static을 추가했다. 그중 불투명한 콘크리트 벽·바닥·구조물 37개는 Occluder Static도 사용한다. 이는 비활성 배치를 포함한 설정 수이며 실제 프레임의 렌더러 수가 아니다.
+
+움직이는 셔터 패널, 환풍기 회전체, 시계 바늘과 양피지 Pickup 하위는 정적 베이크 대상에서 제외한다. 100m를 넘는 bounds를 가진 외곽 배경과 달도 정적 베이크에서 제외하며 기존 Dynamic Occlusion 설정을 유지한다. 큰 결합 메시를 분할하지 않았으므로 일부가 보이는 결합 메시 전체가 컬링에서 살아남을 수 있다.
+
+셔터 10개의 고정 Controller 오브젝트에 OcclusionPortal을 배치하고 `_occlusionPortal`로 연결한다. Portal의 중심과 크기는 닫힌 패널 Collider를 문틀 로컬 좌표로 변환한 값이다. 일반 셔터는 3.2×3.2×0.22m이며 낮은 ROOM 2 출구는 3.2×4.53×0.22m다. `FactoryShutterController.Open()`은 움직임 전에 Portal을 열고, `Close()` 및 `LateUpdate()`는 패널이 완전히 닫힌 `_amount == 0`에서만 Portal을 닫는다. 닫힘 보류와 이동 도중 재개방 동안 Portal은 열린 상태를 유지한다. 충돌·학습 진행·씬 로딩은 기존 소유자가 처리한다.
+
+Factory Environment 루트의 OcclusionArea는 로컬 중심 (0, 2, 8), 크기 (80, 10, 90)의 View Volume이다. 베이크 값은 Smallest Occluder 5m, Smallest Hole 0.25m, Backface Threshold 100이다. 공장만 열어 베이크하며, 로드 후 재배치하는 Additive 체험 씬을 고정 배경 데이터에 포함하지 않는다. 체험 씬의 활성 전환 및 동적 오브젝트 컬링 결과는 실행 확인 전이다.
+
+2026-11-14: Unity 6000.3.24f1 에디터에서 스크립트 컴파일 오류 없이 오클루전 베이크를 완료했다. 생성 데이터는 93,016바이트이며 비어 있지 않은 PVS 데이터와 렌더러 373개·Portal 10개의 베이크 참조를 포함한다. 씬의 Portal 10개 연결과 위치·크기를 에디터에서 조회했다. Play·자동 테스트·APK 빌드·기기 테스트는 실행하지 않았다. 양안 표시, 문 개폐 중 시각적 누락, Additive 전환과 실제 CPU/GPU 시간·FPS 개선은 별도 실행 검증이 필요하다.
 
 ## 확인 범위
 

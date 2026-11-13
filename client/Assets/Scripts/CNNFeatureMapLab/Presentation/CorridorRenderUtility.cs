@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace FeatureMapCorridor
 {
@@ -13,7 +12,6 @@ namespace FeatureMapCorridor
         private static readonly int BaseMap = Shader.PropertyToID("_BaseMap");
         private MaterialPropertyBlock _properties;
         [SerializeField] private List<Transform> _billboards = new List<Transform>();
-        [SerializeField] private Material _opaque;
         [SerializeField] private TMP_FontAsset _korean;
         [SerializeField] private CorridorTheme _theme;
         internal CorridorTheme Theme => _theme;
@@ -61,15 +59,5 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void InstanceLights(Mesh mesh, Matrix4x4[] transforms, int count, Color color, int layer)
-        {
-            _properties.Clear();
-            _properties.SetColor(BaseColor, color);
-            if (!SystemInfo.supportsInstancing)
-            {
-                return;
-            }
-            Graphics.DrawMeshInstanced(mesh, 0, _opaque, transforms, count, _properties, ShadowCastingMode.Off, false, layer);
-        }
     }
 }

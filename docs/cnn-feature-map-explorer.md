@@ -1,6 +1,6 @@
 # CNN실 #8 피처맵 복도
 
-[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)의 학습 진입점은 `CorridorRoot`의 `CNNFeatureMapLabManager`다. 기존 XR 리그와 공장 학습 세션을 사용한다. 공장에서는 Room 02의 기존 앵커와 출입구 사이에 들어오도록 복도를 0.53배로 배치한다. 단독 씬의 복도 좌표는 1:1이다.
+[CNNFeatureMapLab.unity](../client/Assets/Scenes/CNNFeatureMapLab.unity)의 학습 진입점은 `CorridorRoot`의 `CNNFeatureMapLabManager`다. 기존 XR 리그와 공장 학습 세션을 사용한다. 공장에서는 기준점 (-3.65, 0, 12)에서 동쪽으로 향하도록 복도를 0.53배로 배치한다. 단독 씬의 복도 좌표는 1:1이다.
 
 ## 편집 모드의 배치
 
@@ -26,6 +26,10 @@
 - 연산 장치와 결과판은 프리팹에 저장되어 있다. 필터 장치는 3×3 돌출 격자, Pooling 장치는 2×2 격자다. 장치의 Transform에서 조작 위치를, 같은 번호의 `Calculation anchor`에서 Conv 카드나 Pooling 계산판이 나타나는 위치를 편집한다. 출력 통의 액체·점수 기둥은 저장된 크기를 최대 표시 기준으로 사용한다. 자막·팝업은 저장된 배율을 사용하되 위치는 실행 중 카메라를 따라간다.
 - RGB 채널, 필터 카드, 계산 연출, 완료 팝업 등 단계별 오브젝트는 프리팹에 존재하지만 초기에는 비활성 상태일 수 있다. Hierarchy에서 선택해 편집하고 초기 표시 상태를 유지한다. 두 번째 Conv의 여분 판 한 장은 비활성 상태로 배치한다.
 - `Editor/CorridorPrefabBuilder.cs`는 저장된 배치를 프리팹으로 저장하는 도구다. 기존 프리팹이 있으면 메뉴에서 재생성하지 않는다. 저장할 때 필요한 임시 표시 에셋의 영속화는 `CorridorLayoutBuilder`가 담당한다. 런타임의 최초 배치 생성 코드와 `BuildLayoutForEditor`는 제거했다.
+
+공장 Room 02의 체험 발판은 폭 5.104m다. 입력·첫 Conv·Pooling·두 번째 Conv·판정의 각 발판은 0.8m씩 길어졌으며, 계단 구간은 기존 길이를 사용한다. 입력판과 RGB 앵커는 왼쪽, 필터·Pooling 장치와 결과판은 양옆에 놓아 가운데 보행 공간을 확보한다. 판정 장치는 중심 기준 동쪽 셔터에서 약 1.3m 앞에 있고, 세 통 사이로 출구 방향 안내선이 이어진다.
+
+현재 학습 단계의 발판만 무광 파스텔 하늘색으로 표시하고 다른 발판은 무광 검은색으로 표시한다. 현재 구역의 바닥 글자는 짙은 남색으로 표시하며, 계단 앞 모서리는 낮은 채도의 호박색으로 구분한다. 조작 가능한 필터·Pooling 장치에는 호박색, 완료된 장치에는 청록색을 사용한다. 자막과 완료 창은 흑연색 배경을 사용하며 RGB 채널과 판정 결과는 각 데이터의 색을 유지한다.
 
 ## 진행
 
@@ -60,7 +64,7 @@
 
 - 외부 학습 세션과의 계약은 `CNNFeatureMapLabManager`의 기존 `ILearningExperience`다. CNNFeatureMapLab 런타임 코드는 FactoryEnvironment의 Manager, 복도 위치, 방·바닥 구역 데이터를 직접 참조하거나 조회하지 않는다. 카메라와 입력은 기존 공용 XR 리그와 XRI를 사용한다.
 - `Environment/`는 이 체험이 소유한 복도·바닥 표시와 가시 상태를 담당한다. FactoryEnvironment 모듈이 아니다. `CorridorCameraController`는 카메라 위치를 체험 루트의 로컬 좌표로 변환해 내부 범위를 판정한다. 이 판정에 따른 입력·UI·연출 갱신의 활성 조건을 유지한다.
-- 발판 `Walk surface`의 BoxCollider와 표시용 `Slab`은 `CorridorEnvironment.prefab`에 저장되어 있다. 발판의 충돌 범위와 표시 배치는 이 중첩 프리팹에서 편집한다. 충돌체 17개는 발판 상단에서 Slab 바닥까지 이어지도록 main의 크기·중심값을 반영하여, 공장 ROOM #2의 낮은 바닥에서도 발판 옆면에 충돌한다.
+- 발판 `Walk surface`의 BoxCollider와 표시용 `Slab`은 `CorridorEnvironment.prefab`에 저장되어 있다. 받침 윗면은 발판 밑면에 맞춘다. `CorridorFloorController`는 현재 학습 단계의 `Walk surface` 재질을 하늘색으로 바꾸고 다른 발판은 검은색으로 표시한다. 충돌체 17개는 발판 상단에서 받침 바닥까지 이어진다.
 - 씬 Manager가 학습 단계에 맞춰 CorridorEnvironmentManager의 바닥 강조와 FeatureMapsManager의 피처맵 표시 강조를 함께 갱신한다.
 - 공장 측의 체험 로딩·배치와 체험 내부의 로컬 공간 판정은 별도 책임이다. 이 입력 정리에서는 Core와 FactoryEnvironment 코드·에셋 및 기존 공용 인터페이스를 변경하지 않는다.
 ### 실행 데이터와 전달 계약

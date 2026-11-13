@@ -61,7 +61,7 @@ namespace FeatureMapCorridor
         {
             float now = Time.unscaledTime;
             float delta = Time.unscaledDeltaTime;
-            _environment.Tick(now);
+            _environment.Tick();
             if (!_environment.Visible)
             {
                 return;

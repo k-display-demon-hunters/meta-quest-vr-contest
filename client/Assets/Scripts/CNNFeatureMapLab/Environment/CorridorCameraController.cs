@@ -27,7 +27,7 @@ namespace FeatureMapCorridor
                 return;
             }
             Vector3 view = _root.InverseTransformPoint(_camera.transform.position);
-            bool inside = Mathf.Abs(view.x) <= 5.7f && view.z >= -11.3f && view.z <= 26.8f;
+            bool inside = Mathf.Abs(view.x) <= 7.12f && view.z >= -13.4f && view.z <= 29.48716981f;
             if (Visible == inside)
             {
                 return;

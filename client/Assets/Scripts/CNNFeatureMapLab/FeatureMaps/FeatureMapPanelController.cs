@@ -23,7 +23,6 @@ namespace FeatureMapCorridor
         [SerializeField] private TMP_Text _badge;
         [SerializeField] private int _size;
         [SerializeField] private float _width;
-        private Color _defaultFrame = new Color32(30, 58, 72, 255);
         [SerializeField] private Transform _root;
         internal Transform Root => _root;
         internal Vector3 Position => Root.localPosition;
@@ -148,7 +147,7 @@ namespace FeatureMapCorridor
         }
 
         internal void ClearHighlight() => _border.gameObject.SetActive(false);
-        internal void Frame(Color? color = null) => _visuals.Paint(_frame, color ?? _defaultFrame);
+        internal void Frame(Color? color = null) => _visuals.Paint(_frame, color ?? _frame.sharedMaterial.color);
         internal void Opacity(float alpha) => _visuals.Paint(_surface, new Color(1, 1, 1, alpha));
         internal void Badge(string caption, Color color)
         {

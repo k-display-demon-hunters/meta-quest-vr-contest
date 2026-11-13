@@ -8,6 +8,10 @@ namespace FeatureMapCorridor
         internal const string OutputDone = "판정을 마쳤어요. 점수가 어떻게 만들어졌는지 더 살펴볼 수 있어요.";
         internal const string ViewScore = "점수 계산 보기";
         internal const string BackToVerdict = "판정 결과로";
+        internal const string AdditionalFiltersChoice = "피처맵 3-1과 3-2를 비교해 보세요.\n필터 3-3과 3-4도 체험해 볼까요?";
+        internal const string AdditionalFiltersBody = "필터 3-3과 3-4를 눌러 피처맵을 만들어 보세요.";
+        internal const string TryAdditionalFilters = "추가 체험";
+        internal const string GoToVerdict = "판정으로";
         internal const string InputLabel = "입력 · 16×16";
         internal const string Filter = "필터";
         internal const string OutputLabel = "출력 · 100%를 점수대로 나눠 담아요";
@@ -16,9 +20,7 @@ namespace FeatureMapCorridor
         internal const string Previous = "◀ 이전";
         internal const string Next = "다음 ▶";
         internal const string Understood = "알겠어요";
-        internal const string Confirm = "확인";
         internal const string Complete = "체험 완료";
-        internal const string Arrow = "안내";
         private static readonly string[] RoundNames =
         {
             "첫 번째 Conv2D", "MaxPooling", "두 번째 Conv2D", "숫자 판정"
@@ -29,17 +31,13 @@ namespace FeatureMapCorridor
         internal static string Template(int digit) => $"숫자 {digit}의 틀";
         internal static string OutputScore(int digit) => $"숫자 {digit} 점수";
         internal static string RoundHeader(int round) => $"[{round}/4 · {RoundNames[round - 1]}]";
-        internal const string InputPictureBody = "입력 이미지를 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
-        internal const string InputPictureHint = "입력 이미지 누르기";
+        internal const string InputPictureBody = "숫자 버튼으로 입력을 바꿔 보세요.\n입력 이미지를 직접 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
 
-        internal static string WaitingHint(int layer, int map) =>
-            $"{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요";
-
-        internal static string WaitingBody(int layer, int map) => layer == 4
-            ? "이 이미지에서 찾은 특징으로 어떤 숫자인지 알아볼까요? 가운데 판정 시작 버튼을 누르세요."
-            : layer == 2
-                ? "<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling 장치를 눌러 강한 반응이 어떻게 남는지 살펴보세요."
-                : $"<b>필터는 특징을 추출합니다.</b>\n{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 피처맵을 만들어 보세요.";
+        internal static string WaitingBody(int layer, int map) => layer == 2
+                ? $"<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling {map + 1} 장치를 눌러 채널 {map + 1}의 반응을 살펴보세요."
+                : layer == 1
+                    ? $"앞쪽 발판으로 이동해 {FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요."
+                    : $"<b>필터는 특징을 추출합니다.</b>\n{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 피처맵을 만들어 보세요.";
 
         internal static string PoolingBody(LessonStep step, int channel, PoolingCalculationResult data)
         {
@@ -57,16 +55,19 @@ namespace FeatureMapCorridor
         internal static string FilterOpen(int layer, int count, int size)
         {
             if (layer == 1)
-                return "필터는 특징을 추출합니다. 색깔별 이미지에서 어떤 부분이 드러나는지 살펴보세요.";
+                return "필터가 3×3 판 세 장으로 나뉘어요. R·G·B 필터는 앞쪽에 있는 같은 색 입력과 연결돼요.";
             if (layer == 3)
                 return "Pooling을 거친 두 피처맵이 입력이에요. 앞에서 찾은 특징을 조합해 새로운 특징을 추출해요.";
             string why = $"마지막 Conv의 피처맵이 {count}장";
             return $"{why}이라서 필터도 <b>{size}×{size} 판 {count}장</b>이에요.\n<color=#8FA3B8>필터를 두 번 누르면 다시 겹쳐져요</color>";
         }
 
-        internal static string Scan(int layer) => layer == 4
-            ? "판마다 맡은 피처맵 위에 통째로 겹쳐져요."
-            : "필터가 지나가며 찾아낸 특징이 결과판에 드러나요.";
+        internal static string Scan(int layer) => layer switch
+        {
+            1 => "세 필터가 같은 위치를 훑어요. 세 채널의 계산값을 합쳐 결과판의 한 칸을 채워요.",
+            4 => "판마다 맡은 피처맵 위에 통째로 겹쳐져요.",
+            _ => "필터가 지나가며 찾아낸 특징이 결과판에 드러나요."
+        };
         internal static string Explain(int layer, int digit) => layer == 4
         ? string.Format("<b>출력 {0}</b>는 입력이 숫자 {0}인지 판단해야 해요. 그래서 필터의 판마다 <b>숫자 {0}일 때 그 피처맵이 밝아지는 곳</b>이 밝게 그려져 있어요. 피처맵이 그 모양과 많이 겹칠수록 점수가 커져요.", digit) : "필터마다 찾아내는 특징이 달라요. 같은 이미지에서 어디가 밝게 드러났는지 비교해 보세요.";
         internal static string Merge(int layer, int map, int digit, int count, int winner)

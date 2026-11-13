@@ -1,8 +1,5 @@
-using System;
-using UI;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace FeatureMapCorridor
 {
@@ -51,20 +48,17 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform _staging;
         [SerializeField] private Transform[] _tankAnchors = new Transform[3];
         [SerializeField] private Transform[] _answerAnchors = new Transform[3];
-        [SerializeField] private WorldUIButtonController _startButton;
         private Vector3[] _liquidPosition = new Vector3[3];
         private Vector3[] _liquidScale = new Vector3[3];
         private Vector3[] _columnPosition = new Vector3[3];
         private Vector3[] _columnScale = new Vector3[3];
         private Vector3 _tankPosition;
         private Vector3 _tankScale;
-        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, Action onStartRequested)
+        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last)
         {
             _visuals = visuals;
             _input = input;
             _last = last;
-            _buttons.Add(_startButton.GetComponent<Button>(), onStartRequested);
-            _startButton.Hide();
             for (int i = 0; i < 3; i++)
             {
                 _liquidPosition[i] = _liquid[i].localPosition;
@@ -94,11 +88,6 @@ namespace FeatureMapCorridor
             Reset();
         }
 
-        private readonly CorridorButtonBindings _buttons = new CorridorButtonBindings();
-
-        internal void Enable() => _buttons.Enable();
-        internal void Disable() => _buttons.Disable();
-        internal void SetStartAvailable(bool available) => _startButton.gameObject.SetActive(available);
 
         private OutputStageController()
         {
@@ -106,6 +95,7 @@ namespace FeatureMapCorridor
 
         internal Vector3 Tin(int digit) => _root.InverseTransformPoint(_tankAnchors[digit-1].TransformPoint(Vector3.up*2.5f));
         internal Vector3 AnswerDestination => _root.InverseTransformPoint(_answerAnchors[_winner].position);
+        internal Vector3 LessonPanelPosition => _tankAnchors[1].TransformPoint(Vector3.up * 5.2f);
         private Vector3 StagingPosition => _root.InverseTransformPoint(_staging.position);
         internal void SetData(FeatureMapSnapshot snapshot)
         {

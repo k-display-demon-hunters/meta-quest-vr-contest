@@ -36,5 +36,6 @@ namespace FeatureMapCorridor
         }
 
         internal void Highlight(int zone) => _floor.Highlight(zone);
+        internal void HideLessonLabels() => _floor.HideLessonLabels();
     }
 }

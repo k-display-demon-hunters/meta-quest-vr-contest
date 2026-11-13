@@ -134,7 +134,6 @@ MonoBehaviour:
       - {fileID: 5865838708947126388}
       - {fileID: 1016144080668450533}
       - {fileID: 7528235527857985923}
-      - {fileID: 2198802544853876259}
       - {fileID: 7614787178695415905}
       - {fileID: 2835775616020498446}
       - {fileID: 7509979202055725912}
@@ -146,6 +145,12 @@ MonoBehaviour:
       - {fileID: 3426486330457961249}
       - {fileID: 288125650702286587}
     _display:
+      _stageRoots:
+      - {fileID: 8700000000000000014}
+      - {fileID: 8700000000000000024}
+      - {fileID: 8700000000000000034}
+      - {fileID: 8700000000000000054}
+      _inputRoot: {fileID: 8700000000000000004}
       _input:
         _channels:
         - _frame: {fileID: 7942256046233075421}
@@ -384,7 +389,6 @@ MonoBehaviour:
         - {fileID: 3916862662445056813}
         - {fileID: 7526729429512169401}
         - {fileID: 2978156700868051757}
-        _startButton: {fileID: 8785632114090160104}
     _firstFilters:
     - _hit: {fileID: 8910000000000001004}
       _face: {fileID: 8910000000000001013}
@@ -631,6 +635,7 @@ MonoBehaviour:
       - {fileID: 7585610294807890256}
       - {fileID: 385543744890044531}
       - {fileID: 9039413971288240103}
+      - {fileID: 2584512570431688764}
     _subtitle:
       _root: {fileID: 2584512570431688764}
       _header: {fileID: 4244177359216967886}
@@ -642,8 +647,6 @@ MonoBehaviour:
       _hint: {fileID: 3284710731087466268}
       _caption: {fileID: 3218667062870603369}
       _dot: {fileID: 3465429160158789895}
-      _offscreenChip: {fileID: 7912816441460084431}
-      _offscreen: {fileID: 8503096647184887938}
       _recaps:
       - {fileID: 1700250201674642397}
       - {fileID: 3387083044030006522}
@@ -712,9 +715,6 @@ MonoBehaviour:
       - {fileID: 8273928286630511356}
       - {fileID: 3615455557523392927}
       - {fileID: 7162452834353658045}
-    _completion:
-      _popup: {fileID: 8284795500800294590}
-      _parent: {fileID: 3849863622394576141}
     _debug:
       _showDebug: 0
   _environment:
@@ -739,6 +739,7 @@ MonoBehaviour:
       - {fileID: 3430552644213652225}
       - {fileID: 2931911141166755689}
       - {fileID: 3864486279621919010}
+      _outputLabel: {fileID: 7689434579637669481}
     _camera:
       _root: {fileID: 3849863622394576141}
 --- !u!1001 &8700000000000000003
@@ -4025,6 +4026,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8700000000000000072, guid: 769fd2d74437459ba5e884a9342e356d, type: 3}
   m_PrefabInstance: {fileID: 8700000000000000073}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7689434579637669481 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7689434579637669481, guid: 769fd2d74437459ba5e884a9342e356d, type: 3}
+  m_PrefabInstance: {fileID: 8700000000000000073}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9541d86e2fd84c1d9990edf0852d74ab, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!114 &2680204021946253951 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2680204021946253951, guid: 769fd2d74437459ba5e884a9342e356d, type: 3}
@@ -4289,14 +4301,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8910000000000003126, guid: 06b8d19595c7418398cd25bd112776a1, type: 3}
   m_PrefabInstance: {fileID: 8700000000000000033}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8785632114090160104 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8785632114090160103, guid: 5a7ec1195aa4411cba883fbcc7f24713, type: 3}
-  m_PrefabInstance: {fileID: 8700000000000000053}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0c8f6e554d0345649e82343a65c169ba, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:

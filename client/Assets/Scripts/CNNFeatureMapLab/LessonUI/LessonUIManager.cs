@@ -9,7 +9,6 @@ namespace FeatureMapCorridor
         [SerializeField] private CorridorRenderUtility _visuals;
         [SerializeField] private SubtitlePanelController _subtitle;
         [SerializeField] private HintBubblesController _hints;
-        [SerializeField] private CompletionPopupController _completion;
         [SerializeField] private CorridorDebugController _debug;
         private Camera _camera;
         private bool _completed;
@@ -20,23 +19,18 @@ namespace FeatureMapCorridor
             _visuals.InitializeRuntime();
             _subtitle.Bind(() => PreviousRequested?.Invoke(), () => NextRequested?.Invoke());
             _hints.Bind(_visuals);
-            _completion.Bind();
         }
 
         internal void Enable()
         {
             _subtitle.ButtonPressed += RecordButton;
-            _completion.ButtonPressed += RecordButton;
             _subtitle.Enable();
-            _completion.Enable();
         }
 
         internal void Disable()
         {
             _subtitle.Disable();
-            _completion.Disable();
             _subtitle.ButtonPressed -= RecordButton;
-            _completion.ButtonPressed -= RecordButton;
             _debug.Hide();
         }
 
@@ -52,7 +46,6 @@ namespace FeatureMapCorridor
             {
                 _camera = Camera.main;
                 _subtitle.SetCamera(_camera);
-                _completion.SetCamera(_camera);
             }
             else
             {
@@ -60,36 +53,51 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now, float delta)
+        internal void Tick(float now)
         {
-            _hints.Tick(_camera, now);
-            _subtitle.Track(_camera, delta);
-            _completion.Tick(delta);
+            _hints.Tick(now);
             _visuals.UpdateBillboards(_camera);
         }
 
-        internal void OpenCompletion() => _completion.Open(_camera);
+        internal void HidePresentation()
+        {
+            _hints.Hide();
+            _hints.SetRecapVisibility(0);
+        }
         internal void Show(LessonContext context)
         {
             _hints.Hide();
             _completed = context.Phase == LessonPhase.Complete;
+            _hints.SetRecapVisibility(_completed ? 4 : context.Layer);
+            if (!_completed)
+            {
+                _subtitle.SetPosition(context.LessonPanelPosition);
+            }
             switch (context.Phase)
             {
                 case LessonPhase.AwaitInput:
                 _subtitle.Show("", LessonContent.InputPictureBody, false, null);
-                _hints.Show(LessonContent.InputPictureHint, context.HintPosition);
                 break;
                 case LessonPhase.AwaitRound:
-                _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
-                if (context.Layer != 4)
+                if (context.ExploringAdditionalFilters)
                 {
-                    _hints.Show(LessonContent.WaitingHint(context.Layer, context.Map), context.HintPosition);
+                    _subtitle.Show("", LessonContent.AdditionalFiltersBody, false, LessonContent.GoToVerdict);
+                }
+                else
+                {
+                    _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
                 }
                 break;
                 case LessonPhase.Round:
                 ShowRound(context);
                 break;
                 case LessonPhase.Recap:
+                if (context.OfferAdditionalFilters)
+                {
+                    _subtitle.Show("", LessonContent.AdditionalFiltersChoice, true,
+                        LessonContent.GoToVerdict, LessonContent.TryAdditionalFilters);
+                    break;
+                }
                 _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true,
                     context.Layer == 4 ? LessonContent.Complete : LessonContent.Next,
                     context.Layer == 4 ? LessonContent.ViewScore : LessonContent.Previous);
@@ -105,7 +113,12 @@ namespace FeatureMapCorridor
             if (context.Layer == 2)
             {
                 _subtitle.Show(LessonContent.RoundHeader(2), LessonContent.PoolingBody(context.Step, context.Map, context.Pooling),
-                    true, context.Step == LessonStep.PoolingMaximum ? "전체 적용 ▶" : LessonContent.Next);
+                    true, context.Step switch
+                    {
+                        LessonStep.PoolingMaximum => "채널 전체 적용 ▶",
+                        LessonStep.PoolingApply => "채널 완료",
+                        _ => LessonContent.Next
+                    });
                 return;
             }
 
@@ -120,7 +133,8 @@ namespace FeatureMapCorridor
                     : LessonContent.Next;
             string previous = context.ShowingOutputDetails && context.WaitingForFilter
                 ? LessonContent.BackToVerdict : LessonContent.Previous;
-            _subtitle.Show(LessonContent.RoundHeader(context.Layer), context.FilterPending ? "" : RoundBody(context), true, next, previous);
+            string body = context.FilterPending && context.Layer != 1 ? "" : RoundBody(context);
+            _subtitle.Show(LessonContent.RoundHeader(context.Layer), body, true, next, previous);
         }
 
         private static string RoundBody(LessonContext context)
@@ -146,7 +160,9 @@ namespace FeatureMapCorridor
             {
                 names[i] = recap.Layer == 1 ? FeatureMapLabels.InputChannels[i] : FeatureMapLabels.MapId(recap.Layer-1, i);
             }
-            _hints.AddRecap(recap.Position, names, recap.Layer == 4 ? LessonContent.OutputScore(recap.Digit) : FeatureMapLabels.MapId(recap.Layer, recap.Map), recap.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs);
+            _hints.AddRecap(recap.Layer, recap.Position, names,
+                recap.Layer == 4 ? LessonContent.OutputScore(recap.Digit) : FeatureMapLabels.MapId(recap.Layer, recap.Map),
+                recap.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs);
         }
 
         internal void ShowDebug(string state, string hover, string cell, string click) => _debug.Show(state, hover, cell, click, _camera, _visuals.DebugFont);

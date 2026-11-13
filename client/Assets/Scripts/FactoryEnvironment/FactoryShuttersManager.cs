@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Learning;
 using Parchment;
@@ -146,5 +147,14 @@ namespace FactoryEnvironment
 
         private FactoryShutterController GetShutter(FactoryShutterId id) =>
             Array.Find(_shutters, shutter => shutter.Id == id);
+
+        internal IEnumerator WaitForExitOpening(LearningStageId stage)
+        {
+            FactoryShutterController exit = GetShutter(_layoutData.GetStageSpace(stage).ExitShutter);
+            while (exit != null && exit.IsOpening)
+            {
+                yield return null;
+            }
+        }
     }
 }

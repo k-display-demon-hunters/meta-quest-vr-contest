@@ -15,18 +15,25 @@ namespace FeatureMapCorridor
         [SerializeField] private InputPanelController _input;
         [SerializeField] private MapLayerView[] _layers;
         [SerializeField] private OutputStageController _output;
+        [SerializeField] private Transform[] _stageRoots;
+        [SerializeField] private Transform _inputRoot;
         private FeatureMapPanelController[][] _maps;
         private CorridorRenderUtility _visuals;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
-        internal Vector3 InputPictureHint => _input.Picture.Position + Vector3.up * 1.2f;
+        internal Vector3 InputLessonPanelPosition => _input.Picture.Root.TransformPoint(Vector3.up * 1.85f);
+        internal Vector3 OutputLessonPanelPosition => _output.LessonPanelPosition;
         internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);
+        internal float InputChannelSpacing => _input.ChannelSpacing;
+        internal void FollowInputChannels(Transform filterAnchor, Vector3 viewerPosition) =>
+            _input.FollowTowardsCalculation(filterAnchor, viewerPosition);
+        internal void MoveInputChannelsToCalculation(Transform filterAnchor, float duration, bool animate) =>
+            _input.MoveToCalculation(filterAnchor, duration, animate);
         private FeatureMapSnapshot _snapshot;
         private readonly List<int> _outputInputs = new List<int>();
         private float _outputRevealStarted;
         private int _outputCellsShown;
         internal bool RevealingOutputInputs => _outputInputs.Count != 0;
-        internal event Action OutputStarted;
         internal event Action<string> ButtonPressed;
         internal event Action<string> InputClicked;
         internal string HoverName
@@ -55,7 +62,7 @@ namespace FeatureMapCorridor
                     _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, _input, _maps[2], () => OutputStarted?.Invoke());
+            _output.Bind(visuals, _input, _maps[2]);
             ShowSnapshot(snapshot);
             RestoreResults(new HashSet<MapId>());
         }
@@ -65,7 +72,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed += OnButton;
             _input.Enable();
             _input.Picture.InputClicked += OnInputClicked;
-            _output.Enable();
         }
 
         internal void Disable()
@@ -73,7 +79,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed -= OnButton;
             _input.Disable();
             _input.Picture.InputClicked -= OnInputClicked;
-            _output.Disable();
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);
@@ -107,6 +112,9 @@ namespace FeatureMapCorridor
             _outputCellsShown = -1;
         }
 
+        internal void SetSecondConvResultVisible(int map, bool visible) =>
+            Map(3, map).Root.gameObject.SetActive(visible);
+
         private void UpdateOutputInputs(float now)
         {
             if (!RevealingOutputInputs) return;
@@ -135,12 +143,27 @@ namespace FeatureMapCorridor
         }
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
-        internal void SetOutputStartAvailable(bool available) => _output.SetStartAvailable(available);
         internal void HighlightLayer(int zone)
         {
+            bool showFirstExperiences = zone is 0 or 1;
+            _inputRoot.gameObject.SetActive(showFirstExperiences);
+            for (int i = 0; i < _stageRoots.Length; i++)
+            {
+                bool visible = i == 0 ? zone == 1 : zone < 0 || i < zone;
+                _stageRoots[i].gameObject.SetActive(visible);
+            }
             for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])
             {
                 panel.Frame(l+1 == zone ? _visuals.Theme.Cyan : (Color?)null);
+            }
+        }
+
+        internal void HidePresentation()
+        {
+            _inputRoot.gameObject.SetActive(false);
+            foreach (Transform root in _stageRoots)
+            {
+                root.gameObject.SetActive(false);
             }
         }
 

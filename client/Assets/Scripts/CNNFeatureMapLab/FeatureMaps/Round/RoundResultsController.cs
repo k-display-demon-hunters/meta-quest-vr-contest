@@ -168,6 +168,10 @@ namespace FeatureMapCorridor
                 window.position = Vector3.Lerp(plate.position, position, fly);
                 window.rotation = Quaternion.Slerp(plate.rotation, source.Root.rotation, fly);
                 float width = IsOutput ? source.Width : source.Width*3/_size;
+                if (Layer == 1)
+                {
+                    width *= source.Root.localScale.x;
+                }
                 window.localScale = Vector3.one*Mathf.Lerp(.8f, width, fly);
             }
         }

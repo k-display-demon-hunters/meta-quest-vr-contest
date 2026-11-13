@@ -6,24 +6,34 @@ namespace RealityLab
     public sealed class RealityCameraController : MonoBehaviour
     {
         private PassthroughCameraAccess _access;
+        private Transform _view;
         private void Awake()
         {
             _access = gameObject.AddComponent<PassthroughCameraAccess>();
         }
         public bool IsReady => _access.IsPlaying;
-        // Use a square covering 40% of the image's shorter dimension.
+
+        internal void Initialize(Camera view) => _view = view.transform;
+
+        // Keep the crop size, but lift its center to leave room for controls below.
         internal static Rect GetSelectionRegion(int width, int height)
         {
             float side = Mathf.Min(width, height) * 0.4f;
             Vector2 size = new Vector2(side / width, side / height);
-            return new Rect((Vector2.one - size) * 0.5f, size);
+            Vector2 center = new Vector2(0.5f, 0.6f);
+            return new Rect(center - size * 0.5f, size);
         }
 
         internal void GetSelectionGuide(out Pose pose, out Vector2 size)
         {
             Vector2Int resolution = _access.CurrentResolution;
             Rect region = GetSelectionRegion(resolution.x, resolution.y);
-            Pose cameraPose = _access.GetCameraPose();
+            // The shared rig uses XROrigin, not OVRCameraRig. Compose the lens pose
+            // with the rendered head pose so rig movement and Camera Offset are included.
+            Pose lensOffset = _access.Intrinsics.LensOffset;
+            Pose cameraPose = new Pose(
+                _view.position + _view.rotation * lensOffset.position,
+                _view.rotation * lensOffset.rotation);
             Vector3 forward = cameraPose.rotation * Vector3.forward;
             Ray lowerRay = _access.ViewportPointToRay(region.min, cameraPose);
             Ray upperRay = _access.ViewportPointToRay(region.max, cameraPose);

@@ -50,7 +50,7 @@ namespace RealityLab
                 passthrough.Initialize(camera);
                 passthrough.gameObject.SetActive(true);
                 CNNRealityLabManager reality = passthrough.gameObject.AddComponent<CNNRealityLabManager>();
-                reality.Initialize(inferAsync, ExitAsync);
+                reality.Initialize(camera, inferAsync, ExitAsync);
             }
             catch
             {

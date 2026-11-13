@@ -8,6 +8,8 @@ namespace RealityLab
         private void Awake() { _camera = gameObject.AddComponent<RealityCameraController>(); }
         public bool IsReady => _camera.IsReady;
 
+        internal void Initialize(Camera view) => _camera.Initialize(view);
+
         internal void GetSelectionGuide(out Pose pose, out Vector2 size)
         {
             _camera.GetSelectionGuide(out pose, out size);

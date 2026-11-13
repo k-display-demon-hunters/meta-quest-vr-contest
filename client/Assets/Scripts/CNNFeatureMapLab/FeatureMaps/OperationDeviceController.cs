@@ -31,7 +31,7 @@ namespace FeatureMapCorridor
         internal void SetAvailable(bool available, bool completed)
         {
             _tint = completed ? _visuals.Theme.Cyan :
-                available ? new Color32(156, 164, 170, 255) : new Color32(100, 106, 111, 255);
+                available ? _visuals.Theme.Amber : new Color32(113, 120, 123, 255);
             RefreshFace();
         }
 

@@ -14,8 +14,7 @@ namespace FeatureMapCorridor
         internal bool Visible => _camera.Visible;
         internal void Initialize()
         {
-            _visuals.InitializeRuntime();
-            _floor.Bind(_visuals);
+            _floor.Bind();
         }
 
         internal void Enable() => _camera.VisibilityChanged += OnVisibility;
@@ -26,14 +25,13 @@ namespace FeatureMapCorridor
         }
 
         private void OnVisibility(bool visible) => VisibilityChanged?.Invoke(visible);
-        internal void Tick(float now)
+        internal void Tick()
         {
             _camera.Tick();
             if (!Visible)
             {
                 return;
             }
-            _floor.DrawFlow(now);
             _visuals.UpdateBillboards(Camera);
         }
 

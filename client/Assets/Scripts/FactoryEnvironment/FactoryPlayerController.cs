@@ -14,6 +14,9 @@ namespace FactoryEnvironment
     {
         private const float FloorDescentSpeed = 3f;
         private const float FloorContactTolerance = 0.06f;
+#if UNITY_EDITOR
+        private const float SimulatorStepHeight = 0.2f;
+#endif
 
         [Serializable]
         private sealed class StageArrival
@@ -24,6 +27,7 @@ namespace FactoryEnvironment
 
         [SerializeField] private FactorySceneLoadController _sceneLoader;
         [SerializeField] private FactoryAreaController _areaController;
+        [SerializeField] private BoxCollider _featureMapRoomFloor;
         [SerializeField] private BoxCollider _modelDesignRoomFloor;
         [SerializeField] private MeshCollider _modelDesignWalkSurface;
         [SerializeField] private StageArrival[] _stageArrivals;
@@ -87,9 +91,47 @@ namespace FactoryEnvironment
             }
             else if (area == FactoryAreaId.FeatureMapRoom || area == FactoryAreaId.FeatureMapRoomToModelDesignRoom)
             {
-                // Follow the lower treads even when the shared rig has no thumbstick input.
-                Vector3 descent = Vector3.down * (FloorDescentSpeed * Time.deltaTime);
-                _bodyTransformer.constrainedBodyManipulator.MoveBody(descent);
+                FollowFeatureMapFloor();
+            }
+        }
+
+        private void FollowFeatureMapFloor()
+        {
+            Vector3 feet = _bodyTransformer.bodyPositionEvaluator.GetBodyGroundWorldPosition(Rig);
+            // The room and the stair corridor share the same structural floor height.
+            float floorY = _featureMapRoomFloor.bounds.max.y;
+            float probeY = Mathf.Max(feet.y, floorY) + FloorContactTolerance;
+#if UNITY_EDITOR
+            if (_usesEditorSimulator)
+            {
+                probeY = Mathf.Max(feet.y, floorY) + SimulatorStepHeight;
+            }
+#endif
+            Vector3 origin = new Vector3(feet.x, probeY, feet.z);
+            float range = probeY - floorY + FloorContactTolerance;
+            float supportY = Physics.Raycast(origin, Vector3.down, out RaycastHit hit, range,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
+                ? Mathf.Max(hit.point.y, floorY)
+                : floorY;
+
+#if UNITY_EDITOR
+            if (_usesEditorSimulator)
+            {
+                // WASD can move the tracked pose without going through the CharacterController.
+                Rig.Origin.transform.position += Vector3.up * (supportY - feet.y);
+                return;
+            }
+#endif
+            if (feet.y < floorY - FloorContactTolerance)
+            {
+                Rig.MoveCameraToWorldLocation(CameraTransform.position + Vector3.up * (supportY - feet.y));
+                return;
+            }
+
+            float descent = Mathf.Min(feet.y - supportY, FloorDescentSpeed * Time.deltaTime);
+            if (descent > 0f)
+            {
+                _bodyTransformer.constrainedBodyManipulator.MoveBody(Vector3.down * descent);
             }
         }
 

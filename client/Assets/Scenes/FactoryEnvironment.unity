@@ -12617,6 +12617,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7369ff3ff5b44e038f6edbf956c32a67, type: 3}
+  _transitionPrefab: {fileID: 102, guid: ed540ce0c7834e3aa1bd7e792ef41397, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactoryEnvironment.FactorySceneLoadController
   _areaController: {fileID: 980100011}

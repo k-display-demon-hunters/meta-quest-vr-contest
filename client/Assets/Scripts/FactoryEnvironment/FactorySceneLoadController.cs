@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Learning;
-using UI;
+using Cinematic;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -12,6 +12,7 @@ namespace FactoryEnvironment
 {
     public sealed class FactorySceneLoadController : MonoBehaviour
     {
+        [SerializeField] private CinematicTransitionController _transitionPrefab;
         [SerializeField] private FactoryAreaController _areaController;
         [FormerlySerializedAs("_navigationData")]
         [SerializeField] private FactoryLayoutData _layoutData;
@@ -56,7 +57,7 @@ namespace FactoryEnvironment
             if (area.Stage == LearningStageId.Exit)
             {
                 if (!_hasPendingArea)
-                    yield return LeaveWithFade();
+                    yield return LeaveWithTransition();
             }
             else
             {
@@ -96,14 +97,14 @@ namespace FactoryEnvironment
             StateChanged?.Invoke();
         }
 
-        private IEnumerator LeaveWithFade()
+        private IEnumerator LeaveWithTransition()
         {
             string sceneName = LearningStageCatalog.GetSceneName(LearningStageId.Exit);
             XROrigin rig = FindFirstObjectByType<XROrigin>();
             // Single activation unloads factory content; let Unity own that cleanup.
             _loadingSingle = true;
-            SceneTransitionController transition = SceneTransitionController.Begin(
-                rig.Camera, rig.transform, sceneName, null, .6f);
+            CinematicTransitionController transition = CinematicTransitionController.Begin(
+                _transitionPrefab, rig.Camera, rig.transform, sceneName);
             while (transition != null && transition.IsLoading) { yield return null; }
             if (transition != null && !transition.Succeeded)
             {

@@ -3,7 +3,7 @@
 ## 실행 경로
 
 - `Assets/Scenes/CNNArchiveOpening.unity`: 시작 씬. 시작 버튼을 누르면 재생하고 35초 후 기존 `FactoryEnvironment`로 진입한다. 기존 공장·튜토리얼·학습 순서는 유지한다.
-- `Assets/Scenes/CNNArchiveEnding.unity`: 종료 씬. `LearningStageCatalog`의 Exit에서 공용 SceneTransitionController로 로드한다. 공장 화면을 0.6초 암전하고 씬 활성화 후 0.6초 동안 암전을 해제한다. 암전 해제가 끝나면 기존 20초 본편을 시작하며, 재생 완료 또는 건너뛰기 후 완료 화면을 표시한다.
+- `Assets/Scenes/CNNArchiveEnding.unity`: 종료 씬. `LearningStageCatalog`의 Exit에서 공용 SceneTransitionController로 로드한다. 게이트 진입으로 기존 공간을 가리고 씬 활성화 후 도착 연출을 실행한다. 도착 연출이 끝나면 기존 20초 본편을 시작하며, 재생 완료 또는 건너뛰기 후 완료 화면을 표시한다.
 - Build Settings의 첫 씬을 `CNNArchiveOpening`으로 지정했다. 직접 열어 Play해도 기존 XRPlayerRig가 생성된다.
 
 ## 연출과 입력
@@ -35,16 +35,14 @@
 | `Interaction/CinematicInputController.cs` | XR 트리거·에디터 Space 입력과 햅틱 |
 | `Interaction/CinematicMovementController.cs` | 이동·잡기·레이·컨트롤러·태블릿 상태 저장 및 복원 |
 | `Interaction/CinematicControlsController.cs` | 시작·재시작 버튼, 길게 누르기 막대와 기존 실패 안내 표시 |
-| `Assets/Scripts/Core/SceneTransitionController.cs` | 영속 XR 리그 아래에서 선로딩·암전·씬 활성화·암전 해제를 실행. 기본 페이드는 0.25초, 공장→엔딩은 0.6초 |
+| `Assets/Scripts/Core/SceneTransitionController.cs` | 선로딩과 활성화 대기·씬 활성화·성공 상태만 담당 |
 | `Assets/Editor/CinematicSceneBuilder.cs` | 장면 생성과 컴포넌트 참조 연결 |
 
 `CinematicModelResult.cs`는 세션의 모델 층 라벨을 보관한다. `CNNModelDesignLabManager`가 학습 완료 시 INPUT → 사용자가 놓은 실제 층 → OUTPUT 라벨을 기록한다. Conv2D의 필터 수·커널 크기와 Dense의 노드 수도 표시한다. 새 오프닝에서 결과를 초기화한다. 엔딩만 단독 실행하여 결과가 없으면 `구조 예시 · 설계실 결과 없음`을 표시한다.
 
-### 오프닝 진단 로그
+### 전환 확인
 
-Quest Logcat에서 Unity 태그와 `[Opening]`을 검색한다. `run`은 같은 오프닝 실행의 상태·구간·영상·전환을 연결하고, `transition`은 공장 전환 시도를 구별한다. 정상 전환은 재생 시작 시 `LoadCheck → LoadStarted`, 준비 완료 시 `PreloadReady`, 종료 시 `FadeOutStarted → FadeOutCompleted → ActivationRequested → SceneLoaded → LoadCompleted → FadeInCompleted` 순서로 확인한다. 조기 건너뛰기에서는 `ActivationRequested` 이후에 `PreloadReady`가 기록될 수 있다. 로딩 중에는 진행률이 10%p 이상 변하거나 마지막 기록 이후 5초가 지나면 활성 씬, 카메라 활성 상태, 암전 알파를 함께 기록한다. 전환 로그는 오프닝 씬이 해제된 뒤에도 XR 리그에서 이어진다.
-
-오프닝에서 공장으로 실제 비동기 전환할 때 발견한 기존 오류도 수정했다. `FactoryEnvironmentManager`의 `SetActiveScene` 요청을 아직 로딩 중인 `OnEnable`에서 로딩 완료 후 `Start`로 옮겼다. 학습 단계·이동 코드는 변경하지 않았다. 음원 정리는 씬 루트 해제 순서에 따라 AudioSource가 먼저 파괴되는 경우를 처리한다.
+오프닝 시퀀스의 상태 로그는 유지한다. 전환은 OpeningEnding의 진입점과 Core 로더로 분리했으며 이전 FadeOut/Loading/FadeIn 진단 로그는 사용하지 않는다. 로딩 예외는 Core에서 기록하고, 실패 안내는 기존 호출자가 처리한다.
 
 ## 슬롯 편집
 
@@ -119,20 +117,14 @@ Editor D3D11 배치 Play에서 주요 시점의 실제 카메라 렌더를 저�
 
 후속 전체 검증: Unity 6000.3.24f1 D3D11, Mobile 품질의 에디터에서 기존 시작 처리 함수로 오프닝을 시작해 35초 전체를 자연 재생하고 FactoryEnvironment의 로드·암전 해제까지 확인했다. 25개 구간 시점과 시작·전환 후 화면을 캡처했다. 여섯 자막의 완성 문구가 화면 안에 보이고, 우체국·봉투 확대·픽셀·공장 구간에서 3D 물체에 가려지지 않는 것을 확인했다. 도장 동작 구간의 기존 무자막 시간은 유지한다. 공장 입구의 흰 점무늬, 자막 배경의 폰트 아틀라스 무늬, 처마의 보조 간판 가림을 보정한 뒤 처음부터 재검증했다. 최종 재생 로그에서 런타임 오류·예외는 없었으며 스크립트·셰이더 컴파일 오류도 발견하지 않았다. 원래 음성 01~06이 각각 약 0.5, 8.1, 17.05, 22.05, 26.25, 31.05초에 재생됨을 상태 로그로 확인했다. 음성·대사·일정 데이터와 엔딩 씬에는 변경이 없다. 임시 검증 스크립트와 메타 파일은 완료 후 삭제했다. Quest 실기기 스테레오·성능과 직접 청감은 이 에디터 검증에 포함하지 않는다.
 
-## 오프닝 중 공장 선로딩
+## 공용 게이트 전환
 
-시작 버튼을 누르면 CinematicSequenceManager가 Core의 SceneTransitionController.Prepare를 요청한다. Controller는 영속 XR 리그 아래에서 FactoryEnvironment를 Single 방식으로 비동기 로드하고 allowSceneActivation=false로 활성화를 보류한다. 시작 버튼 대기 중에는 로드하지 않는다. 준비 상태에서는 공장의 초기화와 정문 배치가 실행되지 않는다.
+OpeningEnding/CinematicTransitionController가 전환의 진입점이다. 공용 SceneTransition 프리팹을 영속 XR 리그 아래에 생성하고, Core/SceneTransitionController에 선로딩과 활성화를 요청한다. Core는 화면·카메라·OpeningEnding을 참조하지 않는다.
 
-자연 종료와 건너뛰기는 같은 Controller의 BeginTransition을 요청한다. 0.25초 암전 후 활성화를 허용하고, 로드 완료와 다음 프레임을 기다린 뒤 암전을 해제한다. 일찍 건너뛰면 같은 로딩 작업의 남은 시간을 기다린다. 준비 대기 중 다른 씬 로드·언로드를 요청하지 않는다. 활성화와 초기화 비용은 전환 시 남는다.
+Presentation/CinematicTransitionVisualController는 프리팹에 저장된 기본 도형의 청록색 사각 게이트 4개와 청회색 가림 구를 제어한다. 프리팹에는 두 전환 Controller와 시각 Controller, 도형과 공용 재질 참조를 보관한다. 0.4초 동안 게이트를 펼치고 1초까지 주변을 가린 뒤 씬을 활성화한다. 대기 중 프레임은 계속 흐르며, 완료 후 0.6초 동안 통로를 넓히며 다음 공간을 드러낸다. 카메라는 연출로 이동·회전하지 않는다. 가림 구는 머리 위치를 따라가고 안쪽 면을 모든 방향에서 표시한다. 재질·셰이더는 Common 원본을 공유한다.
 
-CinematicSequenceManager는 요청 시점과 기존 실패 UI를 담당하고, Controller는 비동기 작업·암전·활성화·결과 상태를 소유한다. 실패한 전환 객체는 제거하며 사용자의 재시도에서 새 작업을 시작한다. 엔딩의 Begin은 Prepare와 BeginTransition을 연달아 호출한다. 공장 초기화 코드와 씬 배치는 변경하지 않았다.
+오프닝 시작 버튼에서 공장 선로딩을 시작하고, 종료·건너뛰기에서 준비한 전환을 실행한다. 공장 후문과 엔딩 재시작도 같은 진입점을 사용한다. 실패하면 도착 연출로 원래 씬을 다시 보여 주고 기존 호출자가 실패 안내를 처리한다. 전환 성공 시 인스턴스와 전용 가림 재질을 정리한다.
 
-이 변경은 코드와 참조를 정적으로 검토했다. Unity 실행·컴파일·테스트·빌드와 Quest 성능 검증은 수행하지 않았다.
+엔딩은 진입 전환이 완료될 때까지 초기화 상태로 기다린 뒤 기존 20초 본편과 음향·입력을 시작한다. 엔딩 내부 애니메이션·대사·일정은 변경하지 않았다. 씬 단독 실행은 진입 전환 없이 기존 본편을 시작한다.
 
-## 공장 → 엔딩 진입 전환
-
-FactorySceneLoadController는 후문 구역 진입 시 Core의 SceneTransitionController.Begin에 공용 XR 카메라·리그와 페이드 길이 0.6초를 전달한다. 씬 로딩·활성화와 암전 해제는 영속 리그 아래의 Controller가 담당한다. Single 활성화 중 공장과 학습 씬은 Unity가 정리한다. 로드 실패 시 공장 로더가 기존 LoadFailed를 발행하며 자동 재시도하지 않는다.
-
-CinematicSequenceManager는 엔딩 초기화 후 리그의 진입 전환이 끝날 때까지 Initializing 상태로 기다린다. 준비 중에는 본편 표시를 숨기고 배경음·내레이션·타임라인·건너뛰기 입력을 시작하지 않는다. 암전 해제가 끝나면 건너뛰기 입력을 초기화하고 기존 본편을 0초부터 시작한다. CinematicAudioController는 엔딩 배경음 연결과 재생 시작을 분리한다. 엔딩을 단독 실행하여 진입 전환이 없는 경우에는 기존처럼 바로 본편을 시작한다.
-
-엔딩 내부 애니메이션·장면 구성·음성·대사·20초 일정은 변경하지 않았다. 숫자·픽셀 도입 애니메이션은 추가하지 않았다. 이번 변경은 코드와 호출 흐름을 정적으로 검토했으며 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
+이번 변경은 정적 검토만 수행했다. Unity 실행·컴파일·테스트·빌드와 Quest 양안 표시·실기기 성능 검증은 수행하지 않았다.

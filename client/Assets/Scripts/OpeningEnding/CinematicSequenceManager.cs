@@ -1,12 +1,13 @@
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UI;
 
 namespace Cinematic
 {
     public sealed class CinematicSequenceManager : MonoBehaviour
     {
+        [SerializeField] private CinematicTransitionController _transitionPrefab;
+
         private enum State
         {
             Initializing,
@@ -25,7 +26,7 @@ namespace Cinematic
         [SerializeField] private string _destination = "FactoryEnvironment";
 
         private XROrigin _rig;
-        private SceneTransitionController _transition;
+        private CinematicTransitionController _transition;
         private State _state;
 
         private void OnEnable()
@@ -58,7 +59,7 @@ namespace Cinematic
             }
 
             // Direct scene play has no incoming transition. Factory entry waits for its fade-in.
-            SceneTransitionController arrival = _rig.GetComponentInChildren<SceneTransitionController>();
+            CinematicTransitionController arrival = _rig.GetComponentInChildren<CinematicTransitionController>();
             while (arrival != null && arrival.IsLoading) { yield return null; }
             _interaction.BeginEnding();
             SetState(State.Playing);
@@ -83,7 +84,7 @@ namespace Cinematic
                 SetState(State.Playing);
                 _interaction.BeginOpening();
                 _presentation.Begin();
-                _transition = SceneTransitionController.Prepare(_rig.Camera, _rig.transform, _destination, GetInstanceID());
+                _transition = CinematicTransitionController.Prepare(_transitionPrefab, _rig.Camera, _rig.transform, _destination);
             }
             else if (_state == State.Completed || _state == State.TransitionFailed)
             {
@@ -126,13 +127,13 @@ namespace Cinematic
             yield return null;
             if (_transition == null)
             {
-                _transition = SceneTransitionController.Begin(_rig.Camera, _rig.transform, _destination, _ending ? (int?)null : GetInstanceID());
+                _transition = CinematicTransitionController.Begin(_transitionPrefab, _rig.Camera, _rig.transform, _destination);
             }
             else
             {
                 _transition.BeginTransition();
             }
-            SceneTransitionController transition = _transition;
+            CinematicTransitionController transition = _transition;
             while (transition != null && transition.IsLoading) { yield return null; }
             if (transition != null && !transition.Succeeded)
             {

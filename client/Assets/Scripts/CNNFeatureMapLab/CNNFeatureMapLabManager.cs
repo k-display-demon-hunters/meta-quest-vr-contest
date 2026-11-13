@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using FactoryEnvironment;
 using Learning;
 using UnityEngine;
 
@@ -24,7 +23,6 @@ namespace FeatureMapCorridor
         private bool SkipsRecap => _state.ActiveRound.Layer == 1 && _state.ActiveRound.Map == 0;
         private MapId RequiredRound => RequiredRounds[_state.RequiredRoundIndex];
         private int _navigationFrame = -1;
-        private bool _presentationHidden;
         public LearningStageId StageId => LearningStageId.FeatureMap;
         public float Progress => _state.Progress;
 
@@ -64,7 +62,7 @@ namespace FeatureMapCorridor
         {
             float now = Time.unscaledTime;
             _environment.Tick();
-            if (!_environment.Visible || _presentationHidden)
+            if (!_environment.Visible)
             {
                 return;
             }
@@ -78,7 +76,6 @@ namespace FeatureMapCorridor
 
         private void VisibilityChanged(bool visible)
         {
-            visible &= !_presentationHidden;
             _featureMaps.SetVisible(visible);
             _lessonUI.SetVisible(visible && !AwaitingOutput);
         }
@@ -292,23 +289,6 @@ namespace FeatureMapCorridor
             RenderLesson();
             SetProgress(1);
             ExitAvailabilityChanged?.Invoke(true);
-            StartCoroutine(HideCompletedPresentation());
-        }
-
-        private IEnumerator HideCompletedPresentation()
-        {
-            var shutters = FindFirstObjectByType<FactoryShuttersManager>();
-            if (shutters != null)
-            {
-                yield return shutters.WaitForExitOpening(StageId);
-            }
-            yield return new WaitForSecondsRealtime(5f);
-
-            _presentationHidden = true;
-            VisibilityChanged(false);
-            _featureMaps.HidePresentation();
-            _lessonUI.HidePresentation();
-            _environment.HideLessonLabels();
         }
 
         private void Next() => Navigate(RoundRequest.Next);

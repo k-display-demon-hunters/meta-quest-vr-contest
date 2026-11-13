@@ -4,6 +4,8 @@
 
 현재 구역에 따른 학습 단계와 태블릿 이동은 FactoryEnvironmentManager가 조율한다. 셔터 통행 조건은 FactoryShuttersManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
 
+플레이어 입력 없이 배경 연출을 담당하는 `FactoryLightFaultController`, `FactoryFanController`, `LoungeClockController`는 `Scripts/FactoryEnvironment/Decorations/`에 둔다. 네임스페이스는 `FactoryEnvironment`이며 각 Controller가 담당 장식의 동작을 갱신한다.
+
 ## 공장 외형 보강
 
 `FactoryEnvironment`에서 기존 공장 건축과 설비의 표시 메시, 재질, 조명을 보강했다. 콘크리트 벽은 거푸집 이음새와 타이홀, 실내 바닥은 약 1.8m 간격의 줄눈과 마모가 보인다. 기존 건축 메시 28개의 UV와 탄젠트를 재배치해 면 크기가 달라도 표면 결의 실제 크기가 일관된다. 실내 바닥 표시 9개는 `SealedConcreteFloor` 재질을 사용한다.
@@ -18,7 +20,7 @@
 
 튜토리얼실과 ROOM #2에는 중앙 천장등 하나와 외곽 선형 등기구 네 개가 있다. 튜토리얼은 외곽등 세 개가 깨져 있으며 중앙등과 남은 외곽등의 세기를 낮췄다. ROOM #2는 대각선의 두 개가 깨져 있으며 중앙등과 외곽등 두 개로 바닥을 비춘다. ROOM #1-1은 검은 천장등 네 개를 사용한다. ROOM #1-2는 검은 두 줄 등기구 여섯 개를 사용한다. 서로 다른 행·열의 두 개는 형광관이 깨져 있으며 나머지 네 개는 각 형광관에 연결된 베이크 면광원을 사용한다. 깨진 등기구 일곱 개 아래에는 유리와 등기구 테두리 조각이 흩어져 있다. 휴게실에는 검은 천장등 두 개를 두고 스폿 조명의 세기와 범위를 낮췄다. ROOM #3은 바깥쪽의 검은 두 줄 등기구 네 개를 사용하며 각 형광관에 연결된 베이크 면광원을 사용한다. 책상 램프 일곱 개에는 소형 작업광을 연결한다. 현재 라이트맵과 반사 프로브는 이전 배치의 베이크 결과다.
 
-정문 캐노피 아래 벽등 두 개의 점광원과 갓 밝기를 각각 절반으로 설정했다. [FactoryLightFaultController](../client/Assets/Scripts/FactoryEnvironment/FactoryLightFaultController.cs)는 점광원과 확산판을 약 0.42초간 함께 깜빡이고 해당 위치에서 합선 효과음을 재생한다. 정문 벽등은 각각 5초 간격으로 2.5초 차이를 두고 깜빡이며 스파크 입자 40개와 20개를 연달아 방출한다. 연결 복도등의 주기는 7초다. ROOM #1에서 ROOM #2로 가는 복도와 ROOM #3에서 후문으로 가는 복도의 등기구는 줄 두 개로 천장에 연결한다. ROOM #1에서 ROOM #2로 가는 복도의 등기구에서 스파크가 두 번 튀며 인접 벽과 천장이 잠깐 밝아진다. 후문 복도는 꺾이기 전의 등기구 하나를 사용한다.
+정문 캐노피 아래 벽등 두 개의 점광원과 갓 밝기를 각각 절반으로 설정했다. [FactoryLightFaultController](../client/Assets/Scripts/FactoryEnvironment/Decorations/FactoryLightFaultController.cs)는 점광원과 확산판을 약 0.42초간 함께 깜빡이고 해당 위치에서 합선 효과음을 재생한다. 정문 벽등은 각각 5초 간격으로 2.5초 차이를 두고 깜빡이며 스파크 입자 40개와 20개를 연달아 방출한다. 연결 복도등의 주기는 7초다. ROOM #1에서 ROOM #2로 가는 복도와 ROOM #3에서 후문으로 가는 복도의 등기구는 줄 두 개로 천장에 연결한다. ROOM #1에서 ROOM #2로 가는 복도의 등기구에서 스파크가 두 번 튀며 인접 벽과 천장이 잠깐 밝아진다. 후문 복도는 꺾이기 전의 등기구 하나를 사용한다.
 
 ### 연구복과 가까이 보는 가구의 형태
 

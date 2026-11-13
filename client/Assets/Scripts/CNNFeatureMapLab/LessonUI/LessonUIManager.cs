@@ -59,11 +59,6 @@ namespace FeatureMapCorridor
             _visuals.UpdateBillboards(_camera);
         }
 
-        internal void HidePresentation()
-        {
-            _hints.Hide();
-            _hints.SetRecapVisibility(0);
-        }
         internal void Show(LessonContext context)
         {
             _hints.Hide();

@@ -158,15 +158,6 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void HidePresentation()
-        {
-            _inputRoot.gameObject.SetActive(false);
-            foreach (Transform root in _stageRoots)
-            {
-                root.gameObject.SetActive(false);
-            }
-        }
-
         internal void ShowRound(RoundCalculationResult data, LessonStep step)
         {
             _input.MarkChannels(data.Layer == 1 && step != LessonStep.FilterIntro);

@@ -2,10 +2,8 @@ namespace CNNConvolution
 {
     internal static class ChannelSumContent
     {
-        public static string DetailedTitle(int channel) => $"{"RGB"[channel]} · 아홉 칸 계산 완료";
-        public static string DetailedExplanation() => "중간 계산의 아홉 곱을 더하면 R 채널의 합 하나가 돼요.";
-        public static string CompactTitle(int channel, int row, int column) => $"{"RGB"[channel]} · 출력 {row + 1}행 {column + 1}열";
-        public static string CompactExplanation() => "필터 위치와 가중치는 그대로예요. 현재 채널의 아홉 곱을 더해요.";
+        public static string Detailed(int channel) => $"아홉 곱을 모두 더하면 {"RGB"[channel]} 층의 합 하나가 돼요.";
+        public static string Compact(int channel) => $"{"RGB"[channel]} 층도 같은 자리끼리 곱하고 모두 더해요.";
         public static string Equation(ConvolutionCalculation calculation, int channel, bool productsOnly)
         {
             string color = channel == 0 ? "FF666B" : channel == 1 ? "69EDA6" : "61ADFF";

@@ -9,6 +9,7 @@ namespace CNNConvolution
         private readonly WorkbenchKernelController _kernel;
         private readonly EquationDisplayController _equations;
         private readonly LessonUIController _ui;
+        private readonly LessonNarrationController _narration;
         private readonly LessonPlayback _playback;
         private bool _manual;
         private bool _released;
@@ -16,12 +17,13 @@ namespace CNNConvolution
         private Pose _manualStart;
         private Pose _manualTarget;
         public WindowMovementController(InputGridController input, WorkbenchKernelController kernel,
-            EquationDisplayController equations, LessonUIController ui, LessonPlayback playback)
+            EquationDisplayController equations, LessonUIController ui, LessonNarrationController narration, LessonPlayback playback)
         {
             _input = input;
             _kernel = kernel;
             _equations = equations;
             _ui = ui;
+            _narration = narration;
             _playback = playback;
         }
 
@@ -36,9 +38,8 @@ namespace CNNConvolution
             _kernel.ShowChannel(0);
             _input.ShowWindow(row, column);
             _equations.Clear();
-            _ui.Title = "같은 필터를 오른쪽 한 칸 옮겨 보세요";
-            _ui.Explanation = "가중치는 바꾸지 않아요. RGB 세 층의 같은 위치가 함께 이동해요.";
-            _ui.Instruction = "Grip으로 손잡이를 잡고 오른쪽 표시까지 옮긴 뒤 놓으세요.";
+            _ui.Caption = "필터 손잡이를 잡고 오른쪽 표시까지 한 칸 옮겨 놓으세요.";
+            _narration.Play(NarrationCue.MoveFilter);
             _ui.ShowSkip(true, "한 칸 자동 이동");
             _kernel.Released += HandleReleased;
             _ui.SkipRequested += HandleAssist;
@@ -57,13 +58,13 @@ namespace CNNConvolution
                         _released = false;
                         _kernel.RestoreParent();
                         _kernel.SetPose(_manualStart);
-                        _ui.Instruction = "오른쪽 표시까지 옮겨 주세요. ‘한 칸 자동 이동’도 사용할 수 있어요.";
+                        _ui.Caption = "오른쪽 표시까지 옮겨 주세요. ‘한 칸 자동 이동’도 쓸 수 있어요.";
                     }
                 }
                 yield return null;
             }
             Cancel();
-            yield return Run(row, column, false);
+            yield return Run(row, column);
         }
 
         public void SetPaused(bool paused)
@@ -96,15 +97,9 @@ namespace CNNConvolution
             _ui.ShowSkip(false);
         }
 
-        public IEnumerator Run(int row, int column, bool showGuidance)
+        public IEnumerator Run(int row, int column)
         {
-            _ui.ResetChannelProgress();
             _equations.Clear();
-            if (showGuidance)
-            {
-                _ui.Title = WindowMovementContent.Title(row, column);
-                _ui.Explanation = WindowMovementContent.Explanation();
-            }
             Pose start = _kernel.Pose;
             Pose target = _input.WindowPose(row, column);
             float duration = column == 0 && row > 0 ? 0.65f : 0.30f;

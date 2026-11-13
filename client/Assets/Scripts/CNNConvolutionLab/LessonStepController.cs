@@ -7,14 +7,16 @@ namespace CNNConvolution
     internal sealed class LessonStepController
     {
         private readonly LessonUIController _ui;
+        private readonly LessonNarrationController _narration;
         private readonly LessonPlayback _playback;
         private bool _waiting;
         private bool _advance;
         private bool _replay;
 
-        public LessonStepController(LessonUIController ui, LessonPlayback playback)
+        public LessonStepController(LessonUIController ui, LessonNarrationController narration, LessonPlayback playback)
         {
             _ui = ui;
+            _narration = narration;
             _playback = playback;
         }
 
@@ -29,9 +31,9 @@ namespace CNNConvolution
                 _waiting = false;
                 _ui.HideNext();
                 _ui.ShowReplay(false);
-                _ui.Instruction = "계산을 살펴보세요. 연출이 끝나면 다음 단계나 다시 보기를 선택할 수 있어요.";
                 yield return presentation();
-                _ui.Instruction = "확인했으면 다음으로, 놓쳤으면 ‘다시 보기’를 누르세요.";
+                _ui.Caption = "‘다음’으로 계속하거나 ‘다시 보기’를 눌러 주세요.";
+                _narration.Play(NarrationCue.Checkpoint);
                 _ui.ShowNext(nextLabel);
                 _ui.ShowReplay(true);
                 // Subscribe before playback, but accept input only at this checkpoint.

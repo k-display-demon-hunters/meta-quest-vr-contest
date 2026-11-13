@@ -7,33 +7,39 @@ namespace CNNConvolution
     internal sealed class ResultSummaryController
     {
         private readonly LessonUIController _ui;
+        private readonly LessonNarrationController _narration;
         private readonly LessonPlayback _playback;
         private bool _confirmed;
         private bool _ready;
 
         public event Action FinishRequested;
-        public event Action Confirmed;
 
-        public ResultSummaryController(LessonUIController ui, LessonPlayback playback)
+        public ResultSummaryController(LessonUIController ui, LessonNarrationController narration, LessonPlayback playback)
         {
             _ui = ui;
+            _narration = narration;
             _playback = playback;
         }
 
-        public IEnumerator Run(int[] outputs, int[] firstSums)
+        public IEnumerator WaitForConfirmation()
         {
             _confirmed = false;
             _ready = false;
             _ui.NextRequested += HandleConfirm;
             _ui.FinishRequested += HandleFinish;
-            _ui.Title = "아홉 위치의 계산이 끝났어요";
-            _ui.Explanation = "입력판 위를 이동하며 출력값 9개를 만들었어요.";
+            _ui.Caption = "아홉 자리의 계산이 끝났어요. ‘결과 확인’을 눌러 주세요.";
+            _narration.Play(NarrationCue.AllDone);
             _ui.ShowNext("결과 확인");
             yield return new WaitUntil(() => _confirmed && !_playback.IsPaused);
             _ui.NextRequested -= HandleConfirm;
             _ui.HideNext();
-            Confirmed?.Invoke();
-            _ui.ShowOutputSummary(outputs, firstSums);
+        }
+
+        public void ShowSummary()
+        {
+            _ui.Caption = "5×5 입력에서 3×3 출력이 완성됐어요. ‘체험 마치기’를 눌러 주세요.";
+            _narration.Play(NarrationCue.Summary);
+            _ui.ShowFinish();
             _ready = true;
         }
 
@@ -56,6 +62,8 @@ namespace CNNConvolution
             if (!_ready) { return; }
             _ready = false;
             _ui.DisableFinish();
+            _ui.Caption = "체험을 마쳤어요. 다음 방으로 이동할 수 있어요.";
+            _narration.Play(NarrationCue.Finished);
             FinishRequested?.Invoke();
         }
     }

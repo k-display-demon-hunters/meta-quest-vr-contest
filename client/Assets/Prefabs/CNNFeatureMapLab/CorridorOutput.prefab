@@ -18372,11 +18372,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.85
+      value: 2.66
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.85
+      value: 2.66
       objectReference: {fileID: 0}
     - target: {fileID: 1001, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_LocalPosition.z
@@ -18407,20 +18407,12 @@ PrefabInstance:
       value: 판정 시작
       objectReference: {fileID: 0}
     - target: {fileID: 1013, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
+      propertyPath: m_FontData.m_Font
+      value:
+      objectReference: {fileID: 12800000, guid: 021114b488884867ac97d95c9c3d1dee, type: 3}
+    - target: {fileID: 1013, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
       propertyPath: m_FontData.m_FontSize
       value: 44
-      objectReference: {fileID: 0}
-    - target: {fileID: 1006, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: _textColor.r
-      value: 0.04
-      objectReference: {fileID: 0}
-    - target: {fileID: 1006, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: _textColor.g
-      value: 0.08
-      objectReference: {fileID: 0}
-    - target: {fileID: 1006, guid: 35cb45859643461c859bf7f63241ecf1, type: 3}
-      propertyPath: _textColor.b
-      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

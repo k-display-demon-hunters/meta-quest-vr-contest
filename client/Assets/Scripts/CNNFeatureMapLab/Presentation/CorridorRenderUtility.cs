@@ -53,11 +53,17 @@ namespace FeatureMapCorridor
                 {
                     continue;
                 }
-                Vector3 forward = billboard.position - camera.transform.position;
-                if (forward.sqrMagnitude > .0001f)
-                billboard.rotation = Quaternion.LookRotation(forward, Vector3.up);
+                FaceCamera(billboard, camera);
             }
         }
 
+        internal static void FaceCamera(Transform target, Camera camera)
+        {
+            Vector3 forward = target.position - camera.transform.position;
+            if (forward.sqrMagnitude > .0001f)
+            {
+                target.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            }
+        }
     }
 }

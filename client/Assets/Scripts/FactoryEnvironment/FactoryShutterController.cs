@@ -25,6 +25,7 @@ namespace FactoryEnvironment
         private Vector3 _hologramPanelScale;
 
         public FactoryShutterId Id => _id;
+        internal bool IsFullyOpen => _amount == 1f;
 
         private void Awake()
         {

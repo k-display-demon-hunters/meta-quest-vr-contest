@@ -106,6 +106,9 @@ namespace FeatureMapCorridor
 
         internal Vector3 Tin(int digit) => _root.InverseTransformPoint(_tankAnchors[digit-1].TransformPoint(Vector3.up*2.5f));
         internal Vector3 AnswerDestination => _root.InverseTransformPoint(_answerAnchors[_winner].position);
+        internal Vector3 GetLessonPanelPosition(bool awaitingStart) => awaitingStart
+            ? _startButton.transform.position + _root.TransformVector(Vector3.up * .65f)
+            : _tankAnchors[1].TransformPoint(Vector3.up * 6.55f);
         private Vector3 StagingPosition => _root.InverseTransformPoint(_staging.position);
         internal void SetData(FeatureMapSnapshot snapshot)
         {

@@ -146,5 +146,8 @@ namespace FactoryEnvironment
 
         private FactoryShutterController GetShutter(FactoryShutterId id) =>
             Array.Find(_shutters, shutter => shutter.Id == id);
+
+        internal bool IsExitFullyOpen(LearningStageId stage) =>
+            GetShutter(_layoutData.GetStageSpace(stage).ExitShutter).IsFullyOpen;
     }
 }

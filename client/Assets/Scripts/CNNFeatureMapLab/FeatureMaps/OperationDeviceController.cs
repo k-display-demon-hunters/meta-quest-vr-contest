@@ -20,7 +20,11 @@ namespace FeatureMapCorridor
         private Color _tint;
 
         internal Transform CalculationAnchor => _calculationAnchor;
-        internal Vector3 Position => _hit.transform.position;
+        internal Vector3 FilterSplitOrigin => _hit.transform.TransformPoint(0, 0, -.25f);
+        internal void SetVisible(bool visible) => _hit.gameObject.SetActive(visible);
+        internal Vector3 GetLessonPanelPosition(bool showingCalculation) => showingCalculation
+            ? _calculationAnchor.TransformPoint(Vector3.up * 1.65f)
+            : _hit.transform.TransformPoint(Vector3.up * 1.5f);
 
         internal void Bind(CorridorRenderUtility visuals, Action selected)
         {

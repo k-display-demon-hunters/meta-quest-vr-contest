@@ -46,7 +46,7 @@ namespace FeatureMapCorridor
             FeatureMapPanelController source = _display.Map(1, channel);
             source.Highlight(data.InputIndex / snapshot.Size(1), data.InputIndex % snapshot.Size(1),
                 data.InputIndex / snapshot.Size(1) + 1, data.InputIndex % snapshot.Size(1) + 1, _visuals.Theme.Amber);
-            _detail.Badge($"계산 보기 · 채널 {channel + 1}", _visuals.Theme.Ink);
+            _detail.Badge($"채널 {channel + 1} · 16×16 → 8×8", _visuals.Theme.Ink);
             _detail.ClearHighlight();
             float scale = snapshot.Scale(1, channel);
             if (step == LessonStep.PoolingWindow || step == LessonStep.PoolingApply)
@@ -77,7 +77,7 @@ namespace FeatureMapCorridor
                 panel.ClearHighlight();
                 panel.Frame(i == channel ? _visuals.Theme.Amber : _visuals.Theme.Cyan);
                 bool showRepresentative = i == channel && (step is LessonStep.PoolingMaximum or LessonStep.PoolingApply);
-                int shown = showRepresentative || (i != channel && !_applying && revealed.Contains(new MapId(2, i)))
+                int shown = showRepresentative || (i != channel && revealed.Contains(new MapId(2, i)))
                     ? int.MaxValue : 0;
                 int only = showRepresentative ? data.OutputIndex : -1;
                 panel.UpdateMap(snapshot.Values(2, i), snapshot.Scale(2, i), shown, only);
@@ -113,10 +113,7 @@ namespace FeatureMapCorridor
             int shown = Mathf.FloorToInt(Mathf.Clamp01((now - _applyStarted) / 2f) * count);
             if (shown == _shown) return;
             _shown = shown;
-            for (int channel = 0; channel < 2; channel++)
-            {
-                _display.DrawResult(2, channel, shown, always: channel == _transferChannel ? _transferCell : -1);
-            }
+            _display.DrawResult(2, _transferChannel, shown, always: _transferCell);
             _applying = shown < count;
         }
 

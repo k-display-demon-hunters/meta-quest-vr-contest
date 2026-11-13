@@ -18,13 +18,13 @@ namespace FeatureMapCorridor
         private OperationDeviceController[][] _devices;
         private Camera _camera;
         private bool _visible;
-        private int _availableLayer;
+        private MapId _availableRound;
+        private bool _additionalFiltersVisible;
         private IReadOnlyCollection<MapId> _revealed;
         internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
         private bool _roundActive;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
-        internal Vector3 InputPictureHint => _display.InputPictureHint;
         internal void ShowInputChannels(bool expanded) => _display.ShowInputChannels(expanded);
         internal event Action<MapId> OperationSelected;
         internal event Action OutputStarted;
@@ -34,12 +34,48 @@ namespace FeatureMapCorridor
         internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
-        internal Vector3 WaitingHint(int layer, int map) =>
-            _display.Map(layer, map).Root.parent.InverseTransformPoint(_devices[layer - 1][map].Position) + Vector3.up * .35f;
+        internal Vector3 AdditionalFiltersPanelPosition =>
+            (_secondFilters[0].GetLessonPanelPosition(true) + _secondFilters[1].GetLessonPanelPosition(true)) * .5f;
 
-        internal void ShowOperations(int layer, IReadOnlyCollection<MapId> revealed)
+        internal void SetAdditionalFiltersVisible(bool visible)
         {
-            _availableLayer = layer;
+            _additionalFiltersVisible = visible;
+            for (int map = 2; map < _secondFilters.Length; map++)
+            {
+                _secondFilters[map].SetVisible(visible);
+                _display.SetSecondConvResultVisible(map, visible);
+            }
+            UpdateDevices();
+        }
+
+        internal Vector3 GetLessonPanelPosition(LessonPhase phase, int layer, int map, bool showingOutputDetails)
+        {
+            if (layer == 0)
+            {
+                return _display.InputLessonPanelPosition;
+            }
+            if (layer == 4)
+            {
+                Vector3 position = phase == LessonPhase.Round && showingOutputDetails
+                    ? _round.FilterLessonPanelPosition
+                    : _display.GetOutputLessonPanelPosition(phase == LessonPhase.AwaitRound);
+                if (phase == LessonPhase.AwaitRound)
+                {
+                    position.y = AdditionalFiltersPanelPosition.y;
+                }
+                return position;
+            }
+
+            if (phase == LessonPhase.Recap && layer == 1)
+            {
+                return _firstFilters[map].GetLessonPanelPosition(showingCalculation: true);
+            }
+            return _devices[layer - 1][map].GetLessonPanelPosition(phase == LessonPhase.Round);
+        }
+
+        internal void ShowOperations(MapId round, IReadOnlyCollection<MapId> revealed)
+        {
+            _availableRound = round;
             _revealed = revealed;
             UpdateOutputStart();
             UpdateDevices();
@@ -51,7 +87,9 @@ namespace FeatureMapCorridor
             for (int map = 0; map < _devices[layer - 1].Length; map++)
             {
                 bool completed = _revealed.Contains(new MapId(layer, map));
-                bool available = layer == _availableLayer || (_availableLayer != 0 && completed);
+                bool current = layer == _availableRound.Layer && (layer != 2 || map == _availableRound.Map);
+                bool available = (layer != 3 || map < 2 || _additionalFiltersVisible) &&
+                    (current || (layer <= _availableRound.Layer && completed));
                 OperationDeviceController device = _devices[layer - 1][map];
                 device.SetAvailable(available, completed);
                 device.SetInputActive(_visible && available);
@@ -131,7 +169,7 @@ namespace FeatureMapCorridor
             RulesFor(round, outputDetails).Evaluate(step, request, _round.PresentationPending);
 
         private void UpdateOutputStart() =>
-            _display.SetOutputStartAvailable(_visible && _availableLayer == 4 && !RevealingOutputInputs);
+            _display.SetOutputStartAvailable(_visible && _availableRound.Layer == 4 && !RevealingOutputInputs);
 
         private void SetInputActive(bool active)
         {
@@ -157,6 +195,11 @@ namespace FeatureMapCorridor
 
         internal void Tick(float now)
         {
+            if (_availableRound.Layer == 1)
+            {
+                _display.FollowInputChannels(_firstFilters[_availableRound.Map].CalculationAnchor,
+                    _camera.transform.position);
+            }
             _display.Tick(now);
             UpdateOutputStart();
             _visuals.UpdateBillboards(_camera);
@@ -165,7 +208,7 @@ namespace FeatureMapCorridor
             {
                 return;
             }
-            _round.Tick(now);
+            _round.Tick(now, _camera);
         }
 
         internal void ShowSnapshot(FeatureMapSnapshot snapshot, IReadOnlyCollection<MapId> revealed)
@@ -177,6 +220,7 @@ namespace FeatureMapCorridor
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
         internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
         internal void Highlight(int layer) => _display.HighlightLayer(layer);
+        internal void HidePresentation() => _display.HidePresentation();
         internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
             LessonStep step, IReadOnlyCollection<MapId> revealed) =>
             _pooling.Show(snapshot, channel, data, step, revealed, _poolingDevices[channel].CalculationAnchor);
@@ -184,11 +228,20 @@ namespace FeatureMapCorridor
         internal void PrepareRound(RoundCalculationResult data)
         {
             _roundActive = true;
-            _round.Prepare(data, data.IsOutput ? null : _devices[data.Layer - 1][data.Map].CalculationAnchor);
+            if (data.IsOutput)
+            {
+                _round.Prepare(data, null);
+            }
+            else
+            {
+                OperationDeviceController device = _devices[data.Layer - 1][data.Map];
+                _round.Prepare(data, device.CalculationAnchor, device.FilterSplitOrigin);
+            }
             UpdateFilterInput();
         }
 
-        internal void ShowRoundStep(LessonStep step, bool filterInput) => _round.Show(step, filterInput);
+        internal void ShowRoundStep(LessonStep step, bool animateFilterOpening) =>
+            _round.Show(step, animateFilterOpening);
 
         internal void FinishRoundStep(LessonStep step) => _round.FinishStep(step);
 

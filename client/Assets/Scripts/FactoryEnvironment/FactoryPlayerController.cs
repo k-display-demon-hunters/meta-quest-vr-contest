@@ -7,6 +7,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+#if UNITY_EDITOR
+using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
+#endif
 
 namespace FactoryEnvironment
 {
@@ -32,6 +35,7 @@ namespace FactoryEnvironment
         private XRBaseInteractor[] _interactors;
 #if UNITY_EDITOR
         private bool _usesEditorSimulator;
+        private XROriginMovement _editorMovement;
 #endif
 
         public XROrigin Rig { get; private set; }
@@ -54,6 +58,12 @@ namespace FactoryEnvironment
         {
             _sceneLoader.ContentUnloading -= HandleContentUnloading;
             _areaController.AreaChanged -= HandleAreaChanged;
+#if UNITY_EDITOR
+            if (_usesEditorSimulator)
+            {
+                _editorMovement.forceUnconstrained = false;
+            }
+#endif
         }
 
         private void Start()
@@ -64,12 +74,16 @@ namespace FactoryEnvironment
             // Keep the editor simulator at eye level without changing real headset tracking.
             _usesEditorSimulator = !UnityEngine.XR.XRSettings.isDeviceActive
                 && FindFirstObjectByType<XR.XREditorSimulator>() != null;
-            if (_usesEditorSimulator && height < 0.5f)
+            if (_usesEditorSimulator)
             {
-                Vector3 offset = Rig.CameraFloorOffsetObject.transform.localPosition;
-                offset.y += Rig.CameraYOffset - height;
-                Rig.CameraFloorOffsetObject.transform.localPosition = offset;
-                height = Rig.CameraYOffset;
+                _editorMovement = Rig.GetComponent<ContinuousMoveProvider>().transformation;
+                if (height < 0.5f)
+                {
+                    Vector3 offset = Rig.CameraFloorOffsetObject.transform.localPosition;
+                    offset.y += Rig.CameraYOffset - height;
+                    Rig.CameraFloorOffsetObject.transform.localPosition = offset;
+                    height = Rig.CameraYOffset;
+                }
             }
 #endif
             Rig.MatchOriginUpCameraForward(Vector3.up, entrance.forward);
@@ -81,6 +95,18 @@ namespace FactoryEnvironment
         private void Update()
         {
             FactoryAreaId area = _areaController.CurrentArea.Id;
+#if UNITY_EDITOR
+            if (_usesEditorSimulator)
+            {
+                bool freeMovement = area == FactoryAreaId.FeatureMapRoom;
+                _editorMovement.forceUnconstrained = freeMovement;
+                if (freeMovement)
+                {
+                    // Keep the height set with Q/E while inspecting the platforms.
+                    return;
+                }
+            }
+#endif
             if (area == FactoryAreaId.ModelDesignRoom)
             {
                 FollowModelDesignFloor();

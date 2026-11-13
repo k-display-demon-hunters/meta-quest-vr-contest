@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using FactoryEnvironment;
 using Learning;
 using UnityEngine;
 
@@ -15,13 +16,15 @@ namespace FeatureMapCorridor
         private FeatureMapSnapshot _snapshot;
         private static readonly MapId[] RequiredRounds =
         {
-            new MapId(1, 0), new MapId(1, 1), new MapId(2, 0),
+            new MapId(1, 0), new MapId(1, 1), new MapId(2, 0), new MapId(2, 1),
             new MapId(3, 0), new MapId(3, 1), new MapId(4, 0)
         };
         private PoolingCalculationResult _poolingCalculation;
         private bool IsPooling => _state.ActiveRound.Layer == 2;
+        private bool SkipsRecap => _state.ActiveRound.Layer == 1 && _state.ActiveRound.Map == 0;
         private MapId RequiredRound => RequiredRounds[_state.RequiredRoundIndex];
         private int _navigationFrame = -1;
+        private bool _presentationHidden;
         public LearningStageId StageId => LearningStageId.FeatureMap;
         public float Progress => _state.Progress;
 
@@ -34,7 +37,8 @@ namespace FeatureMapCorridor
             _featureMaps.Initialize(_snapshot);
             _lessonUI.Initialize();
             _environment.Initialize();
-            _featureMaps.ShowOperations(0, _state.RevealedMaps);
+            _featureMaps.ShowOperations(default, _state.RevealedMaps);
+            _featureMaps.SetAdditionalFiltersVisible(false);
             Highlight(0);
             RenderLesson();
             _lessonUI.SetVisible(false);
@@ -62,7 +66,7 @@ namespace FeatureMapCorridor
             float now = Time.unscaledTime;
             float delta = Time.unscaledDeltaTime;
             _environment.Tick();
-            if (!_environment.Visible)
+            if (!_environment.Visible || _presentationHidden)
             {
                 return;
             }
@@ -75,6 +79,7 @@ namespace FeatureMapCorridor
 
         private void VisibilityChanged(bool visible)
         {
+            visible &= !_presentationHidden;
             _featureMaps.SetVisible(visible);
             _lessonUI.SetVisible(visible);
         }
@@ -127,6 +132,7 @@ namespace FeatureMapCorridor
         {
             if (_state.Phase == LessonPhase.AwaitInput)
             {
+                _featureMaps.ShowInputChannels(true);
                 AwaitRound();
             }
         }
@@ -145,8 +151,7 @@ namespace FeatureMapCorridor
                     }
                 }
             }
-            _featureMaps.ShowInputChannels(round.Layer == 1);
-            _featureMaps.ShowOperations(round.Layer, _state.RevealedMaps);
+            _featureMaps.ShowOperations(round, _state.RevealedMaps);
 
             Highlight(round.Layer);
             _state.Phase = LessonPhase.AwaitRound;
@@ -155,15 +160,26 @@ namespace FeatureMapCorridor
 
         private void OperationSelected(MapId round)
         {
-            if (_state.Phase != LessonPhase.AwaitRound ||
-                (round.Layer != RequiredRound.Layer && !_state.RevealedMaps.Contains(round)))
+            if (_state.Phase != LessonPhase.AwaitRound)
             {
                 return;
             }
 
-            bool mandatory = round.Layer == RequiredRound.Layer &&
-                (round.Layer == 2 || round.Map == RequiredRound.Map);
-            BeginRound(round, mandatory, _featureMaps.FirstStep(round));
+            MapId required = RequiredRound;
+            if (round.Layer == 3 && round.Map >= 2 && !_state.AdditionalFiltersAccepted)
+            {
+                return;
+            }
+            bool mandatory = !_state.ExploringAdditionalFilters &&
+                round.Layer == required.Layer && round.Map == required.Map;
+            bool availableInLayer = round.Layer == required.Layer && (round.Layer != 2 || mandatory);
+            bool canReplay = round.Layer <= required.Layer && _state.RevealedMaps.Contains(round);
+            if (!availableInLayer && !canReplay)
+            {
+                return;
+            }
+
+            BeginRound(round, mandatory, _featureMaps.FirstStep(round), animateFilterOpening: round.Layer == 1);
         }
 
         private void StartOutput()
@@ -175,17 +191,16 @@ namespace FeatureMapCorridor
             }
         }
 
-        private void BeginRound(MapId round, bool mandatory, LessonStep step)
+        private void BeginRound(MapId round, bool mandatory, LessonStep step, bool animateFilterOpening = false)
         {
             _state.Phase = LessonPhase.Round;
-            _featureMaps.ShowInputChannels(round.Layer == 1);
-            _featureMaps.ShowOperations(0, _state.RevealedMaps);
+            _featureMaps.ShowOperations(default, _state.RevealedMaps);
             _state.ActiveRound = round;
             _state.MandatoryRound = mandatory;
             _state.Step = step;
             Highlight(round.Layer);
             PrepareActiveRound();
-            ShowCurrentStep();
+            ShowCurrentStep(animateFilterOpening);
         }
 
         private void PrepareActiveRound()
@@ -200,7 +215,7 @@ namespace FeatureMapCorridor
             _featureMaps.PrepareRound(_executionData.GetRound(_state.Digit, round.Layer, round.Map));
         }
 
-        private void ShowCurrentStep(bool filterInput = false)
+        private void ShowCurrentStep(bool animateFilterOpening = false)
         {
             if (IsPooling)
             {
@@ -208,7 +223,7 @@ namespace FeatureMapCorridor
             }
             else
             {
-                _featureMaps.ShowRoundStep(_state.Step, filterInput);
+                _featureMaps.ShowRoundStep(_state.Step, animateFilterOpening);
             }
             RenderLesson();
         }
@@ -226,8 +241,13 @@ namespace FeatureMapCorridor
             {
                 _state.RevealedMaps.Add(_state.ActiveRound);
             }
+            if (_state.ActiveRound.Layer == 3)
+            {
+                _state.Filter33Completed |= _state.ActiveRound.Map == 2;
+                _state.Filter34Completed |= _state.ActiveRound.Map == 3;
+            }
             RecapInfo recap = _featureMaps.FinishRoundForRecap();
-            if (recap.Layer != 4)
+            if (recap.Layer == 3)
             {
                 _lessonUI.AddRecap(recap);
             }
@@ -235,6 +255,11 @@ namespace FeatureMapCorridor
             if (_state.MandatoryRound && _state.ActiveRound.Layer != 4)
             {
                 CompleteRequiredRound();
+            }
+            if (SkipsRecap)
+            {
+                ContinueAfterRecap();
+                return;
             }
             RenderLesson();
         }
@@ -246,7 +271,7 @@ namespace FeatureMapCorridor
             _state.RequiredRoundIndex--;
             MapId round = RequiredRound;
             BeginRound(round, true, _featureMaps.LastStep(round));
-            if (!IsPooling)
+            if (!IsPooling && !SkipsRecap)
             {
                 ShowRecap();
             }
@@ -257,9 +282,25 @@ namespace FeatureMapCorridor
             _state.Phase = LessonPhase.Complete;
             Highlight(-1);
             RenderLesson();
-            _lessonUI.OpenCompletion();
             SetProgress(1);
             ExitAvailabilityChanged?.Invoke(true);
+            StartCoroutine(HideCompletedPresentation());
+        }
+
+        private IEnumerator HideCompletedPresentation()
+        {
+            var shutters = FindFirstObjectByType<FactoryShuttersManager>();
+            if (shutters != null)
+            {
+                yield return new WaitUntil(() => shutters == null || shutters.IsExitFullyOpen(StageId));
+            }
+            yield return new WaitForSecondsRealtime(5f);
+
+            _presentationHidden = true;
+            VisibilityChanged(false);
+            _featureMaps.HidePresentation();
+            _lessonUI.HidePresentation();
+            _environment.HideLessonLabels();
         }
 
         private void Next() => Navigate(RoundRequest.Next);
@@ -274,6 +315,22 @@ namespace FeatureMapCorridor
             _navigationFrame = Time.frameCount;
             switch (_state.Phase)
             {
+                case LessonPhase.Recap when OffersAdditionalFilters:
+                    if (request == RoundRequest.Previous)
+                    {
+                        _state.AdditionalFiltersAccepted = true;
+                        _state.ExploringAdditionalFilters = true;
+                        _featureMaps.SetAdditionalFiltersVisible(true);
+                        AwaitRound();
+                    }
+                    else
+                    {
+                        ContinueAfterRecap();
+                    }
+                    break;
+                case LessonPhase.AwaitRound when _state.ExploringAdditionalFilters && request == RoundRequest.Next:
+                    FinishAdditionalFilters();
+                    break;
                 case LessonPhase.Round:
                     ApplyTransition(request);
                     break;
@@ -331,8 +388,7 @@ namespace FeatureMapCorridor
                     ShowRecap();
                     break;
                 case RoundOutcome.Complete:
-                    _state.RevealedMaps.Add(new MapId(2, 0));
-                    _state.RevealedMaps.Add(new MapId(2, 1));
+                    _state.RevealedMaps.Add(_state.ActiveRound);
                     CloseRound();
                     if (_state.MandatoryRound)
                     {
@@ -346,6 +402,18 @@ namespace FeatureMapCorridor
 
         private void ContinueAfterRecap()
         {
+            if (_state.ExploringAdditionalFilters)
+            {
+                if (_state.Filter33Completed && _state.Filter34Completed)
+                {
+                    FinishAdditionalFilters();
+                }
+                else
+                {
+                    AwaitRound();
+                }
+                return;
+            }
             if (_state.MandatoryRound && _state.ActiveRound.Layer == 4)
             {
                 Finish();
@@ -355,6 +423,16 @@ namespace FeatureMapCorridor
             {
                 _state.RequiredRoundIndex++;
             }
+            AwaitRound();
+        }
+
+        private bool OffersAdditionalFilters => _state.MandatoryRound &&
+            _state.ActiveRound.Layer == 3 && _state.ActiveRound.Map == 1 && !_state.AdditionalFiltersAccepted;
+
+        private void FinishAdditionalFilters()
+        {
+            _state.ExploringAdditionalFilters = false;
+            _state.RequiredRoundIndex++;
             AwaitRound();
         }
 
@@ -368,25 +446,27 @@ namespace FeatureMapCorridor
             context.Mandatory = _state.MandatoryRound;
             context.ShowingOutputDetails = _state.ShowingOutputDetails;
             context.Step = _state.Step;
+            context.OfferAdditionalFilters = context.Phase == LessonPhase.Recap && OffersAdditionalFilters;
+            context.ExploringAdditionalFilters = _state.ExploringAdditionalFilters;
             if (_state.Phase == LessonPhase.Round || _state.Phase == LessonPhase.Recap)
             {
                 context.Layer = _state.ActiveRound.Layer;
                 context.Map = _state.ActiveRound.Map;
                 context.Pooling = _poolingCalculation;
             }
-            else if (_state.Phase == LessonPhase.AwaitInput)
-            {
-                context.HintPosition = _featureMaps.InputPictureHint;
-            }
             else if (_state.Phase == LessonPhase.AwaitRound)
             {
                 context.Layer = RequiredRound.Layer;
                 context.Map = RequiredRound.Map;
                 context.CanGoBack = _state.RequiredRoundIndex > 0;
-                if (context.Layer != 4)
-                {
-                    context.HintPosition = _featureMaps.WaitingHint(context.Layer, context.Map);
-                }
+            }
+            if (context.Phase != LessonPhase.Complete)
+            {
+                context.LessonPanelPosition = context.OfferAdditionalFilters ||
+                    (context.Phase == LessonPhase.AwaitRound && context.ExploringAdditionalFilters)
+                    ? _featureMaps.AdditionalFiltersPanelPosition
+                    : _featureMaps.GetLessonPanelPosition(
+                        context.Phase, context.Layer, context.Map, context.ShowingOutputDetails);
             }
             _lessonUI.Show(context);
         }

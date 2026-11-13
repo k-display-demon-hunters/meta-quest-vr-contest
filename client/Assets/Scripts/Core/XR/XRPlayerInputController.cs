@@ -23,7 +23,6 @@ namespace XR
         private float _moveSpeedBeforeParchment;
         private Transform _viewOffset;
         private Quaternion _initialViewRotation;
-        private Vector3 _frontDirection;
         private float _pitch;
         private InputAction _look;
         private InputAction _recenter;
@@ -100,10 +99,9 @@ namespace XR
             _moveProvider = GetComponent<ContinuousMoveProvider>();
             _viewOffset = _rig.CameraFloorOffsetObject.transform;
             _initialViewRotation = _viewOffset.localRotation;
-            _frontDirection = Vector3.ProjectOnPlane(_rig.Origin.transform.forward, Vector3.up).normalized;
             _look = new InputAction("Look", InputActionType.Value,
                 "<XRController>{RightHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)");
-            _recenter = new InputAction("Restore front view", InputActionType.Button,
+            _recenter = new InputAction("Restore view tilt", InputActionType.Button,
                 "<XRController>{RightHand}/primaryButton");
             _laser = new InputAction("Toggle laser", InputActionType.Button,
                 "<XRController>{RightHand}/secondaryButton");
@@ -175,7 +173,7 @@ namespace XR
             }
             if (_recenter.WasPressedThisFrame())
             {
-                RestoreFrontView();
+                RestoreViewTilt();
             }
             else
             {
@@ -245,13 +243,23 @@ namespace XR
             }
         }
 
-        public void RestoreFrontView()
+        public void RestoreViewTilt()
         {
-            Vector3 cameraPosition = _rig.Camera.transform.position;
+            Transform cameraTransform = _rig.Camera.transform;
+            Vector3 cameraPosition = cameraTransform.position;
+            Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up);
+
             _viewOffset.localRotation = _initialViewRotation;
-            _viewOffset.position += cameraPosition - _rig.Camera.transform.position;
+            _viewOffset.position += cameraPosition - cameraTransform.position;
             _pitch = 0f;
-            _rig.MatchOriginUpCameraForward(Vector3.up, _frontDirection);
+
+            Vector3 restoredForward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up);
+            // Looking vertically has no horizontal heading to align.
+            if (forward.sqrMagnitude > 0.0001f && restoredForward.sqrMagnitude > 0.0001f)
+            {
+                float yaw = Vector3.SignedAngle(restoredForward, forward, Vector3.up);
+                _rig.RotateAroundCameraUsingOriginUp(yaw);
+            }
         }
 
         private void SetLaserEnabled(bool active)

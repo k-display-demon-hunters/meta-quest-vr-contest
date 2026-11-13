@@ -463,17 +463,17 @@ namespace FeatureMapCorridor
                 new[] { inputR, inputG, inputB },
                 new[]
                 {
-                    new SavedConvMap(conv1State0Map0, new RoundCalculationResult(1, 0, 3, 196, 16, new[] { conv1State0Map0Source0, conv1State0Map0Source1, conv1State0Map0Source2 }, Array.Empty<float[]>(), new[] { 1.0510118f, 0.124721579f, 0.57090199f }, new[] { 1.04150593f, -0.113223538f, -0.166274503f }, 0.612007916f, -0.150000006f)),
-                    new SavedConvMap(conv1State0Map1, new RoundCalculationResult(1, 1, 3, 148, 16, new[] { conv1State0Map1Source0, conv1State0Map1Source1, conv1State0Map1Source2 }, Array.Empty<float[]>(), new[] { 1.75168622f, 0.748329461f, 0.913443208f }, new[] { -0.707921505f, 0.738917708f, 0.913443208f }, 0.744439423f, -0.200000003f)),
+                    new SavedConvMap(conv1State0Map0, new RoundCalculationResult(1, 0, 3, 196, 16, new[] { conv1State0Map0Source0, conv1State0Map0Source1, conv1State0Map0Source2 }, Array.Empty<float[]>(), new[] { 1.0510118f, 0.124721579f, 0.57090199f }, new[] { 1.04150593f, -0.113223538f, -0.166274503f }, 0.612007916f, -0.150000006f, FirstKernels[0])),
+                    new SavedConvMap(conv1State0Map1, new RoundCalculationResult(1, 1, 3, 148, 16, new[] { conv1State0Map1Source0, conv1State0Map1Source1, conv1State0Map1Source2 }, Array.Empty<float[]>(), new[] { 1.75168622f, 0.748329461f, 0.913443208f }, new[] { -0.707921505f, 0.738917708f, 0.913443208f }, 0.744439423f, -0.200000003f, FirstKernels[1])),
                 },
                 new[] { pool0, pool1 },
                 new[] { new PoolingCalculationResult(196, 50, 0, 0.612007916f, 0.541984379f, 0.333137274f, 0.472196102f, 0.612007916f), new PoolingCalculationResult(132, 34, 2, 0.723733425f, 0.556078553f, 0.744439423f, 0.689631462f, 0.744439423f) },
                 new[]
                 {
-                    new SavedConvMap(conv3State0Map0, new RoundCalculationResult(3, 0, 3, 45, 8, new[] { conv3State0Map0Source0, conv3State0Map0Source1 }, Array.Empty<float[]>(), new[] { 0.543428302f, 0.436908305f }, new[] { 0.543428302f, 0.267783493f }, 0.811211824f, 0f)),
-                    new SavedConvMap(conv3State0Map1, new RoundCalculationResult(3, 1, 3, 51, 8, new[] { conv3State0Map1Source0, conv3State0Map1Source1 }, Array.Empty<float[]>(), new[] { 0.845757723f, 0.491463602f }, new[] { 0.845757723f, 0.491463602f }, 1.33722138f, 0f)),
-                    new SavedConvMap(conv3State0Map2, new RoundCalculationResult(3, 2, 3, 3, 8, new[] { conv3State0Map2Source0, conv3State0Map2Source1 }, Array.Empty<float[]>(), new[] { 0.61539495f, 0.71458149f }, new[] { 0.502270103f, -0.10006091f }, 0.352209181f, -0.0500000007f)),
-                    new SavedConvMap(conv3State0Map3, new RoundCalculationResult(3, 3, 3, 45, 8, new[] { conv3State0Map3Source0, conv3State0Map3Source1 }, Array.Empty<float[]>(), new[] { 0.476882428f, 0.284484804f }, new[] { 0.457197756f, 0.284484804f }, 0.741682529f, 0f)),
+                    new SavedConvMap(conv3State0Map0, new RoundCalculationResult(3, 0, 3, 45, 8, new[] { conv3State0Map0Source0, conv3State0Map0Source1 }, Array.Empty<float[]>(), new[] { 0.543428302f, 0.436908305f }, new[] { 0.543428302f, 0.267783493f }, 0.811211824f, 0f, SecondKernels[0])),
+                    new SavedConvMap(conv3State0Map1, new RoundCalculationResult(3, 1, 3, 51, 8, new[] { conv3State0Map1Source0, conv3State0Map1Source1 }, Array.Empty<float[]>(), new[] { 0.845757723f, 0.491463602f }, new[] { 0.845757723f, 0.491463602f }, 1.33722138f, 0f, SecondKernels[1])),
+                    new SavedConvMap(conv3State0Map2, new RoundCalculationResult(3, 2, 3, 3, 8, new[] { conv3State0Map2Source0, conv3State0Map2Source1 }, Array.Empty<float[]>(), new[] { 0.61539495f, 0.71458149f }, new[] { 0.502270103f, -0.10006091f }, 0.352209181f, -0.0500000007f, SecondKernels[2])),
+                    new SavedConvMap(conv3State0Map3, new RoundCalculationResult(3, 3, 3, 45, 8, new[] { conv3State0Map3Source0, conv3State0Map3Source1 }, Array.Empty<float[]>(), new[] { 0.476882428f, 0.284484804f }, new[] { 0.457197756f, 0.284484804f }, 0.741682529f, 0f, SecondKernels[3])),
                 },
                 new[] { template0, template1, template2, template3 },
                 new SavedOutput(new[] { 0.290745646f, 0.669265985f, 1f }, new[] { 0.00319625204f, 0.0660321489f, 0.930771589f }, new[] { outputState0Source0, outputState0Source1, outputState0Source2, outputState0Source3 }));

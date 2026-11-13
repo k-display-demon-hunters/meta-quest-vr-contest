@@ -18,11 +18,16 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform[] _stageRoots;
         [SerializeField] private Transform _inputRoot;
         private FeatureMapPanelController[][] _maps;
+        private readonly Pose[] _poolingHome = new Pose[2];
+        private readonly Pose[] _poolingTargets = new Pose[2];
+        private bool _poolingBesideFilter;
+        private bool _poolingMoving;
+        private float _poolingMoveStarted;
         private CorridorRenderUtility _visuals;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
-        internal Vector3 InputLessonPanelPosition => _input.Picture.Root.TransformPoint(Vector3.up * 1.85f);
-        internal Vector3 OutputLessonPanelPosition => _output.LessonPanelPosition;
+        internal Pose InputLessonPanelPose => LessonPanelAbove(_input.Picture);
+        internal Pose OutputLessonPanelPose => _output.LessonPanelPose;
         internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);
         internal float InputChannelSpacing => _input.ChannelSpacing;
         internal void FollowInputChannels(Transform filterAnchor, Vector3 viewerPosition) =>
@@ -62,7 +67,12 @@ namespace FeatureMapCorridor
                     _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, _input, _maps[2]);
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
+            {
+                Transform panel = Map(2, channel).Root;
+                _poolingHome[channel] = new Pose(panel.localPosition, panel.localRotation);
+            }
+            _output.Bind(visuals, _input, _maps[2], snapshot);
             ShowSnapshot(snapshot);
             RestoreResults(new HashSet<MapId>());
         }
@@ -112,8 +122,17 @@ namespace FeatureMapCorridor
             _outputCellsShown = -1;
         }
 
-        internal void SetSecondConvResultVisible(int map, bool visible) =>
-            Map(3, map).Root.gameObject.SetActive(visible);
+        internal void SetResultVisible(int layer, int map, bool visible) =>
+            Map(layer, map).Root.gameObject.SetActive(visible);
+
+        internal Pose ResultLessonPanelPose(int layer, int map) => LessonPanelAbove(Map(layer, map));
+
+        private static Pose LessonPanelAbove(FeatureMapPanelController panel)
+        {
+            Transform root = panel.Root;
+            var offset = new Vector3(0, panel.Width * .5f + .52f, -.025f);
+            return new Pose(root.TransformPoint(offset), root.rotation);
+        }
 
         private void UpdateOutputInputs(float now)
         {
@@ -131,6 +150,7 @@ namespace FeatureMapCorridor
 
         internal void Tick(float now)
         {
+            UpdatePoolingSourcePositions(now);
             _input.Tick(now);
             _output.Tick(now);
             UpdateOutputInputs(now);
@@ -143,18 +163,68 @@ namespace FeatureMapCorridor
         }
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
+        internal void ArrangePoolingSources(Transform secondConvAnchor, bool showBesideFilter)
+        {
+            if (_poolingBesideFilter == showBesideFilter) return;
+            _poolingBesideFilter = showBesideFilter;
+            _poolingMoving = showBesideFilter;
+            _poolingMoveStarted = Time.unscaledTime;
+
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
+            {
+                Transform panel = Map(2, channel).Root;
+                if (showBesideFilter)
+                {
+                    float x = channel == 0 ? -.91f : .91f;
+                    Vector3 worldTarget = secondConvAnchor.TransformPoint(x, -1.3f, -.62f);
+                    _poolingTargets[channel] = new Pose(panel.parent.InverseTransformPoint(worldTarget),
+                        Quaternion.Inverse(panel.parent.rotation) * secondConvAnchor.rotation);
+                }
+                else
+                {
+                    Pose home = _poolingHome[channel];
+                    panel.SetLocalPositionAndRotation(home.position, home.rotation);
+                    panel.localScale = Vector3.one;
+                }
+            }
+        }
+
+        private void UpdatePoolingSourcePositions(float now)
+        {
+            if (!_poolingMoving) return;
+            float progress = Mathf.Clamp01((now - _poolingMoveStarted) / 1.35f);
+            float t = Mathf.SmoothStep(0f, 1f, progress);
+            _poolingMoving = progress < 1f;
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
+            {
+                Pose home = _poolingHome[channel];
+                Pose target = _poolingTargets[channel];
+                Transform panel = Map(2, channel).Root;
+                panel.SetLocalPositionAndRotation(Vector3.Lerp(home.position, target.position, t),
+                    Quaternion.Slerp(home.rotation, target.rotation, t));
+                panel.localScale = Vector3.one * Mathf.Lerp(1f, .72f, t);
+            }
+        }
+
         internal void HighlightLayer(int zone)
         {
             bool showFirstExperiences = zone is 0 or 1;
             _inputRoot.gameObject.SetActive(showFirstExperiences);
             for (int i = 0; i < _stageRoots.Length; i++)
             {
-                bool visible = i == 0 ? zone == 1 : zone < 0 || i < zone;
+                bool visible = i switch
+                {
+                    0 => zone == 1,
+                    1 => zone is 2 or 3,
+                    2 => zone == 3,
+                    _ => zone == 4
+                };
                 _stageRoots[i].gameObject.SetActive(visible);
             }
-            for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])
+            foreach (var layer in _maps)
+            foreach (var panel in layer)
             {
-                panel.Frame(l+1 == zone ? _visuals.Theme.Cyan : (Color?)null);
+                panel.Frame();
             }
         }
 
@@ -164,7 +234,6 @@ namespace FeatureMapCorridor
 
             if (!data.IsOutput)
             {
-                Map(data.Layer, data.Map).Frame(_visuals.Theme.Amber);
                 if (step is LessonStep.Merge)
                 {
                     Map(data.Layer, data.Map).Cell(data.Index, _visuals.Theme.Yellow);
@@ -178,8 +247,8 @@ namespace FeatureMapCorridor
             var colors = data.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             for (int i = 0;i<sources.Length;i++)
             {
-                sources[i].Frame(colors[i]);
-                if (data.Layer != 1)
+                if (data.Layer == 1) sources[i].Frame(colors[i]);
+                if (data.IsOutput)
                 {
                     sources[i].Badge(FeatureMapLabels.Marks[i]+" "+FeatureMapLabels.MapId(data.Layer-1, i), colors[i]);
                 }
@@ -211,7 +280,10 @@ namespace FeatureMapCorridor
                 if (data.Layer != 1)
                 {
                     source.Frame();
-                    source.Badge("", _visuals.Theme.Dim);
+                    if (data.IsOutput)
+                    {
+                        source.Badge("", _visuals.Theme.Dim);
+                    }
                 }
             }
         }
@@ -225,6 +297,7 @@ namespace FeatureMapCorridor
         internal void CompleteOutput() => _output.Complete();
         internal void Dispose()
         {
+            _output.Dispose();
             _input.Dispose();
             foreach (var layer in _maps) foreach (var panel in layer)
             {

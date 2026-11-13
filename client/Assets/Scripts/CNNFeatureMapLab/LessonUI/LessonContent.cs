@@ -4,7 +4,7 @@ namespace FeatureMapCorridor
 {
     internal static class LessonContent
     {
-        internal const string FilterHint = "필터를 눌러 펼쳐 보세요";
+        internal const string FilterHint = "필터를 눌러 펼치세요";
         internal const string OutputDone = "판정을 마쳤어요. 점수가 어떻게 만들어졌는지 더 살펴볼 수 있어요.";
         internal const string ViewScore = "점수 계산 보기";
         internal const string BackToVerdict = "판정 결과로";
@@ -12,7 +12,8 @@ namespace FeatureMapCorridor
         internal const string AdditionalFiltersBody = "필터 3-3과 3-4를 눌러 피처맵을 만들어 보세요.";
         internal const string TryAdditionalFilters = "추가 체험";
         internal const string GoToVerdict = "판정으로";
-        internal const string InputLabel = "입력 · 16×16";
+        internal const string RgbSource = "입력 R·G·B로 만들어져요.";
+        internal const string PoolingSource = "Pooling 결과 두 장이 입력이에요.";
         internal const string Filter = "필터";
         internal const string OutputLabel = "출력 · 100%를 점수대로 나눠 담아요";
         internal const string FullTank = "100%";
@@ -31,45 +32,54 @@ namespace FeatureMapCorridor
         internal static string Template(int digit) => $"숫자 {digit}의 틀";
         internal static string OutputScore(int digit) => $"숫자 {digit} 점수";
         internal static string RoundHeader(int round) => $"[{round}/4 · {RoundNames[round - 1]}]";
-        internal const string InputPictureBody = "숫자 버튼으로 입력을 바꿔 보세요.\n입력 이미지를 직접 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
+        internal const string InputPictureBody = "숫자 버튼으로 입력을 선택하세요.\n이미지를 누르면 R·G·B로 나뉘어요.";
 
-        internal static string WaitingBody(int layer, int map) => layer == 2
-                ? $"<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling {map + 1} 장치를 눌러 채널 {map + 1}의 반응을 살펴보세요."
-                : layer == 1
-                    ? $"앞쪽 발판으로 이동해 {FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요."
-                    : $"<b>필터는 특징을 추출합니다.</b>\n{FeatureMapLabels.Operation(layer, map)} 장치를 눌러 피처맵을 만들어 보세요.";
+        internal static string WaitingBody(int layer, int map)
+        {
+            string operation = FeatureMapLabels.Operation(layer, map);
+            string source = layer switch
+            {
+                1 => RgbSource,
+                2 => "2×2마다 가장 밝은 칸을 남겨요.",
+                _ => PoolingSource
+            };
+            string target = $"반짝이는 {operation}";
+            return $"{source}\n<b>{target}</b>을 눌러 보세요.";
+        }
 
-        internal static string PoolingBody(LessonStep step, int channel, PoolingCalculationResult data)
+        internal static string PoolingBody(LessonStep step)
         {
             return step switch
             {
-                LessonStep.PoolingWindow => "Pooling은 중요한 특징을 보존하면서 크기를 줄입니다. 강조된 영역의 밝은 반응을 살펴보세요.",
+                LessonStep.PoolingWindow => "강조된 영역에서 가장 밝은 칸을 찾아보세요.",
                 LessonStep.PoolingMaximum => "강한 반응이 작은 결과판으로 옮겨져 남아요.",
-                _ => "크기가 줄어도 중요한 특징은 남아 있어요. 앞의 피처맵과 비교해 보세요."
+                _ => "작아져도 특징은 남아요.\n입력과 결과를 비교해 보세요."
             };
         }
 
         internal static string FilterIntro(int layer, int map, int digit) => layer == 4
         ? string.Format("출력 숫자 {0}의 점수는 이 필터 하나로 정해져요.", digit)
         : string.Format("{0}는 이 필터 하나로 만들어져요.", FeatureMapLabels.MapId(layer, map));
-        internal static string FilterOpen(int layer, int count, int size)
+        internal static string FilterOpen(int layer, int map, int count, int size)
         {
             if (layer == 1)
-                return "필터가 3×3 판 세 장으로 나뉘어요. R·G·B 필터는 앞쪽에 있는 같은 색 입력과 연결돼요.";
+                return "3×3 필터 세 장이 같은 색의 R·G·B 입력에 하나씩 연결돼요.";
             if (layer == 3)
-                return "Pooling을 거친 두 피처맵이 입력이에요. 앞에서 찾은 특징을 조합해 새로운 특징을 추출해요.";
+                return map < 2 ? "풀링 결과마다\n3×3 필터를 하나씩 적용해요."
+                    : "Pooling 결과 두 장의 특징을 합쳐 새로운 특징을 찾아요.";
             string why = $"마지막 Conv의 피처맵이 {count}장";
             return $"{why}이라서 필터도 <b>{size}×{size} 판 {count}장</b>이에요.\n<color=#8FA3B8>필터를 두 번 누르면 다시 겹쳐져요</color>";
         }
 
         internal static string Scan(int layer) => layer switch
         {
-            1 => "세 필터가 같은 위치를 훑어요. 세 채널의 계산값을 합쳐 결과판의 한 칸을 채워요.",
+            1 => "세 필터가 같은 위치를 훑고, 계산값을 더해 피처맵 한 칸을 채워요.",
             4 => "판마다 맡은 피처맵 위에 통째로 겹쳐져요.",
-            _ => "필터가 지나가며 찾아낸 특징이 결과판에 드러나요."
+            _ => "필터가 훑으며 찾은 특징이\n결과판에 나타나요."
         };
         internal static string Explain(int layer, int digit) => layer == 4
-        ? string.Format("<b>출력 {0}</b>는 입력이 숫자 {0}인지 판단해야 해요. 그래서 필터의 판마다 <b>숫자 {0}일 때 그 피처맵이 밝아지는 곳</b>이 밝게 그려져 있어요. 피처맵이 그 모양과 많이 겹칠수록 점수가 커져요.", digit) : "필터마다 찾아내는 특징이 달라요. 같은 이미지에서 어디가 밝게 드러났는지 비교해 보세요.";
+        ? $"숫자 {digit}의 틀과 피처맵이 잘 맞을수록 점수가 높아져요."
+        : "밝은 칸은 이 필터가 강하게 반응한 위치예요.";
         internal static string Merge(int layer, int map, int digit, int count, int winner)
         {
             if (layer != 4)
@@ -80,9 +90,10 @@ namespace FeatureMapCorridor
             : "{0}장을 모두 더한 값이 <b>숫자 {1}의 점수</b>예요. 다른 숫자보다 <b>낮아요</b>.", count, digit);
         }
 
-        internal static string MatchTemplates(int count) => $"마지막 Conv의 피처맵 {count}장을 <b>한 덩어리로 쌓았어요</b>. 통 위에는 숫자마다 \"이 숫자라면 이렇게 생겨야 해\" 하는 <b>틀</b>이 있어요.\n덩어리를 틀마다 겹쳐 보고, <b>잘 맞을수록 틀이 빛나고 점수(빛 기둥)가 높아져요</b>.";
-        internal static string ShareLight(int winner, int percent) => string.Format("이제 위의 <b>빛 탱크에 담긴 100%</b>를 점수에 따라 세 통에 나눠 담아요.\n점수가 조금만 높아도 <b>훨씬 많이</b> 가져가요. 숫자 {0} 통이 <b>{1}%</b>까지 차올라요.", winner, percent);
-        internal static string FlyAnswer(int winner) => string.Format("가장 많이 차오른 통이 <b>AI의 답</b>이에요.\n<b>AI의 판정 · 숫자 {0}</b>", winner);
+        internal static string MatchTemplates(int count) => $"피처맵 {count}장을 숫자별 틀과 비교해\n점수를 매겨요.";
+        internal static string ShareLight(int winner, int percent) =>
+            $"숫자 {winner}의 확률이 <b>{percent}%</b>로 가장 높아요.";
+        internal static string FlyAnswer(int winner) => $"<b>AI의 판정 · 숫자 {winner}</b>";
         internal static string Recap(int layer, int map, bool mandatory)
         {
             if (layer == 4)
@@ -91,7 +102,7 @@ namespace FeatureMapCorridor
             }
             if (mandatory && map == 1)
             {
-                return "두 피처맵을 비교해 보세요. 같은 재료에 서로 다른 필터를 적용하면 밝아지는 위치가 달라져요.";
+                return "두 피처맵을 비교해 보세요. 필터마다 밝아지는 위치가 달라요.";
             }
             return $"<b>{FeatureMapLabels.MapId(layer, map)}</b> 피처맵이 완성됐어요.";
         }

@@ -192,7 +192,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_Material: {fileID: 0}
-  m_Color: {r: 0.078431375, g: 0.20784314, b: 0.24705882, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -266,8 +266,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_EffectColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
-  m_EffectDistance: {x: 2, y: -2}
-  m_UseGraphicAlpha: 1
+  m_EffectDistance: {x: 7, y: -7}
+  m_UseGraphicAlpha: 0
 --- !u!114 &1076247247840550411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284,15 +284,15 @@ MonoBehaviour:
   _background: {fileID: 3912878421976275584}
   _label: {fileID: 3566782198981417187}
   _outline: {fileID: 1974617778696843870}
-  _normalColor: {r: 1, g: 1, b: 1, a: 1}
-  _hoverColor: {r: 1, g: 1, b: 1, a: 1}
-  _pressedColor: {r: 0.8, g: 0.95, b: 0.94, a: 1}
+  _normalColor: {r: 0.16, g: 0.19, b: 0.21, a: 1}
+  _hoverColor: {r: 0.34, g: 0.28, b: 0.2, a: 1}
+  _pressedColor: {r: 0.45, g: 0.35, b: 0.22, a: 1}
   _disabledColor: {r: 0.12, g: 0.16, b: 0.18, a: 1}
   _textColor: {r: 1, g: 1, b: 1, a: 1}
   _disabledTextColor: {r: 0.55, g: 0.62, b: 0.65, a: 1}
-  _outlineColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
+  _outlineColor: {r: 0.76, g: 0.53, b: 0.26, a: 1}
   _transitionSeconds: 0.08
-  _outlineAtRest: 0
+  _outlineAtRest: 1
 --- !u!223 &6035514146894388103
 Canvas:
   m_ObjectHideFlags: 0
@@ -1030,7 +1030,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_Material: {fileID: 0}
-  m_Color: {r: 0.078431375, g: 0.20784314, b: 0.24705882, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1104,8 +1104,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_EffectColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
-  m_EffectDistance: {x: 2, y: -2}
-  m_UseGraphicAlpha: 1
+  m_EffectDistance: {x: 7, y: -7}
+  m_UseGraphicAlpha: 0
 --- !u!114 &6702882489947885681
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1122,15 +1122,15 @@ MonoBehaviour:
   _background: {fileID: 9029412786764093384}
   _label: {fileID: 1217678685473531813}
   _outline: {fileID: 3638894051916901516}
-  _normalColor: {r: 1, g: 1, b: 1, a: 1}
-  _hoverColor: {r: 1, g: 1, b: 1, a: 1}
-  _pressedColor: {r: 0.8, g: 0.95, b: 0.94, a: 1}
+  _normalColor: {r: 0.16, g: 0.19, b: 0.21, a: 1}
+  _hoverColor: {r: 0.34, g: 0.28, b: 0.2, a: 1}
+  _pressedColor: {r: 0.45, g: 0.35, b: 0.22, a: 1}
   _disabledColor: {r: 0.12, g: 0.16, b: 0.18, a: 1}
   _textColor: {r: 1, g: 1, b: 1, a: 1}
   _disabledTextColor: {r: 0.55, g: 0.62, b: 0.65, a: 1}
-  _outlineColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
+  _outlineColor: {r: 0.76, g: 0.53, b: 0.26, a: 1}
   _transitionSeconds: 0.08
-  _outlineAtRest: 0
+  _outlineAtRest: 1
 --- !u!223 &3865043610966315803
 Canvas:
   m_ObjectHideFlags: 0
@@ -3290,7 +3290,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_Material: {fileID: 0}
-  m_Color: {r: 0.078431375, g: 0.20784314, b: 0.24705882, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -3364,8 +3364,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   m_EffectColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
-  m_EffectDistance: {x: 2, y: -2}
-  m_UseGraphicAlpha: 1
+  m_EffectDistance: {x: 7, y: -7}
+  m_UseGraphicAlpha: 0
 --- !u!114 &2646766130133272044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3382,15 +3382,15 @@ MonoBehaviour:
   _background: {fileID: 4004267851750001576}
   _label: {fileID: 1712005023150555637}
   _outline: {fileID: 797781816563928724}
-  _normalColor: {r: 1, g: 1, b: 1, a: 1}
-  _hoverColor: {r: 1, g: 1, b: 1, a: 1}
-  _pressedColor: {r: 0.8, g: 0.95, b: 0.94, a: 1}
+  _normalColor: {r: 0.16, g: 0.19, b: 0.21, a: 1}
+  _hoverColor: {r: 0.34, g: 0.28, b: 0.2, a: 1}
+  _pressedColor: {r: 0.45, g: 0.35, b: 0.22, a: 1}
   _disabledColor: {r: 0.12, g: 0.16, b: 0.18, a: 1}
   _textColor: {r: 1, g: 1, b: 1, a: 1}
   _disabledTextColor: {r: 0.55, g: 0.62, b: 0.65, a: 1}
-  _outlineColor: {r: 0.38431373, g: 0.89411765, b: 0.8509804, a: 1}
+  _outlineColor: {r: 0.76, g: 0.53, b: 0.26, a: 1}
   _transitionSeconds: 0.08
-  _outlineAtRest: 0
+  _outlineAtRest: 1
 --- !u!223 &4033169864823923034
 Canvas:
   m_ObjectHideFlags: 0

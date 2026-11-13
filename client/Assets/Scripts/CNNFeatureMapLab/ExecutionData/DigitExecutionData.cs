@@ -3,7 +3,30 @@ namespace FeatureMapCorridor
     internal sealed partial class DigitExecutionData
     {
         private static readonly int[] Sizes = { 16, 8, 8 };
+        // The saved convolution results were generated with these kernels from b14a2db.
+        private static readonly float[] Smooth = { .06f, .12f, .06f, .12f, .28f, .12f, .06f, .12f, .06f };
+        private static readonly float[] Vertical = { -.5f, 1f, -.5f, -.5f, 1f, -.5f, -.5f, 1f, -.5f };
+        private static readonly float[] Horizontal = { -.5f, -.5f, -.5f, 1f, 1f, 1f, -.5f, -.5f, -.5f };
+        private static readonly float[] Diagonal = { -.5f, -.5f, 1f, -.5f, 1f, -.5f, 1f, -.5f, -.5f };
+        private static readonly float[][][] FirstKernels =
+        {
+            ScaleKernel(Smooth, 1.2f, -.2f, -1f),
+            ScaleKernel(Smooth, -2f, 1.2f, 1.6f)
+        };
+        private static readonly float[][][] SecondKernels =
+        {
+            ScaleKernel(Vertical, .6f, -.3f),
+            ScaleKernel(Horizontal, .6f, -.3f),
+            ScaleKernel(Smooth, 1.5f, -1f),
+            ScaleKernel(Diagonal, .6f, -.3f)
+        };
+
+        private static float[][] ScaleKernel(float[] kernel, params float[] channelScales) =>
+            System.Array.ConvertAll(channelScales, scale => System.Array.ConvertAll(kernel, weight => weight * scale));
+
         private static readonly DigitExecutionData[] Digits = { CreateDigit1(), CreateDigit2(), CreateDigit3() };
+
+        private static readonly float[][][] OutputTemplates = System.Array.ConvertAll(Digits, digit => digit._templates);
 
         private readonly float[][] _input;
         private readonly SavedConvMap[] _first;
@@ -35,7 +58,7 @@ namespace FeatureMapCorridor
                 _pool,
                 new[] { _second[0].Pixels, _second[1].Pixels, _second[2].Pixels, _second[3].Pixels }
             };
-            return new FeatureMapSnapshot(Sizes, _input, maps, DisplayScales, _output.Scores, _output.Probabilities);
+            return new FeatureMapSnapshot(Sizes, _input, maps, DisplayScales, _output.Scores, _output.Probabilities, OutputTemplates);
         }
 
         internal RoundCalculationResult GetRound(int digit, int layer, int map)

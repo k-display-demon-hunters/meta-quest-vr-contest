@@ -14,9 +14,8 @@ namespace FeatureMapCorridor
         internal bool CanGoBack, Mandatory, WaitingForFilter, FilterPending, IsLastStep, ShowingOutputDetails;
         internal bool OfferAdditionalFilters, ExploringAdditionalFilters;
         internal Vector3 HintPosition;
-        internal Vector3 LessonPanelPosition;
+        internal Pose LessonPanelPose;
         internal RoundCalculationResult Calculation;
-        internal PoolingCalculationResult Pooling;
     }
     internal readonly struct RecapInfo
     {

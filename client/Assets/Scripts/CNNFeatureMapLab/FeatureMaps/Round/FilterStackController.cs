@@ -35,7 +35,9 @@ namespace FeatureMapCorridor
         private bool _expanded;
         private bool _animating;
         private bool _connected;
-        private bool LinksReady => _expanded && _connected && (_layer != 1 || !_animating);
+        private bool _allowLinks;
+        private bool LinksReady => _root.gameObject.activeSelf && _allowLinks && _expanded &&
+            _connected && (_layer != 1 || !_animating);
         private Quaternion _savedRotation;
         internal event Action<bool> ExpansionChanged;
         internal Transform Root => _root;
@@ -153,6 +155,7 @@ namespace FeatureMapCorridor
         {
             int layer = calculation.Layer;
             _layer = layer;
+            _allowLinks = layer != 3 || calculation.Map >= 2;
             _sources = sources;
             _result = result;
             _colors = layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
@@ -247,7 +250,11 @@ namespace FeatureMapCorridor
             _resultLink.enabled = enabled && _layer != 1 && _result != null;
         }
 
-        internal void ShowCards(bool visible) => _root.gameObject.SetActive(visible);
+        internal void ShowCards(bool visible)
+        {
+            _root.gameObject.SetActive(visible);
+            SetLinks(LinksReady);
+        }
         internal void DimDuringScan(bool dim)
         {
             _connected = !dim;
@@ -279,7 +286,7 @@ namespace FeatureMapCorridor
             {
                 return;
             }
-            if (_layer != 1)
+            if (_layer != 1 && _allowLinks)
             {
                 CorridorRenderUtility.FaceCamera(_root, camera);
             }

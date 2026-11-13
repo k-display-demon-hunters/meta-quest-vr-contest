@@ -9,6 +9,7 @@ namespace FeatureMapCorridor
         private readonly ReadOnlyCollection<float>[] _values;
         private readonly ReadOnlyCollection<float>[] _templates;
         private readonly float[] _scales;
+        private readonly float[][] _kernels;
         internal int Layer
         {
             get;
@@ -50,7 +51,9 @@ namespace FeatureMapCorridor
         internal IReadOnlyList<float> Values(int source) => _values[source];
         internal IReadOnlyList<float> Template(int source) => _templates[source];
         internal float Scale(int source) => _scales[source];
-        internal RoundCalculationResult(int layer, int map, int digit, int index, int size, float[][] values, float[][] templates, float[] scales, float[] terms, float pre, float bias)
+        internal float Weight(int source, int cell) => _kernels[source][cell];
+        internal RoundCalculationResult(int layer, int map, int digit, int index, int size, float[][] values, float[][] templates,
+            float[] scales, float[] terms, float pre, float bias, float[][] kernels = null)
         {
             Layer = layer;
             Map = map;
@@ -64,6 +67,7 @@ namespace FeatureMapCorridor
                 _values[i] = Array.AsReadOnly(values[i]);
             }
             _scales = scales;
+            _kernels = kernels;
             Terms = Array.AsReadOnly(terms);
             Pre = pre;
             Bias = bias;

@@ -33,9 +33,9 @@ namespace FeatureMapCorridor
         internal string HoverName => _display.HoverName ?? _round.HoverName ?? "—";
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
-        internal Vector3 AdditionalFiltersPanelPosition =>
+        internal Pose AdditionalFiltersPanelPose => new Pose(
             (_secondFilters[0].CalculationAnchor.position + _secondFilters[1].CalculationAnchor.position) * .5f
-            + Vector3.up * .25f;
+            + Vector3.up * .25f, _secondFilters[0].CalculationAnchor.rotation);
 
         internal void SetAdditionalFiltersVisible(bool visible)
         {
@@ -43,35 +43,46 @@ namespace FeatureMapCorridor
             for (int map = 2; map < _secondFilters.Length; map++)
             {
                 _secondFilters[map].SetVisible(visible);
-                _display.SetSecondConvResultVisible(map, visible);
+                _display.SetResultVisible(3, map, visible);
             }
             UpdateDevices();
         }
 
-        internal Vector3 GetLessonPanelPosition(LessonPhase phase, int layer, int map, bool showingOutputDetails)
+        internal Pose GetLessonPanelPose(LessonPhase phase, int layer, int map, bool showingOutputDetails)
         {
             if (layer == 0)
             {
-                return _display.InputLessonPanelPosition;
+                return _display.InputLessonPanelPose;
             }
             if (layer == 4)
             {
-                return phase == LessonPhase.Round && showingOutputDetails
-                    ? _round.FilterLessonPanelPosition
-                    : _display.OutputLessonPanelPosition;
+                Pose pose = _display.OutputLessonPanelPose;
+                if (phase == LessonPhase.Round && showingOutputDetails)
+                {
+                    pose.position = _round.FilterLessonPanelPosition;
+                }
+                return pose;
             }
 
-            if (phase == LessonPhase.Recap && layer == 1)
+            if (layer == 2 && phase == LessonPhase.Round)
             {
-                return _firstFilters[map].GetLessonPanelPosition(showingCalculation: true);
+                return _pooling.LessonPanelPose(_poolingDevices[map].CalculationAnchor);
             }
-            return _devices[layer - 1][map].GetLessonPanelPosition(phase == LessonPhase.Round);
+            return layer == 3 && map >= 2
+                ? _secondFilters[map].GetLessonPanelPose(phase == LessonPhase.Round)
+                : _display.ResultLessonPanelPose(layer, map);
         }
 
         internal void ShowOperations(MapId round, IReadOnlyCollection<MapId> revealed)
         {
             _availableRound = round;
             _revealed = revealed;
+            for (int layer = 1; layer <= _devices.Length; layer++)
+            {
+                bool secondMapUnlocked = revealed.Contains(new MapId(layer, 0));
+                _devices[layer - 1][1].SetVisible(secondMapUnlocked);
+                _display.SetResultVisible(layer, 1, secondMapUnlocked);
+            }
             UpdateDevices();
         }
 
@@ -81,11 +92,12 @@ namespace FeatureMapCorridor
             for (int map = 0; map < _devices[layer - 1].Length; map++)
             {
                 bool completed = _revealed.Contains(new MapId(layer, map));
-                bool current = layer == _availableRound.Layer && (layer != 2 || map == _availableRound.Map);
+                bool current = layer == _availableRound.Layer &&
+                    (map == _availableRound.Map || (layer == 3 && map >= 2 && _additionalFiltersVisible));
                 bool available = (layer != 3 || map < 2 || _additionalFiltersVisible) &&
                     (current || (layer <= _availableRound.Layer && completed));
                 OperationDeviceController device = _devices[layer - 1][map];
-                device.SetAvailable(available, completed);
+                device.SetHighlight(current && map == _availableRound.Map);
                 device.SetInputActive(_visible && available);
             }
         }
@@ -106,6 +118,12 @@ namespace FeatureMapCorridor
             }
             _pooling.Bind(_visuals, _display);
             _round.Bind(_visuals, _display);
+        }
+
+        internal void ShowFirstFilterKernels(RoundCalculationResult first, RoundCalculationResult second)
+        {
+            _firstFilters[0].ShowKernel(first);
+            _firstFilters[1].ShowKernel(second);
         }
 
         internal void Enable()
@@ -182,6 +200,10 @@ namespace FeatureMapCorridor
 
         internal void Tick(float now)
         {
+            if (_availableRound.Layer is >= 1 and <= 3)
+            {
+                _devices[_availableRound.Layer - 1][_availableRound.Map].TickHighlight(now);
+            }
             if (_availableRound.Layer == 1)
             {
                 _display.FollowInputChannels(_firstFilters[_availableRound.Map].CalculationAnchor,
@@ -205,7 +227,11 @@ namespace FeatureMapCorridor
 
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
         internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
-        internal void Highlight(int layer) => _display.HighlightLayer(layer);
+        internal void Highlight(int layer)
+        {
+            _display.ArrangePoolingSources(_secondFilters[0].CalculationAnchor, layer == 3);
+            _display.HighlightLayer(layer);
+        }
         internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
             LessonStep step, IReadOnlyCollection<MapId> revealed) =>
             _pooling.Show(snapshot, channel, data, step, revealed, _poolingDevices[channel].CalculationAnchor);

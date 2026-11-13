@@ -20,7 +20,7 @@ namespace FeatureMapCorridor
         };
         private PoolingCalculationResult _poolingCalculation;
         private bool IsPooling => _state.ActiveRound.Layer == 2;
-        private bool SkipsRecap => _state.ActiveRound.Layer == 1 && _state.ActiveRound.Map == 0;
+        private bool SkipsRecap => (_state.ActiveRound.Layer is 1 or 3) && _state.ActiveRound.Map == 0;
         private MapId RequiredRound => RequiredRounds[_state.RequiredRoundIndex];
         private int _navigationFrame = -1;
         public LearningStageId StageId => LearningStageId.FeatureMap;
@@ -33,6 +33,9 @@ namespace FeatureMapCorridor
         {
             _snapshot = _executionData.GetSnapshot(_state.Digit);
             _featureMaps.Initialize(_snapshot);
+            _featureMaps.ShowFirstFilterKernels(
+                _executionData.GetRound(_state.Digit, 1, 0),
+                _executionData.GetRound(_state.Digit, 1, 1));
             _lessonUI.Initialize();
             _environment.Initialize();
             _featureMaps.ShowOperations(default, _state.RevealedMaps);
@@ -62,7 +65,7 @@ namespace FeatureMapCorridor
         {
             float now = Time.unscaledTime;
             _environment.Tick();
-            if (!_environment.Visible)
+            if (!_environment.Visible || CanExit)
             {
                 return;
             }
@@ -76,8 +79,12 @@ namespace FeatureMapCorridor
 
         private void VisibilityChanged(bool visible)
         {
-            _featureMaps.SetVisible(visible);
-            _lessonUI.SetVisible(visible && !AwaitingOutput);
+            _featureMaps.SetVisible(visible && !CanExit);
+            _lessonUI.SetVisible(visible && !AwaitingOutput && !CanExit);
+            if (visible)
+            {
+                RenderLesson();
+            }
         }
 
         private void DigitSelected(int digit)
@@ -153,6 +160,7 @@ namespace FeatureMapCorridor
             _state.Phase = LessonPhase.AwaitRound;
             if (AwaitingOutput)
             {
+                SetProgress(.9f);
                 _lessonUI.SetVisible(false);
                 StartOutput();
                 return;
@@ -174,14 +182,15 @@ namespace FeatureMapCorridor
             }
             bool mandatory = !_state.ExploringAdditionalFilters &&
                 round.Layer == required.Layer && round.Map == required.Map;
-            bool availableInLayer = round.Layer == required.Layer && (round.Layer != 2 || mandatory);
+            bool availableInLayer = mandatory || (_state.ExploringAdditionalFilters && round.Layer == 3 && round.Map >= 2);
             bool canReplay = round.Layer <= required.Layer && _state.RevealedMaps.Contains(round);
             if (!availableInLayer && !canReplay)
             {
                 return;
             }
 
-            BeginRound(round, mandatory, _featureMaps.FirstStep(round), animateFilterOpening: round.Layer == 1);
+            BeginRound(round, mandatory, _featureMaps.FirstStep(round),
+                animateFilterOpening: round.Layer == 1 || (round.Layer == 3 && round.Map < 2));
         }
 
         private bool AwaitingOutput => _state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4;
@@ -252,7 +261,7 @@ namespace FeatureMapCorridor
                 _state.Filter34Completed |= _state.ActiveRound.Map == 3;
             }
             RecapInfo recap = _featureMaps.FinishRoundForRecap();
-            if (recap.Layer == 3)
+            if (recap.Layer == 3 && recap.Map >= 2)
             {
                 _lessonUI.AddRecap(recap);
             }
@@ -287,6 +296,8 @@ namespace FeatureMapCorridor
             _state.Phase = LessonPhase.Complete;
             Highlight(-1);
             RenderLesson();
+            _featureMaps.SetVisible(false);
+            _lessonUI.SetVisible(false);
             SetProgress(1);
             ExitAvailabilityChanged?.Invoke(true);
         }
@@ -447,7 +458,6 @@ namespace FeatureMapCorridor
             {
                 context.Layer = _state.ActiveRound.Layer;
                 context.Map = _state.ActiveRound.Map;
-                context.Pooling = _poolingCalculation;
             }
             else if (_state.Phase == LessonPhase.AwaitRound)
             {
@@ -457,10 +467,10 @@ namespace FeatureMapCorridor
             }
             if (context.Phase != LessonPhase.Complete)
             {
-                context.LessonPanelPosition = context.OfferAdditionalFilters ||
+                context.LessonPanelPose = context.OfferAdditionalFilters ||
                     (context.Phase == LessonPhase.AwaitRound && context.ExploringAdditionalFilters)
-                    ? _featureMaps.AdditionalFiltersPanelPosition
-                    : _featureMaps.GetLessonPanelPosition(
+                    ? _featureMaps.AdditionalFiltersPanelPose
+                    : _featureMaps.GetLessonPanelPose(
                         context.Phase, context.Layer, context.Map, context.ShowingOutputDetails);
             }
             _lessonUI.Show(context);

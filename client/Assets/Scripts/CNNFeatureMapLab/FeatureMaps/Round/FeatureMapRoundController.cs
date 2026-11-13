@@ -6,7 +6,7 @@ namespace FeatureMapCorridor
     [Serializable]
     internal sealed class FeatureMapRoundController
     {
-        private const float RgbSplitDuration = .9f;
+        private const float FilterSplitDuration = .9f;
         [SerializeField] private FilterStackController _filter;
         [SerializeField] private RoundResultsController _results;
         private FeatureMapDisplayController _display;
@@ -70,15 +70,15 @@ namespace FeatureMapCorridor
             _presentationReadyAt = null;
             if (Layer == 1)
             {
-                _display.MoveInputChannelsToCalculation(_calculationAnchor, RgbSplitDuration, animateFilterOpening);
+                _display.MoveInputChannelsToCalculation(_calculationAnchor, FilterSplitDuration, animateFilterOpening);
             }
 
             _filter.ShowCards((IsOutput || step == LessonStep.FilterOpened) && (step is LessonStep.FilterIntro or LessonStep.FilterOpened
                 or LessonStep.Scan or LessonStep.Explain));
-            if (animateFilterOpening && Layer == 1)
+            if (animateFilterOpening && (Layer is 1 or 3))
             {
-                _filter.PlaySplit(_operationPosition, RgbSplitDuration);
-                _presentationReadyAt = _started + RgbSplitDuration;
+                _filter.PlaySplit(_operationPosition, FilterSplitDuration);
+                _presentationReadyAt = _started + FilterSplitDuration;
             }
             else if (animateFilterOpening)
             {

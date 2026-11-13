@@ -53,20 +53,24 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now)
-        {
-            _hints.Tick(now);
-            _visuals.UpdateBillboards(_camera);
-        }
+        internal void Tick(float now) => _hints.Tick(now);
 
         internal void Show(LessonContext context)
         {
             _hints.Hide();
             _completed = context.Phase == LessonPhase.Complete;
-            _hints.SetRecapVisibility(_completed ? 4 : context.Layer);
+            bool firstConv = context.Layer == 1;
+            _hints.SetRecapVisibility(_completed ? -1 : context.Layer);
             if (!_completed)
             {
-                _subtitle.SetPosition(context.LessonPanelPosition);
+                float scale = context.Layer switch
+                {
+                    2 when context.Phase == LessonPhase.Round => 1.12f,
+                    3 when context.OfferAdditionalFilters => 1.3f,
+                    4 => 1.4f,
+                    _ => 1f
+                };
+                _subtitle.SetPose(context.LessonPanelPose, scale);
             }
             switch (context.Phase)
             {
@@ -80,7 +84,9 @@ namespace FeatureMapCorridor
                 }
                 else
                 {
-                    _subtitle.Show("", LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
+                    string header = context.Layer == 2 ? FeatureMapLabels.Operation(2, context.Map)
+                        : FeatureMapLabels.MapId(context.Layer, context.Map);
+                    _subtitle.Show(header, LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
                 }
                 break;
                 case LessonPhase.Round:
@@ -93,7 +99,9 @@ namespace FeatureMapCorridor
                         LessonContent.GoToVerdict, LessonContent.TryAdditionalFilters);
                     break;
                 }
-                _subtitle.Show("", LessonContent.Recap(context.Layer, context.Map, context.Mandatory), true,
+                string recap = LessonContent.Recap(context.Layer, context.Map, context.Mandatory);
+                _subtitle.Show(firstConv ? FeatureMapLabels.MapId(1, context.Map) : "",
+                    firstConv ? $"{LessonContent.RgbSource}\n{recap}" : recap, true,
                     context.Layer == 4 ? LessonContent.Complete : LessonContent.Next,
                     context.Layer == 4 ? LessonContent.ViewScore : LessonContent.Previous);
                 break;
@@ -107,7 +115,8 @@ namespace FeatureMapCorridor
         {
             if (context.Layer == 2)
             {
-                _subtitle.Show(LessonContent.RoundHeader(2), LessonContent.PoolingBody(context.Step, context.Map, context.Pooling),
+                _subtitle.Show(FeatureMapLabels.Operation(2, context.Map),
+                    LessonContent.PoolingBody(context.Step),
                     true, context.Step switch
                     {
                         LessonStep.PoolingMaximum => "채널 전체 적용 ▶",
@@ -126,10 +135,22 @@ namespace FeatureMapCorridor
                 : context.IsLastStep
                     ? (context.ShowingOutputDetails ? LessonContent.BackToVerdict : LessonContent.Understood)
                     : LessonContent.Next;
+            bool mapCard = context.Layer == 1 || (context.Layer == 3 && context.Map < 2);
+            if (mapCard && next != null)
+            {
+                next = context.Step switch
+                {
+                    LessonStep.FilterOpened => "필터 적용",
+                    LessonStep.Scan => "건너뛰기",
+                    _ => "확인"
+                };
+            }
             string previous = context.ShowingOutputDetails && context.WaitingForFilter
                 ? LessonContent.BackToVerdict : LessonContent.Previous;
-            string body = context.FilterPending && context.Layer != 1 ? "" : RoundBody(context);
-            _subtitle.Show(LessonContent.RoundHeader(context.Layer), body, true, next, previous);
+            string body = context.FilterPending && !mapCard ? "" : RoundBody(context);
+            string header = mapCard ? FeatureMapLabels.MapId(context.Layer, context.Map)
+                : LessonContent.RoundHeader(context.Layer);
+            _subtitle.Show(header, body, true, next, previous, separateHeader: mapCard && context.Layer == 3);
         }
 
         private static string RoundBody(LessonContext context)
@@ -138,7 +159,7 @@ namespace FeatureMapCorridor
             switch (context.Step)
             {
                 case LessonStep.FilterIntro: return LessonContent.FilterIntro(data.Layer, data.Map, data.Digit);
-                case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
+                case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Map, data.Count, data.Size);
                 case LessonStep.Scan: return LessonContent.Scan(data.Layer);
                 case LessonStep.Explain: return LessonContent.Explain(data.Layer, data.Digit);
                 case LessonStep.Merge: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);

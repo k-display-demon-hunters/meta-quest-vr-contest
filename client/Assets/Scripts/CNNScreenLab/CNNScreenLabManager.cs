@@ -16,8 +16,8 @@ namespace CNNScreen
         private PixelImageData _imageData;
         private PixelPatchData _selectedPatch;
         private Vector2Int _patchOrigin;
-        private int _pixelPage = -1;
-        private int _rgbPage;
+        private float _dwell;
+        private Vector2Int _dwellOrigin;
         private bool _expanding;
         private bool _learningComplete;
         public LearningStageId StageId => LearningStageId.ScreenLab;
@@ -28,6 +28,7 @@ namespace CNNScreen
         public IEnumerator EndSession()
         {
             StopAllCoroutines();
+            _ui.StopGuidance();
             yield break;
         }
         private void PublishState()
@@ -40,7 +41,7 @@ namespace CNNScreen
         {
             _imageData = _imageFactory.Create();
             _board.ShowPhoto(_imageData.PhotoTexture);
-            _selection.Initialize(_imageData);
+            _selection.Initialize(_pixelGrid);
             _ui.Initialize();
             ResetLab();
         }
@@ -53,43 +54,45 @@ namespace CNNScreen
             _ui.NextRequested += NextStage;
             _ui.ResetRequested += ResetLab;
         }
+        private void Update()
+        {
+            if (_revealStage.Phase != PixelObservationPhase.Inactive || _expanding) { return; }
+            if (!_selection.IsOnImage) { _dwell = 0; return; }
+            if (_dwellOrigin != _selection.SelectedPixel)
+            {
+                _dwellOrigin = _selection.SelectedPixel;
+                _dwell = 0;
+            }
+            _dwell += Time.unscaledDeltaTime;
+            if (_dwell >= 1f) { ShowDetails(); }
+        }
         public void ShowDetails()
         {
-            if (_pixelPage < 2 || _selection.IsFilterHeld || !_selection.HasSelection || _expanding
+            if (!_selection.HasSelection || _expanding
                 || _revealStage.Phase != PixelObservationPhase.Inactive) { return; }
             _patchOrigin = _selection.SelectedPixel;
-            if (!_pixelGrid.TryCapturePatch(_selection.SelectionWorldPosition, out _selectedPatch))
-            {
-                _selectedPatch = _imageData.CapturePatch(_patchOrigin);
-            }
+            if (!_pixelGrid.TryCapturePatch(_selection.SelectionWorldPosition, out _selectedPatch)) { return; }
             _expanding = true;
-            _selection.SuspendSelection();
             _ui.ShowMoving();
+            _ui.RequestGuidance(1);
             StartCoroutine(ExpandSelection());
         }
         private IEnumerator ExpandSelection()
         {
-            yield return _board.MoveAside();
-            _revealStage.ShowImage(_imageData.Pixels, _imageData.Columns, _imageData.Rows, _patchOrigin);
+            yield return null;
+            _revealStage.ShowImage(_imageData.Pixels, _pixelGrid.gridWidth, _pixelGrid.gridHeight, _patchOrigin);
             _revealStage.RevealPixels(_selectedPatch);
         }
         public void NextStage()
         {
-            if (_selection.IsFilterHeld || _expanding) { return; }
+            if (_expanding) { return; }
             if (_learningComplete) { return; }
             if (_revealStage.IsReadyForConvolution)
             {
-                _rgbPage++;
-                if (_rgbPage < 3) { _ui.ShowRgbPage(_rgbPage); return; }
                 _learningComplete = true;
                 _ui.ShowExitGuide();
                 PublishState();
                 return;
-            }
-            if (_pixelPage >= 0 && _pixelPage < 2)
-            {
-                _pixelPage++;
-                _ui.ShowPixelPage(_pixelPage);
             }
         }
         public void ResetLab()
@@ -97,7 +100,7 @@ namespace CNNScreen
             if (_selection.IsFilterHeld) { return; }
             StopAllCoroutines();
             _expanding = _learningComplete = false;
-            _pixelPage = -1;
+            _dwell = 0;
             _selectedPatch = null;
             _revealStage.ResetStage();
             _board.RestorePresentation();
@@ -109,15 +112,30 @@ namespace CNNScreen
         private void HandleSelectionChanged()
         {
             if (!_selection.HasSelection) { _ui.ResetControls(); return; }
-            if (_pixelPage < 0) { _pixelPage = 0; }
-            _ui.ShowPixelPage(_pixelPage);
+            if (_revealStage.Phase != PixelObservationPhase.Inactive)
+            {
+                if (_pixelGrid.TryCapturePatch(_selection.SelectionWorldPosition, out _selectedPatch))
+                {
+                    _revealStage.UpdatePatch(_selectedPatch);
+                    if (!_expanding) { _ui.RequestGuidance(2); }
+                }
+                return;
+            }
+            _ui.ShowObservationHint();
         }
-        private void HandleFilterGrabbed() { _ui.ShowFilterGrabbed(); }
+        private void HandleFilterGrabbed()
+        {
+            if (_revealStage.Phase == PixelObservationPhase.Inactive)
+            {
+                _ui.ShowFilterGrabbed();
+                _ui.RequestGuidance(0);
+            }
+        }
         private void HandlePixelsRevealed()
         {
+            HandleSelectionChanged();
             _expanding = false;
-            _rgbPage = 0;
-            _ui.ShowRgbPage(0);
+            _ui.ShowExplorationHint();
         }
         private void OnDisable()
         {

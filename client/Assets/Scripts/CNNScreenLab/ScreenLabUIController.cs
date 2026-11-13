@@ -8,6 +8,20 @@ namespace CNNScreen
         [SerializeField] private Button _detailButton;
         [SerializeField] private Button _nextButton;
         [SerializeField] private Text _instruction;
+        [SerializeField] private AudioSource _voice;
+        [SerializeField] private AudioClip[] _guidance;
+        private int _requestedVoice = -1;
+        private int _playedVoice = -1;
+        public void RequestGuidance(int step) { _requestedVoice = Mathf.Max(_requestedVoice, step); }
+        private void Update()
+        {
+            if (_voice.isPlaying || _playedVoice >= _requestedVoice) { return; }
+            _playedVoice++;
+            _voice.clip = _guidance[_playedVoice];
+            _voice.Play();
+        }
+        public void StopGuidance() { _voice.Stop(); _requestedVoice = _playedVoice = -1; }
+        private void OnDisable() { StopGuidance(); }
         public event System.Action DetailsRequested;
         public event System.Action NextRequested;
         public event System.Action ResetRequested;
@@ -31,24 +45,21 @@ namespace CNNScreen
         }
         public void ResetControls()
         {
+            StopGuidance();
             Present("전시대 위의 돋보기를 Grip으로 잡아보세요.", false, false);
         }
         public void ShowFilterGrabbed()
         {
-            Present("돋보기를 이미지에 가까이 가져가세요.\n원하는 곳에서 Grip을 놓으세요.", false, false);
+            Present("돋보기를 이미지에 가까이 가져가세요.\n한 위치에 잠깐 머물러 보세요.", false, false);
         }
-        public void ShowPixelPage(int page)
+        public void ShowObservationHint()
         {
-            if (page == 0) { Present("픽셀  1 / 2\n이미지는 작은 색 조각으로 이루어져요.\n이 조각 하나를 ‘픽셀’이라고 해요.", false, true); }
-            else if (page == 1) { Present("픽셀  2 / 2\n돋보기 안에 보이는 3 × 3칸,\n모두 9개의 픽셀을 골랐어요.", false, true); }
-            else { Present("픽셀 안에는 어떤 값이 있을까요?\n[픽셀 확대하기]를 눌러 살펴보세요.", true, false); }
+            Present("같은 위치에 잠깐 머물러 보세요.", false, false);
         }
-        public void ShowMoving() { Present("선택한 픽셀을 펼치고 있어요.\n잠시만 기다려 주세요.", false, false); }
-        public void ShowRgbPage(int page)
+        public void ShowMoving() { Present("돋보기를 움직여 다른 색도 살펴보세요.", false, false); }
+        public void ShowExplorationHint()
         {
-            if (page == 0) { Present("RGB  1 / 3\nR은 빨강, G는 초록, B는 파랑이에요.\n세 값을 섞어 한 픽셀의 색을 만들어요.", false, true); }
-            else if (page == 1) { Present("RGB  2 / 3\n숫자는 각 색의 세기예요.\n0은 없음, 255는 가장 강함이에요.", false, true); }
-            else { Present("RGB  3 / 3\n앞뒤의 같은 칸은 같은 픽셀이에요.\n이제 작은 숫자로 계산을 배워봐요.", false, true, "관찰 마치기"); }
+            Present("돋보기를 움직이며 RGB 값을 비교해 보세요.", false, true, "관찰 마치기");
         }
         public void ShowExitGuide()
         {

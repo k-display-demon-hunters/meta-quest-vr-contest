@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using UnityEngine;
 
 namespace CNNScreen
@@ -74,23 +73,18 @@ namespace CNNScreen
 
             const int patchSide = 3;
             Color32[] colors = new Color32[patchSide * patchSide];
-            StringBuilder log = new StringBuilder("[PixelGridData] Cube/RGB panel values (top to bottom, left to right)");
             for (int row = 0; row < patchSide; row++)
             {
-                log.AppendLine();
                 for (int column = 0; column < patchSide; column++)
                 {
                     int x = center.x - 1 + column;
                     int y = center.y + 1 - row;
                     Color32 color = GetColor(x, y);
                     colors[row * patchSide + column] = color;
-                    if (column > 0) log.Append("  ");
-                    log.Append($"[{x},{y}] RGB({color.r},{color.g},{color.b})");
                 }
             }
 
             patch = new PixelPatchData(colors);
-            Debug.Log(log.ToString(), this);
             return true;
         }
 

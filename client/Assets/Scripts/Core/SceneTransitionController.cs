@@ -23,6 +23,13 @@ namespace UI
 
         internal static SceneTransitionController Begin(Camera camera, Transform rig, string destination, int? openingRunId)
         {
+            SceneTransitionController transition = Prepare(camera, rig, destination, openingRunId);
+            transition.BeginTransition();
+            return transition;
+        }
+
+        internal static SceneTransitionController Prepare(Camera camera, Transform rig, string destination, int? openingRunId)
+        {
             GameObject overlay = new GameObject("Archive transition", typeof(RectTransform));
             overlay.transform.SetParent(rig, false);
             SceneTransitionController transition = overlay.AddComponent<SceneTransitionController>();
@@ -30,8 +37,7 @@ namespace UI
             transition._destination = destination;
             transition.Initialize(camera);
             if (openingRunId.HasValue) { SceneManager.sceneLoaded += transition.HandleSceneLoaded; }
-            transition.Log("FadeOutStarted");
-            transition.StartCoroutine(transition.LoadWithFade(destination));
+            transition.StartCoroutine(transition.Preload(destination));
             return transition;
         }
 
@@ -69,11 +75,18 @@ namespace UI
             return Application.CanStreamedLevelBeLoaded(sceneName);
         }
 
-        private IEnumerator LoadWithFade(string sceneName)
+        internal void BeginTransition()
         {
+            if (IsLoading) { return; }
             IsLoading = true;
-            yield return Fade(0f, 1f);
-            Log("FadeOutCompleted");
+            StartCoroutine(ActivateWithFade());
+        }
+
+        private IEnumerator Preload(string sceneName)
+        {
+            bool canLoad = CanLoad(sceneName);
+            Log($"LoadCheck destination={sceneName} canLoad={canLoad}");
+            if (!canLoad) { yield break; }
             Log($"LoadStarted destination={sceneName}");
             AsyncOperation operation = null;
             try
@@ -94,18 +107,32 @@ namespace UI
             {
                 Debug.LogException(exception, this);
             }
+            if (operation == null)
+            {
+                Log($"LoadFailed destination={sceneName}");
+                yield break;
+            }
+            _operation = operation;
+            operation.allowSceneActivation = false;
+            _nextWaitReport = Time.realtimeSinceStartup + 5f;
+            while (operation.progress < .9f) { yield return null; }
+            Log("PreloadReady");
+        }
+
+        private IEnumerator ActivateWithFade()
+        {
+            Log("FadeOutStarted");
+            yield return Fade(0f, 1f);
+            Log("FadeOutCompleted");
+            AsyncOperation operation = _operation;
             if (operation != null)
             {
-                _operation = operation;
-                _nextWaitReport = Time.realtimeSinceStartup + 5f;
+                Log("ActivationRequested");
+                operation.allowSceneActivation = true;
                 yield return operation;
                 _operation = null;
                 Log($"LoadCompleted activeScene={SceneManager.GetActiveScene().name}");
                 yield return null;
-            }
-            else
-            {
-                Log($"LoadFailed destination={sceneName}");
             }
             yield return Fade(1f, 0f);
             Succeeded = operation != null;

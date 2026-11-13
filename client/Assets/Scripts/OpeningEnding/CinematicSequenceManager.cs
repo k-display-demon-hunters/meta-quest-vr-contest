@@ -25,6 +25,7 @@ namespace Cinematic
         [SerializeField] private string _destination = "FactoryEnvironment";
 
         private XROrigin _rig;
+        private SceneTransitionController _transition;
         private State _state;
 
         private void OnEnable()
@@ -72,6 +73,7 @@ namespace Cinematic
                 SetState(State.Playing);
                 _interaction.BeginOpening();
                 _presentation.Begin();
+                _transition = SceneTransitionController.Prepare(_rig.Camera, _rig.transform, _destination, GetInstanceID());
             }
             else if (_state == State.Completed || _state == State.TransitionFailed)
             {
@@ -112,19 +114,20 @@ namespace Cinematic
         private IEnumerator Leave()
         {
             yield return null;
-            bool canLoad = SceneTransitionController.CanLoad(_destination);
-            Log($"LoadCheck destination={_destination} canLoad={canLoad}");
-            if (!canLoad)
+            if (_transition == null)
             {
-                ShowFailure();
-                yield break;
+                _transition = SceneTransitionController.Begin(_rig.Camera, _rig.transform, _destination, _ending ? (int?)null : GetInstanceID());
             }
-
-            SceneTransitionController transition = SceneTransitionController.Begin(_rig.Camera, _rig.transform, _destination, _ending ? (int?)null : GetInstanceID());
+            else
+            {
+                _transition.BeginTransition();
+            }
+            SceneTransitionController transition = _transition;
             while (transition != null && transition.IsLoading) { yield return null; }
             if (transition != null && !transition.Succeeded)
             {
                 Destroy(transition.gameObject);
+                _transition = null;
                 ShowFailure();
             }
         }

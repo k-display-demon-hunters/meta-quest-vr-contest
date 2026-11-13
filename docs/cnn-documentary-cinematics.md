@@ -42,7 +42,7 @@
 
 ### 오프닝 진단 로그
 
-Quest Logcat에서 Unity 태그와 `[Opening]`을 검색한다. `run`은 같은 오프닝 실행의 상태·구간·영상·전환을 연결하고, `transition`은 공장 전환 시도를 구별한다. 정상 전환은 `LoadCheck → FadeOutCompleted → LoadStarted → SceneLoaded → LoadCompleted → FadeInCompleted` 순서로 확인한다. 로딩 중에는 진행률이 10%p 이상 변하거나 마지막 기록 이후 5초가 지나면 활성 씬, 카메라 활성 상태, 암전 알파를 함께 기록한다. 전환 로그는 오프닝 씬이 해제된 뒤에도 XR 리그에서 이어진다.
+Quest Logcat에서 Unity 태그와 `[Opening]`을 검색한다. `run`은 같은 오프닝 실행의 상태·구간·영상·전환을 연결하고, `transition`은 공장 전환 시도를 구별한다. 정상 전환은 재생 시작 시 `LoadCheck → LoadStarted`, 준비 완료 시 `PreloadReady`, 종료 시 `FadeOutStarted → FadeOutCompleted → ActivationRequested → SceneLoaded → LoadCompleted → FadeInCompleted` 순서로 확인한다. 조기 건너뛰기에서는 `ActivationRequested` 이후에 `PreloadReady`가 기록될 수 있다. 로딩 중에는 진행률이 10%p 이상 변하거나 마지막 기록 이후 5초가 지나면 활성 씬, 카메라 활성 상태, 암전 알파를 함께 기록한다. 전환 로그는 오프닝 씬이 해제된 뒤에도 XR 리그에서 이어진다.
 
 오프닝에서 공장으로 실제 비동기 전환할 때 발견한 기존 오류도 수정했다. `FactoryEnvironmentManager`의 `SetActiveScene` 요청을 아직 로딩 중인 `OnEnable`에서 로딩 완료 후 `Start`로 옮겼다. 학습 단계·이동 코드는 변경하지 않았다. 음원 정리는 씬 루트 해제 순서에 따라 AudioSource가 먼저 파괴되는 경우를 처리한다.
 
@@ -118,3 +118,13 @@ Editor D3D11 배치 Play에서 주요 시점의 실제 카메라 렌더를 저�
 오프닝 입구 간판은 `CNN FACTORY`와 `LEARN / BUILD / EXPLORE`로 구성한다. 문 디테일은 각 문 루트의 자식이므로 기존 열림 동작과 함께 움직인다. `BuildOpeningEntrance`, `BuildOpeningFacadeDetails`, `BuildOpeningDoorDetails`가 씬과 같은 입구를 생성한다. 입구 표면은 `Materials/CNNArchiveOpening/Entrance*.mat` 10개를 사용한다. 기존 텍스처를 참조하되 무광 Simple Lit로 설정하여 Lit 재질에서 나타난 흰 점무늬를 제거한다. 다른 씬이 사용하는 원본 재질과 엔딩의 기존 FactoryTitle 데이터, 음성·대사·시간표는 수정하지 않았다.
 
 후속 전체 검증: Unity 6000.3.24f1 D3D11, Mobile 품질의 에디터에서 기존 시작 처리 함수로 오프닝을 시작해 35초 전체를 자연 재생하고 FactoryEnvironment의 로드·암전 해제까지 확인했다. 25개 구간 시점과 시작·전환 후 화면을 캡처했다. 여섯 자막의 완성 문구가 화면 안에 보이고, 우체국·봉투 확대·픽셀·공장 구간에서 3D 물체에 가려지지 않는 것을 확인했다. 도장 동작 구간의 기존 무자막 시간은 유지한다. 공장 입구의 흰 점무늬, 자막 배경의 폰트 아틀라스 무늬, 처마의 보조 간판 가림을 보정한 뒤 처음부터 재검증했다. 최종 재생 로그에서 런타임 오류·예외는 없었으며 스크립트·셰이더 컴파일 오류도 발견하지 않았다. 원래 음성 01~06이 각각 약 0.5, 8.1, 17.05, 22.05, 26.25, 31.05초에 재생됨을 상태 로그로 확인했다. 음성·대사·일정 데이터와 엔딩 씬에는 변경이 없다. 임시 검증 스크립트와 메타 파일은 완료 후 삭제했다. Quest 실기기 스테레오·성능과 직접 청감은 이 에디터 검증에 포함하지 않는다.
+
+## 오프닝 중 공장 선로딩
+
+시작 버튼을 누르면 CinematicSequenceManager가 Core의 SceneTransitionController.Prepare를 요청한다. Controller는 영속 XR 리그 아래에서 FactoryEnvironment를 Single 방식으로 비동기 로드하고 allowSceneActivation=false로 활성화를 보류한다. 시작 버튼 대기 중에는 로드하지 않는다. 준비 상태에서는 공장의 초기화와 정문 배치가 실행되지 않는다.
+
+자연 종료와 건너뛰기는 같은 Controller의 BeginTransition을 요청한다. 0.25초 암전 후 활성화를 허용하고, 로드 완료와 다음 프레임을 기다린 뒤 암전을 해제한다. 일찍 건너뛰면 같은 로딩 작업의 남은 시간을 기다린다. 준비 대기 중 다른 씬 로드·언로드를 요청하지 않는다. 활성화와 초기화 비용은 전환 시 남는다.
+
+CinematicSequenceManager는 요청 시점과 기존 실패 UI를 담당하고, Controller는 비동기 작업·암전·활성화·결과 상태를 소유한다. 실패한 전환 객체는 제거하며 사용자의 재시도에서 새 작업을 시작한다. 엔딩의 Begin은 Prepare와 BeginTransition을 연달아 호출한다. 공장 초기화 코드와 씬 배치는 변경하지 않았다.
+
+이 변경은 코드와 참조를 정적으로 검토했다. Unity 실행·컴파일·테스트·빌드와 Quest 성능 검증은 수행하지 않았다.

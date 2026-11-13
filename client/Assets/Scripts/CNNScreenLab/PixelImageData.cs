@@ -32,7 +32,6 @@ namespace CNNScreen
 
         public void Dispose()
         {
-            UnityEngine.Object.Destroy(PhotoTexture);
             UnityEngine.Object.Destroy(PixelTexture);
         }
     }

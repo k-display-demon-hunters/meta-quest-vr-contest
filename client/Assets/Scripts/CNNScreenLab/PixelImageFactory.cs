@@ -10,10 +10,11 @@ namespace CNNScreen
 
         public PixelImageData Create()
         {
-            Texture2D photo = CreateSmoothPhoto(_sourceImage);
-            Color32[] pixels = SamplePixels(photo, Columns, Rows);
+            Texture2D samplingImage = CreateSmoothPhoto(_sourceImage);
+            Color32[] pixels = SamplePixels(samplingImage, Columns, Rows);
+            Destroy(samplingImage);
             Texture2D pixelTexture = CreateTexture(pixels, Columns, Rows, FilterMode.Point);
-            return new PixelImageData(photo, pixelTexture, pixels);
+            return new PixelImageData(_sourceImage, pixelTexture, pixels);
         }
 
         private static Texture2D CreateTexture(Color32[] pixels, int columns, int rows, FilterMode filterMode)

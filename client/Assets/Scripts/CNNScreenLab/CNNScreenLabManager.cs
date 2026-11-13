@@ -8,6 +8,7 @@ namespace CNNScreen
     public sealed class CNNScreenLabManager : MonoBehaviour, ILearningExperience
     {
         [SerializeField] private PixelImageFactory _imageFactory;
+        [SerializeField] private PixelGridData _pixelGrid;
         [SerializeField] private PixelBoardController _board;
         [SerializeField] private PixelSelectionController _selection;
         [SerializeField] private PixelRevealStage _revealStage;
@@ -57,7 +58,10 @@ namespace CNNScreen
             if (_pixelPage < 2 || _selection.IsFilterHeld || !_selection.HasSelection || _expanding
                 || _revealStage.Phase != PixelObservationPhase.Inactive) { return; }
             _patchOrigin = _selection.SelectedPixel;
-            _selectedPatch = _imageData.CapturePatch(_patchOrigin);
+            if (!_pixelGrid.TryCapturePatch(_selection.SelectionWorldPosition, out _selectedPatch))
+            {
+                _selectedPatch = _imageData.CapturePatch(_patchOrigin);
+            }
             _expanding = true;
             _selection.SuspendSelection();
             _ui.ShowMoving();

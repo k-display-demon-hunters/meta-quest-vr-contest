@@ -25,8 +25,9 @@ namespace RealityLab
             _ui = GetComponent<RealityUIManager>();
         }
 
-        internal void Initialize(Func<float[], string, Task<InferenceResult>> inferAsync, Func<Task> exitAsync)
+        internal void Initialize(Camera view, Func<float[], string, Task<InferenceResult>> inferAsync, Func<Task> exitAsync)
         {
+            _capture.Initialize(view);
             _inferAsync = inferAsync;
             _exitAsync = exitAsync;
             _cameraReady = _capture.IsReady;
@@ -61,14 +62,11 @@ namespace RealityLab
         private void LateUpdate()
         {
             if (_stage != RealityStage.Ready) { return; }
+            _ui.FollowSelectionGuide();
             if (_capture.IsReady)
             {
                 _capture.GetSelectionGuide(out Pose pose, out Vector2 size);
                 _ui.ShowSelectionGuide(pose, size);
-            }
-            else
-            {
-                _ui.FollowSelectionGuide();
             }
         }
 

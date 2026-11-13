@@ -48,13 +48,12 @@ namespace CNNConvolution
                 mark.gameObject.SetActive(false);
                 _productMarks[i] = mark;
             }
-            _result.SetPositionAndRotation(anchor.position, anchor.rotation);
+            _result.SetParent(anchor, false);
             _highlight = factory.Highlight("Active product cell", 0.178f, 0.158f);
             _highlightEdges = _highlight.GetComponentsInChildren<MeshRenderer>(true);
         }
 
         public Vector3 CellPosition(int index) => _factory.LocalPoint(_products[index].transform.position);
-        public void SetVisible(bool visible) => _result.gameObject.SetActive(visible);
         public bool HasRecordedValue(int index) => _productMarks[index].gameObject.activeSelf;
 
         // Bind the selection overlay during construction so it keeps the original canvas and hit plane.
@@ -65,7 +64,6 @@ namespace CNNConvolution
 
         public void Clear()
         {
-            SetVisible(true);
             for (int i = 0; i < _products.Length; i++)
             {
                 ClearCell(i);

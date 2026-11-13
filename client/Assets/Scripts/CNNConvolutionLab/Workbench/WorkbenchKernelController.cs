@@ -14,6 +14,8 @@ namespace CNNConvolution
         private const float LayerSpreadEnd = 0.75f;
 
         private readonly Transform _root;
+        // The filter rests in the input group so it is shown, hidden and moved together with the input.
+        private readonly Transform _dock;
         private readonly Transform _kernel;
         private readonly Text _kernelTitle;
         private readonly Transform _kernelTitlePlate;
@@ -42,16 +44,18 @@ namespace CNNConvolution
         public event Action Grabbed;
         public event Action Released;
 
-        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform home, Transform target,
+        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform dock, Transform home, Transform target,
             Material placementPreviewMaterial, float placementGhostPeriod)
         {
             _root = root;
+            _dock = dock;
             _factory = factory;
             _home = home;
             _target = target;
             _placementPreviewMaterial = placementPreviewMaterial;
             PlacementGhostPeriod = placementGhostPeriod;
             _kernel = factory.Root("Fixed weight slice");
+            _kernel.SetParent(dock, false);
             _gripAccents = FilterFrame(factory, _kernel);
             _slices[0] = _kernel;
             _kernelTitlePlate = factory.PanelHeading(_home);
@@ -256,7 +260,7 @@ namespace CNNConvolution
         public void RestoreParent()
         {
             // XR detaches the object while held. Keep its world scale when returning it.
-            _kernel.SetParent(_root, true);
+            _kernel.SetParent(_dock, true);
         }
 
         public void SetPose(Pose pose)
@@ -283,9 +287,9 @@ namespace CNNConvolution
                 _grab.interactionManager.CancelInteractableSelection((IXRSelectInteractable)_grab);
                 _cancellingSelection = false;
             }
-            if (_grab.transform.parent != _root)
+            if (_grab.transform.parent != _dock)
             {
-                if (_root.gameObject.activeInHierarchy) { RestoreParent(); }
+                if (_dock.gameObject.activeInHierarchy) { RestoreParent(); }
                 else { _grab.gameObject.SetActive(false); }
             }
         }

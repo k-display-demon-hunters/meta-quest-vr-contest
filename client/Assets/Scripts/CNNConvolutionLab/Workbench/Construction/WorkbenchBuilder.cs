@@ -5,6 +5,23 @@ namespace CNNConvolution
 {
     public sealed class WorkbenchBuilder : MonoBehaviour
     {
+        [Header("Panel groups")]
+        [SerializeField] private Transform _inputGroup;
+        [SerializeField] private Transform _productsGroup;
+        [SerializeField] private Transform _outputGroup;
+        [SerializeField] private Transform _equationGroup;
+        [SerializeField] private Transform _meaningGroup;
+
+        [Header("Focus slots")]
+        [SerializeField] private Transform _inputCenterSlot;
+        [SerializeField] private Transform _inputSideSlot;
+        [SerializeField] private Transform _gridCenterSlot;
+        [SerializeField] private Transform _gridSideSlot;
+        [SerializeField] private Transform _equationCenterSlot;
+        [SerializeField] private Transform _equationSideSlot;
+        [SerializeField] private Transform _meaningSlot;
+
+        [Header("Panel anchors")]
         [SerializeField] private Transform _inputAnchor;
         [SerializeField] private Transform _productsAnchor;
         [SerializeField] private Transform _kernelHome;
@@ -24,57 +41,29 @@ namespace CNNConvolution
         private WorkbenchPrimitiveFactory _factory;
         private WorkbenchKernelController _kernel;
 
-        internal (WorkbenchPrimitiveFactory Factory, InputGridController Input, WorkbenchKernelController Kernel,
-            ResultGridController Products, ResultGridController Result, EquationDisplayController Equations, FlyingNumberController Number) Build(Font font)
+        internal (WorkbenchPrimitiveFactory Factory, FocusLayoutController Focus, InputGridController Input,
+            WorkbenchKernelController Kernel, ResultGridController Products, ResultGridController Result,
+            EquationDisplayController Equations, FlyingNumberController Number) Build(Font font, LessonPlayback playback)
         {
             _sideNumbers = new SideNumberController();
             _factory = new WorkbenchPrimitiveFactory(transform, font, _sideNumbers);
             _backdrop = new WorkbenchHologramBackdrop(transform, _hologramBackdropMaterial);
+            FocusLayoutController focus = new FocusLayoutController(_inputGroup, _productsGroup, _outputGroup, _equationGroup,
+                _meaningGroup, _inputCenterSlot, _inputSideSlot, _gridCenterSlot, _gridSideSlot, _equationCenterSlot,
+                _equationSideSlot, _meaningSlot, playback);
             InputGridController input = new InputGridController(_factory, _inputAnchor);
-            _kernel = new WorkbenchKernelController(_factory, transform, _kernelHome, _kernelTarget, _placementPreviewMaterial, _placementGhostPeriod);
+            _kernel = new WorkbenchKernelController(_factory, transform, _inputGroup, _kernelHome, _kernelTarget,
+                _placementPreviewMaterial, _placementGhostPeriod);
             ResultGridController products = new ResultGridController(_factory, _productsAnchor, "중간 계산 · 아홉 곱", hasEquationArea: true);
             ResultGridController result = new ResultGridController(_factory, _resultAnchor, "최종 출력 · 3×3", hasEquationArea: false);
             EquationDisplayController equations = new EquationDisplayController(_factory, _sumAnchor, _equationAnchor, _sumEquationAnchor);
             FlyingNumberController number = new FlyingNumberController(_factory, "Animated calculation copy", 0.9f);
-            return (_factory, input, _kernel, products, result, equations, number);
+            return (_factory, focus, input, _kernel, products, result, equations, number);
         }
 
         internal Transform PlacementTarget => _kernelTarget;
         internal Text PlacementHint => _placementHint;
-
-#if UNITY_EDITOR
-        [ContextMenu("Apply Workbench Panel Layout")]
-        private void ApplyPanelLayout()
-        {
-            Transform hint = _placementHint.rectTransform;
-            Transform[] anchors =
-            {
-                _kernelHome, _inputAnchor, _kernelTarget, _productsAnchor, _resultAnchor,
-                _equationAnchor, _sumAnchor, _sumEquationAnchor, hint
-            };
-            UnityEditor.Undo.RecordObjects(anchors, "Apply Convolution Panel Layout");
-
-            Quaternion leftWing = Quaternion.Euler(0f, -40f, 0f);
-            _kernelHome.SetLocalPositionAndRotation(new Vector3(-2.91f, -0.20f, -1.30f), leftWing);
-            _inputAnchor.SetLocalPositionAndRotation(new Vector3(-1.79f, 0.04f, -0.27f), leftWing);
-            _productsAnchor.SetLocalPositionAndRotation(new Vector3(-0.67f, 0.04f, 0.10f), Quaternion.identity);
-            _resultAnchor.SetLocalPositionAndRotation(new Vector3(0.67f, 0.04f, 0.10f), Quaternion.identity);
-
-            PlaceRelative(_kernelTarget, _inputAnchor, InputGridController.WindowOffset(0, 0));
-            PlaceRelative(_equationAnchor, _productsAnchor, new Vector3(0f, -0.39f, -0.035f));
-            PlaceRelative(_sumAnchor, _productsAnchor, new Vector3(0f, -0.55f, -0.035f));
-            PlaceRelative(_sumEquationAnchor, _productsAnchor, new Vector3(0f, -0.71f, -0.035f));
-            PlaceRelative(hint, _kernelHome, new Vector3(0f, -0.49f, -0.06f));
-
-            foreach (Transform anchor in anchors)
-            {
-                UnityEditor.PrefabUtility.RecordPrefabInstancePropertyModifications(anchor);
-            }
-        }
-
-        private static void PlaceRelative(Transform anchor, Transform panel, Vector3 offset) =>
-            anchor.SetPositionAndRotation(panel.TransformPoint(offset), panel.rotation);
-#endif
+        internal Transform MeaningAnchor => _meaningGroup;
 
         private void LateUpdate()
         {

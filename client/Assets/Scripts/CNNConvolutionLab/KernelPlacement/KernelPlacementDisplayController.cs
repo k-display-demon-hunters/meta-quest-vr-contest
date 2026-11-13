@@ -65,7 +65,7 @@ namespace CNNConvolution
             longStroke.localRotation = Quaternion.Euler(0, 0, -40);
             _placementSolid.gameObject.SetActive(false);
             _placementCheck.gameObject.SetActive(false);
-            _dropTarget.SetPositionAndRotation(target.position, target.rotation);
+            _dropTarget.SetParent(target, false);
             _dropTarget.gameObject.SetActive(false);
         }
 

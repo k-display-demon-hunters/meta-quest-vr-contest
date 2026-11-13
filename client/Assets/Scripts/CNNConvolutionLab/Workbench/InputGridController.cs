@@ -25,6 +25,8 @@ namespace CNNConvolution
             for (int c = 0; c < 3; c++)
             {
                 _layers[c] = c == 0 ? front : factory.Root(Names[c] + " input slice");
+                _layers[c].SetParent(anchor, false);
+                _layers[c].localPosition = ChannelOffset(c);
                 factory.Frame(_layers[c], 0.97f, 0.86f, 0.055f, WorkbenchColors.PanelFrame, 0.012f);
                 // Open frames preserve the channel depth without a solid plate hiding the next layer.
                 _windows[c] = factory.Highlight(Names[c] + " receptive field", 0.59f, 0.53f);
@@ -64,10 +66,6 @@ namespace CNNConvolution
                     WorkbenchPrimitiveFactory.Tint(_inputFaces[c, i], color);
                     _values[c, i].color = Color.white;
                 }
-            }
-            for (int channel = 0; channel < _layers.Length; channel++)
-            {
-                _layers[channel].SetPositionAndRotation(_anchor.TransformPoint(ChannelOffset(channel)), _anchor.rotation);
             }
             ShowChannel(0);
             ShowWindow(0, 0);

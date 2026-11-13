@@ -9,25 +9,27 @@ namespace CNNConvolution
         private readonly OutputSelectionController _selection;
         private readonly EquationDisplayController _equations;
         private readonly LessonUIController _ui;
+        private readonly LessonNarrationController _narration;
         private readonly LessonPlayback _playback;
         private int _expectedIndex;
         private bool _answered;
         public bool Waiting { get; private set; }
 
         public ConvolutionQuizController(ResultGridController result, EquationDisplayController equations,
-            LessonUIController ui, LessonPlayback playback)
+            LessonUIController ui, LessonNarrationController narration, LessonPlayback playback)
         {
             _selection = new OutputSelectionController(result);
             _equations = equations;
             _ui = ui;
+            _narration = narration;
             _playback = playback;
         }
 
         public IEnumerator Run(int expectedIndex)
         {
             _expectedIndex = expectedIndex;
-            _ui.Title = "<size=48><color=#FFD582>위치 퀴즈</color></size>  ·  출력 칸 고르기";
-            _ui.Explanation = "<b>이번 출력값은 어느 칸에 들어갈까요?</b>\n오른쪽 3×3 출력판에서 한 칸을 골라 주세요.";
+            _ui.Caption = "위치 퀴즈 · 이번 출력값이 들어갈 빈칸을 골라 주세요.";
+            _narration.Play(NarrationCue.Quiz);
             _equations.Clear();
             _answered = false;
             Waiting = true;
@@ -44,9 +46,10 @@ namespace CNNConvolution
                 }
                 yield return null;
             }
-            _ui.Title = "<color=#93EDB6>정답</color>  ·  1행 2열이에요";
-            _ui.Explanation = "이제 이 위치의 R · G · B를 계산해요.";
+            _ui.Caption = $"정답 · {_expectedIndex / 3 + 1}행 {_expectedIndex % 3 + 1}열이에요.";
+            _narration.Play(NarrationCue.QuizCorrect);
             yield return _playback.Wait(0.5f);
+            yield return _narration.WaitUntilDone();
             Cancel();
         }
 
@@ -57,8 +60,8 @@ namespace CNNConvolution
             if (!Waiting || _answered || _playback.IsPaused) { return; }
             if (index != _expectedIndex)
             {
-                _ui.Title = "다시 골라 볼까요?";
-                _ui.Explanation = $"선택한 곳은 {index / 3 + 1}행 {index % 3 + 1}열이에요.\n필터가 오른쪽 한 칸 이동했으니 출력도 같은 행에서 오른쪽 한 칸이에요.";
+                _ui.Caption = $"{index / 3 + 1}행 {index % 3 + 1}열은 아니에요. 필터가 오른쪽으로 한 칸 움직였어요.";
+                _narration.Play(NarrationCue.QuizWrong);
                 return;
             }
             _answered = true;

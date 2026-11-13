@@ -42,6 +42,7 @@ namespace CNNConvolution.Editor
             WorkbenchBuilder spatial = blocks.GetComponent<WorkbenchBuilder>();
             SerializedObject fields = new SerializedObject(manager);
             fields.FindProperty("_ui").objectReferenceValue = ui;
+            fields.FindProperty("_narration").objectReferenceValue = CreateNarration(root.transform);
             fields.FindProperty("_spatial").objectReferenceValue = spatial;
             fields.FindProperty("_font").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
@@ -54,6 +55,35 @@ namespace CNNConvolution.Editor
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes.Concat(
                     new[] { new EditorBuildSettingsScene(ScenePath, true) }).ToArray();
             }
+        }
+
+        // The voice sits at the focus centre and fades out before it reaches the neighbouring room.
+        private static LessonNarrationController CreateNarration(Transform root)
+        {
+            GameObject narrationObject = new GameObject("Lesson narration", typeof(AudioSource), typeof(LessonNarrationController));
+            narrationObject.transform.SetParent(root, false);
+            narrationObject.transform.localPosition = new Vector3(0, 1.58f, 0.7f);
+            AudioSource voice = narrationObject.GetComponent<AudioSource>();
+            voice.playOnAwake = false;
+            voice.priority = 64;
+            voice.spatialBlend = 1f;
+            voice.dopplerLevel = 0f;
+            voice.rolloffMode = AudioRolloffMode.Linear;
+            voice.minDistance = 6f;
+            voice.maxDistance = 14f;
+            LessonNarrationController narration = narrationObject.GetComponent<LessonNarrationController>();
+            SerializedObject fields = new SerializedObject(narration);
+            fields.FindProperty("_voice").objectReferenceValue = voice;
+            string[] cues = Enum.GetNames(typeof(NarrationCue));
+            SerializedProperty clips = fields.FindProperty("_clips");
+            clips.arraySize = cues.Length;
+            for (int index = 0; index < cues.Length; index++)
+            {
+                clips.GetArrayElementAtIndex(index).objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(
+                    $"Assets/Audio/CNNConvolutionLab/ConvolutionNarration_{cues[index]}.wav");
+            }
+            fields.ApplyModifiedPropertiesWithoutUndo();
+            return narration;
         }
     }
 }

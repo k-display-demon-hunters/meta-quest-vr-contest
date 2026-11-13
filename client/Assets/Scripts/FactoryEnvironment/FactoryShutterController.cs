@@ -48,7 +48,7 @@ namespace FactoryEnvironment
             {
                 _hologramVisible = visible;
             }
-            else
+            else if (_unavailableSign != null)
             {
                 _unavailableSign.SetActive(visible);
             }

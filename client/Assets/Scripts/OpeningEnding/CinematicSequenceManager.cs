@@ -1,12 +1,13 @@
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UI;
 
 namespace Cinematic
 {
     public sealed class CinematicSequenceManager : MonoBehaviour
     {
+        [SerializeField] private CinematicTransitionController _transitionPrefab;
+
         private enum State
         {
             Initializing,
@@ -25,6 +26,7 @@ namespace Cinematic
         [SerializeField] private string _destination = "FactoryEnvironment";
 
         private XROrigin _rig;
+        private CinematicTransitionController _transition;
         private State _state;
 
         private void OnEnable()
@@ -44,14 +46,24 @@ namespace Cinematic
             Log($"Disabled state={_state} elapsed={_presentation.Elapsed:F2}s");
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
             Log($"Initializing destination={_destination}");
             _rig = FindFirstObjectByType<XROrigin>();
             _interaction.Bind(_rig, _ending);
             _presentation.Bind(_content, _model, _ending, _rig.Camera.transform, GetInstanceID());
-            SetState(_ending ? State.Playing : State.WaitingForStart);
-            if (_ending) { _presentation.Begin(); }
+            if (!_ending)
+            {
+                SetState(State.WaitingForStart);
+                yield break;
+            }
+
+            // Direct scene play has no incoming transition. Factory entry waits for its fade-in.
+            CinematicTransitionController arrival = _rig.GetComponentInChildren<CinematicTransitionController>();
+            while (arrival != null && arrival.IsLoading) { yield return null; }
+            _interaction.BeginEnding();
+            SetState(State.Playing);
+            _presentation.Begin();
         }
 
         private void Update()
@@ -72,6 +84,7 @@ namespace Cinematic
                 SetState(State.Playing);
                 _interaction.BeginOpening();
                 _presentation.Begin();
+                _transition = CinematicTransitionController.Prepare(_transitionPrefab, _rig.Camera, _rig.transform, _destination);
             }
             else if (_state == State.Completed || _state == State.TransitionFailed)
             {
@@ -112,19 +125,20 @@ namespace Cinematic
         private IEnumerator Leave()
         {
             yield return null;
-            bool canLoad = SceneTransitionController.CanLoad(_destination);
-            Log($"LoadCheck destination={_destination} canLoad={canLoad}");
-            if (!canLoad)
+            if (_transition == null)
             {
-                ShowFailure();
-                yield break;
+                _transition = CinematicTransitionController.Begin(_transitionPrefab, _rig.Camera, _rig.transform, _destination);
             }
-
-            SceneTransitionController transition = SceneTransitionController.Begin(_rig.Camera, _rig.transform, _destination, _ending ? (int?)null : GetInstanceID());
+            else
+            {
+                _transition.BeginTransition();
+            }
+            CinematicTransitionController transition = _transition;
             while (transition != null && transition.IsLoading) { yield return null; }
             if (transition != null && !transition.Succeeded)
             {
                 Destroy(transition.gameObject);
+                _transition = null;
                 ShowFailure();
             }
         }

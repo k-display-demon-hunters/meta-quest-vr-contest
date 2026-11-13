@@ -33,7 +33,7 @@ namespace Cinematic
         {
             _movement.Bind(rig, !ending);
             _movement.SetUIVisible(!ending);
-            _input.Bind(!ending);
+            _input.Bind(true);
             _controls.Bind(rig.Camera, ending);
         }
 
@@ -43,6 +43,12 @@ namespace Cinematic
             _movement.SetControllersVisible(false);
             _movement.SetUIVisible(false);
             _controls.SetButtonVisible(false);
+        }
+
+        internal void BeginEnding()
+        {
+            _input.ResetHold();
+            _input.BeginPlayback();
         }
 
         internal void ShowEndingControls()

@@ -24,7 +24,11 @@ namespace Cinematic
             _screen.clip = content.OpeningCrowd;
             _rewind.clip = content.Rewind;
             _pad.clip = ending ? content.Pad : content.OpeningScore;
-            if (ending && _pad.clip != null) { _pad.Play(); }
+        }
+
+        internal void BeginEnding()
+        {
+            if (_pad.clip != null) { _pad.Play(); }
         }
 
         public void BeginOpening()

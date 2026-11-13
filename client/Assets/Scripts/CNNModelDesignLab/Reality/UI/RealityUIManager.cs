@@ -44,12 +44,12 @@ namespace RealityLab
             _resultExit.interactable = stage == RealityStage.Result;
 
             _cameraStatus.text = cameraReady ? "카메라 · 촬영 가능" : "카메라 · 권한 확인 중";
-            _guideStatus.text = cameraReady ? "숫자 0~3 중 한 자리" : "헤드셋 카메라 권한을 확인하세요.";
+            _guideStatus.text = cameraReady ? "촬영 준비 완료" : "헤드셋 카메라 권한을 확인하세요.";
             switch (stage)
             {
                 case RealityStage.Ready:
                     _stageText.text = "숫자 촬영";
-                    _message.text = "숫자 하나를 프레임에 맞춘 뒤 촬영하세요.";
+                    _message.text = "숫자가 프레임 안에 들어오면 ‘촬영하기’를 눌러 주세요.";
                     break;
                 case RealityStage.Captured:
                     _stageText.text = "모델 입력 확인";

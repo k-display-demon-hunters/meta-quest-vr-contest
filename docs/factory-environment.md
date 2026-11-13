@@ -16,7 +16,7 @@
 
 씬의 오브젝트 ID와 Transform, 충돌 영역, 셔터의 이동 방식과 체험 연결을 유지한다. 실내 등기구와 간접광을 다시 베이크해 라이트맵 2장과 방별 반사 프로브 5개를 생성했다. 데스크 주변과 튜토리얼 작업화·연구복은 데스크톱 Unity Play의 전후 화면에서 확인했다. Quest 기기 성능은 실측하지 않았다. 텍스처 출처는 [에셋 출처 및 저작권](ASSET_CREDITS.md)에 기록했다.
 
-튜토리얼실과 ROOM #2에는 중앙 천장등 하나와 외곽 선형 등기구 네 개가 있다. 튜토리얼은 외곽등 세 개가 깨져 있으며 중앙등과 남은 외곽등의 세기와 범위를 낮췄다. ROOM #2는 대각선의 두 개가 깨져 있으며 중앙등과 외곽등 두 개로 바닥을 비춘다. ROOM #1-1은 검은 천장등 네 개를 사용한다. ROOM #1-2는 검은 두 줄 등기구 여섯 개를 사용한다. 서로 다른 행·열의 두 개는 형광관이 깨져 있으며 나머지 네 개는 스폿 조명으로 바닥을 비춘다. 깨진 등기구 일곱 개 아래에는 유리와 등기구 테두리 조각이 흩어져 있다. 휴게실에는 검은 천장등 두 개를 두고 스폿 조명의 세기와 범위를 낮췄다. ROOM #3은 바깥쪽의 검은 두 줄 등기구 네 개를 사용하며 각 등기구 중앙에서 실시간 스폿 하나가 바닥을 비춘다. 책상 램프 일곱 개에는 소형 작업광을 연결한다. 현재 라이트맵과 반사 프로브는 이전 배치의 베이크 결과다.
+튜토리얼실과 ROOM #2에는 중앙 천장등 하나와 외곽 선형 등기구 네 개가 있다. 튜토리얼은 외곽등 세 개가 깨져 있으며 중앙등과 남은 외곽등의 세기를 낮췄다. ROOM #2는 대각선의 두 개가 깨져 있으며 중앙등과 외곽등 두 개로 바닥을 비춘다. ROOM #1-1은 검은 천장등 네 개를 사용한다. ROOM #1-2는 검은 두 줄 등기구 여섯 개를 사용한다. 서로 다른 행·열의 두 개는 형광관이 깨져 있으며 나머지 네 개는 각 형광관에 연결된 베이크 면광원을 사용한다. 깨진 등기구 일곱 개 아래에는 유리와 등기구 테두리 조각이 흩어져 있다. 휴게실에는 검은 천장등 두 개를 두고 스폿 조명의 세기와 범위를 낮췄다. ROOM #3은 바깥쪽의 검은 두 줄 등기구 네 개를 사용하며 각 형광관에 연결된 베이크 면광원을 사용한다. 책상 램프 일곱 개에는 소형 작업광을 연결한다. 현재 라이트맵과 반사 프로브는 이전 배치의 베이크 결과다.
 
 정문 캐노피 아래 벽등 두 개의 점광원과 갓 밝기를 각각 절반으로 설정했다. [FactoryLightFaultController](../client/Assets/Scripts/FactoryEnvironment/FactoryLightFaultController.cs)는 점광원과 확산판을 약 0.42초간 함께 깜빡이고 해당 위치에서 합선 효과음을 재생한다. 정문 벽등은 각각 5초 간격으로 2.5초 차이를 두고 깜빡이며 스파크 입자 40개와 20개를 연달아 방출한다. 연결 복도등의 주기는 7초다. ROOM #1에서 ROOM #2로 가는 복도와 ROOM #3에서 후문으로 가는 복도의 등기구는 줄 두 개로 천장에 연결한다. ROOM #1에서 ROOM #2로 가는 복도의 등기구에서 스파크가 두 번 튀며 인접 벽과 천장이 잠깐 밝아진다. 후문 복도는 꺾이기 전의 등기구 하나를 사용한다.
 
@@ -301,7 +301,7 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 7. 플레이어가 접근 범위 안에 있고 닫힌 셔터를 열 수 없으면 `FactoryShuttersManager`는 해당 `FactoryShutterController`에 안내 표시를 요청한다. 양면 World Space 안내판 `Prefabs/FactoryEnvironment/ShutterUnavailableSign.prefab`은 ROOM #1-1에서 ROOM #1-2로 가는 아치 문과 ROOM #1-2·#2·#3 출구에만 배치한다. 문구는 “체험을 완료해야 문을 열 수 있습니다”다. 문이 열리거나 접근 범위를 벗어나면 안내판을 숨긴다.
 8. FactoryShuttersManager는 LearningSessionManager의 StageAvailabilityChanged를 직접 구독한다. 체험에서 퇴장이 가능해지면 FactoryLayoutData.GetStageSpace(stage).ExitShutter로 출구를 조회하고 셔터당 한 번 자동 개방을 요청한다. 기존 개방 조건이 충족되면 접근 범위 밖에서도 출구를 열고 안내판을 숨긴다. 플레이어가 6m 안에 들어온 뒤 다시 밖으로 나가면 문을 닫고 일반 근접 개폐로 돌아간다. 개방 시 이미 6m 안에 있으면 접근한 것으로 처리한다. ShuttersManager는 출구마다 자동 개방 대기와 접근 여부를 관리한다.
 
-ROOM #1과 ROOM #2 입구의 바닥 투사 안내는 `ShutterFloorHologram.prefab`의 바닥 높이와 패널 기울기를 공통으로 사용한다. 각 `FactoryShutterController`가 해당 인스턴스의 투사 표시, 패널과 스캔 라인을 참조하고 펼침·접힘을 갱신한다.
+ROOM #1과 ROOM #2 입구의 바닥 투사 안내는 `ShutterFloorHologram.prefab`의 바닥 높이와 패널 기울기를 공통으로 사용한다. 각 `FactoryShutterController`가 해당 인스턴스의 투사 표시, 패널과 스캔 라인을 참조하고 펼침·접힘을 갱신한다. ROOM #2 입구에서는 `FactoryShuttersManager`가 직전 체험의 완료 여부와 입장용 양피지 수집 여부를 확인해 남은 조건을 전달한다. 표시 문구는 입구의 바닥 홀로그램에서 갱신된다.
 9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 OpeningEnding의 CinematicTransitionController로 CNNArchiveEnding 전환을 요청한다. 1초 게이트 진입 연출로 가린 후 Single로 활성화하고, 0.6초 도착 연출이 끝나면 엔딩 본편이 시작된다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.

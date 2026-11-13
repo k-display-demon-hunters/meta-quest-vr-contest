@@ -78,32 +78,6 @@ MonoBehaviour:
     StartSeconds: 0
     Duration: 35
     Source: "OpenAI image_gen · 1989년 미국 우체국의 가상 재구성"
-  PostOfficeStamp:
-    Id: PO_STAMP
-    Video: {fileID: 32900000, guid: ff7b900e87b84b5cb01071508644d17c, type: 3}
-    Still: {fileID: 2800000, guid: 2bd6b66b5fbb4c17b8f39f6078bf86b9, type: 3}
-    UV:
-      serializedVersion: 2
-      x: 0.10
-      y: 0.035
-      width: 0.89
-      height: 0.89
-    StartSeconds: 0
-    Duration: 2.8
-    Source: "OpenAI image_gen 이미지와 FFmpeg 합성"
-  PostOfficeEnvelope:
-    Id: PO_STAMPED_ENVELOPE
-    Video: {fileID: 0}
-    Still: {fileID: 2800000, guid: 37ac5de567db4374bba9ddc21cec3273, type: 3}
-    UV:
-      serializedVersion: 2
-      x: 0
-      y: 0
-      width: 1
-      height: 1
-    StartSeconds: 0
-    Duration: 4
-    Source: "도장 컷의 마지막 프레임과 인식 표시"
   OpeningCrowd: {fileID: 8300000, guid: 1a5a2268713e469dbf509bf1a0cd2118, type: 3}
   OpeningScore: {fileID: 8300000, guid: c88cd00a3fc945e5b6419fe93254bb64, type: 3}
   OpeningLocation: "1989년, 미국의 한 우체국"

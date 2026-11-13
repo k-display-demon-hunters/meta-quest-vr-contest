@@ -78,19 +78,6 @@ namespace CinematicEditor
             Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice_US_1989.png");
             Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/EverydayVisionAtlas.png");
             _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_US_1989", Still=post, Source="OpenAI image_gen · 1989년 미국 우체국 분위기 재구성 · 실제 기록사진 아님" };
-            _content.PostOfficeStamp = new CinematicText.ArchiveClip
-            {
-                Id = "PO_STAMP",
-                Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampPlate.png"),
-                Video = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/Textures/OpeningEnding/PostOfficeStamp.mp4"),
-                UV = new Rect(.10f, .035f, .89f, .89f),
-                Duration = 2.8f
-            };
-            _content.PostOfficeEnvelope = new CinematicText.ArchiveClip
-            {
-                Id = "PO_STAMPED_ENVELOPE",
-                Still = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOfficeStampedEnvelope.png")
-            };
             string[] years = { "1998", "2012", "2015", "2018", "2020", "2022", "2024", "2026" };
             string[] labels = { "725", "사진 분류", "얼굴", "12가 3456", "양말 · 전선", "표지판 30", "확인 필요", "고양이" };
             double[] durations = { 1.8, 1.6, 1.4, 1.3, 1.2, 1.2, 1.2, 1.3 };

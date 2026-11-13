@@ -44,8 +44,6 @@ namespace Cinematic
         public Line[] Opening;
         public Line[] Ending;
         public ArchiveClip PostOffice;
-        public ArchiveClip PostOfficeStamp;
-        public ArchiveClip PostOfficeEnvelope;
         public AudioClip OpeningCrowd, OpeningScore;
         public string OpeningLocation = "1989년, 미국의 한 우체국";
         public string OpeningResearch = "1989 · 얀 르쿤 연구팀의 손글씨 우편번호 인식 연구";

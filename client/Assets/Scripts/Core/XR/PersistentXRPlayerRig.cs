@@ -1,3 +1,4 @@
+using System.Collections;
 using Tablet;
 using UnityEngine;
 
@@ -25,7 +26,39 @@ namespace XR
         {
             _leftControllerModel = CreateControllerVisual(_leftGripVisual, true).gameObject;
             _rightControllerModel = CreateControllerVisual(_rightGripVisual, false).gameObject;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            StartCoroutine(RequestStartupDisplayRefreshRate());
+#endif
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private IEnumerator RequestStartupDisplayRefreshRate()
+        {
+            // The SDK returns zero until the OpenXR session can report its refresh rate.
+            while (OVRPlugin.systemDisplayFrequency <= 0f)
+                yield return null;
+
+            OVRPlugin.systemDisplayFrequency = 90f;
+            Debug.Log("[XR] Requested startup display refresh rate: 90 Hz.", this);
+
+            float deadline = Time.realtimeSinceStartup + 5f;
+            float actualFrequency;
+            do
+            {
+                yield return null;
+                actualFrequency = OVRPlugin.systemDisplayFrequency;
+                if (Mathf.Abs(actualFrequency - 90f) < 0.1f)
+                {
+                    Debug.Log($"[XR] Confirmed startup display refresh rate: {actualFrequency:0.##} Hz.", this);
+                    yield break;
+                }
+            }
+            while (Time.realtimeSinceStartup < deadline);
+
+            string actualState = actualFrequency > 0f ? $"{actualFrequency:0.##} Hz" : "unavailable";
+            Debug.LogWarning($"[XR] Startup 90 Hz request was not confirmed within 5 seconds. Last queried refresh rate: {actualState}.", this);
+        }
+#endif
 
         public void SetControllerModelsVisible(bool visible)
         {

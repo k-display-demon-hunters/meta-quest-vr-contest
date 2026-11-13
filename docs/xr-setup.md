@@ -20,6 +20,12 @@
 
 `SubsystemRegistration`에서 정적 리그 참조를 초기화하므로 도메인 재로드를 끈 에디터 실행에서도 이전 참조를 재사용하지 않는다.
 
+### 시작 주사율
+
+Android 기기에서는 `PersistentXRPlayerRig.Start()`가 컨트롤러 모델을 생성한 뒤 `RequestStartupDisplayRefreshRate()` 코루틴을 시작한다. `OVRPlugin.systemDisplayFrequency`로 현재 주사율을 조회할 수 있을 때까지 기다린 후 90Hz를 한 번 요청한다. SDK가 조회 실패 시 반환하는 0은 아직 요청할 준비가 되지 않은 상태로 취급한다.
+
+영속 리그가 유지되므로 씬 이동 때마다 다시 요청하지 않으며, Unity 에디터에서는 실행하지 않는다. `[XR] Requested startup display refresh rate: 90 Hz.` 로그는 요청 사실만 기록한다. 요청 다음 프레임부터 최대 5초 동안 실제 주사율을 조회하고, 90Hz와의 차이가 0.1Hz 미만이면 `[XR] Confirmed startup display refresh rate: 90 Hz.` 형식으로 조회값을 기록한다. 대기 시간은 `Time.realtimeSinceStartup`을 사용하므로 게임 시간 배율에 영향을 받지 않는다. 제한 시간 안에 확인되지 않으면 마지막 조회 주사율을 경고로 남기며, SDK 조회 실패값 0은 `unavailable`로 표시한다. 확인 후에는 조회를 종료한다. 주사율 확인은 실제 90fps 유지나 이후 주사율 유지까지 보장하지 않으며, 기기 실행 결과와 성능은 확인 전이다.
+
 ### 컨트롤러 모델과 태블릿 표시
 
 `PersistentXRPlayerRig`는 프리팹에 연결한 양손 부착점에 컨트롤러 모델을 생성하고 생성한 인스턴스를 보관한다. `SetControllerModelsVisible(bool)`은 두 모델의 표시를 제어한다. `SetTabletVisible(bool)`은 프리팹에 연결한 `TabletManager.SetAvailable(bool)`을 호출해 태블릿의 표시와 입력 활성화를 함께 요청한다. 모델을 숨겨도 부착점의 `TrackedPoseDriver`는 계속 활성 상태다. 컨트롤러 표시 상태는 `ControllerModelsVisible`로, 태블릿 사용 상태는 `TabletVisible`을 통해 `TabletManager.IsAvailable`에서 조회한다.

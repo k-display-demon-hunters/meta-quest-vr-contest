@@ -9,6 +9,7 @@ namespace FactoryEnvironment
     {
         [SerializeField] private FactoryShutterId _id;
         [SerializeField] private Transform _panel;
+        [SerializeField] private OcclusionPortal _occlusionPortal;
         [SerializeField] private GameObject _unavailableSign;
         [SerializeField] private CanvasGroup _hologramProjector;
         [SerializeField] private RectTransform _hologramPanel;
@@ -31,6 +32,7 @@ namespace FactoryEnvironment
         private void Awake()
         {
             _closedPosition = _panel.localPosition;
+            _occlusionPortal.open = false;
             if (_hologramProjector != null)
             {
                 _hologramPanelScale = _hologramPanel.localScale;
@@ -38,8 +40,17 @@ namespace FactoryEnvironment
             }
         }
 
-        public void Open() => _open = true;
-        public void Close() => _open = false;
+        public void Open()
+        {
+            _occlusionPortal.open = true;
+            _open = true;
+        }
+        public void Close()
+        {
+            _open = false;
+            if (_amount == 0f)
+                _occlusionPortal.open = false;
+        }
         public void SetNear(bool isNear) => _isNear = isNear;
 
         public void SetUnavailable(bool unavailable, bool experienceIncomplete = false, bool parchmentMissing = false)
@@ -95,6 +106,8 @@ namespace FactoryEnvironment
             if (!_open && _isNear) { return; }
             _amount = Mathf.MoveTowards(_amount, target, Time.deltaTime / _duration);
             _panel.localPosition = _closedPosition + Vector3.up * (_travel * Mathf.SmoothStep(0f, 1f, _amount));
+            if (_amount == 0f)
+                _occlusionPortal.open = false;
         }
     }
 }

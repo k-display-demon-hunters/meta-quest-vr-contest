@@ -56,6 +56,7 @@ namespace Cinematic
 
         private void Update()
         {
+            if (_state == State.WaitingForStart) { _presentation.AlignOpeningToViewer(); }
             if (_state == State.Playing) { _presentation.Tick(Time.deltaTime); }
             if (_state == State.Playing || _state == State.Completed || _state == State.TransitionFailed)
             {

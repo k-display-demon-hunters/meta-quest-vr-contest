@@ -128,6 +128,20 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 
 ## 미국 우체국 오프닝
 
+### 2026-11-13 출처·배포 조건 확인
+
+- **Quaternius Ultimate Modular Men Pack — Suit.fbx, Casual_2.fbx**: `client/Assets/Meshes/CNNArchiveOpening/`. [제작자 공식 배포 페이지](https://quaternius.com/packs/ultimatemodularcharacters.html), [공식 배포 폴더](https://drive.google.com/drive/folders/1USAAquX2JJWuA2m6zol0KUkFe3UkZ8zX), [동봉 License.txt](https://drive.google.com/file/d/1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z/view). 제작자·권리 표기: Quaternius. **CC0 1.0**. 공식 페이지, FAQ, 동봉 고지에서 수정·상업적 사용·재배포 허용 확인. 저작자 표기 의무는 없으나 프로젝트 제출 기록에 기재한다. CC0는 상표·초상·프라이버시 권리를 포괄 보증하지 않으며 제작자 보증이나 후원을 암시하지 않는다. FBX 원본 수정 없음. Codex AI 보조로 Unity에서 Idle/Walk 동작 선택, 크기·배치·동선과 무광 재질을 설정한다. 원래 License.txt 고지는 모델과 함께 보존한다.
+- **ArchiveMaterials.png 재사용**: 기존 엔딩 소품 외에 오프닝 우체국 목재·테라조·회벽·종이 표면에도 사용. 기존 OpenAI image_gen / Codex AI 보조 생성 이미지이며 위 기록의 권리자 미확인 상태를 유지한다. PNG 원본 수정·복제 없음. 재질의 UV 영역과 색만 변경.
+- **OpeningCrowd.mp3**: [4177569399의 Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/)에서 CC0 표기를 재확인했다. 프로젝트 파일은 사용자 제공 Pixabay 파일이므로 원본과의 동일성까지 확인한 것은 아니다. 기존 파일은 유지하며 재생 음량·공간화·저역 통과 설정을 조정한다.
+- **OpeningNarration01–06.wav**: 사용자도 제작 서비스·목소리를 확인하지 못함. 제작자·권리자·공개 배포 허용 조건은 **미확인**이며, 사용자 제공 파일이라는 사실만으로 배포 권한을 인정하지 않는다. 파일은 유지하며 내레이션 출력 설정만 조정한다.
+- **OpeningScore.wav / Suno Vintage Electro Swing**: 사용자 답변은 “아마 유료구독은 아니었을 것”. 생성 당시 플랜과 개별 이용권은 확인되지 않았다. [Suno 공식 권리 안내](https://help.suno.com/en/articles/2416769)와 [배포 안내](https://help.suno.com/en/articles/2410177)에 따르면 무료 생성물은 비상업적 이용에 제한되며 사후 구독만으로 상업 이용권이 자동 소급되지 않는다. **상업적 배포 권한 미확인**. 경진대회 제출·전시·주최 측 재배포를 비상업적 이용이라고 임의 판단하지 않는다. 사용 곡의 생성 시점 약관·계정 권한과 대회 조건을 별도로 대조해야 한다.
+- **ArchiveVoiceEnding01–04.wav / Windows Heami Desktop TTS**: 기존 생성 경로는 Windows System.Speech이며 Azure 유료 TTS가 아니다. Heami 출력물의 공개 배포·상업 이용 허용 근거는 **미확인**. Azure TTS 조건을 이 파일에 적용하지 않는다. 원본은 유지하며 음성 출력 설정만 조정한다.
+
+위 미확인 음원은 사용 가능 판정을 내린 자료가 아니다. 공개 배포 전에 제작 서비스·생성 당시 조건을 확인하거나 권한이 확인된 음원으로 교체해야 한다. 현재 작업은 배포·게시를 수행하지 않는다.
+
+- **우체국 서비스 명판의 Pretendard SemiBold 재사용**: 기존 `Fonts/Pretendard/Pretendard-SemiBold.otf`를 창구 표지에 참조. 제작자·출처·SIL OFL 1.1은 위 Pretendard 기록과 동일하며 원본·라이선스 고지를 유지한다. Codex AI 보조로 글자 배치·색상만 설정했다.
+- **2026-11-13 오프닝 검증 PNG**: Codex 시각화 작업 폴더의 `verified-opening-0.png`~`verified-opening-3.png` 등. Codex AI 보조로 현재 Unity 씬의 실제 카메라 렌더를 캡처한 검증 자료이며 게임 런타임 에셋에는 포함하지 않는다. 생성형 사진이 아니다. 원본 에셋의 권리 조건은 이 문서 해당 항목을 따르며 캡처 자체에 별도 공개 라이선스를 지정하지 않는다.
+
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
 | PostOffice_US_1989.png | 이전 오프닝 우체국 전경. 현재 오프닝은 3D로 대체, 원본·데이터 슬롯 보존 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |

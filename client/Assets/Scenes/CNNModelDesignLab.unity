@@ -139,6 +139,7 @@ GameObject:
   - component: {fileID: 61005}
   - component: {fileID: 61006}
   - component: {fileID: 61007}
+  - component: {fileID: 61008}
   m_Layer: 0
   m_Name: CNN Model Design
   m_TagString: Untagged
@@ -1267,6 +1268,7 @@ MonoBehaviour:
   _supply: {fileID: 1004}
   _conveyor: {fileID: 30002}
   _placementExample: {fileID: 61007}
+  _trainingFlow: {fileID: 61008}
 --- !u!114 &61003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1432,6 +1434,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.PlacementExampleController
   _outlineMaterial: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
   _ghostMaterial: {fileID: 2100000, guid: 25d71861a6a54b31bb56b62e149e7613, type: 2}
+--- !u!114 &61008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f998f13c1d84966b954afc18a33b27a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.TrainingFlowController
+  _outlineMaterial: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

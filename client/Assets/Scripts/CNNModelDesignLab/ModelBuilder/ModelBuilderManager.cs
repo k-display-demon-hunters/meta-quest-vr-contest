@@ -13,6 +13,9 @@ namespace ModelDesignScene.ModelBuilder
         public bool CanPlayPlacementExample => _controller.CanPlayPlacementExample;
         public void PlayPlacementExample() => _controller.PlayPlacementExample();
         public void CancelPlacementExample() => _controller.CancelPlacementExample();
+        public void PlayTrainingFlow() => _controller.PlayTrainingFlow();
+        public void FinishTrainingFlow() => _controller.FinishTrainingFlow();
+        public void CancelTrainingFlow() => _controller.CancelTrainingFlow();
 
         public event Action OnChanged;
         public event Action<LayerDefinition, Pose> OnSettingsRequested;

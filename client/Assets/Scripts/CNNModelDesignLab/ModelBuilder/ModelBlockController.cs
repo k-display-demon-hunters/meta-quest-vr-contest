@@ -44,6 +44,7 @@ namespace ModelDesignScene.ModelBuilder
         internal LayerDefinition Layer { get; private set; }
         internal bool IsPalette { get; private set; }
         internal Mesh ExampleMesh => _surface.sharedMesh;
+        internal Bounds VisualBounds => new Bounds(_collider.center, _collider.size);
         internal bool IsGrabbed => _grabInteractable.isSelected;
         internal bool IsFixed => Layer != null && (Layer.Type == LayerType.Input || Layer.Type == LayerType.Output);
         public bool canProcess => isActiveAndEnabled;

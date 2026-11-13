@@ -29,6 +29,7 @@ namespace CNNConvolution
         private OutputRecordingController _outputRecording;
         private WindowMovementController _windowMovement;
         private ConvolutionQuizController _quiz;
+        private FeatureMeaningController _meaning;
         private ResultSummaryController _summary;
         private LessonStepController _steps;
 
@@ -155,6 +156,7 @@ namespace CNNConvolution
                 workbench.Number, _ui, _narration, _playback);
             _windowMovement = new WindowMovementController(_input, _kernel, _equations, _ui, _narration, _playback);
             _quiz = new ConvolutionQuizController(_result, _equations, _ui, _narration, _playback);
+            _meaning = new FeatureMeaningController(workbench.Factory, _spatial.MeaningAnchor, _ui, _narration, _playback);
         }
 
         private void ReleaseWorkbench()
@@ -200,10 +202,10 @@ namespace CNNConvolution
             yield return _focus.Show(FocusLayout.Output);
             yield return _summary.WaitForConfirmation();
             ReleaseWorkbench();
-            _calculation = _calculation.ForWindow(0, 0);
-            _outputRecording.ShowComparison(_calculation);
-            yield return _focus.Show(FocusLayout.OutputAndEquation);
-            _summary.ShowSummary();
+            _meaning.Prepare();
+            yield return _focus.Show(FocusLayout.Meaning);
+            yield return _meaning.Run();
+            _summary.ShowFinish();
         }
 
         private IEnumerator RunFirstWindow()

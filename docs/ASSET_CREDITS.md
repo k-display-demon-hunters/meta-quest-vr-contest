@@ -224,6 +224,6 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| `ConvolutionNarration_*.wav` 21개 | `Audio/CNNConvolutionLab/`, CNNConvolutionLab의 단계별 안내 음성 | Claude Code AI 보조. Windows System.Speech의 Microsoft Heami Desktop(ko-KR), 말하기 속도 +2로 프로젝트 안내 문구를 22.05 kHz 16-bit 모노 WAV로 합성. 문구는 [픽셀 관찰과 ROOM 1-2 체험](pixel-inspection.md)의 안내 음성 표에 기록 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성. 앞뒤 무음만 절단(앞 0.12초, 뒤 0.25초 유지) |
+| `ConvolutionNarration_*.wav` 23개 | `Audio/CNNConvolutionLab/`, CNNConvolutionLab의 단계별 안내 음성 | Claude Code AI 보조. Windows System.Speech의 Microsoft Heami Desktop(ko-KR), 말하기 속도 +2로 프로젝트 안내 문구를 22.05 kHz 16-bit 모노 WAV로 합성. 문구는 [픽셀 관찰과 ROOM 1-2 체험](pixel-inspection.md)의 안내 음성 표에 기록 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성. 앞뒤 무음만 절단(앞 0.12초, 뒤 0.25초 유지) |
 
 같은 변경에서 받침대 명판, 상단 설명판, 오른쪽 목표·조작 안내 글을 제거했다. CNNConvolutionLab에서 Pretendard Regular는 자막·버튼·계산 숫자에, Noto Sans CJK KR Regular는 필터 손잡이 배치 안내에 계속 사용한다. 두 폰트의 원본과 배포용 라이선스 고지는 그대로다.

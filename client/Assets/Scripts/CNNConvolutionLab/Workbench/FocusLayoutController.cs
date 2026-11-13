@@ -10,14 +10,14 @@ namespace CNNConvolution
         Products,
         InputAndOutput,
         Output,
-        OutputAndEquation
+        Meaning
     }
 
     // Shows only the panel groups a lesson stage needs, at the focus slots saved in the prefab.
     internal sealed class FocusLayoutController
     {
-        // Group order: input, products, output, equations.
-        private const int Input = 0, Products = 1, Output = 2;
+        // Group order: input, products, output, equations, meaning.
+        private const int Input = 0, Products = 1, Output = 2, Equations = 3;
         private const float LeaveDuration = 0.4f;
         private const float EnterDuration = 0.35f;
         // Never reach zero scale: child poses are still read while a group shrinks.
@@ -27,19 +27,21 @@ namespace CNNConvolution
         private readonly Transform _inputCenter, _inputSide;
         private readonly Transform _gridCenter, _gridSide;
         private readonly Transform _equationCenter, _equationSide;
+        private readonly Transform _meaningSlot;
         private readonly LessonPlayback _playback;
 
         public FocusLayoutController(Transform inputGroup, Transform productsGroup, Transform outputGroup, Transform equationGroup,
-            Transform inputCenter, Transform inputSide, Transform gridCenter, Transform gridSide,
-            Transform equationCenter, Transform equationSide, LessonPlayback playback)
+            Transform meaningGroup, Transform inputCenter, Transform inputSide, Transform gridCenter, Transform gridSide,
+            Transform equationCenter, Transform equationSide, Transform meaningSlot, LessonPlayback playback)
         {
-            _groups = new[] { inputGroup, productsGroup, outputGroup, equationGroup };
+            _groups = new[] { inputGroup, productsGroup, outputGroup, equationGroup, meaningGroup };
             _inputCenter = inputCenter;
             _inputSide = inputSide;
             _gridCenter = gridCenter;
             _gridSide = gridSide;
             _equationCenter = equationCenter;
             _equationSide = equationSide;
+            _meaningSlot = meaningSlot;
             _playback = playback;
         }
 
@@ -134,10 +136,11 @@ namespace CNNConvolution
                         : layout == FocusLayout.Products ? _gridCenter : null;
                 case Output:
                     return layout == FocusLayout.InputAndOutput ? _gridSide
-                        : layout == FocusLayout.Output || layout == FocusLayout.OutputAndEquation ? _gridCenter : null;
+                        : layout == FocusLayout.Output ? _gridCenter : null;
+                case Equations:
+                    return paired ? _equationSide : layout == FocusLayout.Products ? _equationCenter : null;
                 default:
-                    return paired ? _equationSide
-                        : layout == FocusLayout.Products || layout == FocusLayout.OutputAndEquation ? _equationCenter : null;
+                    return layout == FocusLayout.Meaning ? _meaningSlot : null;
             }
         }
     }

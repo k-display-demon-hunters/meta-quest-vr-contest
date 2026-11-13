@@ -35,10 +35,9 @@ namespace CNNConvolution
             _ui.HideNext();
         }
 
-        public void ShowSummary()
+        // The closing scene's caption stays; its last narration already asks for the finish button.
+        public void ShowFinish()
         {
-            _ui.Caption = "5×5 입력에서 3×3 출력이 완성됐어요. ‘체험 마치기’를 눌러 주세요.";
-            _narration.Play(NarrationCue.Summary);
             _ui.ShowFinish();
             _ready = true;
         }

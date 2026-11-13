@@ -4,7 +4,6 @@ namespace CNNConvolution
 {
     internal sealed class OutputRecordingController
     {
-        private readonly ResultGridController _result;
         private readonly EquationDisplayController _equations;
         private readonly OutputRecordingAnimationController _animation;
         private readonly LessonUIController _ui;
@@ -14,7 +13,6 @@ namespace CNNConvolution
             EquationDisplayController equations, FlyingNumberController number, LessonUIController ui,
             LessonNarrationController narration, LessonPlayback playback)
         {
-            _result = result;
             _equations = equations;
             _ui = ui;
             _narration = narration;
@@ -22,12 +20,6 @@ namespace CNNConvolution
             _animation = new OutputRecordingAnimationController(factory, kernel, result, equations, number, playback);
         }
         public void Cancel() => _animation.Cancel();
-        public void ShowComparison(ConvolutionCalculation calculation)
-        {
-            _equations.Clear();
-            _equations.ShowRgbSum(calculation.Output(calculation.Row, calculation.Column), OutputRecordingContent.Equation(calculation));
-            _result.Highlight(calculation.Row * 3 + calculation.Column);
-        }
 
         // The first output is narrated: the three sums stay gathered until the spoken addition ends.
         public IEnumerator Run(ConvolutionCalculation calculation, bool narrated)

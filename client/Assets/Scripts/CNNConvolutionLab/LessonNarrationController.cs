@@ -25,7 +25,9 @@ namespace CNNConvolution
         AutoIntro,
         NextRow,
         AllDone,
-        Summary,
+        MeaningDetector,
+        MeaningScore,
+        MeaningMap,
         Finished
     }
 

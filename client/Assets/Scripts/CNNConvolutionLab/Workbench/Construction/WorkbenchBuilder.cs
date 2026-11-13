@@ -10,6 +10,7 @@ namespace CNNConvolution
         [SerializeField] private Transform _productsGroup;
         [SerializeField] private Transform _outputGroup;
         [SerializeField] private Transform _equationGroup;
+        [SerializeField] private Transform _meaningGroup;
 
         [Header("Focus slots")]
         [SerializeField] private Transform _inputCenterSlot;
@@ -18,6 +19,7 @@ namespace CNNConvolution
         [SerializeField] private Transform _gridSideSlot;
         [SerializeField] private Transform _equationCenterSlot;
         [SerializeField] private Transform _equationSideSlot;
+        [SerializeField] private Transform _meaningSlot;
 
         [Header("Panel anchors")]
         [SerializeField] private Transform _inputAnchor;
@@ -47,7 +49,8 @@ namespace CNNConvolution
             _factory = new WorkbenchPrimitiveFactory(transform, font, _sideNumbers);
             _backdrop = new WorkbenchHologramBackdrop(transform, _hologramBackdropMaterial);
             FocusLayoutController focus = new FocusLayoutController(_inputGroup, _productsGroup, _outputGroup, _equationGroup,
-                _inputCenterSlot, _inputSideSlot, _gridCenterSlot, _gridSideSlot, _equationCenterSlot, _equationSideSlot, playback);
+                _meaningGroup, _inputCenterSlot, _inputSideSlot, _gridCenterSlot, _gridSideSlot, _equationCenterSlot,
+                _equationSideSlot, _meaningSlot, playback);
             InputGridController input = new InputGridController(_factory, _inputAnchor);
             _kernel = new WorkbenchKernelController(_factory, transform, _inputGroup, _kernelHome, _kernelTarget,
                 _placementPreviewMaterial, _placementGhostPeriod);
@@ -60,6 +63,7 @@ namespace CNNConvolution
 
         internal Transform PlacementTarget => _kernelTarget;
         internal Text PlacementHint => _placementHint;
+        internal Transform MeaningAnchor => _meaningGroup;
 
         private void LateUpdate()
         {

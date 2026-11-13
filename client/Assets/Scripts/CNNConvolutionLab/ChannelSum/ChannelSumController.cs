@@ -43,8 +43,25 @@ namespace CNNConvolution
             yield return _narration.WaitUntilDone();
         }
 
+        public IEnumerator RunNarrated(ConvolutionCalculation calculation, int channel)
+        {
+            _ui.Caption = ChannelSumContent.Compact(channel);
+            _narration.Play(channel == 1 ? NarrationCue.GreenChannel : NarrationCue.BlueChannel);
+            yield return RunCompact(calculation, channel);
+            yield return _narration.WaitUntilDone();
+        }
+
+        public IEnumerator RunAllChannels(ConvolutionCalculation calculation)
+        {
+            _ui.Caption = $"필터 위치 {calculation.Row + 1}행 {calculation.Column + 1}열 · 세 층을 곱하고 더해요.";
+            for (int channel = 0; channel < 3; channel++)
+            {
+                yield return RunCompact(calculation, channel);
+            }
+        }
+
         // The caller owns the caption and narration; this only shows one channel's products and sum.
-        public IEnumerator RunCompact(ConvolutionCalculation calculation, int channel)
+        private IEnumerator RunCompact(ConvolutionCalculation calculation, int channel)
         {
             _equations.Clear();
             _input.ShowChannel(channel);

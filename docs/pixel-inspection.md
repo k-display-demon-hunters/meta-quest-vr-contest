@@ -142,7 +142,8 @@ R 입력             G 입력             B 입력
 
 | 진입점·기능 | 책임 |
 | --- | --- |
-| `CNNConvolutionLabManager` | 단계 순서와 단계별 장면 선택, 현재 계산 위치, 코루틴 수명, 진행률·출구 상태 |
+| `CNNConvolutionLabManager` | 단계 순서, 코루틴 수명, 진행률·출구 상태, 체험 모듈 이벤트 연결 |
+| `ConvolutionPracticeManager` | 체험 모듈 진입점. 내부 Controller 구성·연결, 현재 계산 위치, 작업대 초기화·장면 선택, 일시정지·취소 조율 |
 | `ConvolutionCalculation` | 고정 입력·가중치·채널 곱·채널 합·출력 계산 |
 | `LessonStepController` | 전달받은 단계 연출 재생, 다음·재보기 대기와 이벤트 해제. 계산 위치는 변경하지 않는다. |
 | `LessonPlayback` | 일시정지와 배속을 반영한 프레임 시간·대기 |
@@ -166,12 +167,14 @@ R 입력             G 입력             B 입력
 | `FlyingNumberController`, `SideNumberController`, `WorkbenchPrimitiveFactory` | 숫자 사본, 측면 숫자, 도형·글자·선·런타임 재질 생성 |
 | `ConvolutionLabBuilder` | 저장된 두 프리팹과 안내 음성을 참조하는 씬 생성 경로. 이번 변경에서 실행하지 않았다. |
 
-Manager는 단계 Controller에 `LessonUIController`, `LessonNarrationController`, `LessonPlayback`을 전달한다. 단계 Controller는 자기 단계의 자막과 음성을 요청하고, 장면 전환은 Manager가 `FocusLayoutController`에 요청한다. 자동 계산과 G·B 채널의 음성·자막은 순서를 가진 Manager가 요청한다.
+씬 Manager는 기존 직렬화 참조로 `ConvolutionPracticeManager`를 구성한 뒤 이 진입점만 호출한다. 내부 Controller·Factory·격자는 모듈 밖으로 반환하지 않는다. 채널 자막·음성·종료 대기 및 자동 계산의 채널 안내는 `ChannelSumController`가 담당한다. 첫 출력 기록·종료·재시작 요청은 로컬 C# 이벤트로 씬 Manager에 전달한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다.
 
 런타임 표시는 각 기준점의 자식으로 생성하므로 묶음을 옮기면 함께 움직인다. 숫자 사본은 Workbench 루트 좌표에서 움직이며, 장면 전환이 끝난 뒤의 위치를 읽어 이동한다. 버튼판의 다시 보기 버튼은 `LessonUIController.RequestReplay` 로컬 이벤트로 연결한다.
 
 ## 중단·재시작과 확인 범위
 
-Manager는 먼저 소유 코루틴을 중단하고 안내 음성을 정지한 뒤, 단계 Controller의 `Cancel`로 다음·재보기·배치·이동·퀴즈 입력 구독을 해제한다. 숫자 사본, RGB 합 사본, 잡기, 강조와 숨겨진 합계 글자를 정리한다. 직접 이동을 취소할 때 XR의 자유 위치 추적 설정을 복원한다. 다시 시작하면 모든 묶음을 숨기고 새 계산 객체, 빈 두 격자로 첫 배치 장면부터 시작한다. 내부 XR 리스너는 표시 생성부터 폐기까지 유지하고 폐기 시 해제한다.
+씬 Manager는 먼저 소유 코루틴을 중단하고 체험 모듈의 Cancel을 호출한다. 모듈은 안내 음성을 정지한 뒤, 단계 Controller의 `Cancel`로 다음·재보기·배치·이동·퀴즈 입력 구독을 해제한다. 숫자 사본, RGB 합 사본, 잡기, 강조와 숨겨진 합계 글자를 정리한다. 직접 이동을 취소할 때 XR의 자유 위치 추적 설정을 복원한다. 다시 시작하면 모든 묶음을 숨기고 새 계산 객체, 빈 두 격자로 첫 배치 장면부터 시작한다. 내부 XR 리스너는 표시 생성부터 폐기까지 유지하고 폐기 시 해제한다.
 
 2026-11-13 받침대 제거, 단계별 장면 전환, 자막·버튼 축소, 안내 음성, 출력값의 의미 마무리 장면 변경은 Unity 6000.3.24f1 배치 모드(Android 대상)의 임포트와 스크립트 컴파일만 확인했다. 컴파일 오류는 없고, 수정한 두 프리팹·씬과 음성 23개의 임포트에서 오류가 나오지 않았다. 프리팹과 씬은 에디터 없이 YAML을 직접 수정했다. Play·XR 조작·음성 청취·화면 배치 확인은 수행하지 않았으므로 슬롯 위치, 자막·버튼판 배치, 음성 속도와 연출 대기 시간은 실행 확인 전이다. 테스트 파일·플레이어 빌드는 생성하지 않았다.
+
+책임 분리 리팩터링은 호출·이벤트 연결을 정적으로 검토했다. 이 변경에 대한 테스트·컴파일·빌드·Unity 실행은 수행하지 않았다. 기존 단계 순서와 음성 대기, 재보기 및 종료 버튼 동작을 유지했다.

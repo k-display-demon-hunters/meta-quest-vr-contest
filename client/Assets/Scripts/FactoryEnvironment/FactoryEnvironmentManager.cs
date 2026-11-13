@@ -1,5 +1,6 @@
 using System;
 using Learning;
+using Tablet;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.SceneManagement;
@@ -15,6 +16,7 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         [SerializeField] private LearningSessionManager _session;
         [SerializeField] private FactoryPlayerController _player;
+        private TabletManager _tablet;
         private LearningStageId _travelStage;
         private bool _tutorialAvailable;
 
@@ -25,8 +27,14 @@ namespace FactoryEnvironment
         public bool CanTravel => !_sceneLoader.IsBusy
             && (CurrentStage != LearningStageId.Tutorial || _tutorialAvailable);
 
+        private void Awake()
+        {
+            _tablet = FindFirstObjectByType<TabletManager>();
+        }
+
         private void OnEnable()
         {
+            _tablet.StageMoveRequested += HandleStageMoveRequested;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
             _areaController.AreaChanged += HandleAreaChanged;
             _sceneLoader.StateChanged += HandleLoadingStateChanged;
@@ -35,6 +43,10 @@ namespace FactoryEnvironment
 
         private void OnDisable()
         {
+            if (_tablet != null)
+            {
+                _tablet.StageMoveRequested -= HandleStageMoveRequested;
+            }
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
             _areaController.AreaChanged -= HandleAreaChanged;
             _sceneLoader.StateChanged -= HandleLoadingStateChanged;

@@ -5,6 +5,7 @@ namespace CNNConvolution
 {
     internal sealed class OutputRecordingAnimationController
     {
+        private const float ChannelSpacing = 0.27f;
         private readonly WorkbenchKernelController _kernel;
         private readonly ResultGridController _result;
         private readonly FlyingNumberController _number;
@@ -25,18 +26,20 @@ namespace CNNConvolution
                 _channelSums[channel] = new FlyingNumberController(factory, "RGB channel sum " + channel, 0.45f);
             }
         }
-        public IEnumerator Run(int index, int[] sums)
+
+        private Vector3 GatherPoint => _equations.AnswerPosition + Vector3.back * 0.08f;
+
+        // The three channel sums leave their filter layers and line up at the answer slot.
+        public IEnumerator Gather(int[] sums)
         {
             _equations.SetAnswerVisible(false);
-            Vector3 start = _equations.AnswerPosition + Vector3.back * 0.08f;
+            Vector3 gather = GatherPoint;
             Vector3[] sources = new Vector3[3];
-            int value = 0;
             for (int channel = 0; channel < 3; channel++)
             {
                 sources[channel] = _kernel.ChannelPosition(channel) + Vector3.back * 0.14f;
                 _channelSums[channel].Move(sources[channel]);
                 _channelSums[channel].Show($"{"RGB"[channel]} {sums[channel]}", WorkbenchColors.Channel(channel), 48);
-                value += sums[channel];
             }
             yield return _playback.Wait(0.6f);
             const float gatherDuration = 0.7f;
@@ -44,26 +47,33 @@ namespace CNNConvolution
             {
                 for (int channel = 0; channel < 3; channel++)
                 {
-                    Vector3 destination = start + Vector3.right * ((channel - 1) * 0.27f);
+                    Vector3 destination = gather + Vector3.right * ((channel - 1) * ChannelSpacing);
                     _channelSums[channel].Move(Vector3.Lerp(sources[channel], destination, Mathf.SmoothStep(0, 1, time / gatherDuration)));
                 }
                 yield return null;
             }
             for (int channel = 0; channel < 3; channel++)
             {
-                _channelSums[channel].Move(start + Vector3.right * ((channel - 1) * 0.27f));
+                _channelSums[channel].Move(gather + Vector3.right * ((channel - 1) * ChannelSpacing));
             }
             yield return _playback.Wait(0.35f);
+        }
+
+        // The gathered sums become one output value that flies into its output cell.
+        public IEnumerator Record(int index, int value)
+        {
+            Vector3 gather = GatherPoint;
             foreach (FlyingNumberController sum in _channelSums) { sum.Hide(); }
-            _number.Move(start);
+            _number.Move(gather);
             _number.Show(value.ToString(), WorkbenchColors.CalculationAccent, 64);
             _result.Highlight(index);
-            yield return Fly(start, _result.CellPosition(index), 0.55f);
+            yield return Fly(gather, _result.CellPosition(index), 0.55f);
             _result.Record(index, value);
             _number.Hide();
             _equations.SetAnswerVisible(true);
             _result.HideHighlight();
         }
+
         public void Cancel()
         {
             foreach (FlyingNumberController sum in _channelSums) { sum.Hide(); }

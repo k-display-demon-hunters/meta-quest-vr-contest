@@ -13,6 +13,7 @@ namespace CNNConvolution
         private readonly WorkbenchKernelController _kernel;
         private readonly KernelPlacementDisplayController _display;
         private readonly LessonUIController _ui;
+        private readonly LessonNarrationController _narration;
         private readonly LessonPlayback _playback;
         private PlacementState _state = PlacementState.Hidden;
         private Pose _motionStart;
@@ -26,11 +27,12 @@ namespace CNNConvolution
         private bool IsWaitingForGrab => _state == PlacementState.Waiting || _state == PlacementState.Hovered;
 
         public KernelInteractionController(WorkbenchPrimitiveFactory factory, WorkbenchKernelController kernel, Transform target,
-            UnityEngine.UI.Text hint, LessonUIController ui, LessonPlayback playback)
+            UnityEngine.UI.Text hint, LessonUIController ui, LessonNarrationController narration, LessonPlayback playback)
         {
             _kernel = kernel;
             _display = new KernelPlacementDisplayController(factory, kernel, target, hint);
             _ui = ui;
+            _narration = narration;
             _playback = playback;
         }
 
@@ -46,8 +48,8 @@ namespace CNNConvolution
             _moving = false;
             _kernel.SetGrabEnabled(true);
             ShowState(PlacementState.Waiting);
-            _ui.Title = "필터가 지나간 자리";
-            _ui.Explanation = "손잡이를 잡아 입력판 맨 왼쪽 위의 점선에 놓으세요.";
+            _ui.Caption = "필터 손잡이를 잡아 입력의 왼쪽 위 점선에 놓으세요.";
+            _narration.Play(NarrationCue.PlaceFilter);
             _ui.ShowSkip(true);
             while (!_aligned)
             {
@@ -62,7 +64,10 @@ namespace CNNConvolution
             _active = false;
             _kernel.SetGrabEnabled(false);
             _ui.ShowSkip(false);
+            _ui.Caption = "배치 완료 · 필터가 왼쪽 위 아홉 칸을 덮었어요.";
+            _narration.Play(NarrationCue.FilterPlaced);
             yield return _playback.Wait(0.45f);
+            yield return _narration.WaitUntilDone();
             Cancel();
             _kernel.SetTitleVisible(false);
         }

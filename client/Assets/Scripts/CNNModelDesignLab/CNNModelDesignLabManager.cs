@@ -33,6 +33,7 @@ namespace ModelDesignScene
                 throw new System.InvalidOperationException("Finish training and release the block before entering Reality.");
             _settings.Close();
             _builder.CancelPlacementExample();
+            _builder.CancelTrainingFlow();
             return _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
         }
         public System.Threading.Tasks.Task ExitRealityAsync() => _reality.ExitAsync();
@@ -50,6 +51,7 @@ namespace ModelDesignScene
         private bool _progressionAvailable;
         public System.Collections.IEnumerator EndSession()
         {
+            _builder.CancelTrainingFlow();
             _execution.CloseSession();
             yield break;
         }
@@ -208,6 +210,15 @@ namespace ModelDesignScene
                     _validationIssues = System.Array.Empty<ValidationIssue>();
                     _hasValidationResult = true;
                     _controlPanel.ResetTraining();
+                    _builder.PlayTrainingFlow();
+                }
+                else if (_execution.State == ModelExecutionState.Completed)
+                {
+                    _builder.FinishTrainingFlow();
+                }
+                else
+                {
+                    _builder.CancelTrainingFlow();
                 }
                 _controlPanel.ShowState(_execution.State, _execution.HasTrainedModel,
                     !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
@@ -261,6 +272,7 @@ namespace ModelDesignScene
 
         private void HandleModelChanged()
         {
+            _builder.CancelTrainingFlow();
             _validationIssues = System.Array.Empty<ValidationIssue>();
             _hasValidationResult = false;
             _modelUIIsDirty = true;

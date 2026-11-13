@@ -11,6 +11,7 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private ModelSupplyController _supply;
         [SerializeField] private ModelConveyorController _conveyor;
         [SerializeField] private PlacementExampleController _placementExample;
+        [SerializeField] private TrainingFlowController _trainingFlow;
 
         private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
         private ModelBuilderManager _manager;
@@ -47,6 +48,24 @@ namespace ModelDesignScene.ModelBuilder
         }
 
         internal void CancelPlacementExample() => _placementExample.Cancel();
+
+        internal void PlayTrainingFlow()
+        {
+            List<ModelBlockController> blocks = new List<ModelBlockController>(_slots.Count + 2) { _inputBlock };
+            for (int index = 0; index < _slots.Count; index++)
+            {
+                ModelBlockController block = _slots[index];
+                if (block != null)
+                {
+                    blocks.Add(block);
+                }
+            }
+            blocks.Add(_outputBlock);
+            _trainingFlow.Play(blocks);
+        }
+
+        internal void FinishTrainingFlow() => _trainingFlow.FinishCurrentPass();
+        internal void CancelTrainingFlow() => _trainingFlow.Cancel();
 
         internal void Initialize(ModelBuilderManager manager, ModelDefinition model)
         {
@@ -88,6 +107,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             _interactionEnabled = false;
             _placementExample.Cancel();
+            _trainingFlow.Cancel();
             if (!_initialized)
             {
                 return;

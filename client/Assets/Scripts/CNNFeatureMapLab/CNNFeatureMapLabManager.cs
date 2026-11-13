@@ -49,7 +49,6 @@ namespace FeatureMapCorridor
             _featureMaps.DigitSelected += DigitSelected;
             _featureMaps.InputPictureSelected += InputPictureSelected;
             _featureMaps.OperationSelected += OperationSelected;
-            _featureMaps.OutputStarted += StartOutput;
             _featureMaps.FilterExpanded += OnFilterExpanded;
             _featureMaps.PresentationReady += RenderLesson;
             _featureMaps.ButtonPressed += _lessonUI.RecordButton;
@@ -64,14 +63,14 @@ namespace FeatureMapCorridor
         private void LateUpdate()
         {
             float now = Time.unscaledTime;
-            float delta = Time.unscaledDeltaTime;
             _environment.Tick();
             if (!_environment.Visible || _presentationHidden)
             {
                 return;
             }
             _featureMaps.Tick(now);
-            _lessonUI.Tick(now, delta);
+            StartOutput();
+            _lessonUI.Tick(now);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _lessonUI.ShowDebug(_state.Phase+" / "+_state.Step, _featureMaps.HoverName, "", _featureMaps.LastClick);
 #endif
@@ -81,7 +80,7 @@ namespace FeatureMapCorridor
         {
             visible &= !_presentationHidden;
             _featureMaps.SetVisible(visible);
-            _lessonUI.SetVisible(visible);
+            _lessonUI.SetVisible(visible && !AwaitingOutput);
         }
 
         private void DigitSelected(int digit)
@@ -151,10 +150,16 @@ namespace FeatureMapCorridor
                     }
                 }
             }
-            _featureMaps.ShowOperations(round, _state.RevealedMaps);
+            _featureMaps.ShowOperations(round.Layer == 4 ? default : round, _state.RevealedMaps);
 
             Highlight(round.Layer);
             _state.Phase = LessonPhase.AwaitRound;
+            if (AwaitingOutput)
+            {
+                _lessonUI.SetVisible(false);
+                StartOutput();
+                return;
+            }
             RenderLesson();
         }
 
@@ -182,12 +187,15 @@ namespace FeatureMapCorridor
             BeginRound(round, mandatory, _featureMaps.FirstStep(round), animateFilterOpening: round.Layer == 1);
         }
 
+        private bool AwaitingOutput => _state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4;
+
         private void StartOutput()
         {
-            if (_state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 4 && !_featureMaps.RevealingOutputInputs)
+            if (AwaitingOutput && !_featureMaps.RevealingOutputInputs)
             {
                 MapId round = RequiredRound;
                 BeginRound(round, true, _featureMaps.FirstStep(round));
+                _lessonUI.SetVisible(_environment.Visible);
             }
         }
 
@@ -292,7 +300,7 @@ namespace FeatureMapCorridor
             var shutters = FindFirstObjectByType<FactoryShuttersManager>();
             if (shutters != null)
             {
-                yield return new WaitUntil(() => shutters == null || shutters.IsExitFullyOpen(StageId));
+                yield return shutters.WaitForExitOpening(StageId);
             }
             yield return new WaitForSecondsRealtime(5f);
 
@@ -382,7 +390,14 @@ namespace FeatureMapCorridor
                     break;
                 case RoundOutcome.BeforeFirstStep:
                     CloseRound();
-                    AwaitRound();
+                    if (_state.ActiveRound.Layer == 4)
+                    {
+                        ShowPreviousRequiredRound();
+                    }
+                    else
+                    {
+                        AwaitRound();
+                    }
                     break;
                 case RoundOutcome.ShowRecap:
                     ShowRecap();
@@ -427,7 +442,7 @@ namespace FeatureMapCorridor
         }
 
         private bool OffersAdditionalFilters => _state.MandatoryRound &&
-            _state.ActiveRound.Layer == 3 && _state.ActiveRound.Map == 1 && !_state.AdditionalFiltersAccepted;
+            _state.ActiveRound.Layer == 3 && _state.ActiveRound.Map == 1;
 
         private void FinishAdditionalFilters()
         {
@@ -486,7 +501,6 @@ namespace FeatureMapCorridor
             _featureMaps.DigitSelected -= DigitSelected;
             _featureMaps.InputPictureSelected -= InputPictureSelected;
             _featureMaps.OperationSelected -= OperationSelected;
-            _featureMaps.OutputStarted -= StartOutput;
             _featureMaps.FilterExpanded -= OnFilterExpanded;
             _featureMaps.PresentationReady -= RenderLesson;
             _featureMaps.ButtonPressed -= _lessonUI.RecordButton;

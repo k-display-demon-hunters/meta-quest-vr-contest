@@ -27,7 +27,6 @@ namespace FeatureMapCorridor
         internal event Action InputPictureSelected;
         internal void ShowInputChannels(bool expanded) => _display.ShowInputChannels(expanded);
         internal event Action<MapId> OperationSelected;
-        internal event Action OutputStarted;
         internal event Action FilterExpanded;
         internal event Action PresentationReady;
         internal event Action<string> ButtonPressed;
@@ -35,7 +34,8 @@ namespace FeatureMapCorridor
         internal string LastClick { get; private set; } = "—";
         private void OnInputClicked(string name) => LastClick = name;
         internal Vector3 AdditionalFiltersPanelPosition =>
-            (_secondFilters[0].GetLessonPanelPosition(true) + _secondFilters[1].GetLessonPanelPosition(true)) * .5f;
+            (_secondFilters[0].CalculationAnchor.position + _secondFilters[1].CalculationAnchor.position) * .5f
+            + Vector3.up * .25f;
 
         internal void SetAdditionalFiltersVisible(bool visible)
         {
@@ -56,14 +56,9 @@ namespace FeatureMapCorridor
             }
             if (layer == 4)
             {
-                Vector3 position = phase == LessonPhase.Round && showingOutputDetails
+                return phase == LessonPhase.Round && showingOutputDetails
                     ? _round.FilterLessonPanelPosition
-                    : _display.GetOutputLessonPanelPosition(phase == LessonPhase.AwaitRound);
-                if (phase == LessonPhase.AwaitRound)
-                {
-                    position.y = AdditionalFiltersPanelPosition.y;
-                }
-                return position;
+                    : _display.OutputLessonPanelPosition;
             }
 
             if (phase == LessonPhase.Recap && layer == 1)
@@ -77,7 +72,6 @@ namespace FeatureMapCorridor
         {
             _availableRound = round;
             _revealed = revealed;
-            UpdateOutputStart();
             UpdateDevices();
         }
 
@@ -118,7 +112,6 @@ namespace FeatureMapCorridor
         {
             _display.DigitSelected += OnDigit;
             _display.InputPictureSelected += OnInputPicture;
-            _display.OutputStarted += OnOutputStarted;
             _display.ButtonPressed += OnButton;
             _round.FilterPressed += OnFilter;
             _round.PresentationReady += OnPresentationReady;
@@ -137,7 +130,6 @@ namespace FeatureMapCorridor
             _round.InputClicked -= OnInputClicked;
             _display.DigitSelected -= OnDigit;
             _display.InputPictureSelected -= OnInputPicture;
-            _display.OutputStarted -= OnOutputStarted;
             _display.ButtonPressed -= OnButton;
             _round.FilterPressed -= OnFilter;
             _round.PresentationReady -= OnPresentationReady;
@@ -145,7 +137,6 @@ namespace FeatureMapCorridor
 
         private void OnInputPicture() => InputPictureSelected?.Invoke();
         private void OnDigit(int digit) => DigitSelected?.Invoke(digit);
-        private void OnOutputStarted() => OutputStarted?.Invoke();
         private void OnButton(string caption) => ButtonPressed?.Invoke(caption);
         private void OnPresentationReady() => PresentationReady?.Invoke();
         private void OnFilter(bool expanded)
@@ -168,14 +159,10 @@ namespace FeatureMapCorridor
         internal RoundTransition EvaluateTransition(MapId round, LessonStep step, RoundRequest request, bool outputDetails) =>
             RulesFor(round, outputDetails).Evaluate(step, request, _round.PresentationPending);
 
-        private void UpdateOutputStart() =>
-            _display.SetOutputStartAvailable(_visible && _availableRound.Layer == 4 && !RevealingOutputInputs);
-
         private void SetInputActive(bool active)
         {
             _visible = active;
             _display.SetInputActive(active);
-            UpdateOutputStart();
             UpdateFilterInput();
             UpdateDevices();
         }
@@ -201,7 +188,6 @@ namespace FeatureMapCorridor
                     _camera.transform.position);
             }
             _display.Tick(now);
-            UpdateOutputStart();
             _visuals.UpdateBillboards(_camera);
             _pooling.Tick(now);
             if (!_roundActive)

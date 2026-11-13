@@ -22,7 +22,7 @@ namespace FeatureMapCorridor
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
         internal Vector3 InputLessonPanelPosition => _input.Picture.Root.TransformPoint(Vector3.up * 1.85f);
-        internal Vector3 GetOutputLessonPanelPosition(bool awaitingStart) => _output.GetLessonPanelPosition(awaitingStart);
+        internal Vector3 OutputLessonPanelPosition => _output.LessonPanelPosition;
         internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);
         internal float InputChannelSpacing => _input.ChannelSpacing;
         internal void FollowInputChannels(Transform filterAnchor, Vector3 viewerPosition) =>
@@ -34,7 +34,6 @@ namespace FeatureMapCorridor
         private float _outputRevealStarted;
         private int _outputCellsShown;
         internal bool RevealingOutputInputs => _outputInputs.Count != 0;
-        internal event Action OutputStarted;
         internal event Action<string> ButtonPressed;
         internal event Action<string> InputClicked;
         internal string HoverName
@@ -63,7 +62,7 @@ namespace FeatureMapCorridor
                     _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, _input, _maps[2], () => OutputStarted?.Invoke());
+            _output.Bind(visuals, _input, _maps[2]);
             ShowSnapshot(snapshot);
             RestoreResults(new HashSet<MapId>());
         }
@@ -73,7 +72,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed += OnButton;
             _input.Enable();
             _input.Picture.InputClicked += OnInputClicked;
-            _output.Enable();
         }
 
         internal void Disable()
@@ -81,7 +79,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed -= OnButton;
             _input.Disable();
             _input.Picture.InputClicked -= OnInputClicked;
-            _output.Disable();
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);
@@ -146,7 +143,6 @@ namespace FeatureMapCorridor
         }
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
-        internal void SetOutputStartAvailable(bool available) => _output.SetStartAvailable(available);
         internal void HighlightLayer(int zone)
         {
             bool showFirstExperiences = zone is 0 or 1;

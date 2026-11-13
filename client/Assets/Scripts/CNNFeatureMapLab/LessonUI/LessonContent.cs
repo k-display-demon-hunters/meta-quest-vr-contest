@@ -20,7 +20,6 @@ namespace FeatureMapCorridor
         internal const string Previous = "◀ 이전";
         internal const string Next = "다음 ▶";
         internal const string Understood = "알겠어요";
-        internal const string Confirm = "확인";
         internal const string Complete = "체험 완료";
         private static readonly string[] RoundNames =
         {
@@ -34,9 +33,7 @@ namespace FeatureMapCorridor
         internal static string RoundHeader(int round) => $"[{round}/4 · {RoundNames[round - 1]}]";
         internal const string InputPictureBody = "숫자 버튼으로 입력을 바꿔 보세요.\n입력 이미지를 직접 눌러 빨강, 초록, 파랑 채널로 나눠 보세요.";
 
-        internal static string WaitingBody(int layer, int map) => layer == 4
-            ? "이 이미지에서 찾은 특징으로 어떤 숫자인지 알아볼까요? 아래의 판정 시작 버튼을 누르세요."
-            : layer == 2
+        internal static string WaitingBody(int layer, int map) => layer == 2
                 ? $"<b>Pooling은 중요한 특징을 보존하면서 크기를 줄입니다.</b>\nPooling {map + 1} 장치를 눌러 채널 {map + 1}의 반응을 살펴보세요."
                 : layer == 1
                     ? $"앞쪽 발판으로 이동해 {FeatureMapLabels.Operation(layer, map)} 장치를 눌러 보세요."

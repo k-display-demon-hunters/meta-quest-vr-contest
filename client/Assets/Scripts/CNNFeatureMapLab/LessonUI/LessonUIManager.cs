@@ -9,7 +9,6 @@ namespace FeatureMapCorridor
         [SerializeField] private CorridorRenderUtility _visuals;
         [SerializeField] private SubtitlePanelController _subtitle;
         [SerializeField] private HintBubblesController _hints;
-        [SerializeField] private CompletionPopupController _completion;
         [SerializeField] private CorridorDebugController _debug;
         private Camera _camera;
         private bool _completed;
@@ -20,23 +19,18 @@ namespace FeatureMapCorridor
             _visuals.InitializeRuntime();
             _subtitle.Bind(() => PreviousRequested?.Invoke(), () => NextRequested?.Invoke());
             _hints.Bind(_visuals);
-            _completion.Bind();
         }
 
         internal void Enable()
         {
             _subtitle.ButtonPressed += RecordButton;
-            _completion.ButtonPressed += RecordButton;
             _subtitle.Enable();
-            _completion.Enable();
         }
 
         internal void Disable()
         {
             _subtitle.Disable();
-            _completion.Disable();
             _subtitle.ButtonPressed -= RecordButton;
-            _completion.ButtonPressed -= RecordButton;
             _debug.Hide();
         }
 
@@ -52,7 +46,6 @@ namespace FeatureMapCorridor
             {
                 _camera = Camera.main;
                 _subtitle.SetCamera(_camera);
-                _completion.SetCamera(_camera);
             }
             else
             {
@@ -60,10 +53,9 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now, float delta)
+        internal void Tick(float now)
         {
             _hints.Tick(now);
-            _completion.Tick(delta);
             _visuals.UpdateBillboards(_camera);
         }
 

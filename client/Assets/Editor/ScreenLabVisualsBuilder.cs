@@ -58,6 +58,18 @@ namespace CNNScreen.Editor
             instruction.fontStyle = FontStyle.Bold;
             instruction.color = Color.white;
             Bind(ui, "_instruction", instruction);
+            AudioSource voice = lab.GetComponent<AudioSource>();
+            if (voice == null) { voice = lab.gameObject.AddComponent<AudioSource>(); }
+            voice.playOnAwake = false;
+            voice.spatialBlend = 0;
+            voice.priority = 0;
+            Bind(ui, "_voice", voice);
+            AudioClip[] guidance = new AudioClip[3];
+            for (int i = 0; i < guidance.Length; i++)
+            {
+                guidance[i] = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/CNNScreenLab/Observation{i}.wav");
+            }
+            BindArray(ui, "_guidance", guidance);
             Bind(ui, "_nextButton", controls.Find("다음으로").GetComponent<Button>());
             foreach (Button button in controls.GetComponentsInChildren<Button>(true))
             {
@@ -67,7 +79,7 @@ namespace CNNScreen.Editor
                 if (button.GetComponent<Outline>() == null) { button.gameObject.AddComponent<Outline>(); }
                 RectTransform rect = (RectTransform)button.transform;
                 rect.sizeDelta = new Vector2(520, 110);
-                rect.anchoredPosition = new Vector2(reset ? 300 : -300, -150);
+                rect.anchoredPosition = new Vector2(reset ? -300 : 300, -150);
                 Text caption = button.GetComponentInChildren<Text>();
                 caption.fontSize = 48;
                 caption.fontStyle = FontStyle.Bold;

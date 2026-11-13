@@ -234,3 +234,10 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 | Noto Sans CJK KR Regular 2.004 | CNNConvolutionLab 필터 손잡이의 배치 안내 | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe | SIL Open Font License 1.1. 기존 프로젝트 폰트 재사용, 폰트 원본 수정 없음. 기존 배포용 라이선스 유지. |
 
 - **ParchmentDigitIllustrations.png**. 공용 양피지 Reader의 01번 문서에 사용한다. 기존 숫자 획, 밝기값, RGB 패턴을 바탕으로 Codex 보조 Python/Pillow 코드로 도형·격자·색을 합성했다. 라벨에 위 Pretendard SemiBold를 재사용했으며 폰트 원본 수정은 없다. 아틀라스 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
+
+
+## ROOM 1-1 관찰 안내 음성 (2026-11-13)
+
+| 에셋 | 사용 위치 | 생성 도구·제작 방법 | 제작자·권리자 / 라이선스 | 수정 |
+| --- | --- | --- | --- | --- |
+| Observation0–2.wav | `client/Assets/Audio/CNNScreenLab/`, 돋보기 조작·RGB 펼침·이동 비교 안내 | Codex 보조로 작성한 한국어 대사를 Windows System.Speech / Microsoft Heami Desktop으로 WAV 합성 | 음성 엔진 Microsoft. 생성 파일 권리·배포 조건 미확인, 별도 공개 라이선스 부여 없음 | 새 합성, 후처리 없음 |

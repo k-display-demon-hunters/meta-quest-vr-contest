@@ -24,6 +24,7 @@ namespace CNNScreen
         private Vector2Int _preview;
 
         public bool HasSelection => _hasSelection;
+        public bool IsOnImage => _filter.isSelected ? _previewValid : _hasSelection;
         public Vector2Int SelectedPixel => _selected;
         public Vector3 SelectionWorldPosition => _board.TransformPoint(SelectionCenter(_selected));
 
@@ -32,11 +33,17 @@ namespace CNNScreen
         public event Action SelectionChanged;
         public event Action FilterGrabbed;
 
-        public void Initialize(PixelImageData image)
+        public void Initialize(PixelGridData grid)
         {
-            _columns = image.Columns;
-            _rows = image.Rows;
-            _volume.Initialize(image.Pixels, _columns);
+            _columns = grid.gridWidth;
+            _rows = grid.gridHeight;
+            Color32[] colors = new Color32[_columns * _rows];
+            for (int y = 0; y < _rows; y++)
+            {
+                for (int x = 0; x < _columns; x++) { colors[y * _columns + x] = grid.GetColor(x, y); }
+            }
+            _volume.Initialize(colors, _columns);
+            _selectionFrame.localScale = new Vector3(32f / _columns, 18f / _rows, 1);
             _selectionEnabled = true;
             _filterScale = _filter.transform.localScale;
         }
@@ -125,6 +132,12 @@ namespace CNNScreen
                 Mathf.Clamp(Mathf.FloorToInt((local.x / _boardSize.x + 0.5f) * _columns) - 1, 0, _columns - 3),
                 Mathf.Clamp(Mathf.FloorToInt((local.y / _boardSize.y + 0.5f) * _rows) - 1, 0, _rows - 3));
             SetPreview(_preview);
+            if (!_hasSelection || _selected != _preview)
+            {
+                _selected = _preview;
+                _hasSelection = true;
+                SelectionChanged?.Invoke();
+            }
         }
 
         private void SetPreview(Vector2Int origin)

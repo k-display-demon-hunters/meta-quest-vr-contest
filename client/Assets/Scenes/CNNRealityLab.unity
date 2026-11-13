@@ -5109,8 +5109,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5fc1d0abac0423a8b329eb457eefdfb, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  _selectionFrame: {fileID: 90001}
-  _selectionCanvas: {fileID: 30014}
 --- !u!114 &20006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5328,6 +5326,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   _guideCanvas: {fileID: 30014}
+  _selectionFrame: {fileID: 90001}
   _resultPanel: {fileID: 30161}
   _inputPreview: {fileID: 100320}
   _help: {fileID: 80002}

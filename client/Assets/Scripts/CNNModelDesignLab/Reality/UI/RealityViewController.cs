@@ -6,14 +6,27 @@ namespace RealityLab
     public sealed class RealityViewController : MonoBehaviour
     {
         [SerializeField] private Canvas _guideCanvas;
+        [SerializeField] private RectTransform _selectionFrame;
         [SerializeField] private Transform _resultPanel;
         [SerializeField] private GameObject _inputPreview;
         [SerializeField] private WorldUIPopupController _help;
         private bool _following;
 
-        private void LateUpdate()
+        internal void FollowSelectionGuide()
         {
             if (_following) { PlaceInView(_guideCanvas.transform); }
+        }
+
+        internal void ShowSelectionGuide(Pose pose, Vector2 size)
+        {
+            if (!_following) { return; }
+            Transform guide = _guideCanvas.transform;
+            guide.SetPositionAndRotation(pose.position, pose.rotation);
+            // The existing corner marks share the guide canvas and surround this rect.
+            guide.localScale = new Vector3(
+                size.x / _selectionFrame.rect.width,
+                size.y / _selectionFrame.rect.height,
+                0.001f);
         }
 
         internal void ShowStage(RealityStage stage)

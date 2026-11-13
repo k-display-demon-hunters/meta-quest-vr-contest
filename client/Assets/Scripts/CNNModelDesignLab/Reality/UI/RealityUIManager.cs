@@ -62,6 +62,9 @@ namespace RealityLab
             }
         }
 
+        internal void ShowSelectionGuide(Pose pose, Vector2 size) => _view.ShowSelectionGuide(pose, size);
+        internal void FollowSelectionGuide() => _view.FollowSelectionGuide();
+
         internal void ShowInput(RealityRecognitionData input) => _results.ShowInput(input);
         internal void ShowPrediction(IReadOnlyList<double> scores) => _results.ShowPrediction(scores);
 
@@ -74,11 +77,8 @@ namespace RealityLab
         {
             switch (exception.Message)
             {
-                case "선택 프레임을 정면에서 바라보세요.":
-                    return "선택 프레임을 정면에서 바라보세요.";
-                case "프레임 전체가 카메라 범위 안에 들어오도록 위치를 조정하세요.":
                 case "Selection must be inside the camera viewport.":
-                    return "프레임 전체가 카메라 범위 안에 들어오도록 위치를 조정하세요.";
+                    return "촬영 영역을 처리하지 못했습니다. 다시 촬영하세요.";
                 case "Camera is not ready. Grant headset camera access first.":
                     return "카메라가 준비되지 않았습니다. 헤드셋 카메라 권한을 확인하세요.";
                 case "Invalid camera image.":

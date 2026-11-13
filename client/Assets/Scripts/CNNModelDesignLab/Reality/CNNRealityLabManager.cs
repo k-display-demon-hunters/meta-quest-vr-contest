@@ -58,6 +58,20 @@ namespace RealityLab
             _ui.ShowStage(_stage, cameraReady);
         }
 
+        private void LateUpdate()
+        {
+            if (_stage != RealityStage.Ready) { return; }
+            if (_capture.IsReady)
+            {
+                _capture.GetSelectionGuide(out Pose pose, out Vector2 size);
+                _ui.ShowSelectionGuide(pose, size);
+            }
+            else
+            {
+                _ui.FollowSelectionGuide();
+            }
+        }
+
         private void Capture()
         {
             if (_stage != RealityStage.Ready || !_cameraReady) { return; }

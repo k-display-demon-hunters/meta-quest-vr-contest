@@ -12596,7 +12596,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sceneLoader: {fileID: 720003513}
   _areaController: {fileID: 980100011}
-  _featureMapRoomFloor: {fileID: 720000396}
   _modelDesignRoomFloor: {fileID: 720000589}
   _modelDesignWalkSurface: {fileID: 908330005}
   _stageArrivals:

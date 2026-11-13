@@ -66,7 +66,7 @@ Quest Logcat에서 Unity 태그와 `[Opening]`을 검색한다. `run`은 같은 
 
 ### 눈높이·우체국 인물·음향 수정 (2026-11-13)
 
-- `OpeningVisualController`는 대기 중/재생 직전 관찰자 정렬과 기존 시각 연출을 담당한다. `CinematicSequenceManager → CinematicPresentationManager → OpeningVisualController → PostOfficeCrowdController` 순서로 제어한다. `Scripts/CNNArchiveOpening/PostOfficeCrowdController.cs`는 전달받은 우체국 경과 시간으로 개별 인물의 보행 위치·방향과 Idle/Walk 동작을 샘플링한다. 별도 전역 상태·이벤트·패키지는 추가하지 않는다.
+- `OpeningVisualController`는 대기 중/재생 직전 관찰자 정렬과 기존 시각 연출을 담당한다. `CinematicSequenceManager → CinematicPresentationManager → OpeningVisualController → PostOfficeCrowdController` 순서로 제어한다. `Scripts/OpeningEnding/Presentation/Opening/PostOfficeCrowdController.cs`는 전달받은 우체국 경과 시간으로 개별 인물의 보행 위치·방향과 Idle/Walk 동작을 샘플링한다. 별도 전역 상태·이벤트·패키지는 추가하지 않는다.
 - 우체국에는 Quaternius의 Suit와 Casual_2를 사용한 직원 2명·손님 2명·이동 인물 3명이 있다. 중앙 봉투를 가리는 정면 통로는 비워 두고 양쪽 통로와 창구 뒤에서 이동한다. 외부 인물 원본은 `Meshes/CNNArchiveOpening/`, 변환한 무광 표시 재질은 `Materials/CNNArchiveOpening/`에 둔다. Unity Legacy Animation에서 Idle과 Walk만 임포트한다.
 - 기존 `ArchiveMaterials.png`의 목재·테라조·회벽·종이 영역을 우체국 재질에서 참조한다. 창구 서비스 명판, 패널 몰딩, 창문 가로대·창턱, 벽시계, CRT·키보드·전화기, 서류 더미·분류표를 기본 도형과 기존 폰트로 구성한다. 제작은 `Editor/CinematicSceneBuilder.Opening.cs`가 담당한다.
 - Simple Lit의 `_SpecularHighlights`는 일반 Lit의 불리언 토글과 달리 enum이다. `1 (NoSpecular)`로 지정하고 `_SPECULAR_COLOR`/`_SPECGLOSSMAP`을 끈다. 실시간 그림자를 쓰지 않는 오프닝 전용 재질은 `_ReceiveShadows=0`과 `_RECEIVE_SHADOWS_OFF`로 그림자 수신도 끈다. 에디터 캡처 비교에서 그림자 수신을 켰을 때 나타나던 검은 점무늬가 이 설정으로 사라졌다. 프로젝트 전체 렌더러 설정은 바꾸지 않는다.

@@ -300,7 +300,7 @@ AreaController는 LateUpdate에서 셔터 상태를 먼저 계산하고 구역 �
 8. FactoryShuttersManager는 LearningSessionManager의 StageAvailabilityChanged를 직접 구독한다. 체험에서 퇴장이 가능해지면 FactoryLayoutData.GetStageSpace(stage).ExitShutter로 출구를 조회하고 셔터당 한 번 자동 개방을 요청한다. 기존 개방 조건이 충족되면 접근 범위 밖에서도 출구를 열고 안내판을 숨긴다. 플레이어가 6m 안에 들어온 뒤 다시 밖으로 나가면 문을 닫고 일반 근접 개폐로 돌아간다. 개방 시 이미 6m 안에 있으면 접근한 것으로 처리한다. ShuttersManager는 출구마다 자동 개방 대기와 접근 여부를 관리한다.
 
 ROOM #1과 ROOM #2 입구의 개방 불가 안내는 `ShutterFloorHologram.prefab`을 사용한다. 각 `FactoryShutterController`가 해당 인스턴스의 투사 표시, 패널과 스캔 라인을 참조하고 펼침·접힘을 갱신한다. 다른 셔터는 기존 안내판을 표시한다.
-9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 CNNArchiveEnding을 Single로 연다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
+9. 후문 구역에 들어가면 FactoryRouteGuideController가 목적지 도착으로 안내선을 끈다. FactoryPlayerController가 AreaChanged를 직접 받아 로드된 체험의 잡은 물체를 해제한다. 로더는 구역 이벤트 전달이 끝난 다음 프레임에 Core의 SceneTransitionController로 CNNArchiveEnding 전환을 요청한다. 0.6초 암전 후 Single로 활성화하고, 0.6초 암전 해제가 끝나면 엔딩 본편이 시작된다. 실패하면 LoadFailed로 알리고 중단한다. 자동 재시도하지 않으며 다음 AreaChanged 때 다시 처리한다.
 
 스틱 이동은 공용 리그의 기존 CharacterController와 벽·셔터 Collider를 사용한다. 에디터 FPS의 WASD는 시뮬레이터의 몸 추적 위치를 직접 바꾸므로 스틱 이동의 충돌 확인을 대신하지 않는다.
 
@@ -414,7 +414,7 @@ ContentUnloading은 모든 구독자의 정리 코루틴을 기다린다. 세션
 
 태블릿 StageMoveRequested는 공장과 세션이 구독한다. 공장은 이동 가능 여부를 확인하고 플레이어를 목적지로 옮긴다. FactoryAreaController가 LateUpdate에서 위치를 판정해 발생시킨 AreaChanged가 도보 진입과 동일한 로딩 경로를 사용한다. 공장의 TravelStarted·TravelFinished를 받아 세션이 태블릿 안내를 갱신한다. 같은 구역을 다시 선택하면 도착점으로 이동하며 체험을 재시작하지 않는다. 로드되지 않은 체험으로 이동하면 위치 이동 뒤 콘텐츠 로딩이 진행된다. 세션은 요청 기준으로 문서를 지급하며 로딩을 지시하지 않는다.
 
-로더는 공장 종료 시 로드된 체험 목록을 정리하고 로딩 중 종료되면 완료 콜백으로 뒤늦게 로드된 씬을 정리한다. 엔딩 Single 로드에서는 Unity의 씬 정리와 중복 언로드하지 않는다.
+로더는 공장 종료 시 로드된 체험 목록을 정리하고 로딩 중 종료되면 완료 콜백으로 뒤늦게 로드된 씬을 정리한다. 후문 전환은 영속 XR 리그의 Core SceneTransitionController가 실행한다. 로더는 전환 요청 전에 Single 전환 상태를 표시해 Unity의 씬 정리와 중복 언로드하지 않으며, 실패하면 이 상태를 해제하고 기존 LoadFailed를 알린다. Additive 학습 씬 로딩·배치는 기존 로더가 담당한다.
 
 ## 지도·양피지
 

@@ -45,14 +45,24 @@ namespace Cinematic
             Log($"Disabled state={_state} elapsed={_presentation.Elapsed:F2}s");
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
             Log($"Initializing destination={_destination}");
             _rig = FindFirstObjectByType<XROrigin>();
             _interaction.Bind(_rig, _ending);
             _presentation.Bind(_content, _model, _ending, _rig.Camera.transform, GetInstanceID());
-            SetState(_ending ? State.Playing : State.WaitingForStart);
-            if (_ending) { _presentation.Begin(); }
+            if (!_ending)
+            {
+                SetState(State.WaitingForStart);
+                yield break;
+            }
+
+            // Direct scene play has no incoming transition. Factory entry waits for its fade-in.
+            SceneTransitionController arrival = _rig.GetComponentInChildren<SceneTransitionController>();
+            while (arrival != null && arrival.IsLoading) { yield return null; }
+            _interaction.BeginEnding();
+            SetState(State.Playing);
+            _presentation.Begin();
         }
 
         private void Update()

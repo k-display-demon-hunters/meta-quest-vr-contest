@@ -20,10 +20,12 @@ namespace UI
         private int? _openingRunId;
         private float _reportedProgress;
         private float _nextWaitReport;
+        private float _fadeDuration = .25f;
 
-        internal static SceneTransitionController Begin(Camera camera, Transform rig, string destination, int? openingRunId)
+        internal static SceneTransitionController Begin(Camera camera, Transform rig, string destination, int? openingRunId, float fadeDuration = .25f)
         {
             SceneTransitionController transition = Prepare(camera, rig, destination, openingRunId);
+            transition._fadeDuration = fadeDuration;
             transition.BeginTransition();
             return transition;
         }
@@ -188,12 +190,11 @@ namespace UI
 
         private IEnumerator Fade(float from, float to)
         {
-            const float duration = .25f;
             float elapsed = 0f;
-            while (elapsed < duration)
+            while (elapsed < _fadeDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                _blackout.color = new Color(0f, 0f, 0f, Mathf.Lerp(from, to, elapsed / duration));
+                _blackout.color = new Color(0f, 0f, 0f, Mathf.Lerp(from, to, elapsed / _fadeDuration));
                 yield return null;
             }
             _blackout.color = new Color(0f, 0f, 0f, to);

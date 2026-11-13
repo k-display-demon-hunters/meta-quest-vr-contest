@@ -3,7 +3,7 @@
 ## 실행 경로
 
 - `Assets/Scenes/CNNArchiveOpening.unity`: 시작 씬. 시작 버튼을 누르면 재생하고 35초 후 기존 `FactoryEnvironment`로 진입한다. 기존 공장·튜토리얼·학습 순서는 유지한다.
-- `Assets/Scenes/CNNArchiveEnding.unity`: 종료 씬. `LearningStageCatalog`의 Exit에서 로드한다. 20초 재생 후 또는 건너뛴 뒤 완료 화면을 표시한다.
+- `Assets/Scenes/CNNArchiveEnding.unity`: 종료 씬. `LearningStageCatalog`의 Exit에서 공용 SceneTransitionController로 로드한다. 공장 화면을 0.6초 암전하고 씬 활성화 후 0.6초 동안 암전을 해제한다. 암전 해제가 끝나면 기존 20초 본편을 시작하며, 재생 완료 또는 건너뛰기 후 완료 화면을 표시한다.
 - Build Settings의 첫 씬을 `CNNArchiveOpening`으로 지정했다. 직접 열어 Play해도 기존 XRPlayerRig가 생성된다.
 
 ## 연출과 입력
@@ -35,7 +35,7 @@
 | `Interaction/CinematicInputController.cs` | XR 트리거·에디터 Space 입력과 햅틱 |
 | `Interaction/CinematicMovementController.cs` | 이동·잡기·레이·컨트롤러·태블릿 상태 저장 및 복원 |
 | `Interaction/CinematicControlsController.cs` | 시작·재시작 버튼, 길게 누르기 막대와 기존 실패 안내 표시 |
-| `Assets/Scripts/Core/SceneTransitionController.cs` | 영속 XR 리그 아래에서 기존 암전·씬 로드·암전 해제를 실행 |
+| `Assets/Scripts/Core/SceneTransitionController.cs` | 영속 XR 리그 아래에서 선로딩·암전·씬 활성화·암전 해제를 실행. 기본 페이드는 0.25초, 공장→엔딩은 0.6초 |
 | `Assets/Editor/CinematicSceneBuilder.cs` | 장면 생성과 컴포넌트 참조 연결 |
 
 `CinematicModelResult.cs`는 세션의 모델 층 라벨을 보관한다. `CNNModelDesignLabManager`가 학습 완료 시 INPUT → 사용자가 놓은 실제 층 → OUTPUT 라벨을 기록한다. Conv2D의 필터 수·커널 크기와 Dense의 노드 수도 표시한다. 새 오프닝에서 결과를 초기화한다. 엔딩만 단독 실행하여 결과가 없으면 `구조 예시 · 설계실 결과 없음`을 표시한다.
@@ -128,3 +128,11 @@ Editor D3D11 배치 Play에서 주요 시점의 실제 카메라 렌더를 저�
 CinematicSequenceManager는 요청 시점과 기존 실패 UI를 담당하고, Controller는 비동기 작업·암전·활성화·결과 상태를 소유한다. 실패한 전환 객체는 제거하며 사용자의 재시도에서 새 작업을 시작한다. 엔딩의 Begin은 Prepare와 BeginTransition을 연달아 호출한다. 공장 초기화 코드와 씬 배치는 변경하지 않았다.
 
 이 변경은 코드와 참조를 정적으로 검토했다. Unity 실행·컴파일·테스트·빌드와 Quest 성능 검증은 수행하지 않았다.
+
+## 공장 → 엔딩 진입 전환
+
+FactorySceneLoadController는 후문 구역 진입 시 Core의 SceneTransitionController.Begin에 공용 XR 카메라·리그와 페이드 길이 0.6초를 전달한다. 씬 로딩·활성화와 암전 해제는 영속 리그 아래의 Controller가 담당한다. Single 활성화 중 공장과 학습 씬은 Unity가 정리한다. 로드 실패 시 공장 로더가 기존 LoadFailed를 발행하며 자동 재시도하지 않는다.
+
+CinematicSequenceManager는 엔딩 초기화 후 리그의 진입 전환이 끝날 때까지 Initializing 상태로 기다린다. 준비 중에는 본편 표시를 숨기고 배경음·내레이션·타임라인·건너뛰기 입력을 시작하지 않는다. 암전 해제가 끝나면 건너뛰기 입력을 초기화하고 기존 본편을 0초부터 시작한다. CinematicAudioController는 엔딩 배경음 연결과 재생 시작을 분리한다. 엔딩을 단독 실행하여 진입 전환이 없는 경우에는 기존처럼 바로 본편을 시작한다.
+
+엔딩 내부 애니메이션·장면 구성·음성·대사·20초 일정은 변경하지 않았다. 숫자·픽셀 도입 애니메이션은 추가하지 않았다. 이번 변경은 코드와 호출 흐름을 정적으로 검토했으며 Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.

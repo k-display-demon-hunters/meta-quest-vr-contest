@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Learning;
+using UI;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.SceneManagement;
@@ -54,7 +56,7 @@ namespace FactoryEnvironment
             if (area.Stage == LearningStageId.Exit)
             {
                 if (!_hasPendingArea)
-                    yield return Load(LearningStageId.Exit, LoadSceneMode.Single);
+                    yield return LeaveWithFade();
             }
             else
             {
@@ -71,7 +73,7 @@ namespace FactoryEnvironment
                     if (_hasPendingArea) { break; }
                     if (!IsLoaded(stage))
                     {
-                        yield return Load(stage, LoadSceneMode.Additive);
+                        yield return Load(stage);
                         if (_loadFailed) { break; }
                     }
                 }
@@ -94,7 +96,27 @@ namespace FactoryEnvironment
             StateChanged?.Invoke();
         }
 
-        private IEnumerator Load(LearningStageId stage, LoadSceneMode mode)
+        private IEnumerator LeaveWithFade()
+        {
+            string sceneName = LearningStageCatalog.GetSceneName(LearningStageId.Exit);
+            XROrigin rig = FindFirstObjectByType<XROrigin>();
+            // Single activation unloads factory content; let Unity own that cleanup.
+            _loadingSingle = true;
+            SceneTransitionController transition = SceneTransitionController.Begin(
+                rig.Camera, rig.transform, sceneName, null, .6f);
+            while (transition != null && transition.IsLoading) { yield return null; }
+            if (transition != null && !transition.Succeeded)
+            {
+                _loadingSingle = false;
+                _loadFailed = true;
+                Destroy(transition.gameObject);
+                string message = sceneName + " 씬을 열지 못했습니다.";
+                Debug.LogError(message, this);
+                LoadFailed?.Invoke(LearningStageId.Exit, message);
+            }
+        }
+
+        private IEnumerator Load(LearningStageId stage)
         {
             string sceneName = LearningStageCatalog.GetSceneName(stage);
             _loadFailed = false;
@@ -103,7 +125,6 @@ namespace FactoryEnvironment
             {
                 if (scene.name != sceneName) { return; }
                 SceneManager.sceneLoaded -= HandleLoaded;
-                if (mode == LoadSceneMode.Single) { return; }
                 if (this == null)
                 {
                     SceneManager.UnloadSceneAsync(scene);
@@ -117,7 +138,7 @@ namespace FactoryEnvironment
             SceneManager.sceneLoaded += HandleLoaded;
             AsyncOperation operation = null;
             string error = null;
-            try { operation = SceneManager.LoadSceneAsync(sceneName, mode); }
+            try { operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive); }
             catch (Exception exception) { error = exception.Message; }
             if (operation == null)
             {
@@ -128,7 +149,6 @@ namespace FactoryEnvironment
                 LoadFailed?.Invoke(stage, message);
                 yield break;
             }
-            _loadingSingle = mode == LoadSceneMode.Single;
             yield return operation;
             yield return null;
         }

@@ -42,7 +42,7 @@ namespace Cinematic
 
         private void EvaluateVisuals(float time)
         {
-            _view.ShowPostOffice(time >= _schedule.Arrival && time < _schedule.Digit);
+            _view.ShowPostOffice(time >= _schedule.Arrival && time < _schedule.Digit, time - _schedule.Arrival);
             _view.ShowPostalProps(time >= _schedule.Arrival && time < _schedule.Digit,
                 Smooth(Mathf.InverseLerp(_schedule.Zoom, _schedule.StampShot, time)),
                 time - _schedule.StampShot, _schedule.StampContactOffset,
@@ -73,8 +73,8 @@ namespace Cinematic
             bool inArchive = time >= _schedule.Arrival && time < _schedule.Digit;
             bool inFactory = time >= _schedule.Doors;
             backing = inDigitAndPixels || inArchive || inFactory;
-            // Keep captions below the postal props, digit and factory entrance at a stable reading height.
-            height = inDigitAndPixels || inArchive || inFactory ? .43f : 1.45f;
+            // Eye height is .75: captions sit only 25 cm below it, in a separate band from the props.
+            height = inDigitAndPixels || inArchive || inFactory ? .50f : .75f;
         }
 
         private void EvaluateAudio(float time)

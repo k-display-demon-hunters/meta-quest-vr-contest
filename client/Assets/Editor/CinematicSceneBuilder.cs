@@ -14,7 +14,7 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace CinematicEditor
 {
-    public static class CinematicSceneBuilder
+    public static partial class CinematicSceneBuilder
     {
         private const string DataPath = "Assets/Data/OpeningEnding/CinematicText.asset";
         private const string ResultPath = "Assets/Data/OpeningEnding/CinematicModelResult.asset";
@@ -29,6 +29,8 @@ namespace CinematicEditor
             foreach (string path in new[] { "Assets/Data/OpeningEnding", "Assets/Materials/OpeningEnding" })
             { Directory.CreateDirectory(path); }
             AssetDatabase.Refresh();
+            PreparePostalModels();
+            ApplyPostalTextures();
             _wood = Material("ArchiveOak", new Color(.23f,.125f,.064f));
             _paper = Material("ArchivePaper", new Color(.76f,.69f,.52f));
             _metal = Material("ArchiveMetal", new Color(.2f,.25f,.22f));
@@ -132,7 +134,7 @@ namespace CinematicEditor
             light.type=LightType.Directional; light.intensity=.9f; light.color=new Color(1,.87f,.67f);
             light.transform.rotation=Quaternion.Euler(45,-40,0); light.shadows=LightShadows.None;
             Transform stage=Root("Documentary stage",null);
-            float stageLift = ending ? 0f : .45f;
+            float stageLift = ending ? 0f : .85f;
             stage.localPosition = Vector3.up * stageLift;
             LineRenderer platform=Root("Quiet standing marker",stage).gameObject.AddComponent<LineRenderer>();
             platform.transform.localPosition = Vector3.down * stageLift;
@@ -159,7 +161,7 @@ namespace CinematicEditor
             Assign(world,"_world",stage);
             if (!ending)
             {
-                Assign(world, "_postOffice", BuildPostOffice(stage));
+                Assign(world, "_postOffice", BuildPostOffice(stage, world));
                 BuildPostalProps(stage, world);
             }
             Transform portal=Primitive("Archive surface",stage,new Vector3(0,1.85f,3),new Vector3(1.6f,1.067f,1),_dark,PrimitiveType.Quad);
@@ -175,7 +177,7 @@ namespace CinematicEditor
             Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),ending ? 100 : 110);
             Assign(world,"_year",year);
             Vector2 archiveCaptionSize = ending ? new Vector2(1500,100) : new Vector2(1680,190);
-            Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.345556f,1.2f),archiveCaptionSize,ending ? .002f : .0008888889f);
+            Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.1f,1.2f),archiveCaptionSize,ending ? .002f : .0008888889f);
             if (!ending)
             {
                 ImageAt(captionCanvas.transform,"Archive caption backing",archiveCaptionSize,new Color(0,0,0,.75f));
@@ -199,7 +201,7 @@ namespace CinematicEditor
                 Transform box=Recognition(stage,"Recognition "+i,p+new Vector3(0,0,-.03f),new Vector2(.45f,.27f),_green,i==0?"12345":(12000+i*173).ToString()); boxes.Add(box);
             }
             Array(world,"_boxes",boxes);
-            Vector3 digitPosition = new Vector3(0, ending ? 1.9f : 1.35f, 2.4f);
+            Vector3 digitPosition = new Vector3(0, ending ? 1.9f : 1.25f, 2.4f);
             Transform digit=Root("Handwritten digit",stage); digit.localPosition=digitPosition;
             List<Transform> pixels=new List<Transform>();
             for(int row=0;row<16;row++) for(int col=0;col<16;col++)
@@ -208,16 +210,18 @@ namespace CinematicEditor
                 bool ink=(row>=2&&row<=4&&col>=4&&col<=11)||(col>=10&&col<=12&&row>=3&&row<=7)
                     ||(row>=6&&row<=11&&Mathf.Abs(col-(17-row))<2)||(row>=11&&row<=13&&col>=3&&col<=12);
                 if(!ink) {continue;}
-                Vector3 local=new Vector3(x*.8f,-y*.8f,0);
+                float spread = ending ? .8f : .48f;
+                Vector3 local=new Vector3(x*spread,-y*spread,0);
                 pixels.Add(Box("Light pixel",stage,local+digitPosition,Vector3.one*.085f,_cyan));
             }
-            Canvas handwritten=CanvasAt(digit,"Handwritten numeral",Vector3.zero,new Vector2(330,330),.008f);
+            Canvas handwritten=CanvasAt(digit,"Handwritten numeral",Vector3.zero,new Vector2(330,330),ending ? .008f : .0048f);
             Text numeral=TextAt(handwritten.transform,"Numeral","2",Vector2.zero,new Vector2(330,330),280);
             numeral.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");
             Assign(world,"_digit",digit);
             Array(world,"_pixels",pixels);
             if (!ending) { Assign(world,"_numeral",numeral); }
             Transform digitBox = Recognition(digit,"Digit recognition",new Vector3(0,0,-.06f),new Vector2(1.7f,1.7f),_green,"2",ending ? 25 : 56);
+            if (!ending) { digitBox.localScale = Vector3.one * .6f; }
             if (!ending) { Assign(world,"_digitBox",digitBox); }
             Transform factory=Root("CNN facade",stage); factory.localPosition=new Vector3(0,0,12);
             if (!ending) { factory.localPosition = new Vector3(0, 0, 8.5f); }
@@ -264,14 +268,14 @@ namespace CinematicEditor
                 Array(world,"_networkLayers",layers);
                 Array(world,"_layerLabels",labels);
             }
-            Canvas captions=CanvasAt(stage,"Narration",new Vector3(0,ending ? .99f : 1.04f,2.5f),ending ? new Vector2(1500,260) : new Vector2(1740,260),.0018f);
+            Canvas captions=CanvasAt(stage,"Narration",new Vector3(0,ending ? .99f : .5f,2.5f),ending ? new Vector2(1500,260) : new Vector2(1740,200),.0018f);
             if (!ending)
             {
                 captions.overrideSorting = true;
                 captions.sortingOrder = 10;
             }
-            Image backing=ImageAt(captions.transform,"Caption backing",ending ? new Vector2(1500,245) : new Vector2(1740,245),new Color(0,0,0,ending ? .45f : .88f));
-            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,ending ? new Vector2(1450,240) : new Vector2(1660,240),ending ? 48 : 62);
+            Image backing=ImageAt(captions.transform,"Caption backing",ending ? new Vector2(1500,245) : new Vector2(1740,200),new Color(0,0,0,ending ? .45f : .88f));
+            Text text=TextAt(captions.transform,"Type line","",Vector2.zero,ending ? new Vector2(1450,240) : new Vector2(1660,190),ending ? 48 : 62);
             Value(type, "_drawOverScene", !ending);
             Assign(type,"_line",text); Assign(type,"_backing",backing);
             Canvas hints=CanvasAt(stage,"Trigger hold",new Vector3(0,ending ? .4f : .64f,2.3f),new Vector2(1100,120),.0015f);
@@ -291,11 +295,12 @@ namespace CinematicEditor
             }
             else
             {
-                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1.45f, 2.15f), new Vector2(420, 122), .0018f);
+                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, .75f, 2.15f), new Vector2(420, 122), .0018f);
                 Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420, 76);
                 Assign(controls, "_startButton", startButton);
             }
             BuildAudio(stage,audio);
+            ConfigureNarrationAudio(audio, !ending);
             factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
             foreach(Transform t in boxes.Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}
             digit.gameObject.SetActive(false); portal.gameObject.SetActive(false); timeline.gameObject.SetActive(false);
@@ -438,7 +443,7 @@ namespace CinematicEditor
             Assign(world, "_postalOutline", postal54);
         }
 
-        private static Transform BuildPostOffice(Transform stage)
+        private static Transform BuildPostOffice(Transform stage, MonoBehaviour world)
         {
             Transform room = Root("Post office interior", stage);
             Material plaster = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/CNNArchiveOpening/PostOfficePlaster.mat");
@@ -570,6 +575,8 @@ namespace CinematicEditor
             Box("Ceiling light", room, new Vector3(-2.5f, 3.12f, 1.0f), new Vector3(1.3f, 0.08f, 0.35f), light);
             Box("Ceiling light", room, new Vector3(0.0f, 3.12f, 1.0f), new Vector3(1.3f, 0.08f, 0.35f), light);
             Box("Ceiling light", room, new Vector3(2.5f, 3.12f, 1.0f), new Vector3(1.3f, 0.08f, 0.35f), light);
+            BuildPostOfficeDetails(room, oak, brass, paper, ink, blue);
+            Assign(world, "_crowd", BuildPostOfficeCrowd(room));
             room.gameObject.SetActive(false);
             return room;
         }

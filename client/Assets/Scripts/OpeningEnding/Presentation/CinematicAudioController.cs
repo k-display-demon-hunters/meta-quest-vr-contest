@@ -6,12 +6,21 @@ namespace Cinematic
     {
         [SerializeField] private AudioSource _screen, _voice, _type, _impact, _rewind, _pad;
         [SerializeField] private AudioSource _stamp, _beep;
-        private const float OpeningScoreVolume = .95f;
+        private const float OpeningScoreVolume = .38f;
         private CinematicText _content;
 
         public void Bind(CinematicText content, bool ending)
         {
             _content = content;
+            // Narration (including the ending TTS) belongs to the listener, not a point in the room.
+            _voice.spatialBlend = 0f;
+            _voice.volume = 1f;
+            _voice.priority = 0;
+            if (!ending)
+            {
+                _screen.spatialBlend = 0f;
+                _pad.spatialBlend = 0f;
+            }
             _screen.clip = content.OpeningCrowd;
             _rewind.clip = content.Rewind;
             _pad.clip = ending ? content.Pad : content.OpeningScore;
@@ -50,8 +59,8 @@ namespace Cinematic
         internal void MixOpening(float crowdFade, bool quietCue)
         {
             bool underNarration = _voice.isPlaying;
-            _screen.volume = (underNarration ? .12f : .28f) * crowdFade;
-            float scoreLevel = quietCue ? .18f : underNarration ? .55f : OpeningScoreVolume;
+            _screen.volume = (underNarration ? .24f : .46f) * crowdFade;
+            float scoreLevel = quietCue ? .10f : underNarration ? .12f : OpeningScoreVolume;
             _pad.volume = Mathf.MoveTowards(_pad.volume, scoreLevel, Time.deltaTime * 2f);
         }
 

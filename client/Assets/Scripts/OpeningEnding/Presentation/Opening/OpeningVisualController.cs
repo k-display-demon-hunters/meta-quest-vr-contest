@@ -7,6 +7,7 @@ namespace Cinematic
     {
         [SerializeField] private Transform _world, _portal, _timeline, _digit, _factory;
         [SerializeField] private Transform _postOffice;
+        [SerializeField] private PostOfficeCrowdController _crowd;
         [SerializeField] private Transform _postalEnvelope, _postalStamp, _postmark, _postalOutline;
         [SerializeField] private Transform[] _boxes, _pixels, _eraProps;
         [SerializeField] private Transform _network;
@@ -14,15 +15,15 @@ namespace Cinematic
         [SerializeField] private Transform _leftDoor, _rightDoor, _digitBox;
         [SerializeField] private Text _numeral;
         private Vector3[] _pixelOrigins;
+        private Transform _head;
+        private const float EyeHeight = .75f;
 
         internal Vector3 DigitPosition => _digit.position;
 
         internal void Bind(string provenance, Transform head)
         {
-            // Move the stage around the viewer once; never move the camera or chase head rotation.
-            Vector3 forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
-            _world.position = new Vector3(head.position.x, head.position.y - 1.15f, head.position.z);
-            _world.rotation = Quaternion.LookRotation(forward.sqrMagnitude > .01f ? forward : Vector3.forward);
+            _head = head;
+            AlignToViewer();
             _pixelOrigins = new Vector3[_pixels.Length];
             for (int i = 0; i < _pixels.Length; i++) { _pixelOrigins[i] = _pixels[i].localPosition; }
             _caption.text = provenance;
@@ -32,7 +33,19 @@ namespace Cinematic
             foreach (Transform item in _eraProps) { item.gameObject.SetActive(false); }
         }
 
-        internal void ShowPostOffice(bool visible) => _postOffice.gameObject.SetActive(visible);
+        internal void AlignToViewer()
+        {
+            // Refresh tracking while waiting, then freeze the stage when playback begins.
+            Vector3 forward = Vector3.ProjectOnPlane(_head.forward, Vector3.up).normalized;
+            _world.position = _head.position - Vector3.up * EyeHeight;
+            _world.rotation = Quaternion.LookRotation(forward.sqrMagnitude > .01f ? forward : Vector3.forward);
+        }
+
+        internal void ShowPostOffice(bool visible, float elapsed)
+        {
+            _postOffice.gameObject.SetActive(visible);
+            if (visible) { _crowd.Evaluate(elapsed); }
+        }
 
         internal void ShowPostalProps(bool visible, float lift, float stampElapsed,
             float contactOffset, bool inspecting, float zoom)
@@ -41,13 +54,13 @@ namespace Cinematic
             if (!visible) { return; }
 
             Vector3 counterPosition = new Vector3(.25f, .73f, 1.85f);
-            Vector3 inspectionPosition = new Vector3(0f, 1.30f, 1.65f);
-            const float closeupScale = 4.5f;
+            Vector3 inspectionPosition = new Vector3(0f, 1.25f, 2f);
+            const float closeupScale = 1.8f;
             // The first ZIP digit meets the existing digit stage; the headset never moves.
             Vector3 digitAnchor = new Vector3(.04f, -.12f, -.018f);
             // Keep the envelope in front of the counter posts while matching the digit's viewing direction.
-            const float envelopeDepth = 1.65f;
-            Vector3 eyePosition = new Vector3(0f, 1.15f, 0f);
+            const float envelopeDepth = 2f;
+            Vector3 eyePosition = new Vector3(0f, EyeHeight, 0f);
             Vector3 closeupDigitPosition = Vector3.Lerp(eyePosition, _digit.localPosition,
                 envelopeDepth / _digit.localPosition.z);
             Vector3 closeupPosition = closeupDigitPosition - digitAnchor * closeupScale;
@@ -74,7 +87,7 @@ namespace Cinematic
             float yearsElapsed = 37 * (1 - Mathf.Pow(1 - rewind, 1.55f));
             _year.text = (2026 - Mathf.FloorToInt(yearsElapsed)).ToString();
             _timeline.localPosition = new Vector3(Mathf.Lerp(0, 12, rewind), 1f, 3.3f);
-            _year.transform.parent.localPosition = new Vector3(0, 2.25f, 2.9f);
+            _year.transform.parent.localPosition = new Vector3(0, 1.25f, 2.9f);
         }
 
         internal void ShowLocation(bool visible, float elapsed, string location, string research)

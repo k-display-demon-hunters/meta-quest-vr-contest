@@ -57,9 +57,12 @@ namespace Cinematic
 
         internal void Begin()
         {
+            if (_opening != null) { _openingView.AlignToViewer(); }
             _opening?.Begin();
             Evaluate(0f);
         }
+
+        internal void AlignOpeningToViewer() => _openingView.AlignToViewer();
 
         internal void Tick(float deltaTime)
         {

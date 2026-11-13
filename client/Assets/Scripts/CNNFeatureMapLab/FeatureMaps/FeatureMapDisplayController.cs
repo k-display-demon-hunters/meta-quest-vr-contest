@@ -35,10 +35,6 @@ namespace FeatureMapCorridor
         internal void MoveInputChannelsToCalculation(Transform filterAnchor, float duration, bool animate) =>
             _input.MoveToCalculation(filterAnchor, duration, animate);
         private FeatureMapSnapshot _snapshot;
-        private readonly List<int> _outputInputs = new List<int>();
-        private float _outputRevealStarted;
-        private int _outputCellsShown;
-        internal bool RevealingOutputInputs => _outputInputs.Count != 0;
         internal event Action<string> ButtonPressed;
         internal event Action<string> InputClicked;
         internal string HoverName
@@ -96,14 +92,12 @@ namespace FeatureMapCorridor
         internal void ShowSnapshot(FeatureMapSnapshot snapshot)
         {
             _snapshot = snapshot;
-            _outputInputs.Clear();
             _input.Draw(snapshot.Input);
             _output.SetData(snapshot);
         }
 
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed)
         {
-            _outputInputs.Clear();
             for (int layer = 1; layer <= _maps.Length; layer++)
             for (int map = 0; map < _snapshot.MapCount(layer); map++)
             {
@@ -114,13 +108,6 @@ namespace FeatureMapCorridor
 
         internal void DrawResult(int layer, int map, int shown, int only = -1, int always = -1) =>
             Map(layer, map).UpdateMap(_snapshot.Values(layer, map), _snapshot.Scale(layer, map), shown, only, always);
-
-        internal void RevealOutputInput(int map)
-        {
-            _outputInputs.Add(map);
-            _outputRevealStarted = Time.unscaledTime;
-            _outputCellsShown = -1;
-        }
 
         internal void SetResultVisible(int layer, int map, bool visible) =>
             Map(layer, map).Root.gameObject.SetActive(visible);
@@ -134,26 +121,11 @@ namespace FeatureMapCorridor
             return new Pose(root.TransformPoint(offset), root.rotation);
         }
 
-        private void UpdateOutputInputs(float now)
-        {
-            if (!RevealingOutputInputs) return;
-            int count = _snapshot.Size(3) * _snapshot.Size(3);
-            int shown = Mathf.FloorToInt(Mathf.Clamp01(now - _outputRevealStarted) * count);
-            if (shown == _outputCellsShown) return;
-            _outputCellsShown = shown;
-            foreach (int map in _outputInputs)
-            {
-                DrawResult(3, map, shown);
-            }
-            if (shown == count) _outputInputs.Clear();
-        }
-
         internal void Tick(float now)
         {
             UpdatePoolingSourcePositions(now);
             _input.Tick(now);
             _output.Tick(now);
-            UpdateOutputInputs(now);
         }
 
         internal FeatureMapPanelController Map(int layer, int map) => _maps[layer-1][map];
@@ -206,7 +178,7 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void HighlightLayer(int zone)
+        internal void HighlightLayer(int zone, bool showingOutputDetails)
         {
             bool showFirstExperiences = zone is 0 or 1;
             _inputRoot.gameObject.SetActive(showFirstExperiences);
@@ -216,7 +188,7 @@ namespace FeatureMapCorridor
                 {
                     0 => zone == 1,
                     1 => zone is 2 or 3,
-                    2 => zone == 3,
+                    2 => zone == 3 || (zone == 4 && showingOutputDetails),
                     _ => zone == 4
                 };
                 _stageRoots[i].gameObject.SetActive(visible);

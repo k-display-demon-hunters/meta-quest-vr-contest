@@ -21,7 +21,6 @@ namespace FeatureMapCorridor
         private MapId _availableRound;
         private bool _additionalFiltersVisible;
         private IReadOnlyCollection<MapId> _revealed;
-        internal bool RevealingOutputInputs => _display.RevealingOutputInputs;
         private bool _roundActive;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
@@ -226,11 +225,25 @@ namespace FeatureMapCorridor
         }
 
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed) => _display.RestoreResults(revealed);
-        internal void RevealOutputInput(int map) => _display.RevealOutputInput(map);
-        internal void Highlight(int layer)
+        internal void DrawOutputInput(int map) => _display.DrawResult(3, map, int.MaxValue);
+        internal void Highlight(int layer, bool showingOutputDetails)
         {
             _display.ArrangePoolingSources(_secondFilters[0].CalculationAnchor, layer == 3);
-            _display.HighlightLayer(layer);
+            if (layer == 3 || showingOutputDetails)
+            {
+                for (int map = 0; map < _secondFilters.Length; map++)
+                {
+                    bool unlocked = map switch
+                    {
+                        0 => true,
+                        1 => _revealed.Contains(new MapId(3, 0)),
+                        _ => _additionalFiltersVisible
+                    };
+                    _secondFilters[map].SetVisible(unlocked && !showingOutputDetails);
+                    _display.SetResultVisible(3, map, unlocked || showingOutputDetails);
+                }
+            }
+            _display.HighlightLayer(layer, showingOutputDetails);
         }
         internal void ShowPooling(FeatureMapSnapshot snapshot, int channel, PoolingCalculationResult data,
             LessonStep step, IReadOnlyCollection<MapId> revealed) =>

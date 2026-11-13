@@ -116,10 +116,10 @@ namespace FeatureMapCorridor
             }
         }
 
-        private void Highlight(int zone)
+        private void Highlight(int zone, bool showingOutputDetails = false)
         {
             _environment.Highlight(zone);
-            _featureMaps.Highlight(zone);
+            _featureMaps.Highlight(zone, showingOutputDetails);
         }
 
         private void SetProgress(float value)
@@ -150,7 +150,7 @@ namespace FeatureMapCorridor
                     var result = new MapId(3, map);
                     if (_state.RevealedMaps.Add(result))
                     {
-                        _featureMaps.RevealOutputInput(map);
+                        _featureMaps.DrawOutputInput(map);
                     }
                 }
             }
@@ -160,7 +160,6 @@ namespace FeatureMapCorridor
             _state.Phase = LessonPhase.AwaitRound;
             if (AwaitingOutput)
             {
-                SetProgress(.9f);
                 _lessonUI.SetVisible(false);
                 StartOutput();
                 return;
@@ -197,7 +196,7 @@ namespace FeatureMapCorridor
 
         private void StartOutput()
         {
-            if (AwaitingOutput && !_featureMaps.RevealingOutputInputs)
+            if (AwaitingOutput)
             {
                 MapId round = RequiredRound;
                 BeginRound(round, true, _featureMaps.FirstStep(round));
@@ -212,7 +211,7 @@ namespace FeatureMapCorridor
             _state.ActiveRound = round;
             _state.MandatoryRound = mandatory;
             _state.Step = step;
-            Highlight(round.Layer);
+            Highlight(round.Layer, _state.ShowingOutputDetails);
             PrepareActiveRound();
             ShowCurrentStep(animateFilterOpening);
         }
@@ -375,6 +374,7 @@ namespace FeatureMapCorridor
                 case RoundOutcome.BeforeFirstStep when _state.ShowingOutputDetails:
                 case RoundOutcome.ShowRecap when _state.ShowingOutputDetails:
                     _state.ShowingOutputDetails = false;
+                    Highlight(4);
                     _state.Step = LessonStep.RevealAnswer;
                     _featureMaps.ShowRoundStep(_state.Step, false);
                     ShowRecap();

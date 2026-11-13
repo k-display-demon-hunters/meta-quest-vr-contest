@@ -25,7 +25,6 @@ namespace FactoryEnvironment
         private readonly HashSet<FactoryShutterId> _permittedShutters = new HashSet<FactoryShutterId>();
         private readonly HashSet<LearningStageId> _availableStages = new HashSet<LearningStageId>();
         private ParchmentManager _parchment;
-        private bool _featureMapVerdictReached;
 
         private void Awake()
         {
@@ -36,8 +35,6 @@ namespace FactoryEnvironment
         {
             _areaController.ShutterProximityChanged += HandleProximityChanged;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
-            _session.StateChanged += HandleLearningProgress;
-            HandleLearningProgress(_session.GetSnapshot());
             _parchment.Collected += HandleParchmentCollected;
         }
 
@@ -45,7 +42,6 @@ namespace FactoryEnvironment
         {
             _areaController.ShutterProximityChanged -= HandleProximityChanged;
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
-            _session.StateChanged -= HandleLearningProgress;
             _parchment.Collected -= HandleParchmentCollected;
         }
 
@@ -62,15 +58,6 @@ namespace FactoryEnvironment
                 _availableStages.Remove(stage);
             }
             RefreshConditions();
-        }
-
-        private void HandleLearningProgress(LearningProgressSnapshot snapshot)
-        {
-            bool verdictReached = snapshot.GetProgress(LearningStageId.FeatureMap) >= .9f;
-            if (_featureMapVerdictReached == verdictReached) return;
-            _featureMapVerdictReached = verdictReached;
-            var exit = GetShutter(FactoryShutterId.FeatureMapExit);
-            RefreshShutter(exit, _areaController.IsNearShutter(exit.Id));
         }
 
         private void HandleParchmentCollected(int documentId) => RefreshConditions();
@@ -124,8 +111,7 @@ namespace FactoryEnvironment
                 shutter.Close();
             }
 
-            bool unavailable = isNear && !canOpen &&
-                (id != FactoryShutterId.FeatureMapExit || !_featureMapVerdictReached);
+            bool unavailable = isNear && !canOpen;
             if (unavailable && id == FactoryShutterId.FeatureMapEntrance)
             {
                 var (experienceIncomplete, parchmentMissing) = GetEntryRequirements(LearningStageId.FeatureMap);

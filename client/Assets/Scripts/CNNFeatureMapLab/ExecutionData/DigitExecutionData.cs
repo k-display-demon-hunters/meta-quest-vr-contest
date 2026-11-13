@@ -5,20 +5,10 @@ namespace FeatureMapCorridor
         private static readonly int[] Sizes = { 16, 8, 8 };
         // The saved convolution results were generated with these kernels from b14a2db.
         private static readonly float[] Smooth = { .06f, .12f, .06f, .12f, .28f, .12f, .06f, .12f, .06f };
-        private static readonly float[] Vertical = { -.5f, 1f, -.5f, -.5f, 1f, -.5f, -.5f, 1f, -.5f };
-        private static readonly float[] Horizontal = { -.5f, -.5f, -.5f, 1f, 1f, 1f, -.5f, -.5f, -.5f };
-        private static readonly float[] Diagonal = { -.5f, -.5f, 1f, -.5f, 1f, -.5f, 1f, -.5f, -.5f };
         private static readonly float[][][] FirstKernels =
         {
             ScaleKernel(Smooth, 1.2f, -.2f, -1f),
             ScaleKernel(Smooth, -2f, 1.2f, 1.6f)
-        };
-        private static readonly float[][][] SecondKernels =
-        {
-            ScaleKernel(Vertical, .6f, -.3f),
-            ScaleKernel(Horizontal, .6f, -.3f),
-            ScaleKernel(Smooth, 1.5f, -1f),
-            ScaleKernel(Diagonal, .6f, -.3f)
         };
 
         private static float[][] ScaleKernel(float[] kernel, params float[] channelScales) =>

@@ -63,6 +63,8 @@ Flatten은 H×W×C 길이의 벡터 하나, Dense는 설정 유닛 수의 벡터
 
 Builder가 인접한 배치 블록의 연결 지점 쌍을 모아 Conveyor에 전달한다. Conveyor는 저장된 Flow MeshFilter에 Input부터 Output까지 화살표 메시를 갱신하며 빈 슬롯을 건너뛴다. 화살표는 단계 사이의 데이터 흐름이고 개별 가중치 연결을 뜻하지 않는다.
 
+구성 검사를 통과해 학습이 시작되면 Builder의 `TrainingFlowController`가 고정 Input, 배치된 블록, 고정 Output 순서로 호박색 테두리를 하나씩 밝힌다. 배치 예시와 같은 테두리 재질을 사용한다. 빈 슬롯을 건너뛰며 한 블록당 약 0.32초 동안 강조한다. 이 연출은 순전파의 레이어 순서를 보여 주며 학습 중에 반복된다. 실제 에포크와 학습 지표는 콘솔에 표시된다. 학습이 완료되면 현재 순회를 Output까지 마친다. 학습 중지·실패, 블록 구성 변경 또는 체험 종료 시 테두리를 즉시 지운다.
+
 ### 바닥 조립 슬롯과 공급 책상
 
 조립 행은 씬 루트 기준 Y=0, Z=0.82에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.82에 둔다. 공장에서는 콘텐츠 기준점이 월드 Y=0.24에 놓이고 배율 1.2를 적용한다. 조립 행과 공급 책상은 이전 공장 배치의 80% 크기로 단상에 정렬된다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 빈 슬롯의 글씨는 판 가운데에 배치한다. 블록이 놓이면 슬롯 번호와 설정 글씨를 판 앞쪽에 표시하고, 글씨 위의 얇은 Trigger Collider로 오른손 레이 입력을 받는다.
@@ -100,7 +102,7 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 | 연결 대상 | 현재 구성 |
 | --- | --- |
 | 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset` |
-| `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어 |
+| `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어, 배치 예시와 학습 흐름 표시 Controller |
 | `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 판과 설정 입력 영역. 자식 순서는 슬롯 순서와 대응한다. |
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |

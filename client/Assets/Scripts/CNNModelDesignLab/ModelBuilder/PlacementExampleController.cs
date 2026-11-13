@@ -8,14 +8,13 @@ namespace ModelDesignScene.ModelBuilder
     public sealed class PlacementExampleController : MonoBehaviour
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-        private static readonly Color OutlineColor = new Color(0.73f, 0.48f, 0.21f, 1f);
         private static readonly Color GhostColor = new Color(0.30f, 0.84f, 1f, 0.46f);
 
         [SerializeField] private Material _outlineMaterial;
         [SerializeField] private Material _ghostMaterial;
 
         private Coroutine _animation;
-        private LineRenderer _outline;
+        private ModelBlockOutline _outline;
         private MeshRenderer _ghost;
         private MaterialPropertyBlock _ghostProperties;
 
@@ -39,11 +38,11 @@ namespace ModelDesignScene.ModelBuilder
         private IEnumerator Animate(IReadOnlyList<ModelBlockController> blocks, IReadOnlyList<int> emptySlots,
             ModelConveyorController conveyor)
         {
-            CreateOutline();
+            _outline = new ModelBlockOutline(transform, "Placement example outline", _outlineMaterial);
             ModelBlockController selected = blocks[0];
             foreach (ModelBlockController block in blocks)
             {
-                Outline(block.transform, block.ExampleMesh.bounds, false);
+                _outline.Show(block.transform, block.ExampleMesh.bounds);
                 if (block.ExampleMesh.bounds.size.x > selected.ExampleMesh.bounds.size.x)
                 {
                     selected = block;
@@ -51,7 +50,7 @@ namespace ModelDesignScene.ModelBuilder
                 yield return new WaitForSecondsRealtime(0.24f);
             }
 
-            Outline(selected.transform, selected.ExampleMesh.bounds, false);
+            _outline.Show(selected.transform, selected.ExampleMesh.bounds);
             yield return new WaitForSecondsRealtime(0.42f);
 
             CreateGhost(selected);
@@ -98,49 +97,10 @@ namespace ModelDesignScene.ModelBuilder
             Clear();
         }
 
-        private void CreateOutline()
-        {
-            GameObject visual = new GameObject("Placement example outline");
-            visual.transform.SetParent(transform, false);
-            _outline = visual.AddComponent<LineRenderer>();
-            _outline.sharedMaterial = _outlineMaterial;
-            _outline.shadowCastingMode = ShadowCastingMode.Off;
-            _outline.receiveShadows = false;
-            _outline.useWorldSpace = true;
-            _outline.positionCount = 4;
-            _outline.loop = true;
-            _outline.widthMultiplier = 0.022f;
-            _outline.numCornerVertices = 4;
-            MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            properties.SetColor(BaseColor, OutlineColor);
-            _outline.SetPropertyBlock(properties);
-        }
-
         private void OutlineSlot(ModelConveyorController conveyor, int slot)
         {
             Renderer surface = conveyor.GetSlotRenderer(slot);
-            Outline(surface.transform, surface.localBounds, true);
-        }
-
-        private void Outline(Transform target, Bounds bounds, bool horizontal)
-        {
-            Vector3 min = bounds.min;
-            Vector3 max = bounds.max;
-            Vector3 offset = horizontal ? target.up * 0.018f : -target.forward * 0.018f;
-            if (horizontal)
-            {
-                _outline.SetPosition(0, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
-                _outline.SetPosition(1, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _outline.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, max.z)) + offset);
-                _outline.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, max.z)) + offset);
-            }
-            else
-            {
-                _outline.SetPosition(0, target.TransformPoint(new Vector3(min.x, min.y, min.z)) + offset);
-                _outline.SetPosition(1, target.TransformPoint(new Vector3(max.x, min.y, min.z)) + offset);
-                _outline.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _outline.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
-            }
+            _outline.Show(surface.transform, surface.localBounds, true);
         }
 
         private void CreateGhost(ModelBlockController source)
@@ -177,8 +137,7 @@ namespace ModelDesignScene.ModelBuilder
             _animation = null;
             if (_outline != null)
             {
-                _outline.gameObject.SetActive(false);
-                Destroy(_outline.gameObject);
+                _outline.Remove();
                 _outline = null;
             }
             if (_ghost != null)

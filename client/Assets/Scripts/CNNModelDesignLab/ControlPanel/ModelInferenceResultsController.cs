@@ -27,8 +27,8 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private RawImage _selectedPreview;
         [SerializeField] private Button _previousPageButton;
         [SerializeField] private Button _nextPageButton;
-        [SerializeField] private Color _sampleColor = new Color32(16, 38, 58, 255);
-        [SerializeField] private Color _selectedSampleColor = new Color32(33, 76, 98, 255);
+        [SerializeField] private Color _sampleColor = new Color32(46, 64, 71, 255);
+        [SerializeField] private Color _selectedSampleColor = new Color32(183, 121, 50, 255);
 
         private readonly List<DatasetSample> _availableSamples = new List<DatasetSample>();
         private UnityAction[] _sampleListeners;

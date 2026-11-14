@@ -57,16 +57,16 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private ModelInferenceResultsController _inference;
 
         [Header("Status colors")]
-        private static readonly Color Cyan = new Color32(57, 230, 255, 255);
         private static readonly Color Yellow = new Color32(242, 201, 76, 255);
-        private static readonly Color TextMuted = new Color32(159, 179, 200, 255);
-        private static readonly Color TextDisabled = new Color32(129, 148, 167, 255);
-        private static readonly Color TabUnavailable = new Color32(130, 151, 172, 255);
-        private static readonly Color Amber = new Color32(255, 181, 71, 255);
-        private static readonly Color PanelFill = new Color32(16, 38, 58, 255);
-        private static readonly Color SelectedTabText = new Color32(4, 34, 43, 255);
-        private static readonly Color AvailableTabBorder = new Color32(46, 74, 99, 255);
-        private static readonly Color UnavailableTabBorder = new Color32(34, 56, 76, 255);
+        private static readonly Color TextBright = new Color32(235, 242, 242, 255);
+        private static readonly Color TextMuted = new Color32(170, 185, 192, 255);
+        private static readonly Color TextDisabled = new Color32(130, 146, 154, 255);
+        private static readonly Color Amber = new Color32(255, 178, 74, 255);
+        private static readonly Color ReadyGreen = new Color32(64, 214, 176, 255);
+        private static readonly Color PanelFill = new Color32(31, 37, 40, 255);
+        private static readonly Color SelectedTabFill = new Color32(77, 55, 28, 255);
+        private static readonly Color AvailableTabBorder = new Color32(74, 82, 84, 255);
+        private static readonly Color UnavailableTabBorder = new Color32(47, 54, 58, 255);
         private static readonly Color ActionText = new Color32(26, 18, 6, 255);
 
         private enum ErrorCard { None, Training, Cancelling, SampleInference, Reality, Dataset }
@@ -79,6 +79,8 @@ namespace ModelDesignScene.ControlPanel
         private bool _isDragging;
         private bool _isBusy;
         private bool _hasTrainedModel;
+        private bool _showingTrainingResult;
+        private bool _highlightReality;
         private ModelExecutionState _state;
 
         internal event Action OnExampleRequested;
@@ -116,7 +118,7 @@ namespace ModelDesignScene.ControlPanel
         internal void SetExampleAvailable(bool available)
         {
             _exampleButton.interactable = available;
-            SetSecondaryStyle(_exampleBorder, _exampleLabel, available);
+            SetSecondaryStyle(_exampleBorder, _exampleLabel, available && !_highlightReality);
             RefreshSecondaryReasons();
         }
 
@@ -130,9 +132,32 @@ namespace ModelDesignScene.ControlPanel
         internal void SetRealityAvailable(bool available)
         {
             _realityButton.interactable = available;
-            SetSecondaryStyle(_realityBorder, _realityLabel, available);
+            bool highlighted = available && _highlightReality;
+            _realityButton.image.color = highlighted ? Amber : Color.clear;
+            if (highlighted)
+            {
+                foreach (Image edge in _realityBorder) { edge.color = Amber; }
+                _realityLabel.color = ActionText;
+            }
+            else
+            {
+                SetSecondaryStyle(_realityBorder, _realityLabel, available);
+            }
             RefreshSecondaryReasons();
             if (_activeError == ErrorCard.Reality) { _errorActionButton.interactable = available; }
+        }
+
+        internal void SetTrainingResultPresentation(bool showing, bool highlightReality)
+        {
+            _showingTrainingResult = showing;
+            _highlightReality = highlightReality;
+            _validationTab.interactable = !showing;
+            _trainingTab.interactable = !showing;
+            _predictionTab.interactable = !showing;
+            _inference.SetAvailability(_hasTrainedModel, !showing && !_isBusy && _hasTrainedModel);
+
+            RefreshStartButton();
+            RefreshTabStyles();
         }
 
         internal void SetSamples(IReadOnlyList<DatasetSample> samples)
@@ -178,8 +203,9 @@ namespace ModelDesignScene.ControlPanel
             _assembly.ShowOutputSizes(Array.Empty<string>());
             _state = ModelExecutionState.Idle;
             _hasTrainedModel = false;
+            SetTrainingResultPresentation(false, false);
             SetExampleAvailable(false);
-            SetSecondaryStyle(_realityBorder, _realityLabel, _realityButton.interactable);
+            SetRealityAvailable(false);
             _validation.ShowValidation(Array.Empty<ValidationIssue>(), Array.Empty<LayerDefinition>(), false, false);
             _stopTrainingButton.interactable = false;
             ShowTrainingAction(false);
@@ -268,14 +294,15 @@ namespace ModelDesignScene.ControlPanel
                 _statusAccent.color = state switch
                 {
                     ModelExecutionState.StartingTraining or ModelExecutionState.Training => Amber,
-                    ModelExecutionState.Completed or ModelExecutionState.Inferring => Cyan,
+                    ModelExecutionState.Completed => ReadyGreen,
+                    ModelExecutionState.Inferring => Amber,
                     ModelExecutionState.Failed => Yellow,
                     _ => TextMuted
                 };
             }
             RefreshSecondaryReasons();
             RefreshTabStyles();
-            _inference.SetAvailability(hasTrainedModel, canInfer);
+            _inference.SetAvailability(hasTrainedModel, canInfer && !_showingTrainingResult);
             RefreshStartButton();
         }
 
@@ -319,7 +346,7 @@ namespace ModelDesignScene.ControlPanel
 
             _activeError = card;
             Color borderColor = card == ErrorCard.Cancelling
-                ? new Color32(106, 139, 158, 255) : Yellow;
+                ? TextMuted : Yellow;
             foreach (Image edge in _errorBorder) { edge.color = borderColor; }
             _errorTitle.text = title;
             _errorText.text = reason;
@@ -354,11 +381,16 @@ namespace ModelDesignScene.ControlPanel
 
         private void RefreshStartButton()
         {
-            bool canStart = !_isBusy && !_isDragging;
+            bool canStart = !_isBusy && !_isDragging && !_showingTrainingResult;
             _startTrainingButton.interactable = canStart;
             if (_activeError == ErrorCard.Training) { _errorActionButton.interactable = canStart; }
-            SetTrainingStyle(_startTrainingBorder, _startTrainingLabel, canStart);
-            _startTrainingLabel.text = "▶ 학습 시작";
+            SetSecondaryStyle(_startTrainingBorder, _startTrainingLabel, canStart);
+            if (canStart && _highlightReality)
+            {
+                foreach (Image edge in _startTrainingBorder) { edge.color = TextDisabled; }
+                _startTrainingLabel.color = TextBright;
+            }
+            _startTrainingLabel.text = _hasTrainedModel ? "▶ 다시 학습하기" : "▶ 학습 시작";
         }
 
         private void ShowTrainingAction(bool showStop)
@@ -370,8 +402,8 @@ namespace ModelDesignScene.ControlPanel
 
         private static void SetSecondaryStyle(Image[] border, Text label, bool available)
         {
-            foreach (Image edge in border) { edge.color = available ? Cyan : AvailableTabBorder; }
-            label.color = available ? Cyan : TextDisabled;
+            foreach (Image edge in border) { edge.color = available ? Amber : AvailableTabBorder; }
+            label.color = available ? Amber : TextDisabled;
         }
 
         private static void SetTrainingStyle(Image[] border, Text label, bool available)
@@ -382,7 +414,7 @@ namespace ModelDesignScene.ControlPanel
 
         private void HandleStartRequested()
         {
-            if (isActiveAndEnabled && !_isBusy && !_isDragging)
+            if (isActiveAndEnabled && _startTrainingButton.interactable)
             {
                 DismissError();
                 OnStartRequested?.Invoke();
@@ -445,9 +477,10 @@ namespace ModelDesignScene.ControlPanel
             {
                 bool selected = index == _currentPage;
                 bool unavailable = index == 2 && !_hasTrainedModel;
-                _tabBorders[index].color = selected ? Cyan : unavailable ? UnavailableTabBorder : AvailableTabBorder;
-                _tabBackgrounds[index].color = selected ? Cyan : PanelFill;
-                _tabLabels[index].color = selected ? SelectedTabText : unavailable ? TabUnavailable : TextMuted;
+                bool emphasized = selected && !_highlightReality;
+                _tabBorders[index].color = emphasized ? Amber : unavailable ? UnavailableTabBorder : AvailableTabBorder;
+                _tabBackgrounds[index].color = emphasized ? SelectedTabFill : selected ? UnavailableTabBorder : PanelFill;
+                _tabLabels[index].color = emphasized ? Amber : unavailable ? TextDisabled : TextMuted;
             }
         }
 

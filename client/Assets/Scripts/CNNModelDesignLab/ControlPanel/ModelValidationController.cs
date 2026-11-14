@@ -19,9 +19,9 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Button _previousIssue;
         [SerializeField] private Button _nextIssue;
         [SerializeField] private Image _statusAccent;
-        [SerializeField] private Color _readyColor = new Color32(57, 230, 255, 255);
+        [SerializeField] private Color _readyColor = new Color32(64, 214, 176, 255);
         [SerializeField] private Color _problemColor = new Color32(242, 201, 76, 255);
-        [SerializeField] private Color _placingColor = new Color32(106, 139, 158, 255);
+        [SerializeField] private Color _placingColor = new Color32(170, 185, 192, 255);
 
         private IReadOnlyList<ValidationIssue> _issues = Array.Empty<ValidationIssue>();
         private IReadOnlyList<LayerDefinition> _slotLayers = Array.Empty<LayerDefinition>();

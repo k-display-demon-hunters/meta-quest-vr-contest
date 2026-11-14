@@ -20,10 +20,10 @@ namespace ModelDesignScene.ModelBuilder
 
         internal bool IsPlaying => _animation != null;
 
-        internal void Play(IReadOnlyList<ModelBlockController> blocks, IReadOnlyList<int> emptySlots,
+        internal void Play(IReadOnlyList<(ModelBlockController Block, Renderer Pad)> displays, IReadOnlyList<int> emptySlots,
             ModelConveyorController conveyor)
         {
-            _animation = StartCoroutine(Animate(blocks, emptySlots, conveyor));
+            _animation = StartCoroutine(Animate(displays, emptySlots, conveyor));
         }
 
         internal void Cancel()
@@ -35,27 +35,27 @@ namespace ModelDesignScene.ModelBuilder
             Clear();
         }
 
-        private IEnumerator Animate(IReadOnlyList<ModelBlockController> blocks, IReadOnlyList<int> emptySlots,
+        private IEnumerator Animate(IReadOnlyList<(ModelBlockController Block, Renderer Pad)> displays, IReadOnlyList<int> emptySlots,
             ModelConveyorController conveyor)
         {
             _outline = new ModelBlockOutline(transform, "Placement example outline", _outlineMaterial);
-            ModelBlockController selected = blocks[0];
-            foreach (ModelBlockController block in blocks)
+            var selected = displays[0];
+            foreach (var display in displays)
             {
-                _outline.Show(block.transform, block.ExampleMesh.bounds);
-                if (block.ExampleMesh.bounds.size.x > selected.ExampleMesh.bounds.size.x)
+                _outline.Show(display.Pad);
+                if (display.Block.ExampleMesh.bounds.size.x > selected.Block.ExampleMesh.bounds.size.x)
                 {
-                    selected = block;
+                    selected = display;
                 }
                 yield return new WaitForSecondsRealtime(0.24f);
             }
 
-            _outline.Show(selected.transform, selected.ExampleMesh.bounds);
+            _outline.Show(selected.Pad);
             yield return new WaitForSecondsRealtime(0.42f);
 
-            CreateGhost(selected);
+            CreateGhost(selected.Block);
             Transform ghost = _ghost.transform;
-            Vector3 start = selected.transform.position;
+            Vector3 start = selected.Block.transform.position;
             Vector3 lifted = start + transform.up * 0.48f - transform.forward * 0.20f;
             for (float elapsed = 0f; elapsed < 0.48f; elapsed += Time.unscaledDeltaTime)
             {
@@ -99,8 +99,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void OutlineSlot(ModelConveyorController conveyor, int slot)
         {
-            Renderer surface = conveyor.GetSlotRenderer(slot);
-            _outline.Show(surface.transform, surface.localBounds, true);
+            _outline.Show(conveyor.GetSlotRenderer(slot));
         }
 
         private void CreateGhost(ModelBlockController source)

@@ -45,7 +45,7 @@ namespace ModelDesignScene.ModelBuilder
             {
                 if (_slots[index] == null) { emptySlots.Add(index); }
             }
-            _placementExample.Play(_supply.GetExampleBlocks(), emptySlots, _conveyor);
+            _placementExample.Play(_supply.GetExampleDisplays(), emptySlots, _conveyor);
         }
 
         internal void CancelPlacementExample() => _placementExample.Cancel();

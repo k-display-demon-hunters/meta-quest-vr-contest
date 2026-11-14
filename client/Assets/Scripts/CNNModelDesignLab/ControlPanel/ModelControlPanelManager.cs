@@ -46,6 +46,9 @@ namespace ModelDesignScene.ControlPanel
 
         public void SetRealityAvailable(bool available) => _controller.SetRealityAvailable(available);
 
+        internal void SetTrainingResultPresentation(bool showing, bool highlightReality) =>
+            _controller.SetTrainingResultPresentation(showing, highlightReality);
+
         public void Initialize(ModelDatasetManager dataset)
         {
             _controller.SetSamples(dataset.Samples);

@@ -16,10 +16,7 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private MeshFilter _surface;
         [SerializeField] private MeshFilter[] _inputChannelSurfaces;
         [SerializeField] private BoxCollider _collider;
-        [SerializeField] private Text _outputCaption;
         private Mesh _outputMesh;
-        private MeshRenderer _supplyRenderer;
-        private Material[] _assemblyMaterials;
         private Vector3Int _visualShape = new Vector3Int(-1, -1, -1);
         private bool _visualSpatial;
         private bool _visualEnlarged;
@@ -91,22 +88,16 @@ namespace ModelDesignScene.ModelBuilder
             SetPose(parent.TransformPoint(position), parent.rotation * rotation);
         }
 
-        internal void Initialize(LayerDefinition layer, bool isPalette, Material supplyFrame = null)
+        internal void Initialize(LayerDefinition layer, bool isPalette)
         {
             Layer = layer;
             IsPalette = isPalette;
             if (isPalette)
             {
-                _supplyRenderer = _surface.GetComponent<MeshRenderer>();
-                _assemblyMaterials = _supplyRenderer.sharedMaterials;
-                Material[] supplyMaterials = new Material[_assemblyMaterials.Length + 1];
-                Array.Copy(_assemblyMaterials, supplyMaterials, _assemblyMaterials.Length);
-                supplyMaterials[_assemblyMaterials.Length] = supplyFrame;
-                _supplyRenderer.sharedMaterials = supplyMaterials;
                 _supplyIdlePose = new Pose(transform.localPosition, transform.localRotation);
                 _supplyIdleStarted = Time.unscaledTime;
             }
-            SetOutputLabelsVisible(IsFixed);
+            SetOutputLabelVisible(IsFixed);
             name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
             RefreshLabel();
         }
@@ -114,15 +105,13 @@ namespace ModelDesignScene.ModelBuilder
         internal void TakeFromPalette()
         {
             IsPalette = false;
-            _supplyRenderer.sharedMaterials = _assemblyMaterials;
             _grabInteractable.retainTransformParent = false;
             RefreshLabel();
         }
 
-        internal void SetOutputLabelsVisible(bool visible)
+        internal void SetOutputLabelVisible(bool visible)
         {
             _label.transform.parent.gameObject.SetActive(visible);
-            _outputCaption.transform.parent.gameObject.SetActive(visible);
         }
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
@@ -211,11 +200,19 @@ namespace ModelDesignScene.ModelBuilder
             OutputSizeLabel = spatial ? (channels > 0 ? $"{height}×{width}×{channels}" : "—")
                 : elements > 0 ? elements.ToString() : "—";
             string shapeLabel = spatial ? $"{height} × {width} × {channels}" : $"{elements} elements";
-            _label.text = title + "\n" + shapeLabel
-                + (!_hasInputShape && !IsFixed ? "\nExample" : "");
-            _outputCaption.text = spatial
-                ? (channels > 0 ? (Layer.Type == LayerType.Input ? "RGB / 3 channels shown" : $"{channels} channels / 1 shown") : "Spatial output unavailable")
-                : (elements > 0 ? VectorBlockMesh.VectorCaption(elements) : "Input unavailable");
+            string displayDetail = spatial switch
+            {
+                true when channels == 0 => "Spatial output unavailable",
+                true when channels > 1 && Layer.Type != LayerType.Input => $"1 of {channels} channels shown",
+                false when elements == 0 => "Input unavailable",
+                false when elements > 8 => $"8 shown / {elements - 8} omitted",
+                _ => ""
+            };
+            _label.text = title + "\n" + shapeLabel;
+            if (displayDetail.Length > 0)
+            {
+                _label.text += $"\n<size=19>{displayDetail}</size>";
+            }
             bool enlargedExample = IsPalette && Layer.Type == LayerType.MaxPooling2D;
             Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, elements);
             if (_visualShape == shape && _visualSpatial == spatial && _visualEnlarged == enlargedExample
@@ -241,7 +238,6 @@ namespace ModelDesignScene.ModelBuilder
                 {
                     channelSurface.sharedMesh = _outputMesh;
                 }
-                _collider.center += new Vector3(0.04f, 0f, 0.12f);
                 _collider.size += new Vector3(0.08f, 0f, 0.24f);
                 VisualBounds = new Bounds(_collider.center, _collider.size);
             }

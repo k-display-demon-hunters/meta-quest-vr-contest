@@ -34,11 +34,6 @@ namespace ModelDesignScene.Hologram
                 1 => new Color32(84, 243, 136, 255),
                 _ => new Color32(93, 160, 255, 255)
             };
-            internal string Shape => IsSpatial ? $"{Width}×{Height}×{Channels}" : Elements.ToString();
-            internal string SamplingLabel => IsSpatial
-                ? (Count < Width * Height * DisplayedChannels ? $"격자 일부 · {Channels}장 중 {DisplayedChannels}장 표시"
-                    : Channels > DisplayedChannels ? $"{Channels}장 중 {DisplayedChannels}장 표시" : "")
-                : Elements > Count ? $"{Elements}개 중 일부" : "";
 
             internal Layer((Vector3Int Grid, int Elements, Vector3 Origin) data, string name, Color32 color)
             {
@@ -60,7 +55,6 @@ namespace ModelDesignScene.Hologram
             new List<(Vector3, Color32, float)>();
         internal readonly List<(int Start, int End, int Stage)> Lines = new List<(int, int, int)>();
         internal float Top { get; private set; }
-        internal float Bottom { get; private set; }
         private readonly float _pointPitch;
 
         internal CnnHologramLayout(ModelExecutionDefinition snapshot,
@@ -75,7 +69,7 @@ namespace ModelDesignScene.Hologram
                 {
                     LayerKind.Conv2D => ("CONV", new Color32(76, 141, 255, 255)),
                     LayerKind.MaxPooling2D => ("POOL", new Color32(155, 107, 255, 255)),
-                    LayerKind.Flatten => ("FLATTEN", new Color32(224, 64, 200, 255)),
+                    LayerKind.Flatten => ("FLATTEN", new Color32(193, 119, 154, 255)),
                     _ => ("DENSE", new Color32(61, 220, 132, 255))
                 };
                 Layers.Add(new Layer(sizes[index + 1], name, color));
@@ -191,7 +185,6 @@ namespace ModelDesignScene.Hologram
             layer.NodeByIndex.Add(source, Nodes.Count);
             Nodes.Add((position, color, radius));
             Top = Mathf.Max(Top, position.y + radius);
-            Bottom = Mathf.Min(Bottom, position.y - radius);
         }
 
         private List<(int Start, int End, int Stage)> BuildConnection(int stage, CnnLayerDefinition definition)

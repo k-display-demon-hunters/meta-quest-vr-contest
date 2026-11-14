@@ -1,6 +1,8 @@
 using System.Collections;
+using System.Collections.Generic;
 using Tablet;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace XR
 {
@@ -19,6 +21,7 @@ namespace XR
         private GameObject _leftControllerModel;
         private GameObject _rightControllerModel;
 #if UNITY_ANDROID && !UNITY_EDITOR
+        private const float FoveatedRenderingLevel = 0.5f;
         private const float TargetDisplayRefreshRate = 120f;
         private const float InitialRefreshRetrySeconds = 3f;
         private const float SecondRefreshRetrySeconds = 5f;
@@ -36,9 +39,23 @@ namespace XR
         {
             _leftControllerModel = CreateControllerVisual(_leftGripVisual, true).gameObject;
             _rightControllerModel = CreateControllerVisual(_rightGripVisual, false).gameObject;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            ConfigureFoveatedRendering();
+#endif
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
+        private static void ConfigureFoveatedRendering()
+        {
+            List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
+            SubsystemManager.GetSubsystems(displays);
+            foreach (XRDisplaySubsystem display in displays)
+            {
+                // SRP foveation defaults to off; 0.5 selects Medium on Quest.
+                display.foveatedRenderingLevel = FoveatedRenderingLevel;
+            }
+        }
+
         private void OnEnable()
         {
             _refreshRateMonitor = StartCoroutine(MonitorDisplayRefreshRate());

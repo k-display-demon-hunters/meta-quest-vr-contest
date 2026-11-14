@@ -131,6 +131,28 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.
 
+### Android 입력·렌더링 지연 설정
+
+활성 [OpenXRPackageSettings.asset](../client/Assets/XR/Settings/OpenXRPackageSettings.asset)의 Android 설정은 `Latency Optimization = Prioritize Input Polling`을 사용한다. Android의 Meta Quest Support에는 `Late Latching (Vulkan)`을 활성화하고 `Late Latching Debug Mode`는 비활성화한다. 프레임 동기화를 입력 처리 전에 수행하고, 렌더링에는 최신 추적 자세를 추가로 반영하도록 설정했다. 근거는 Meta의 [입력 타이밍 권장](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings/#latency-optimization)과 [Late Latching 권장](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings-quest/#late-latching-vulkan)이다.
+
+공용 리그의 카메라·양손 `TrackedPoseDriver`는 기존 `UpdateAndBeforeRender`를 유지한다. Standalone 입력 타이밍과 120Hz 요청 로직은 변경하지 않았다. 이 변경은 저장된 설정과 참조를 정적으로 확인했으며, Unity 실행·컴파일·테스트·빌드 및 Quest에서의 지연·프레임 성능·잡기 동작 검증은 수행하지 않았다.
+
+### Android 렌더링 부하 설정
+
+Android의 활성 OpenXR 설정과 공용 리그에는 다음 값을 적용한다.
+
+| 항목 | 적용값과 목적 |
+| --- | --- |
+| Symmetric Projection | 활성화. 기존 Vulkan·Single Pass Instanced와 함께 양안 렌더링을 최적화한다. |
+| Multiview Render Regions | `Final Pass`. OpenXR 1.16.1의 `MetaQuestFeature` 검증 규칙은 `All Passes`와 자동 동적 해상도의 조합에서 `Final Pass`를 권장하므로 이 조합을 사용한다. 기존 Render Graph 활성 상태를 유지한다. |
+| Foveated Rendering API | `SRP Foveation`. Unity의 `Foveated Rendering` 기능을 켜고 Legacy 경로의 `Meta XR Foveation`은 끈다. |
+| Foveation 강도 | Android 기기에서 `PersistentXRPlayerRig.Start()`가 XR display subsystem의 `foveatedRenderingLevel`을 `0.5`로 설정한다. Quest의 Medium에 해당하며, 시선 추적 플래그를 켜지 않아 고정 중심 방식을 사용한다. |
+| Automatic Viewport Dynamic Resolution | 활성화. 최소 `0.7`, 최대 `0.8`로 제한하고 공용 Main Camera의 `Allow Dynamic Resolution`을 켠다. OpenXR가 런타임 권장 해상도를 반영한다. |
+
+동적 해상도 상한은 기존 Mobile URP `Render Scale = 0.8`과 같게 두었다. OpenXR 기능이 초기화될 때 URP render scale을 상한으로 설정하므로 0.8에 다시 0.8을 곱하는 구성이 아니다. 하한 0.7과 Foveation Medium은 글자와 주변부 화질 저하를 제한하면서 GPU 여유를 확보하기 위해 선택한 시작값이며, 공식 고정 권장 수치나 실기기 측정 결과는 아니다. OVRManager의 별도 동적 해상도 제어는 사용하지 않는다.
+
+근거는 Meta의 [Quest 렌더링 설정](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings-quest/), Unity OpenXR 1.16의 [SRP Foveation 구성·런타임 강도](https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/foveatedrendering.html), 설치된 OpenXR 1.16.1의 `MetaQuestFeature`·`AutomaticDynamicResolutionFeature` 구현이다. 설정·참조·코드 차이를 정적으로 확인했으며 Unity 실행·컴파일·테스트·빌드와 Quest 실기기 성능·화질 확인은 수행하지 않았다.
+
 ## Quest 3S Touch Plus 표시
 
 공용 `XRPlayerRig`의 `PersistentXRPlayerRig.CreateControllerVisual()`은 Meta XR Core 207.0.1의 `OVRControllerPrefab`을 참조한다. 양손 grip pose 아래의 손 모델과 FactoryTutorial 안내 패널의 확대 모델에 같은 패키지 프리팹을 사용한다. `OVRControllerHelper`가 좌우 컨트롤러의 표시와 조이스틱·버튼·트리거·그립 애니메이션을 갱신한다.

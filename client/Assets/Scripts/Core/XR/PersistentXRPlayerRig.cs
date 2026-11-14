@@ -18,6 +18,16 @@ namespace XR
         [SerializeField] private TabletManager _tablet;
         private GameObject _leftControllerModel;
         private GameObject _rightControllerModel;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private const float TargetDisplayRefreshRate = 120f;
+        private const float InitialRefreshRetrySeconds = 3f;
+        private const float SecondRefreshRetrySeconds = 5f;
+        private const float MaxRefreshRetrySeconds = 10f;
+        private Coroutine _refreshRateMonitor;
+        private bool _applicationPaused;
+        private bool _applicationFocused = true;
+        private bool _refreshRateRecheckRequested;
+#endif
 
         public bool ControllerModelsVisible => _leftControllerModel.activeSelf;
         public bool TabletVisible => _tablet.IsAvailable;
@@ -26,37 +36,102 @@ namespace XR
         {
             _leftControllerModel = CreateControllerVisual(_leftGripVisual, true).gameObject;
             _rightControllerModel = CreateControllerVisual(_rightGripVisual, false).gameObject;
-#if UNITY_ANDROID && !UNITY_EDITOR
-            StartCoroutine(RequestStartupDisplayRefreshRate());
-#endif
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-        private IEnumerator RequestStartupDisplayRefreshRate()
+        private void OnEnable()
         {
-            // The SDK returns zero until the OpenXR session can report its refresh rate.
-            while (OVRPlugin.systemDisplayFrequency <= 0f)
-                yield return null;
+            _refreshRateMonitor = StartCoroutine(MonitorDisplayRefreshRate());
+        }
 
-            OVRPlugin.systemDisplayFrequency = 90f;
-            Debug.Log("[XR] Requested startup display refresh rate: 90 Hz.", this);
-
-            float deadline = Time.realtimeSinceStartup + 5f;
-            float actualFrequency;
-            do
+        private void OnDisable()
+        {
+            if (_refreshRateMonitor != null)
             {
-                yield return null;
-                actualFrequency = OVRPlugin.systemDisplayFrequency;
-                if (Mathf.Abs(actualFrequency - 90f) < 0.1f)
-                {
-                    Debug.Log($"[XR] Confirmed startup display refresh rate: {actualFrequency:0.##} Hz.", this);
-                    yield break;
-                }
+                StopCoroutine(_refreshRateMonitor);
+                _refreshRateMonitor = null;
             }
-            while (Time.realtimeSinceStartup < deadline);
+        }
 
-            string actualState = actualFrequency > 0f ? $"{actualFrequency:0.##} Hz" : "unavailable";
-            Debug.LogWarning($"[XR] Startup 90 Hz request was not confirmed within 5 seconds. Last queried refresh rate: {actualState}.", this);
+        private void OnApplicationPause(bool paused)
+        {
+            _applicationPaused = paused;
+            _refreshRateRecheckRequested = true;
+        }
+
+        private void OnApplicationFocus(bool focused)
+        {
+            _applicationFocused = focused;
+            _refreshRateRecheckRequested = true;
+        }
+
+        private IEnumerator MonitorDisplayRefreshRate()
+        {
+            WaitForSecondsRealtime pollInterval = new WaitForSecondsRealtime(1f);
+            float nextRequestTime = 0f;
+            float retrySeconds = InitialRefreshRetrySeconds;
+            bool confirmed = false;
+            bool powerSaving = false;
+
+            while (true)
+            {
+                // Wait for foreground execution and let XR initialize before querying it.
+                yield return pollInterval;
+                if (_applicationPaused || !_applicationFocused)
+                {
+                    continue;
+                }
+
+                if (_refreshRateRecheckRequested)
+                {
+                    _refreshRateRecheckRequested = false;
+                    nextRequestTime = 0f;
+                    retrySeconds = InitialRefreshRetrySeconds;
+                    confirmed = false;
+                }
+
+                bool currentPowerSaving = OVRPlugin.powerSaving;
+                if (currentPowerSaving != powerSaving)
+                {
+                    powerSaving = currentPowerSaving;
+                    Debug.Log($"[XR] Power saving: {powerSaving}. 120 Hz requests are deferred while active.", this);
+                }
+
+                float actualFrequency = OVRPlugin.systemDisplayFrequency;
+                if (Mathf.Abs(actualFrequency - TargetDisplayRefreshRate) < 0.1f)
+                {
+                    if (!confirmed)
+                    {
+                        Debug.Log($"[XR] Confirmed display refresh rate: {actualFrequency:0.##} Hz.", this);
+                    }
+                    confirmed = true;
+                    retrySeconds = InitialRefreshRetrySeconds;
+                    // If the OS lowers the rate, allow it a cooldown before requesting again.
+                    nextRequestTime = Time.realtimeSinceStartup + MaxRefreshRetrySeconds;
+                    continue;
+                }
+
+                if (confirmed)
+                {
+                    string actualState = actualFrequency > 0f ? $"{actualFrequency:0.##} Hz" : "unavailable";
+                    Debug.LogWarning($"[XR] Display refresh rate is no longer confirmed at 120 Hz: {actualState}.", this);
+                    confirmed = false;
+                    retrySeconds = MaxRefreshRetrySeconds;
+                }
+
+                // Zero means the runtime cannot currently report a refresh rate.
+                if (actualFrequency <= 0f || powerSaving || Time.realtimeSinceStartup < nextRequestTime)
+                {
+                    continue;
+                }
+
+                OVRPlugin.systemDisplayFrequency = TargetDisplayRefreshRate;
+                Debug.Log($"[XR] Requested display refresh rate: 120 Hz. Last queried: {actualFrequency:0.##} Hz. Retry in {retrySeconds:0} seconds if unconfirmed.", this);
+                nextRequestTime = Time.realtimeSinceStartup + retrySeconds;
+                retrySeconds = retrySeconds < SecondRefreshRetrySeconds
+                    ? SecondRefreshRetrySeconds
+                    : MaxRefreshRetrySeconds;
+            }
         }
 #endif
 

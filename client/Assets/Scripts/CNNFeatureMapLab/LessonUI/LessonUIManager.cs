@@ -86,7 +86,8 @@ namespace FeatureMapCorridor
                 {
                     string header = context.Layer == 2 ? FeatureMapLabels.Operation(2, context.Map)
                         : FeatureMapLabels.MapId(context.Layer, context.Map);
-                    _subtitle.Show(header, LessonContent.WaitingBody(context.Layer, context.Map), context.CanGoBack, null);
+                    _subtitle.Show(header, LessonContent.WaitingBody(context.Layer, context.Map),
+                        context.CanGoBack, null, emphasizeHeading: firstConv);
                 }
                 break;
                 case LessonPhase.Round:
@@ -101,7 +102,7 @@ namespace FeatureMapCorridor
                 }
                 string recap = LessonContent.Recap(context.Layer, context.Map, context.Mandatory);
                 _subtitle.Show(firstConv ? FeatureMapLabels.MapId(1, context.Map) : "",
-                    firstConv ? $"{LessonContent.RgbSource}\n{recap}" : recap, true,
+                    recap, true,
                     context.Layer == 4 ? LessonContent.Complete : LessonContent.Next,
                     context.Layer == 4 ? LessonContent.ViewScore : LessonContent.Previous);
                 break;
@@ -141,7 +142,7 @@ namespace FeatureMapCorridor
                 next = context.Step switch
                 {
                     LessonStep.FilterOpened => "필터 적용",
-                    LessonStep.Scan => "건너뛰기",
+                    LessonStep.Scan => LessonContent.Next,
                     _ => "확인"
                 };
             }
@@ -150,7 +151,9 @@ namespace FeatureMapCorridor
             string body = context.FilterPending && !mapCard ? "" : RoundBody(context);
             string header = mapCard ? FeatureMapLabels.MapId(context.Layer, context.Map)
                 : LessonContent.RoundHeader(context.Layer);
-            _subtitle.Show(header, body, true, next, previous, separateHeader: mapCard && context.Layer == 3);
+            _subtitle.Show(header, body, true, next, previous,
+                separateHeader: mapCard && context.Layer == 3,
+                enlargeButtons: context.Layer == 1 && (context.Step is LessonStep.FilterOpened or LessonStep.Scan));
         }
 
         private static string RoundBody(LessonContext context)

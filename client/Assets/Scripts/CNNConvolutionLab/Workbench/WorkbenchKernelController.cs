@@ -44,7 +44,7 @@ namespace CNNConvolution
         public event Action Grabbed;
         public event Action Released;
 
-        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform dock, Transform home, Transform target,
+        public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform dock, Transform home, Transform target, Transform titlePlate,
             float windowSize, Material placementPreviewMaterial, float placementGhostPeriod)
         {
             _root = root;
@@ -52,6 +52,7 @@ namespace CNNConvolution
             _factory = factory;
             _home = home;
             _target = target;
+            _kernelTitlePlate = titlePlate;
             _placementPreviewMaterial = placementPreviewMaterial;
             PlacementGhostPeriod = placementGhostPeriod;
             Scale = new Vector3(windowSize / FrameWidth, windowSize / FrameHeight, windowSize / FrameWidth);
@@ -59,11 +60,6 @@ namespace CNNConvolution
             _kernel.SetParent(dock, false);
             _kernel.localScale = Scale;
             _gripAccents = FilterFrame(factory, _kernel);
-            _kernelTitlePlate = factory.FormulaPlate("Filter title", 0.62f);
-            _kernelTitlePlate.SetParent(_home, false);
-            _kernelTitlePlate.localPosition = new Vector3(0f, 0.27f, -0.025f);
-            Text title = factory.Caption(_kernelTitlePlate, "필터 · 빨강 층 1/9", new Vector3(0, 0, -0.027f), 0.6f);
-            title.fontSize = WorkbenchColors.HeadingFontSize;
             // Only the red layer carries weights; the green and blue layers behind it weigh nothing.
             for (int index = 0; index < _weights.Length; index++)
             {

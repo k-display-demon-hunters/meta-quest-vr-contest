@@ -36,21 +36,15 @@ Core/Learning의 단계는 `Tutorial → ScreenLab → ConvolutionLab → Featur
 
 받침대 없이 입력 그림·수식 판·특징 맵을 공중에 띄우고, 단계마다 필요한 묶음만 보여 준다. 공장 콘텐츠 기준점은 `(-28.55, -0.3, -2.0)`, Y 회전은 -90°, 콘텐츠 배율은 1.2, 내부 Workbench 배율은 1.15다. 표시판과 자막·버튼판을 함께 담는 씬의 `Floating pixel values`는 배율 1.25, 높이 1.98이며, 전체 표시 크기는 이 배율 하나로 조절한다. 표시판 뒤에 별도 배경은 두지 않는다.
 
-`ConvolutionWorkbench.prefab`은 세 묶음과 세 슬롯을 저장한다. 묶음은 기준점을 자식으로 가지며, `FocusLayoutController`가 장면에 맞는 슬롯으로 묶음을 옮긴다. 슬롯 위치는 프리팹의 `Focus slots` 아래에서 조정한다.
+입력 그림, 수식 판, 특징 맵, 필터 명판은 `ConvolutionWorkbench.prefab`에 월드 공간 UI로 저장한다. Scene 뷰와 Prefab Mode에서 입력 원본과 빈 특징 맵을 볼 수 있다. 수식 판을 편집할 때는 `Output group`을 끄고 `Formula group`을 켠다. 위치는 각 그룹의 Transform에서 조정한다.
 
-| 묶음 | 포함 기준점 | 사용하는 슬롯 |
-| --- | --- | --- |
-| `Input group` | 입력 그림, 필터 시작 위치·첫 목표, 손잡이 안내 | `Input center slot`, `Input side slot` |
-| `Formula group` | 수식 판 | `Grid side slot` |
-| `Output group` | 특징 맵 | `Grid side slot` |
-
-| 장면 (`FocusLayout`) | 보이는 묶음 |
+| 단계 (`FocusLayout`) | 보이는 묶음 |
 | --- | --- |
-| `Picture` | 입력 그림과 필터(가운데) |
-| `PictureAndFormula` | 입력 그림과 필터(왼쪽), 수식 판(오른쪽) |
-| `PictureAndMap` | 입력 그림과 필터(왼쪽), 특징 맵(오른쪽) |
+| `Picture` | 왼쪽의 입력 그림과 배치용 필터 |
+| `PictureAndFormula` | 왼쪽의 입력 그림과 필터, 오른쪽의 수식 판 |
+| `PictureAndMap` | 왼쪽의 입력 그림과 필터, 오른쪽의 특징 맵 |
 
-장면이 바뀌면 필요 없는 묶음은 줄어들며 사라지고, 남는 묶음은 새 슬롯으로 이동한 뒤, 새 묶음이 슬롯에서 커지며 나타난다. 필터는 `Input group` 아래에 두어 입력 그림과 함께 이동하고 숨겨진다. 수식 판과 특징 맵은 같은 슬롯을 쓰며 동시에 표시하지 않는다. 필터의 첫 목표(`KernelTarget anchor`)는 프리팹의 위치를 쓰지 않고, 시작할 때 계산한 첫 위치의 그림 칸 위로 옮긴다.
+입력 그림은 같은 위치를 유지한다. `FocusLayoutController`는 오른쪽의 수식 판과 특징 맵의 표시 여부만 바꾼다. 플레이가 시작되면 입력 그림을 샘플링한 텍스처로 갱신하고, 특징 맵에는 계산한 값을 기록한다. 움직이는 필터와 수식 숫자 연출은 런타임에 생성한다. 필터의 첫 목표(`KernelTarget anchor`)는 계산한 첫 위치의 그림 칸 위에 놓인다.
 
 | 공간 요소 | 현재 표시 |
 | --- | --- |
@@ -124,21 +118,21 @@ AudioSource는 초점 중앙에 둔 3D 음원이며 6m까지 원래 크기, 14m�
 | `FilterSweepController` (`Sweep/`) | 훑기 입력, 필터의 칸 단위 이동, 지나간 칸 기록과 기록 여부 관리, 자동 채우기 |
 | `ResultSummaryController` | 특징 맵 완성 뒤의 설명 자막·음성, 체험 마치기 버튼 표시, 종료 요청 |
 | `LessonUIController` | 자막 한 줄·버튼 표시와 사용자 요청 이벤트 |
-| `WorkbenchBuilder` | 프리팹의 묶음·슬롯·기준점에서 런타임 공유 표시와 `FocusLayoutController`를 한 번 생성하고 수명 관리 |
-| `FocusLayoutController` | 장면에 맞는 묶음의 표시·숨김과 슬롯 이동 |
+| `WorkbenchBuilder` | 프리팹에 연결된 표시와 기준점을 각 Controller에 전달하고 런타임 리소스의 수명 관리 |
+| `FocusLayoutController` | 단계에 따른 수식 판·특징 맵의 표시 전환 |
 | `PictureDisplayController` | 입력 그림 표시, 필터 위치의 자세 계산, 공간 좌표에서 가장 가까운 필터 위치 계산 |
 | `FeatureMapDisplayController` | 특징 맵 칸 채우기, 현재 칸 테두리와 출력값 표시 |
 | `WorkbenchKernelController` | 세 층 필터와 단일 XR 잡기 대상, 크기·위치·가중치 표시. 놓인 필터는 `Input group` 아래에 둔다. 제한 이동 중에는 XR의 자유 위치 추적을 끄고 손이 요청한 위치만 알려 준다. |
-| `FlyingNumberController`, `WorkbenchPrimitiveFactory` | 수식 항·합 글자, 도형·글자·그림 면·선·런타임 재질 생성 |
-| `ConvolutionLabBuilder` | 저장된 두 프리팹, 안내 음성, 입력 그림을 참조하는 씬 생성 경로. 이번 변경에서 실행하지 않았다. |
+| `FlyingNumberController`, `WorkbenchPrimitiveFactory` | 움직이는 수식 항·합 글자, 필터·강조 도형과 런타임 재질 생성 |
+| `ConvolutionLabBuilder` | 저장된 두 프리팹과 안내 음성을 연결하는 씬 생성 경로 |
 
 씬 Manager는 직렬화 참조로 `ConvolutionPracticeManager`를 구성한 뒤 이 진입점만 호출한다. 내부 Controller·Factory·표시판은 모듈 밖으로 반환하지 않는다. 종료·재시작 요청은 로컬 C# 이벤트로 씬 Manager에 전달하고, 진행률은 씬 Manager가 단계 호출이 끝날 때 갱신한다. 활성 기간 이벤트는 OnEnable/OnDisable에서 대칭으로 연결·해제한다.
 
-런타임 표시는 각 기준점의 자식으로 생성하므로 묶음을 옮기면 함께 움직인다. 수식 항과 합은 Workbench 루트 좌표에서 움직이며, 장면 전환이 끝난 뒤의 위치를 읽어 이동한다. 합은 수식 판이 사라지는 동안에도 공중에 남는다.
+수식 항과 합은 Workbench 루트 좌표에서 움직인다. 수식 판을 숨기고 특징 맵을 표시하면 합이 고정된 수식 판 위치에서 특징 맵의 해당 칸으로 이동한다.
 
 ## 중단·재시작과 확인 범위
 
-씬 Manager는 먼저 소유 코루틴을 중단하고 체험 모듈의 Cancel을 호출한다. 모듈은 안내 음성을 정지한 뒤, 단계 Controller의 `Cancel`로 배치·훑기 입력 구독을 해제한다. 수식 항과 합, 잡기, 강조를 정리하고 훑기 중이던 XR의 자유 위치 추적 설정을 복원한다. 다시 시작하면 모든 묶음을 숨기고 필터를 시작 위치로 돌려놓은 뒤, 빈 특징 맵으로 첫 배치 장면부터 시작한다. 픽셀 샘플링과 첫 위치 계산은 처음 한 번만 한다. 내부 XR 리스너는 표시 생성부터 폐기까지 유지하고 폐기 시 해제한다.
+씬 Manager는 먼저 소유 코루틴을 중단하고 체험 모듈의 Cancel을 호출한다. 모듈은 안내 음성을 정지한 뒤, 단계 Controller의 `Cancel`로 배치·훑기 입력 구독을 해제한다. 수식 항과 합, 잡기, 강조를 정리하고 훑기 중이던 XR의 자유 위치 추적 설정을 복원한다. 다시 시작하면 오른쪽 판을 숨기고 특징 맵을 비우며, 필터를 시작 위치로 돌려놓는다. 픽셀 샘플링과 첫 위치 계산은 처음 한 번만 한다. 내부 XR 리스너는 표시 생성부터 폐기까지 유지하고 폐기 시 해제한다.
 
 2026-11-13 받침대 제거, 단계별 장면 전환, 자막·버튼 축소, 안내 음성 변경은 Unity 6000.3.24f1 배치 모드(Android 대상)의 임포트와 스크립트 컴파일만 확인했다. 프리팹과 씬은 에디터 없이 YAML을 직접 수정했다.
 

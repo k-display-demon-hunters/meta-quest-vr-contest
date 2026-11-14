@@ -11,7 +11,6 @@ namespace CNNConvolution
         private readonly LessonNarrationController _narration;
         private readonly WorkbenchBuilder _spatial;
         private readonly Font _font;
-        private readonly Texture2D _pictureSource;
         private readonly LessonPlayback _playback = new LessonPlayback();
         private readonly ResultSummaryController _summary;
         private FocusLayoutController _focus;
@@ -29,13 +28,12 @@ namespace CNNConvolution
         public event Action RestartRequested;
 
         public ConvolutionPracticeManager(LessonUIController ui, LessonNarrationController narration,
-            WorkbenchBuilder spatial, Font font, Texture2D picture)
+            WorkbenchBuilder spatial, Font font)
         {
             _ui = ui;
             _narration = narration;
             _spatial = spatial;
             _font = font;
-            _pictureSource = picture;
             _summary = new ResultSummaryController(ui, narration);
         }
 
@@ -69,8 +67,7 @@ namespace CNNConvolution
             _ui.BeginCalculation();
             SetPaused(false);
             _spatial.gameObject.SetActive(true);
-            _focus.Hide();
-            // The first scene grows in with the filter already at its start position.
+            _focus.Show(FocusLayout.Picture);
             _kernel.ResetToHome();
             _sweep.Prepare();
         }
@@ -101,12 +98,11 @@ namespace CNNConvolution
 
         private void InitializeWorkbench()
         {
-            var workbench = _spatial.Build(_font, _playback);
+            var workbench = _spatial.Build(_font);
             _focus = workbench.Focus;
             _kernel = workbench.Kernel;
             _map = workbench.Map;
-            Color32[] pixels = PictureSampler.Sample(_pictureSource);
-            workbench.Picture.Show(pixels);
+            Color32[] pixels = workbench.Picture.Show();
             _convolution = new PictureConvolution(pixels);
             _start = _convolution.StrongestWindow();
             _kernel.SetWeights(_convolution);
@@ -117,19 +113,15 @@ namespace CNNConvolution
             _sweep = new FilterSweepController(_kernel, workbench.Picture, _map, _convolution, _ui, _narration, _playback);
         }
 
-        public IEnumerator PlaceFilter()
-        {
-            yield return _focus.Show(FocusLayout.Picture);
-            yield return _placement.Run();
-        }
+        public IEnumerator PlaceFilter() => _placement.Run();
 
         // One filter position is worked out as a formula; its sum then drops into the same cell of the
         // feature map that appears beside the picture.
         public IEnumerator CalculateFirstOutput()
         {
-            yield return _focus.Show(FocusLayout.PictureAndFormula);
+            _focus.Show(FocusLayout.PictureAndFormula);
             yield return _formula.Run(_convolution, _start.y, _start.x);
-            yield return _focus.Show(FocusLayout.PictureAndMap);
+            _focus.Show(FocusLayout.PictureAndMap);
             yield return _formula.SendSum(_map.CellPosition(_start.y, _start.x));
             _sweep.Record(_start.y, _start.x);
             yield return _narration.WaitUntilDone();

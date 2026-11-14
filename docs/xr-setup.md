@@ -20,11 +20,15 @@
 
 `SubsystemRegistration`에서 정적 리그 참조를 초기화하므로 도메인 재로드를 끈 에디터 실행에서도 이전 참조를 재사용하지 않는다.
 
-### 시작 주사율
+### 주사율 요청과 지속 확인
 
-Android 기기에서는 `PersistentXRPlayerRig.Start()`가 컨트롤러 모델을 생성한 뒤 `RequestStartupDisplayRefreshRate()` 코루틴을 시작한다. `OVRPlugin.systemDisplayFrequency`로 현재 주사율을 조회할 수 있을 때까지 기다린 후 90Hz를 한 번 요청한다. SDK가 조회 실패 시 반환하는 0은 아직 요청할 준비가 되지 않은 상태로 취급한다.
+Android 기기에서는 `PersistentXRPlayerRig.OnEnable()`이 `MonitorDisplayRefreshRate()` 코루틴을 시작하고 `OnDisable()`에서 중지한다. 앱이 일시 정지되지 않고 포커스를 가진 동안 1초마다 `OVRPlugin.systemDisplayFrequency`로 실제 주사율을 조회한다. SDK 조회 실패값 0에서는 요청을 보류하고 계속 조회한다. Unity 에디터에서는 실행하지 않는다.
 
-영속 리그가 유지되므로 씬 이동 때마다 다시 요청하지 않으며, Unity 에디터에서는 실행하지 않는다. `[XR] Requested startup display refresh rate: 90 Hz.` 로그는 요청 사실만 기록한다. 요청 다음 프레임부터 최대 5초 동안 실제 주사율을 조회하고, 90Hz와의 차이가 0.1Hz 미만이면 `[XR] Confirmed startup display refresh rate: 90 Hz.` 형식으로 조회값을 기록한다. 대기 시간은 `Time.realtimeSinceStartup`을 사용하므로 게임 시간 배율에 영향을 받지 않는다. 제한 시간 안에 확인되지 않으면 마지막 조회 주사율을 경고로 남기며, SDK 조회 실패값 0은 `unavailable`로 표시한다. 확인 후에는 조회를 종료한다. 주사율 확인은 실제 90fps 유지나 이후 주사율 유지까지 보장하지 않으며, 기기 실행 결과와 성능은 확인 전이다.
+120Hz가 아니면 요청하고, 미적용 상태가 이어지면 요청 간격을 3→5→10초로 늘려 최대 10초 간격으로 계속 재요청한다. `[XR] Requested display refresh rate: 120 Hz.` 로그에는 마지막 실제 조회값과 다음 재시도 간격을 함께 남긴다. SDK setter는 호출 결과를 반환하지 않으므로 요청 로그를 성공으로 취급하지 않는다. 실제 조회값이 120Hz와 0.1Hz 미만 차이일 때만 `[XR] Confirmed display refresh rate: 120 Hz.` 로그를 남기고 요청을 멈추며, 상태 조회는 계속한다.
+
+확인 이후 주사율이 내려가거나 조회 불가가 되면 마지막 상태를 경고로 기록하고, 마지막 120Hz 확인 시점에서 약 10초의 대기를 둔 뒤 10초 간격으로 재요청한다. `OVRPlugin.powerSaving`이 참이면 요청을 보류하고 상태 조회를 계속하며, 전력 절약 상태 변화만 로그로 남긴다. 이 신호는 모든 발열 제한을 판별하지 않으며 OS의 주사율 제한을 해제하지 않는다. `OnApplicationPause`와 `OnApplicationFocus` 변화 시 재확인을 예약하고, 앱 복귀 후 다음 조회에서 실제 주사율을 다시 확인한다. 복귀 시 재시도 간격은 초기화하되 전력 절약 상태에서는 계속 보류한다. 코루틴을 추가로 시작하지 않으므로 복귀 이벤트가 겹쳐도 중복 루프를 만들지 않는다.
+
+영속 리그가 유지되므로 씬 이동 때마다 재시작하지 않는다. 조회 간격과 재요청 시간은 `WaitForSecondsRealtime`과 `Time.realtimeSinceStartup`을 사용하여 게임 시간 배율에 영향을 받지 않는다. 120Hz 확인은 실제 120fps 유지나 이후 주사율 유지까지 보장하지 않는다. 이 지속 확인·재요청 변경의 Unity 실행·컴파일·테스트·빌드 및 기기 검증은 수행하지 않았다.
 
 ### 컨트롤러 모델과 태블릿 표시
 

@@ -255,3 +255,10 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 | 에셋 | 사용 위치 | 생성 도구·제작 방법 | 제작자·권리자 / 라이선스 | 수정 |
 | --- | --- | --- | --- | --- |
 | Observation0–2.wav | `client/Assets/Audio/CNNScreenLab/`, 돋보기 조작·RGB 펼침·이동 비교 안내 | Codex 보조로 작성한 한국어 대사를 Windows System.Speech / Microsoft Heami Desktop으로 WAV 합성 | 음성 엔진 Microsoft. 생성 파일 권리·배포 조건 미확인, 별도 공개 라이선스 부여 없음 | 새 합성, 후처리 없음 |
+
+
+## 공장 조명 재베이크 (2026-11-14)
+
+기존 `Textures/FactoryEnvironment/Lightmap-*_comp_*`와 `ReflectionProbe-0~4.exr`를 휴게실 Baked 조명 설정을 포함해 다시 생성했다. Unity 6000.3.24f1 Progressive CPU Lightmapper 및 반사 프로브 베이크를 Codex AI 보조로 실행했다. 기존 씬의 메시·재질·광원을 사용했고 새 외부 미디어는 추가하지 않았다. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음. 기존 에셋 출처와 라이선스 고지는 유지한다.
+
+휴게실 가구·침구 단순화, 바닥 소품·남쪽 게시판·선반 제거 및 북쪽 창문 차폐 후 같은 도구와 방식으로 조명·반사 프로브 이미지를 다시 베이크했다. 기존 생성 방법·권리 표기는 동일하다.

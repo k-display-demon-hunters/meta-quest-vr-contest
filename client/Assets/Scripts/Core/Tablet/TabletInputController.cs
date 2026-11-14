@@ -26,6 +26,7 @@ namespace Tablet
         private readonly List<FocusTarget> _detailTargets = new List<FocusTarget>();
         private bool _movementCaptured;
         private bool _isInteracting;
+        private bool _waitForTriggerRelease;
         private bool _isAdjustingSlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
@@ -103,6 +104,12 @@ namespace Tablet
             ResetFocus(initialIndex);
         }
 
+        public void CancelInteraction(int initialIndex)
+        {
+            _waitForTriggerRelease = true;
+            SetInteraction(false, initialIndex);
+        }
+
         public void StopAdjustingSlider()
         {
             _isAdjustingSlider = false;
@@ -142,7 +149,9 @@ namespace Tablet
 
         public void Tick(bool visible)
         {
-            bool navigating = _trigger.IsPressed();
+            bool triggerPressed = _trigger.IsPressed();
+            if (!triggerPressed) { _waitForTriggerRelease = false; }
+            bool navigating = triggerPressed && !_waitForTriggerRelease;
             Vector2 stick = _stick.ReadValue<Vector2>();
             if (navigating && visible)
             {
@@ -152,13 +161,13 @@ namespace Tablet
                 }
                 CaptureMovement();
             }
-            else if (stick.magnitude < 0.25f)
+            else if ((!triggerPressed || !visible) && stick.magnitude < 0.25f)
             {
                 // Do not turn a tablet gesture into walking until the stick returns to neutral.
                 ReleaseMovement();
             }
 
-            if (!navigating && _xButton.WasPressedThisFrame())
+            if (!triggerPressed && _xButton.WasPressedThisFrame())
             {
                 VisibilityToggleRequested?.Invoke();
                 return;

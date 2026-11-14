@@ -130,6 +130,7 @@ namespace Tablet
         private void ToggleVisibility()
         {
             _visible = !_visible;
+            if (!_visible && _detail.IsOpen) { CloseQuit(); }
             _body.gameObject.SetActive(_visible);
             _canvas.gameObject.SetActive(_visible);
             _rearLogo.SetActive(_visible);
@@ -147,7 +148,7 @@ namespace Tablet
             if (_detail.IsOpen) { CloseQuit(); }
             else if (_input.IsAdjustingSlider) { _input.StopAdjustingSlider(); }
             else if (_settings.IsOpen) { ToggleSettings(); }
-            else { SetInteraction(false); }
+            else { _input.CancelInteraction(_ui.SelectedApp); }
         }
         private void SaveSettings() => _settings.Save(_parchment.SelectedIndex);
         private void ShowQuit() { _detail.Show(); _input.ResetFocus(0); }

@@ -99,6 +99,11 @@ namespace FactoryEnvironment
             {
                 return false;
             }
+            if (point.Source == FactoryAreaId.ModelDesignRoom && point.RequiredCompletion == LearningStageId.ModelDesign
+                && !_session.CanExitStage(LearningStageId.ModelDesign))
+            {
+                return false;
+            }
             if (point.RequiredParchmentStage == LearningStageId.None) { return true; }
             foreach (int documentId in LearningStageCatalog.Get(point.RequiredParchmentStage).EntranceParchmentIds)
             {

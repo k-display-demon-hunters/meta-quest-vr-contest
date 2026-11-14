@@ -250,7 +250,6 @@ MonoBehaviour:
   _ui: {fileID: 820000023}
   _narration: {fileID: 730000004}
   _spatial: {fileID: 820000042}
-  _picture: {fileID: 2800000, guid: 1b977e083dd14ef8ada760223a39ce70, type: 3}
 --- !u!1 &730000001
 GameObject:
   m_ObjectHideFlags: 0

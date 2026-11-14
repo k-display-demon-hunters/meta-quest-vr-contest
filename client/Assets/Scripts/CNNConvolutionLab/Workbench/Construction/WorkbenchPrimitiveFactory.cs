@@ -110,23 +110,6 @@ namespace CNNConvolution
             return label;
         }
 
-        // A flat picture surface. UI images draw unlit, so pixel colours are shown as they are.
-        public RawImage Picture(Transform parent, Vector3 position, float width, float height)
-        {
-            GameObject canvasObject = new GameObject("Picture", typeof(RectTransform), typeof(Canvas));
-            canvasObject.transform.SetParent(parent, false);
-            canvasObject.transform.localPosition = position;
-            canvasObject.transform.localScale = Vector3.one * 0.001f;
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            canvas.worldCamera = _camera;
-            RawImage image = new GameObject("Image", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
-            image.transform.SetParent(canvasObject.transform, false);
-            image.rectTransform.sizeDelta = new Vector2(width, height) * 1000f;
-            image.raycastTarget = false;
-            return image;
-        }
-
         public void Frame(Transform parent, float width, float height, float depth, Color color, float edge = 0.018f)
         {
             for (int side = -1; side <= 1; side += 2)
@@ -134,24 +117,6 @@ namespace CNNConvolution
                 Tile(parent, new Vector3(side * width * 0.5f, 0, 0), new Vector3(edge, height + edge, depth), color);
                 Tile(parent, new Vector3(0, side * height * 0.5f, 0), new Vector3(width, edge, depth), color);
             }
-        }
-
-        public Transform PanelHeading(Transform parent)
-        {
-            Transform plate = FormulaPlate("Panel heading", 0.92f);
-            plate.SetParent(parent, false);
-            plate.localPosition = new Vector3(0f, WorkbenchColors.HeadingHeight, -0.025f);
-            Tile(plate, new Vector3(0f, 0.069f, -0.024f), new Vector3(0.88f, 0.006f, 0.003f),
-                WorkbenchColors.PlacementMint);
-            return plate;
-        }
-
-        public Transform FormulaPlate(string name, float width)
-        {
-            Transform plate = Root(name);
-            Tile(plate, Vector3.zero, new Vector3(width, 0.14f, 0.04f), WorkbenchColors.PanelFace);
-            Frame(plate, width, 0.14f, 0.043f, WorkbenchColors.PanelFrame, 0.008f);
-            return plate;
         }
 
         public Transform Highlight(string name, float width, float height)

@@ -8,35 +8,29 @@ namespace CNNConvolution
     internal sealed class PictureDisplayController : IDisposable
     {
         public const float Pitch = 0.05f;
-        private const float Width = PictureSampler.Columns * Pitch;
-        private const float Height = PictureSampler.Rows * Pitch;
         // The filter floats just far enough in front for its green and blue layers to clear the picture.
         private const float FilterDepth = 0.045f;
 
         private readonly Transform _root;
+        private readonly Texture2D _source;
         private readonly Texture2D _texture;
 
-        public PictureDisplayController(WorkbenchPrimitiveFactory factory, Transform anchor)
+        public PictureDisplayController(Transform anchor, RawImage image)
         {
-            _root = factory.Root("Input picture");
-            _root.SetParent(anchor, false);
-            factory.Tile(_root, new Vector3(0f, 0f, 0.03f), new Vector3(Width + 0.06f, Height + 0.06f, 0.026f), WorkbenchColors.PanelFace);
-            factory.Frame(_root, Width + 0.06f, Height + 0.06f, 0.04f, WorkbenchColors.PanelFrame, 0.012f);
-            Transform heading = factory.PanelHeading(_root);
-            heading.localPosition = new Vector3(0f, Height * 0.5f + 0.14f, -0.025f);
-            Text title = factory.Caption(heading, "입력 그림", new Vector3(0f, 0f, -0.027f), 0.88f);
-            title.fontSize = WorkbenchColors.HeadingFontSize;
-            RawImage image = factory.Picture(_root, new Vector3(0f, 0f, 0.01f), Width, Height);
+            _root = anchor;
+            _source = (Texture2D)image.texture;
             _texture = new Texture2D(PictureSampler.Columns, PictureSampler.Rows, TextureFormat.RGBA32, false);
             _texture.filterMode = FilterMode.Point;
             _texture.wrapMode = TextureWrapMode.Clamp;
             image.texture = _texture;
         }
 
-        public void Show(Color32[] pixels)
+        public Color32[] Show()
         {
+            Color32[] pixels = PictureSampler.Sample(_source);
             _texture.SetPixels32(pixels);
             _texture.Apply();
+            return pixels;
         }
 
         // Where the filter sits when its top-left cell is over (row, column).

@@ -8,8 +8,6 @@ namespace CNNConvolution
     internal sealed class FeatureMapDisplayController : IDisposable
     {
         private const float Pitch = PictureDisplayController.Pitch;
-        private const float Width = PictureConvolution.MapColumns * Pitch;
-        private const float Height = PictureConvolution.MapRows * Pitch;
         // Cells without a value yet are slate so they cannot be mistaken for a small (dark) value.
         private static readonly Color32 Empty = new Color32(58, 74, 90, 255);
 
@@ -19,27 +17,18 @@ namespace CNNConvolution
         private readonly Text _readout;
         private readonly WorkbenchPrimitiveFactory _factory;
 
-        public FeatureMapDisplayController(WorkbenchPrimitiveFactory factory, Transform anchor)
+        public FeatureMapDisplayController(WorkbenchPrimitiveFactory factory, Transform anchor, RawImage image, Text readout)
         {
             _factory = factory;
-            _root = factory.Root("Feature map");
-            _root.SetParent(anchor, false);
-            factory.Tile(_root, new Vector3(0f, 0f, 0.03f), new Vector3(Width + 0.06f, Height + 0.06f, 0.026f), WorkbenchColors.PanelFace);
-            factory.Frame(_root, Width + 0.06f, Height + 0.06f, 0.04f, WorkbenchColors.PanelFrame, 0.012f);
-            Transform heading = factory.PanelHeading(_root);
-            heading.localPosition = new Vector3(0f, Height * 0.5f + 0.14f, -0.025f);
-            Text title = factory.Caption(heading, "특징 맵", new Vector3(0f, 0f, -0.027f), 0.88f);
-            title.fontSize = WorkbenchColors.HeadingFontSize;
-            RawImage image = factory.Picture(_root, new Vector3(0f, 0f, 0.01f), Width, Height);
+            _root = anchor;
             _texture = new Texture2D(PictureConvolution.MapColumns, PictureConvolution.MapRows, TextureFormat.RGBA32, false);
             _texture.filterMode = FilterMode.Point;
             _texture.wrapMode = TextureWrapMode.Clamp;
             image.texture = _texture;
+            image.color = Color.white;
             _highlight = factory.Highlight("Current output cell", Pitch + 0.012f, Pitch + 0.012f);
             _highlight.SetParent(_root, false);
-            _readout = factory.Caption(_root, "", new Vector3(0f, -Height * 0.5f - 0.12f, -0.025f), 1.2f);
-            _readout.fontSize = 46;
-            _readout.color = WorkbenchColors.CalculationAccent;
+            _readout = readout;
         }
 
         // Workbench-local point just in front of a cell.

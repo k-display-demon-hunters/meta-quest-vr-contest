@@ -13,8 +13,6 @@ namespace CNNConvolution
         [SerializeField] private LessonNarrationController _narration;
         [SerializeField] private WorkbenchBuilder _spatial;
         [SerializeField] private Font _font;
-        // The picture Room 1-1 showed as pixels; here one filter draws a feature out of it.
-        [SerializeField] private Texture2D _picture;
         private ConvolutionPracticeManager _practice;
         private bool _started;
         private bool _completed;
@@ -27,7 +25,7 @@ namespace CNNConvolution
 
         private void Awake()
         {
-            _practice = new ConvolutionPracticeManager(_ui, _narration, _spatial, _font, _picture);
+            _practice = new ConvolutionPracticeManager(_ui, _narration, _spatial, _font);
         }
 
         private void OnEnable()

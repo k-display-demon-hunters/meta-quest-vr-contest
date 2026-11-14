@@ -10,17 +10,16 @@ namespace CNNConvolution
         [SerializeField] private Transform _formulaGroup;
         [SerializeField] private Transform _outputGroup;
 
-        [Header("Focus slots")]
-        [SerializeField] private Transform _inputCenterSlot;
-        [SerializeField] private Transform _inputSideSlot;
-        [SerializeField] private Transform _gridSideSlot;
-
         [Header("Panel anchors")]
         [SerializeField] private Transform _inputAnchor;
+        [SerializeField] private RawImage _inputImage;
         [SerializeField] private Transform _formulaAnchor;
+        [SerializeField] private Transform _kernelTitle;
         [SerializeField] private Transform _kernelHome;
         [SerializeField] private Transform _kernelTarget;
         [SerializeField] private Transform _resultAnchor;
+        [SerializeField] private RawImage _resultImage;
+        [SerializeField] private Text _resultReadout;
         [SerializeField] private Text _placementHint;
         [SerializeField] private Material _placementPreviewMaterial;
         [SerializeField, Min(0.1f)] private float _placementGhostPeriod = 1f;
@@ -31,15 +30,14 @@ namespace CNNConvolution
         private FeatureMapDisplayController _map;
 
         internal (WorkbenchPrimitiveFactory Factory, FocusLayoutController Focus, PictureDisplayController Picture,
-            WorkbenchKernelController Kernel, FeatureMapDisplayController Map) Build(Font font, LessonPlayback playback)
+            WorkbenchKernelController Kernel, FeatureMapDisplayController Map) Build(Font font)
         {
             _factory = new WorkbenchPrimitiveFactory(transform, font);
-            FocusLayoutController focus = new FocusLayoutController(_inputGroup, _formulaGroup, _outputGroup,
-                _inputCenterSlot, _inputSideSlot, _gridSideSlot, playback);
-            _picture = new PictureDisplayController(_factory, _inputAnchor);
-            _kernel = new WorkbenchKernelController(_factory, transform, _inputGroup, _kernelHome, _kernelTarget,
+            FocusLayoutController focus = new FocusLayoutController(_formulaGroup, _outputGroup);
+            _picture = new PictureDisplayController(_inputAnchor, _inputImage);
+            _kernel = new WorkbenchKernelController(_factory, transform, _inputGroup, _kernelHome, _kernelTarget, _kernelTitle,
                 PictureDisplayController.Pitch * 3f, _placementPreviewMaterial, _placementGhostPeriod);
-            _map = new FeatureMapDisplayController(_factory, _resultAnchor);
+            _map = new FeatureMapDisplayController(_factory, _resultAnchor, _resultImage, _resultReadout);
             return (_factory, focus, _picture, _kernel, _map);
         }
 

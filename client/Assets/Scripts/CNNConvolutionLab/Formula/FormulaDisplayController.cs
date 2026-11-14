@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CNNConvolution
 {
@@ -9,8 +8,6 @@ namespace CNNConvolution
     {
         private const float ColumnPitch = 0.40f;
         private const float RowPitch = 0.20f;
-        private static readonly Color MutedNote = new Color(0.62f, 0.68f, 0.72f);
-
         private readonly WorkbenchPrimitiveFactory _factory;
         private readonly WorkbenchKernelController _kernel;
         private readonly Transform _anchor;
@@ -24,16 +21,6 @@ namespace CNNConvolution
             _factory = factory;
             _kernel = kernel;
             _anchor = anchor;
-            Transform panel = factory.Root("Formula panel");
-            panel.SetParent(anchor, false);
-            factory.Tile(panel, new Vector3(0f, 0f, 0.03f), new Vector3(1.42f, 1.16f, 0.026f), WorkbenchColors.PanelFace);
-            factory.Frame(panel, 1.42f, 1.16f, 0.03f, WorkbenchColors.PanelFrame, 0.008f);
-            Text heading = factory.Caption(panel, "빨강 층 · 겹친 아홉 칸", new Vector3(0f, 0.44f, -0.02f), 1.2f);
-            heading.fontSize = 38;
-            heading.color = WorkbenchColors.Channel(0);
-            Text note = factory.Caption(panel, "초록 층과 파랑 층은 가중치가 0이라 더할 값이 없습니다.", new Vector3(0f, -0.27f, -0.02f), 1.3f);
-            note.fontSize = 30;
-            note.color = MutedNote;
             for (int index = 0; index < _terms.Length; index++)
             {
                 _terms[index] = new FlyingNumberController(factory, "Formula term " + index, 0.38f);

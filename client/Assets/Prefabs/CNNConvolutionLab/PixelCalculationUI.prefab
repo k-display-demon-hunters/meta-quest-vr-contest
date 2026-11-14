@@ -292,7 +292,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: ""
+  m_Text: "필터 손잡이를 잡아 그림 위 점선에 놓아 주세요."
 --- !u!1 &310000
 GameObject:
   m_ObjectHideFlags: 0

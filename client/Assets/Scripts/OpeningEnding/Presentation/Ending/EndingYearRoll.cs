@@ -6,7 +6,7 @@ namespace Cinematic
     // Moves and clips the glyph quads of the existing year Text.
     [AddComponentMenu("")]
     [RequireComponent(typeof(Text))]
-    internal sealed class EndingYearRoll : BaseMeshEffect
+    public sealed class EndingYearRoll : BaseMeshEffect
     {
         private readonly float[] _offsets = new float[4];
         private readonly char[] _glyphs = new char[8];
@@ -18,8 +18,6 @@ namespace Cinematic
         internal void Bind(Text text)
         {
             _text = text;
-            _text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _text.verticalOverflow = VerticalWrapMode.Overflow;
         }
 
         internal void Show(string previous, string year, float elapsed, float alpha)

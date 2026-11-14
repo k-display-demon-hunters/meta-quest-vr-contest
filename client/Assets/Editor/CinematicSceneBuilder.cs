@@ -194,6 +194,19 @@ namespace CinematicEditor
             Canvas yearCanvas=CanvasAt(stage,"Year",new Vector3(0,1.9f,3),new Vector2(1000,260),.003f);
             Text year=TextAt(yearCanvas.transform,"Year","1989",Vector2.zero,new Vector2(1000,220),ending ? 100 : 110);
             Assign(world,"_year",year);
+            if (ending)
+            {
+                portal.localPosition = new Vector3(0f, 1.66f, 3f);
+                portal.localScale = new Vector3(2.32f, 1.305f, 1f);
+                year.fontSize = 56;
+                year.alignment = TextAnchor.MiddleRight;
+                year.horizontalOverflow = HorizontalWrapMode.Overflow;
+                year.verticalOverflow = VerticalWrapMode.Overflow;
+                year.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 220f);
+                yearCanvas.transform.localPosition = new Vector3(-1.62f, 2.2125f, 3f);
+                Assign(world, "_yearRoll", year.gameObject.AddComponent<EndingYearRoll>());
+                BuildEndingSet(world, stage, portal, year);
+            }
             Vector2 archiveCaptionSize = ending ? new Vector2(1500,100) : new Vector2(1680,190);
             Canvas captionCanvas=CanvasAt(stage,"Archive caption",ending ? new Vector3(0,.45f,3) : new Vector3(0,1.1f,1.2f),archiveCaptionSize,ending ? .002f : .0008888889f);
             if (!ending)
@@ -838,13 +851,27 @@ namespace CinematicEditor
         {
             canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
             var obj = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
-                typeof(OpeningStartButtonGraphic));
+                typeof(Image));
             obj.transform.SetParent(canvas.transform, false);
-            var face = obj.GetComponent<OpeningStartButtonGraphic>();
+            var face = obj.GetComponent<Image>();
             face.rectTransform.sizeDelta = new Vector2(width, 122);
-            var faceData = new SerializedObject(face);
-            faceData.FindProperty("_iconOffset").floatValue = iconOffset;
-            faceData.ApplyModifiedPropertiesWithoutUndo();
+            face.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            face.type = Image.Type.Sliced;
+            face.color = new Color32(188, 123, 38, 255);
+            var background = new GameObject("Background", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            background.transform.SetParent(obj.transform, false);
+            background.rectTransform.anchorMin = Vector2.zero;
+            background.rectTransform.anchorMax = Vector2.one;
+            background.rectTransform.offsetMin = Vector2.one * 3f;
+            background.rectTransform.offsetMax = Vector2.one * -3f;
+            background.sprite = face.sprite;
+            background.type = Image.Type.Sliced;
+            background.color = new Color32(36, 24, 12, 255);
+            background.raycastTarget = false;
+            Text icon = TextAt(obj.transform, "Play Icon", "▶", new Vector2(-iconOffset, 0),
+                new Vector2(64, 80), 48);
+            icon.color = new Color32(255, 184, 75, 255);
+            icon.raycastTarget = false;
             face.raycastTarget = true;
             var button = obj.AddComponent<Button>();
             button.targetGraphic = face;
@@ -855,8 +882,55 @@ namespace CinematicEditor
             colors.pressedColor = new Color(0.79f, 0.71f, 0.59f);
             button.colors = colors;
             Text label = TextAt(obj.transform, labelName, caption, new Vector2(43, 0), new Vector2(labelWidth, 110), fontSize);
-            label.color = OpeningStartButtonGraphic.LabelColor;
+            label.color = new Color32(255, 240, 215, 255);
             return button;
+        }
+
+        private static void BuildEndingSet(MonoBehaviour view, Transform stage, Transform front, Text yearStyle)
+        {
+            Transform history = Root("Ending archive trail", stage);
+            var data = new SerializedObject(view);
+            SerializedProperty panels = data.FindProperty("_historyPanels");
+            panels.arraySize = _content.EndingSchedule.Montage.Length;
+            for (int i = 0; i < panels.arraySize; i++)
+            {
+                string year = _content.EndingSchedule.Montage[i].Year;
+                Transform panel = Root("Retired photo " + year, history);
+                panel.localPosition = new Vector3((i - 2) * .65f, 1.66f, 3.8f);
+                Material material = AssetDatabase.LoadAssetAtPath<Material>(
+                    "Assets/Materials/OpeningEnding/EndingHistory" + year + ".mat");
+                Transform photo = Primitive("Archive still", panel, Vector3.zero, front.localScale, material, PrimitiveType.Quad);
+                Canvas canvas = CanvasAt(panel, "Retired year label", new Vector3(1.26f, .6875f, -.012f),
+                    new Vector2(160f, 48f), yearStyle.transform.parent.localScale.x);
+                canvas.sortingOrder = 1;
+                Text label = TextAt(canvas.transform, "Year", year, Vector2.zero, new Vector2(160f, 48f), 28);
+                label.font = yearStyle.font;
+                label.fontStyle = yearStyle.fontStyle;
+                panel.gameObject.SetActive(false);
+                SerializedProperty entry = panels.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("Root").objectReferenceValue = panel;
+                entry.FindPropertyRelative("Photo").objectReferenceValue = photo.GetComponent<MeshRenderer>();
+                entry.FindPropertyRelative("Year").objectReferenceValue = label;
+            }
+            data.ApplyModifiedPropertiesWithoutUndo();
+
+            Transform background = Root("Ending background", stage);
+            Transform grid = Root("Floor grid", background);
+            grid.gameObject.AddComponent<MeshFilter>().sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(
+                "Assets/Meshes/CNNArchiveEnding/EndingFloorGrid.asset");
+            MeshRenderer gridRenderer = grid.gameObject.AddComponent<MeshRenderer>();
+            gridRenderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/EndingFloorGrid.mat");
+            gridRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            gridRenderer.receiveShadows = false;
+
+            Transform dust = Root("Dust", background);
+            MeshFilter dustFilter = dust.gameObject.AddComponent<MeshFilter>();
+            MeshRenderer dustRenderer = dust.gameObject.AddComponent<MeshRenderer>();
+            dustRenderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/EndingDust.mat");
+            dustRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            dustRenderer.receiveShadows = false;
+            var effects = background.gameObject.AddComponent<EndingBackgroundController>();
+            Assign(effects, "_dust", dustFilter);
         }
 
         private static void BuildAudio(Transform stage,CinematicAudioController audio,bool ending)

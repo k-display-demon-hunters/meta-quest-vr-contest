@@ -22,7 +22,6 @@ namespace Cinematic
         private readonly float[] _montageStarts;
         private readonly Rect[] _crops, _focus;
         private readonly float _montageEnd;
-        private readonly EndingArchiveTrail _trail;
         private float _previous = -1f;
         private int _era = -1;
 
@@ -40,14 +39,14 @@ namespace Cinematic
             _montageStarts = new float[count];
             _crops = new Rect[count];
             _focus = new Rect[count];
-            _trail = _view.CreateTrail(count);
+            _view.PrepareTrail(count);
             double start = schedule.IntroDuration;
             for (int i = 0; i < count; i++)
             {
                 _montageStarts[i] = (float)start;
                 _crops[i] = _view.FrameArchive(schedule.Montage[i], out _focus[i]);
                 EndingSequenceData.MontageEntry entry = schedule.Montage[i];
-                _trail.SetPhoto(i, entry.Clip.Still, ZoomedCrop(i, 1.04f), entry.Year);
+                _view.SetTrailPhoto(i, entry.Clip.Still, ZoomedCrop(i, 1.04f), entry.Year);
                 start += entry.Duration;
             }
             _montageEnd = (float)start;
@@ -74,7 +73,7 @@ namespace Cinematic
 
             _view.SetMontageVisible(montage);
             _view.ShowModel(intro, time);
-            _trail.Evaluate(time, _montageStarts, OutroStart, QuietStart);
+            _view.EvaluateTrail(time, _montageStarts, OutroStart, QuietStart);
 
             if (montage)
             {
@@ -176,7 +175,7 @@ namespace Cinematic
         private float MoveStart(int era) =>
             _montageStarts[era] - (_schedule.Montage[era].ShowUpscaleComparison ? BaseballLead : Release);
 
-        private EndingVisualController.FrameTarget PhotoTarget(int era, float elapsed) =>
+        private EndingFocusTarget PhotoTarget(int era, float elapsed) =>
             _view.ArchiveTarget(_focus[era], PhotoZoom(era, elapsed));
 
         private float PhotoZoom(int era, float elapsed) =>

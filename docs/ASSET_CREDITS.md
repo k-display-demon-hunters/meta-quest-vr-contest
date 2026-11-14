@@ -12,7 +12,7 @@
 | **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 구성 검사·학습·예측 UI, 바닥 슬롯 표기, 공급 책상 앞 명찰(굵은 스타일로 재사용) 및 학습 흐름 라벨, CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
 | **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1)** | 공용 XRPlayerRig, FactoryTutorial 확대 안내 | [Meta XR Core 207.0.1](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 `OVRControllerPrefab` 직접 참조. [공식 애니메이션 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/) | 패키지 원본 수정 없음. Codex 보조로 프리팹 연결 및 프로젝트의 버튼 강조를 적용함 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
-| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 2개, 공용 ParchmentReader·TabletUI 프리팹, CNNRealityLab의 선택 안내·인식 패널·사용 안내 팝업·촬영/인식/복귀 버튼, 피처맵 복도의 한글 자막·라벨, CNNConvolutionLab 자막·버튼·계산 숫자(Regular), CNNArchiveOpening의 공장 입장 안내 간판(SemiBold) | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
+| **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 2개, 공용 ParchmentReader·TabletUI 프리팹, CNNRealityLab의 선택 안내·인식 패널·사용 안내 팝업·촬영/인식/복귀 버튼, 피처맵 복도의 한글 자막·라벨, CNNConvolutionLab 자막·버튼·계산 숫자(Regular), CNNArchiveOpening의 공장 입장 안내 간판과 오프닝·엔딩의 시작·재시작 버튼 문구 및 ▶ 아이콘(SemiBold) | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
 | **Lucide / Feather 기반 아이콘** / 아이콘 | 태블릿 UI | [Lucide 공식 저장소 및 라이선스](https://github.com/lucide-icons/lucide/blob/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE) | © 2026 Lucide Icons and Contributors, ISC. Feather 유래 도형: © 2013–present Cole Bemis, MIT | 선 도형을 간략화하고 아이콘 아틀라스로 변환 |
 | **Universal Animation Library — Standard** / 주민 동작 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 FactoryIntro·FactoryEnding 마을 주민의 걷기·시청·대화·충격 반응·축하; 엔딩 감사 인사의 접근·대화·측면 이동 | [Quaternius 공식 배포 페이지](https://quaternius.itch.io/universal-animation-library), 무료 Standard 배포본 확인·다운로드: 2026-10-23 | 동봉 License/README의 제작자 표기: **Quaternius**. 공식 페이지에 애니메이터 **Gonzalo Furnier**의 제작 참여 표기. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/): 수정·재배포·상업적 이용 허용 | 실제 관절 애니메이션을 Codex 보조로 기존 주민의 비율·관절에 맞게 변환하고 상태 전환을 혼합. 외부 캐릭터 메시·유료 Pro/Source 파일 사용 없음 |
 | **VillageOpening.wav** / 음원 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 18초 마을 오프닝의 배경·효과음 | 프로젝트 작업에서 Codex 보조로 Python 사인파·필터링한 난수·음량 곡선을 직접 합성 | 프로젝트용 직접 제작 음원. 별도 공개 라이선스는 지정하지 않음. 외부 녹음·음악 샘플 사용 없음 | 오프닝의 공격·화면 고장 시점에 맞춰 제작 |
@@ -113,7 +113,9 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리·수정 |
 | --- | --- | --- | --- |
 | PostOffice1989.png | 삭제됨, 제출 대상 제외. 이전 사용 위치는 CNNArchiveOpening 기록판. | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 사람 없는 1989년 한국 우체국, 눈높이 1.6m 정면 다큐멘터리 사진, 오래된 목재 창구·우편 선반·CRT·형광등·테라조, 자연광과 실사 질감. | AI 생성 재구성, 실제 기록사진 아님. 생성 도구를 권리자로 단정하지 않음; 권리자 미확인, 별도 공개 라이선스 지정 없음. 생성 PNG 원본 저장, Unity 셰이더로 흑백/밝기/그레인 표시. |
-| EverydayVisionAtlas.png | `Textures/OpeningEnding`, 8개 엔딩 기록판 및 사진 소품 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
+| EndingZipAndTranslation.png | Textures/OpeningEnding, 엔딩 우편번호 및 카메라 번역 장면 | Codex 보조, OpenAI 내장 image_gen. 손글씨 우편번호 20501이 적힌 봉투와 휴대폰 화면의 가상 간판 번역을 위아래로 생성. | AI 생성 재구성, 실제 기록사진과 제품 화면이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. Unity UV로 각 장면을 표시. |
+| EndingBaseballUpscale.png | Textures/OpeningEnding, 엔딩 2026 업스케일링 컷 | Codex 보조, OpenAI 내장 image_gen. 1990년대 야구 중계풍 실사 16:9, 타자의 등번호 23이 중앙에 보이는 가상 경기, 방송사 로고·점수판 제외. | 권리자 미확인, 별도 공개 라이선스 지정 없음. Unity에서 같은 생성 이미지의 저해상도 밉과 원본을 비교선으로 전환하는 설명 연출. |
+| EverydayVisionAtlas.png | `Textures/OpeningEnding`, 엔딩의 은행 수표 컷 및 이전 기록판 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
 | ArchiveMaterials.png | `Textures/OpeningEnding`, 엔딩 소품의 목재·종이 재질 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 2×2 정사영 재질 아틀라스, 낡은 꿀색 참나무·회색 베이지 테라조·상아색 회벽·크림색 종이, 균일 조명, 글자 없음. | AI 생성 재질. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 그대로, 재질별 UV 선택·색 곱셈. |
 | ArchiveCrowd.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 군중 공간 음향. | [Indoor adult murmur, large group.wav](https://freesound.org/people/SpliceSound/sounds/260123/), 공개 HQ MP3 미리듣기 파일. 라이선스 원문 확인: 2026-11-09. | **SpliceSound**, **CC0 1.0**. 원본 파일 내용 변경 없음. Unity에서 위치별 재생 시작 시점·음량·필터 조절. 한국어/1989년 우체국 실녹음이라고 주장하지 않음. |
 | ArchivePrinter.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 프린터. | [old dot-matrix printer](https://freesound.org/people/viertelnachvier/sounds/181420/), Epson LX-400 실제 녹음의 공개 HQ MP3. 라이선스 원문 확인: 2026-11-09. | **viertelnachvier**, **CC0 1.0**. 원본 파일 수정 없음; 장면에서는 일부 구간만 재생. |
@@ -128,7 +130,7 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 | --- | --- | --- | --- | --- |
 | PostOffice1989WithClerks.png | Textures/OpeningEnding, 이전 오프닝 기록판 | Codex 보조, OpenAI 내장 image_gen. 1989년 한국 우체국에서 봉투를 정리하는 가상의 직원과 손님을 실사 다큐멘터리 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본, 실제 기록사진 아님 |
 | FaceRecognition2015Portrait.png | Textures/OpeningEnding, 엔딩 얼굴 인식 기록판 | Codex 보조, OpenAI 내장 image_gen. 2010년대 실내에서 카메라를 바라보는 가상의 인물을 실사 사진 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본 |
-| ArchiveVoiceEnding01–04.wav | Audio/OpeningEnding, 엔딩 자막별 Voice | Codex 보조, Windows System.Speech의 Microsoft Heami Desktop(ko-KR)으로 프로젝트 대사를 22.05 kHz 16-bit 모노 WAV로 합성 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 대사 구간에 맞춰 무음·속도 조정, 일부 긴 구절은 축약 |
+| ArchiveVoiceEnding01–04.wav | 이전 엔딩 음성. 프로젝트에서 제거되어 제출 대상 제외 | Codex 보조, Windows System.Speech의 Microsoft Heami Desktop(ko-KR)으로 프로젝트 대사를 22.05 kHz 16-bit 모노 WAV로 합성 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 대사 구간에 맞춰 무음·속도 조정, 일부 긴 구절은 축약 |
 
 ## 미국 우체국 오프닝
 
@@ -139,7 +141,7 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 - **OpeningCrowd.mp3**: [4177569399의 Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/)에서 CC0 표기를 재확인했다. 프로젝트 파일은 사용자 제공 Pixabay 파일이므로 원본과의 동일성까지 확인한 것은 아니다. 기존 파일은 유지하며 재생 음량·공간화·저역 통과 설정을 조정한다.
 - **OpeningNarration01–06.wav**: 사용자도 제작 서비스·목소리를 확인하지 못함. 제작자·권리자·공개 배포 허용 조건은 **미확인**이며, 사용자 제공 파일이라는 사실만으로 배포 권한을 인정하지 않는다. 파일은 유지하며 내레이션 출력 설정만 조정한다.
 - **OpeningScore.wav / Suno Vintage Electro Swing**: 사용자 답변은 “아마 유료구독은 아니었을 것”. 생성 당시 플랜과 개별 이용권은 확인되지 않았다. [Suno 공식 권리 안내](https://help.suno.com/en/articles/2416769)와 [배포 안내](https://help.suno.com/en/articles/2410177)에 따르면 무료 생성물은 비상업적 이용에 제한되며 사후 구독만으로 상업 이용권이 자동 소급되지 않는다. **상업적 배포 권한 미확인**. 경진대회 제출·전시·주최 측 재배포를 비상업적 이용이라고 임의 판단하지 않는다. 사용 곡의 생성 시점 약관·계정 권한과 대회 조건을 별도로 대조해야 한다.
-- **ArchiveVoiceEnding01–04.wav / Windows Heami Desktop TTS**: 기존 생성 경로는 Windows System.Speech이며 Azure 유료 TTS가 아니다. Heami 출력물의 공개 배포·상업 이용 허용 근거는 **미확인**. Azure TTS 조건을 이 파일에 적용하지 않는다. 원본은 유지하며 음성 출력 설정만 조정한다.
+- **ArchiveVoiceEnding01–04.wav / Windows Heami Desktop TTS**: 기존 합성 음성은 프로젝트에서 제거했다. 현재 엔딩 내레이션은 아래 EndingNarration01–05.wav 항목을 참고한다.
 
 위 미확인 음원은 사용 가능 판정을 내린 자료가 아니다. 공개 배포 전에 제작 서비스·생성 당시 조건을 확인하거나 권한이 확인된 음원으로 교체해야 한다. 현재 작업은 배포·게시를 수행하지 않는다.
 
@@ -148,10 +150,14 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| PostOffice_US_1989.png | 이전 오프닝 우체국 전경. 현재 엔딩 초기화에서 기록판에 연결 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |
+| PostOffice_US_1989.png | 이전 오프닝 우체국 전경 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |
 | PostOfficeStamp.mp4, PostOfficeStampPlate.png, PostOfficeStampedEnvelope.png | 삭제됨, 제출 대상 제외. 이전 오프닝 도장 동작 및 우편번호 인식에 사용 | Codex 보조. OpenAI 내장 image_gen으로 우체국 전경을 참고한 봉투 사진과 도장을 쥔 손을 생성하고 FFmpeg로 손동작, 도장 자국, 인식 표시 합성 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | 무음 H.264 컷 및 정지 프레임 |
 | OpeningCrowd.mp3 | 오프닝 우체국 군중 소리 | [Pixabay의 Group Talking](https://pixabay.com/sound-effects/people-group-talking-68823/), 사용자 제공 파일. [Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/) | 4177569399, Pixabay Content License 표시, Freesound 원본 CC0 | 원본 파일 그대로, 0초부터 재생 |
+| EndingNarration01–05.wav | 엔딩 대사 5개 | 사용자가 제공한 2026-11-14 화면 녹화의 Typecast 합성 음성을 Codex 보조로 추출 | 음성 제공 서비스 Typecast. 음성 권리자와 공개 배포 조건 미확인 | 대사별 절단, 모노 48 kHz PCM WAV 변환, 10 dB 증폭 |
+| EndingNarrationIntro.wav, EndingNarrationUpscale.wav, EndingNarrationOutro.wav | 엔딩 첫 모델, 2026 야구, 마지막 모델 | 사용자가 제공한 2026-11-15 03:19:56 화면 녹화에서 준성 음성 추출. | Typecast 합성 음성. 음성 권리자와 공개 배포 조건 미확인. | 48 kHz 모노 PCM WAV, 게인 조정, 2026 컷 재생 속도 1.16배, 마지막 모델 앞의 구간 안내 삭제. |
+| EndingNarrationFace.wav, EndingNarrationSign.wav, EndingNarrationBaseball.wav | 엔딩 얼굴, 간판, 야구 컷 | 사용자가 제공한 2026-11-15 03:54:53 화면 녹화에서 준성 음성 추출. | Typecast 합성 음성. 음성 권리자와 공개 배포 조건 미확인. | 대사별 절단, 48 kHz 모노 PCM WAV, 10 dB 증폭. |
 | OpeningNarration01–06.wav | 오프닝 대사 | 사용자 화면 녹화에서 오디오 추출. 녹음·합성 방식과 음성 제공 서비스 미확인 | 제작자·권리자·배포 조건 미확인 | 대사별 절단, 모노 WAV 변환 및 게인 조절 |
+| EndingScore.wav | 엔딩 배경음악 | 사용자가 제공한 2026-11-14 23:56:53 화면 녹화의 Suno 곡 「1989」에서 Codex 보조로 오디오 추출 | Suno 생성. 생성 당시 계정 플랜과 공개 배포 조건 미확인 | 시작 구간 21.05초 편집, 스테레오 48 kHz PCM WAV 변환, 10 dB 증폭, 페이드 인·아웃 |
 | OpeningScore.wav | 오프닝 음악 | 사용자가 Suno에서 생성한 [Vintage Electro Swing](https://suno.com/s/X1UheAwttpqtFZhR)의 화면 녹화에서 오디오 추출 | Suno 생성. 계정의 사용 조건 및 공개 배포 권한 미확인 | 앞 무음 절단, 35초 편집, 페이드 및 게인 조절 |
 | OpeningTimelinePulse.wav | 오프닝 연도표 3.5초 | Codex 보조 Python PCM 합성. 낮은 사인파 펄스와 짧은 감쇠를 연도 카운트다운 속도에 맞춰 합성 | 프로젝트 제작, 별도 공개 라이선스 지정 없음 | 사용자가 고른 C 시안, 24kHz 모노 WAV |
 
@@ -265,3 +271,5 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 기존 `Textures/FactoryEnvironment/Lightmap-*_comp_*`와 `ReflectionProbe-0~4.exr`를 휴게실 Baked 조명 설정을 포함해 다시 생성했다. Unity 6000.3.24f1 Progressive CPU Lightmapper 및 반사 프로브 베이크를 Codex AI 보조로 실행했다. 기존 씬의 메시·재질·광원을 사용했고 새 외부 미디어는 추가하지 않았다. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음. 기존 에셋 출처와 라이선스 고지는 유지한다.
 
 휴게실 가구·침구 단순화, 바닥 소품·남쪽 게시판·선반 제거 및 북쪽 창문 차폐 후 같은 도구와 방식으로 조명·반사 프로브 이미지를 다시 베이크했다. 기존 생성 방법·권리 표기는 동일하다.
+
+엔딩 잔상 사진판의 `EndingHistory1989/1998/2016/2019/2026.mat`은 위에 기록된 기존 엔딩 이미지 원본을 참조한다. Codex 보조로 씬 배치와 재질 크롭을 설정했으며 이미지 파일은 새로 생성하지 않았다. 원출처·권리·라이선스는 해당 기존 이미지 기록을 따른다.

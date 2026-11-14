@@ -7,99 +7,100 @@ namespace Cinematic
     {
         [SerializeField] private Transform _world, _portal, _timeline, _digit, _factory;
         [SerializeField] private Transform[] _boxes, _pixels, _eraProps;
-        [SerializeField] private Transform _network;
-        [SerializeField] private Text _year, _caption;
+        [SerializeField] private Transform _network, _modelFrame, _standingMarker, _holdHint;
+        [SerializeField] private Material _recognitionMaterial;
+        [SerializeField] private Text _year;
         [SerializeField] private Transform[] _networkLayers;
-        [SerializeField] private Text _networkNote;
+        [SerializeField] private MeshRenderer[] _layerCards;
+        [SerializeField] private Text _modelHeading, _testAccuracy;
         [SerializeField] private Text[] _layerLabels;
-        private static readonly string[] ExampleLayers = { "INPUT", "CONV", "POOL", "DENSE", "OUTPUT" };
+        [SerializeField] private EndingArchiveTrail.Panel[] _historyPanels;
+        [SerializeField] private EndingYearRoll _yearRoll;
 
-        internal Vector3 ArchivePosition => _portal.position;
+        private EndingRecognitionController _archiveFrame;
+        private EndingModelController _model;
+        private EndingQuietController _quietController;
+        private EndingArchiveTrail _trail;
+        internal const float RecognitionLockTime = EndingRecognitionController.LockAt;
+        internal const float FocusLockDuration = EndingRecognitionController.LockDuration;
+        internal Vector3 FocusPosition => _boxes[0].position;
 
-        internal void Bind(CinematicModelResult result, string example, string provenance, Transform head)
+        internal void Bind(CinematicModelResult result, Camera camera)
         {
+            _quietController = new EndingQuietController(camera, _standingMarker, _holdHint);
+            Transform head = camera.transform;
             // Move the stage around the viewer once; never move the camera or chase head rotation.
             Vector3 forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
             _world.position = new Vector3(head.position.x, head.position.y - 1.6f, head.position.z);
             _world.rotation = Quaternion.LookRotation(forward.sqrMagnitude > .01f ? forward : Vector3.forward);
-            _caption.text = provenance;
-            int count = result.Layers.Count;
-            _networkNote.text = count == 0 ? example : "";
-            for (int i = 0; i < _networkLayers.Length; i++)
-            {
-                bool visible = i < (count == 0 ? 5 : count);
-                _networkLayers[i].gameObject.SetActive(visible);
-                _networkLayers[i].localPosition = new Vector3((i - ((count == 0 ? 5 : count) - 1) * .5f) * .22f, 0, 0);
-                if (visible) { _layerLabels[i].text = count == 0 ? ExampleLayers[i] : result.Layers[i]; }
-            }
+            _archiveFrame = new EndingRecognitionController(_boxes[0], _recognitionMaterial, _portal);
+            _modelFrame.gameObject.SetActive(false);
+
+            _yearRoll.Bind(_year);
+            _model = new EndingModelController(_world, _network, _networkLayers, _layerCards,
+                _modelHeading, _testAccuracy, _layerLabels);
+            _model.Bind(result);
         }
+
+        internal void PrepareTrail(int panelCount)
+        {
+            _trail = new EndingArchiveTrail(_portal, _historyPanels, panelCount);
+        }
+        internal void SetTrailPhoto(int index, Texture2D still, Rect crop, string year) =>
+            _trail.SetPhoto(index, still, crop, year);
+        internal void EvaluateTrail(float time, float[] starts, float outroStart, float quietStart) =>
+            _trail.Evaluate(time, starts, outroStart, quietStart);
+        private void OnDestroy() => _trail?.Dispose();
 
         internal void SetMontageVisible(bool visible)
         {
-            _factory.gameObject.SetActive(false);
-            _digit.gameObject.SetActive(false);
-            _timeline.gameObject.SetActive(false);
-            foreach (Transform pixel in _pixels) { pixel.gameObject.SetActive(false); }
             _portal.gameObject.SetActive(visible);
-            _year.gameObject.SetActive(visible);
-            _caption.gameObject.SetActive(visible);
         }
 
-        internal void FrameArchive(float elapsed)
+        internal Rect FrameArchive(EndingSequenceData.MontageEntry entry, out Rect visibleFocus) =>
+            EndingPhotoFraming.Calculate(entry, _portal.localScale.x / _portal.localScale.y, out visibleFocus);
+
+        internal void HideArchiveFocus() => _archiveFrame.Hide();
+
+        internal void ShowYear(string previous, string year, float elapsed, float alpha) =>
+            _yearRoll.Show(previous, year, elapsed, alpha);
+
+        internal void HideYear() => _year.gameObject.SetActive(false);
+
+        internal EndingFocusTarget ArchiveTarget(Rect focus, float zoom)
         {
-            float stretch = Smooth(elapsed / .3f);
-            _portal.localPosition = new Vector3(0, 2.1f, Mathf.Lerp(3, 4.5f, stretch));
-            _portal.localScale = new Vector3(Mathf.Lerp(.9f, 3.6f, stretch), Mathf.Lerp(1.2f, 4.8f, stretch), 1);
-            _year.transform.parent.localPosition = new Vector3(-1.7f, 3.15f, 3.5f);
+            Vector2 offset = (focus.center - Vector2.one * .5f) * zoom;
+            Vector3 world = _portal.TransformPoint(new Vector3(offset.x, offset.y, -.045f));
+            Vector2 size = new Vector2(focus.width * _portal.lossyScale.x, focus.height * _portal.lossyScale.y) * zoom;
+            return new EndingFocusTarget(_world.InverseTransformPoint(world), size);
         }
 
-        internal void ShowEraProp(int propIndex, float elapsed)
-        {
-            for (int i = 0; i < _eraProps.Length; i++)
-            {
-                bool showProp = i == propIndex;
-                _eraProps[i].gameObject.SetActive(showProp);
-                if (showProp)
-                {
-                    _eraProps[i].localRotation = Quaternion.Euler(0, Mathf.Sin(elapsed * 2) * 8, 0);
-                }
-            }
-        }
+        internal EndingFocusTarget ModelTarget => _model.Target;
 
-        internal void SetLabels(string year, string label)
-        {
-            _year.text = year;
-            _caption.text = label;
-        }
+        internal void ShowModelFocus(float elapsed) => _archiveFrame.ShowModelFocus(ModelTarget, elapsed);
+        internal void ShowReleasedFocus(EndingFocusTarget target, float progress) =>
+            _archiveFrame.ShowReleasedFocus(target, progress);
+        internal void ShowFlyingFocus(EndingFocusTarget source, EndingFocusTarget target, float progress) =>
+            _archiveFrame.ShowFlyingFocus(source, target, progress);
+        internal void ShowLockedFocus(EndingFocusTarget target, float elapsed) =>
+            _archiveFrame.ShowLockedFocus(target, elapsed);
 
-        internal void ShowRecognition(bool beforeModel, float elapsed)
-        {
-            for (int i = 0; i < _boxes.Length; i++)
-            {
-                bool visible = i < 8 && elapsed >= i * .11f && beforeModel;
-                _boxes[i].gameObject.SetActive(visible);
-                float angle = i * Mathf.PI / 4;
-                _boxes[i].localPosition = Vector3.Lerp(new Vector3(Mathf.Sin(angle) * 3, 1.7f, Mathf.Cos(angle) * 3),
-                    new Vector3(0, 1.7f, 1.8f), Smooth((elapsed - i * .11f) / .7f));
-                _boxes[i].localScale = Vector3.one;
-            }
-        }
+        internal void ShowModel(bool visible, float elapsed) => _model.ShowModel(visible, elapsed);
+        internal void SetQuiet(bool quiet) => _quietController.SetQuiet(quiet);
+        private void OnDisable() => _quietController?.Restore();
 
-        internal void ShowModel(bool visible, float elapsed)
-        {
-            _network.gameObject.SetActive(visible);
-            _network.localScale = Vector3.one * Mathf.Lerp(.7f, 1, Smooth(elapsed / .25f));
-        }
-
-        private static float Smooth(float t) => Mathf.SmoothStep(0, 1, Mathf.Clamp01(t));
         internal void Finish()
         {
-            foreach (Transform target in new[] { _portal, _timeline, _digit, _factory, _network })
+            SetQuiet(false);
+            _trail?.HidePhotos();
+            _model.ShowModel(false, 0f);
+            foreach (Transform target in new[] { _portal, _timeline, _digit, _factory })
             { target.gameObject.SetActive(false); }
-            _year.gameObject.SetActive(false); _caption.gameObject.SetActive(false);
+            _year.gameObject.SetActive(false);
             foreach (Transform target in _boxes) { target.gameObject.SetActive(false); }
             foreach (Transform target in _pixels) { target.gameObject.SetActive(false); }
             foreach (Transform target in _eraProps) { target.gameObject.SetActive(false); }
         }
+
     }
 }

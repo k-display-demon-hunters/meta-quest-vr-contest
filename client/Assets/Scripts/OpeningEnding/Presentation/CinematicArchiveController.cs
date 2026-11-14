@@ -13,6 +13,7 @@ namespace Cinematic
         private float _elapsed;
         private bool _frameVideo;
         private int? _openingRunId;
+        private static readonly int UpscaleSweep = Shader.PropertyToID("_UpscaleSweep");
 
         internal void SetOpeningRun(int? runId) => _openingRunId = runId;
 
@@ -35,6 +36,8 @@ namespace Cinematic
             _material.mainTexture = clip.Still;
             SetFraming(clip.UV);
             SetPeopleMotion(0f);
+            SetUpscaleSweep(-1f);
+            SetPhotoBlend(1f, false);
             if (ready) { Prepared(_player); }
             else if (clip.Video != null) { PrepareVideo(clip.Video); }
         }
@@ -50,6 +53,20 @@ namespace Cinematic
             _material.mainTextureScale = uv.size;
             _material.mainTextureOffset = uv.position;
         }
+
+        internal void SetPreviousPhoto(Texture2D photo, Rect crop)
+        {
+            _material.SetTexture("_PreviousPhoto", photo);
+            _material.SetVector("_PreviousPhotoUV", new Vector4(crop.width, crop.height, crop.x, crop.y));
+        }
+
+        internal void SetPhotoBlend(float blend, bool hasPrevious) =>
+            _material.SetFloat("_PhotoBlend", hasPrevious ? blend : 1f);
+
+        internal void SetUpscaleFraming(Rect crop) =>
+            _material.SetVector("_UpscaleFrameUV", new Vector4(crop.width, crop.height, crop.x, crop.y));
+
+        internal void SetUpscaleSweep(float position) => _material.SetFloat(UpscaleSweep, position);
 
         public void SetPeopleMotion(float time) => _material.SetFloat("_PeopleMotionTime", time);
 

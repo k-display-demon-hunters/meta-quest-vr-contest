@@ -295,7 +295,7 @@ namespace ModelDesignScene
             _trainingResultEndsAt = Time.unscaledTime + TrainingResultDisplaySeconds;
             _controlPanel.SetTrainingResultPresentation(true, false);
             RunPresentation(() => _controlPanel.ShowCompleted(result));
-            RunPresentation(() => RecordTrainedModel(_execution.SubmittedModel));
+            RunPresentation(() => RecordTrainedModel(_execution.SubmittedModel, result));
         }
 
         private void FinishTrainingResultPresentation()
@@ -309,7 +309,7 @@ namespace ModelDesignScene
             PublishProgressionState();
         }
 
-        private void RecordTrainedModel(ModelExecutionDefinition submitted)
+        private void RecordTrainedModel(ModelExecutionDefinition submitted, TrainingResult result)
         {
             List<string> layers = new List<string> { "INPUT" };
             // The final definition is the fixed OUTPUT classifier.
@@ -322,7 +322,8 @@ namespace ModelDesignScene
                 layers.Add(label);
             }
             layers.Add("OUTPUT");
-            _cinematicResult.Record(layers);
+            double? testAccuracy = result.Evaluation.TryGetValue("accuracy", out double accuracy) ? accuracy : null;
+            _cinematicResult.Record(layers, testAccuracy);
         }
 
         private static void RunPresentation(System.Action action)

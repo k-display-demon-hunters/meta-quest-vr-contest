@@ -6,6 +6,11 @@ Shader "CNN/ArchivePhoto"
         _Mono ("Monochrome", Range(0,1)) = 0
         _Brightness ("Brightness", Range(0,2)) = 1
         _PeopleMotionTime ("Post office motion time", Float) = 0
+        _UpscaleSweep ("Upscale comparison position", Float) = -1
+        _UpscaleFrameUV ("Upscale reference crop", Vector) = (1, 1, 0, 0)
+        _PreviousPhoto ("Outgoing photo", 2D) = "black" {}
+        _PreviousPhotoUV ("Outgoing photo crop", Vector) = (1, 1, 0, 0)
+        _PhotoBlend ("Incoming photo blend", Range(0,1)) = 1
     }
     SubShader
     {
@@ -14,6 +19,7 @@ Shader "CNN/ArchivePhoto"
         {
             Cull Off
             HLSLPROGRAM
+            #pragma target 3.0
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
@@ -21,8 +27,10 @@ Shader "CNN/ArchivePhoto"
             struct Attributes { float4 positionOS:POSITION; float2 uv:TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings { float4 positionCS:SV_POSITION; float2 uv:TEXCOORD0; UNITY_VERTEX_OUTPUT_STEREO };
             TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
+            TEXTURE2D(_PreviousPhoto); SAMPLER(sampler_PreviousPhoto);
             CBUFFER_START(UnityPerMaterial)
-            float4 _MainTex_ST; float _Mono; float _Brightness; float _PeopleMotionTime;
+            float4 _MainTex_ST; float _Mono; float _Brightness; float _PeopleMotionTime; float _UpscaleSweep;
+            float4 _UpscaleFrameUV; float4 _PreviousPhotoUV; float _PhotoBlend;
             CBUFFER_END
             Varyings vert(Attributes input)
             {
@@ -51,11 +59,30 @@ Shader "CNN/ArchivePhoto"
                     sourceUV += movement * smoothstep(0.0, .65, _PeopleMotionTime);
                 }
                 half3 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUV).rgb;
+                float comparisonX = (sourceUV.x - _UpscaleFrameUV.z) / _UpscaleFrameUV.x;
+                if (_UpscaleSweep >= -.02 && comparisonX > _UpscaleSweep)
+                {
+                    // Simulate a low-resolution broadcast with a coarser mip of the same frame.
+                    col = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, sourceUV, 5).rgb;
+                }
+                if (_PhotoBlend < 1)
+                {
+                    float2 previousUV = input.uv * _PreviousPhotoUV.xy + _PreviousPhotoUV.zw;
+                    half3 previous = SAMPLE_TEXTURE2D(_PreviousPhoto, sampler_PreviousPhoto, previousUV).rgb;
+                    col = lerp(previous, col, _PhotoBlend);
+                }
                 half lum=dot(col,half3(.2126,.7152,.0722));
                 col=lerp(col,lum*half3(1,.96,.87),_Mono);
                 float grain=frac(sin(dot(input.uv+floor(_Time.y*18),float2(12.9898,78.233)))*43758.5453)-.5;
                 float vignette=1-.22*dot(input.uv-.5,input.uv-.5);
-                return half4(max(0,col*_Brightness*vignette+grain*.018),1);
+                col = max(0, col * _Brightness * vignette + grain * .018);
+                if (_UpscaleSweep > 0 && _UpscaleSweep < 1)
+                {
+                    float distanceToSweep = abs(comparisonX - _UpscaleSweep) * (_UpscaleFrameUV.x / _MainTex_ST.x);
+                    half sweepHighlight = 1 - smoothstep(.0013, .0034, distanceToSweep);
+                    col = lerp(col, half3(.24, 1, .54), sweepHighlight);
+                }
+                return half4(col, 1);
             }
             ENDHLSL
         }

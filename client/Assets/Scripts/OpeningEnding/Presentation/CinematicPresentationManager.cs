@@ -25,36 +25,43 @@ namespace Cinematic
         private void OnEnable() => _type.CharacterTyped += _audio.Type;
         private void OnDisable() => _type.CharacterTyped -= _audio.Type;
 
-        internal void Bind(CinematicText content, CinematicModelResult model, bool ending, Transform head, int runId)
+        internal void Bind(CinematicText content, CinematicModelResult model, bool ending, Camera camera, int runId)
         {
             _archive.SetOpeningRun(ending ? (int?)null : runId);
             _audio.Bind(content, ending);
-            if (ending) { _archive.Show(content.PostOffice); }
             _type.Bind();
-            CinematicText.Line[] lines = ending ? content.Ending : content.Opening;
-            _lines = new (CinematicText.Line, float, float)[lines.Length];
-            for (int i = 0; i < lines.Length; i++)
-            {
-                CinematicText.Line line = lines[i];
-                double origin = content.GetCaptionOrigin(line.Anchor);
-                _lines[i] = (line, (float)(origin + line.Start), (float)(origin + line.End));
-            }
-
             if (ending)
             {
-                _duration = content.EndingSchedule.Duration;
-                _endingView.Bind(model, content.Example, content.Provenance, head);
-                _ending = new EndingSequence(content.EndingSchedule, _endingView, _archive, _audio, Recognize, Pulse);
+                EndingSequenceData schedule = content.EndingSchedule;
+                _endingView.Bind(model, camera);
+                _ending = new EndingSequence(schedule, _endingView, _archive, _audio, Recognize, Pulse);
+                _duration = _ending.Duration;
+                _lines = new (CinematicText.Line, float, float)[content.Ending.Length + 2];
+                _lines[0] = At(schedule.Intro, 0d);
+                for (int i = 0; i < content.Ending.Length; i++)
+                {
+                    _lines[i + 1] = At(content.Ending[i], schedule.IntroDuration);
+                }
+                _lines[_lines.Length - 1] = At(schedule.Outro, _ending.OutroStart);
                 _endingView.Finish();
             }
             else
             {
                 _duration = content.OpeningSchedule.Duration;
-                _openingView.Bind(content.Provenance, head);
+                _lines = new (CinematicText.Line, float, float)[content.Opening.Length];
+                for (int i = 0; i < _lines.Length; i++)
+                {
+                    CinematicText.Line line = content.Opening[i];
+                    _lines[i] = At(line, content.GetCaptionOrigin(line.Anchor));
+                }
+                _openingView.Bind(content.Provenance, camera.transform);
                 _opening = new OpeningSequence(content, _openingView, _audio, Recognize, runId);
                 _opening.PrepareStage();
             }
         }
+
+        private static (CinematicText.Line, float, float) At(CinematicText.Line line, double origin) =>
+            (line, (float)(origin + line.Start), (float)(origin + line.End));
 
         internal void Begin()
         {
@@ -95,9 +102,9 @@ namespace Cinematic
             else
             {
                 _ending.Evaluate(time);
-                height = _ending.IsShowingModel(time) ? .95f : 1.6f;
+                height = .85f;
                 foreground = false;
-                backing = false;
+                backing = true;
             }
 
             CinematicText.Line line = null;
@@ -117,6 +124,7 @@ namespace Cinematic
                 _activeLine = line;
                 if (line != null) { _audio.Voice(line.Voice); }
             }
+            if (_ending != null) { _audio.MixEnding(_ending.ScoreGain(time)); }
             _type.Show(line, elapsed, remaining, height, foreground, backing);
         }
 

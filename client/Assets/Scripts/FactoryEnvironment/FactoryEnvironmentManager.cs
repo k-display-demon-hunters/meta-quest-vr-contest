@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Learning;
+using Parchment;
 using Tablet;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -8,6 +10,7 @@ using UnityEngine.SceneManagement;
 namespace FactoryEnvironment
 {
     // Coordinates the current stage and travel.
+    [DefaultExecutionOrder(10)]
     public sealed class FactoryEnvironmentManager : MonoBehaviour
     {
         [FormerlySerializedAs("_navigationData")]
@@ -16,7 +19,10 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         [SerializeField] private LearningSessionManager _session;
         [SerializeField] private FactoryPlayerController _player;
+        [SerializeField] private FactoryTeleportFeedbackController _teleportFeedback;
         private TabletManager _tablet;
+        private ParchmentManager _parchment;
+        private readonly HashSet<Transform> _usedTeleportArrivals = new HashSet<Transform>();
         private LearningStageId _travelStage;
         private bool _tutorialAvailable;
 
@@ -30,6 +36,7 @@ namespace FactoryEnvironment
         private void Awake()
         {
             _tablet = FindFirstObjectByType<TabletManager>();
+            _parchment = FindFirstObjectByType<ParchmentManager>();
         }
 
         private void OnEnable()
@@ -57,6 +64,72 @@ namespace FactoryEnvironment
         {
             // OnEnable runs before an asynchronously loaded scene becomes available.
             SceneManager.SetActiveScene(gameObject.scene);
+        }
+
+        private void LateUpdate()
+        {
+            // Read input after the independent area controller has updated this frame.
+            if (_player.TeleportPressedThisFrame) { TryTeleport(); }
+        }
+
+        private void TryTeleport()
+        {
+            if (!_sceneLoader.IsBusy && !_parchment.IsOpen && TryGetTeleportArrival(out Transform arrival))
+            {
+                _usedTeleportArrivals.Add(arrival);
+                _teleportFeedback.Hide();
+                _player.TeleportTo(arrival);
+                return;
+            }
+            _teleportFeedback.ShowDenied(_player.CameraTransform);
+        }
+
+        private bool TryGetTeleportArrival(out Transform arrival)
+        {
+            FactoryAreaId source = ResolveTeleportSource();
+            foreach (FactoryLayoutData.TeleportPoint point in _layoutData.TeleportPoints)
+            {
+                if (point.Source != source || !CanUseTeleportPoint(point)) { continue; }
+                // Keep the first eligible destination even when it has already been used.
+                arrival = point.Arrival;
+                return !_usedTeleportArrivals.Contains(arrival);
+            }
+            arrival = null;
+            return false;
+        }
+
+        private FactoryAreaId ResolveTeleportSource()
+        {
+            FactoryAreaId source = _areaController.CurrentArea.Id;
+            if (source != FactoryAreaId.InspectionRoom) { return source; }
+
+            foreach (FactoryLayoutData.Shutter shutter in _layoutData.Shutters)
+            {
+                if (shutter.Id != FactoryShutterId.ScreenToConvolution) { continue; }
+                Transform divider = shutter.Frame;
+                return Vector3.Dot(_player.CameraTransform.position - divider.position, divider.forward) > 0f
+                    ? FactoryAreaId.ConvolutionRoom : FactoryAreaId.ScreenRoom;
+            }
+            throw new InvalidOperationException("Missing ScreenToConvolution shutter.");
+        }
+
+        private bool CanUseTeleportPoint(FactoryLayoutData.TeleportPoint point)
+        {
+            if (point.RequiredCompletion != LearningStageId.None && !_session.IsCompleted(point.RequiredCompletion))
+            {
+                return false;
+            }
+            if (point.Source == FactoryAreaId.ModelDesignRoom && point.RequiredCompletion == LearningStageId.ModelDesign
+                && !_session.CanExitStage(LearningStageId.ModelDesign))
+            {
+                return false;
+            }
+            if (point.RequiredParchmentStage == LearningStageId.None) { return true; }
+            foreach (int documentId in LearningStageCatalog.Get(point.RequiredParchmentStage).EntranceParchmentIds)
+            {
+                if (!_parchment.HasRead(documentId)) { return false; }
+            }
+            return true;
         }
 
         private void HandleAreaChanged(FactoryLayoutData.Area area)

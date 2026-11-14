@@ -26,6 +26,7 @@ namespace Tablet
         private readonly List<FocusTarget> _detailTargets = new List<FocusTarget>();
         private bool _movementCaptured;
         private bool _isInteracting;
+        private bool _waitForTriggerRelease;
         private bool _isAdjustingSlider;
         private bool _stickMustCenter;
         private Vector2 _lastDirection;
@@ -35,6 +36,7 @@ namespace Tablet
         private readonly Func<FocusGroup> _activeGroup;
         private readonly Func<RectTransform> _canvasRect;
         public event Action<bool> InteractionRequested;
+        public event Action VisibilityToggleRequested;
         public event Action SettingsRequested;
         public event Action BackRequested;
         public event Action<Selectable, bool> FocusChanged;
@@ -102,6 +104,12 @@ namespace Tablet
             ResetFocus(initialIndex);
         }
 
+        public void CancelInteraction(int initialIndex)
+        {
+            _waitForTriggerRelease = true;
+            SetInteraction(false, initialIndex);
+        }
+
         public void StopAdjustingSlider()
         {
             _isAdjustingSlider = false;
@@ -139,11 +147,13 @@ namespace Tablet
             _stick.Enable();
         }
 
-        public void Tick()
+        public void Tick(bool visible)
         {
-            bool navigating = _trigger.IsPressed();
+            bool triggerPressed = _trigger.IsPressed();
+            if (!triggerPressed) { _waitForTriggerRelease = false; }
+            bool navigating = triggerPressed && !_waitForTriggerRelease;
             Vector2 stick = _stick.ReadValue<Vector2>();
-            if (navigating)
+            if (navigating && visible)
             {
                 if (!_isInteracting)
                 {
@@ -151,26 +161,29 @@ namespace Tablet
                 }
                 CaptureMovement();
             }
-            else if (stick.magnitude < 0.25f)
+            else if ((!triggerPressed || !visible) && stick.magnitude < 0.25f)
             {
                 // Do not turn a tablet gesture into walking until the stick returns to neutral.
                 ReleaseMovement();
             }
 
+            if (!triggerPressed && _xButton.WasPressedThisFrame())
+            {
+                VisibilityToggleRequested?.Invoke();
+                return;
+            }
+            if (!visible) { return; }
+
             if (_menuButton.WasPressedThisFrame())
             {
                 SettingsRequested?.Invoke();
             }
-            else if (_yButton.WasPressedThisFrame())
+            else if (navigating && _yButton.WasPressedThisFrame())
             {
                 BackRequested?.Invoke();
             }
-            else if (_xButton.WasPressedThisFrame())
+            else if (navigating && _xButton.WasPressedThisFrame())
             {
-                if (!_isInteracting)
-                {
-                    InteractionRequested?.Invoke(true);
-                }
                 if (ActiveTargets[_focusIndex].Control is Button button && button.IsActive() && button.IsInteractable())
                 {
                     button.onClick.Invoke();

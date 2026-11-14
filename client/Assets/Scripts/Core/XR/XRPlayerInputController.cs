@@ -1,3 +1,4 @@
+using System;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -5,7 +6,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Inputs.Readers;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using UnityEngine.XR.Interaction.Toolkit.Interactors.Visuals;
 
 namespace XR
 {
@@ -26,10 +26,10 @@ namespace XR
         private float _pitch;
         private InputAction _look;
         private InputAction _recenter;
-        private InputAction _laser;
+        private InputAction _teleport;
+        private InputAction _developerMode;
+        private InputAction _leftTrigger;
         private XRRayInteractor _rightRay;
-        private XRInteractorLineVisual _lineVisual;
-        private LineRenderer _line;
         private XRInputButtonReader _uiPress;
         private XRInputButtonReader _previousUIPress;
         private bool _previousUIInteraction;
@@ -37,11 +37,12 @@ namespace XR
         private bool _previousHitClosestOnly;
         private bool _previousManipulation;
         private XRBaseInputInteractor.InputTriggerType _previousSelectTrigger;
-        private bool _laserEnabled = true;
         private bool _tutorialInputSuppressed;
-        private bool _tutorialRayForcedOn;
-        private bool _laserStateBeforeTutorial;
         private bool _bound;
+
+        public bool DeveloperModeEnabled { get; private set; }
+        public event Action<bool> DeveloperModeChanged;
+        public bool TeleportPressedThisFrame => _teleport.WasPressedThisFrame();
 
         public void SetParchmentMovementBlocked(bool blocked)
         {
@@ -64,35 +65,6 @@ namespace XR
             set => _tutorialInputSuppressed = value;
         }
 
-        public bool TutorialRayForcedOn
-        {
-            get => _tutorialRayForcedOn;
-            set
-            {
-                if (_tutorialRayForcedOn == value)
-                {
-                    return;
-                }
-                _tutorialRayForcedOn = value;
-                if (value)
-                {
-                    _laserStateBeforeTutorial = _laserEnabled;
-                    if (_rightRay != null)
-                    {
-                        SetLaserEnabled(true);
-                    }
-                }
-                else if (_rightRay != null)
-                {
-                    SetLaserEnabled(_laserStateBeforeTutorial);
-                }
-                else
-                {
-                    _laserEnabled = _laserStateBeforeTutorial;
-                }
-            }
-        }
-
         private void Awake()
         {
             _rig = GetComponent<XROrigin>();
@@ -103,8 +75,12 @@ namespace XR
                 "<XRController>{RightHand}/primary2DAxis", processors: "stickDeadzone(min=0.15,max=0.95)");
             _recenter = new InputAction("Restore view tilt", InputActionType.Button,
                 "<XRController>{RightHand}/primaryButton");
-            _laser = new InputAction("Toggle laser", InputActionType.Button,
+            _teleport = new InputAction("Request teleport", InputActionType.Button,
                 "<XRController>{RightHand}/secondaryButton");
+            _developerMode = new InputAction("Toggle developer mode", InputActionType.Button,
+                "<XRController>{LeftHand}/secondaryButton");
+            _leftTrigger = new InputAction("Left trigger modifier", InputActionType.Button,
+                "<XRController>{LeftHand}/triggerPressed");
         }
 
         private void OnEnable()
@@ -112,7 +88,9 @@ namespace XR
             SceneManager.sceneLoaded += HandleSceneLoaded;
             _look.Enable();
             _recenter.Enable();
-            _laser.Enable();
+            _teleport.Enable();
+            _developerMode.Enable();
+            _leftTrigger.Enable();
             if (_rightRay != null)
             {
                 BindRay();
@@ -145,8 +123,6 @@ namespace XR
                 enabled = false;
                 return;
             }
-            _lineVisual = _rightRay.GetComponent<XRInteractorLineVisual>();
-            _line = _rightRay.GetComponent<LineRenderer>();
             if (_uiPress == null)
             {
                 _uiPress = new XRInputButtonReader("Right Trigger UI",
@@ -163,6 +139,11 @@ namespace XR
 
         private void Update()
         {
+            if (_developerMode.WasPressedThisFrame() && !_leftTrigger.IsPressed())
+            {
+                DeveloperModeEnabled = !DeveloperModeEnabled;
+                DeveloperModeChanged?.Invoke(DeveloperModeEnabled);
+            }
             if (_tutorialInputSuppressed)
             {
                 return;
@@ -178,10 +159,6 @@ namespace XR
             else
             {
                 RotateView(_look.ReadValue<Vector2>());
-            }
-            if (!_tutorialRayForcedOn && _laser.WasPressedThisFrame() && _rightRay != null)
-            {
-                SetLaserEnabled(!_laserEnabled);
             }
         }
 
@@ -207,7 +184,6 @@ namespace XR
             // Holding Grip should also acquire a target reached after the initial button press.
             _rightRay.selectActionTrigger = XRBaseInputInteractor.InputTriggerType.State;
             _bound = true;
-            SetLaserEnabled(_tutorialRayForcedOn || _laserEnabled);
             RestoreUIRegistration();
         }
 
@@ -262,27 +238,14 @@ namespace XR
             }
         }
 
-        private void SetLaserEnabled(bool active)
-        {
-            _laserEnabled = active;
-            // Disabling the interactor also cancels a held selection and blocks invisible clicks.
-            _rightRay.enabled = active;
-            if (_lineVisual != null)
-            {
-                _lineVisual.enabled = active;
-            }
-            if (_line != null)
-            {
-                _line.enabled = active;
-            }
-        }
-
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             _look?.Disable();
             _recenter?.Disable();
-            _laser?.Disable();
+            _teleport?.Disable();
+            _developerMode?.Disable();
+            _leftTrigger?.Disable();
             if (!_bound || _rightRay == null)
             {
                 return;
@@ -300,7 +263,9 @@ namespace XR
         {
             _look?.Dispose();
             _recenter?.Dispose();
-            _laser?.Dispose();
+            _teleport?.Dispose();
+            _developerMode?.Dispose();
+            _leftTrigger?.Dispose();
             _uiPress?.inputActionPerformed.Dispose();
             _uiPress?.inputActionValue.Dispose();
         }

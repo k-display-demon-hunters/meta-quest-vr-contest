@@ -26,7 +26,6 @@ namespace OpeningEnding
         private XRInputButtonReader _previousGripInput;
         private bool _moveWasEnabled;
         private bool _inputWasSuppressed;
-        private bool _rayWasForcedOn;
         private bool _rayWasEnabled;
         private bool _lineVisualWasEnabled;
         private bool _lineWasEnabled;
@@ -72,7 +71,6 @@ namespace OpeningEnding
 
             _moveWasEnabled = _moveProvider != null && _moveProvider.enabled;
             _inputWasSuppressed = _playerInput != null && _playerInput.TutorialInputSuppressed;
-            _rayWasForcedOn = _playerInput != null && _playerInput.TutorialRayForcedOn;
             _previousGripInput = _rightRay != null ? _rightRay.selectInput : null;
             _lineVisual = _rightRay != null ? _rightRay.GetComponent<XRInteractorLineVisual>() : null;
             _line = _rightRay != null ? _rightRay.GetComponent<LineRenderer>() : null;
@@ -84,7 +82,6 @@ namespace OpeningEnding
             // Keep tracked hands and the right ray alive; only gameplay actions are gated.
             if (_playerInput != null)
             {
-                _playerInput.TutorialRayForcedOn = true;
                 _playerInput.TutorialInputSuppressed = true;
             }
             if (_rightRay != null)
@@ -142,7 +139,6 @@ namespace OpeningEnding
             if (_playerInput != null)
             {
                 _playerInput.TutorialInputSuppressed = _inputWasSuppressed;
-                _playerInput.TutorialRayForcedOn = _rayWasForcedOn;
             }
             if (_rightRay != null)
             {

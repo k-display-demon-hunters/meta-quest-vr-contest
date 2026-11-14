@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
+using XR;
 #if UNITY_EDITOR
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Movement;
 #endif
@@ -33,6 +34,7 @@ namespace FactoryEnvironment
         private FactoryLayoutData _layoutData;
         private XRBodyTransformer _bodyTransformer;
         private XRBaseInteractor[] _interactors;
+        private XRPlayerInputController _input;
 #if UNITY_EDITOR
         private bool _usesEditorSimulator;
         private XROriginMovement _editorMovement;
@@ -40,11 +42,13 @@ namespace FactoryEnvironment
 
         public XROrigin Rig { get; private set; }
         public Transform CameraTransform => Rig.Camera.transform;
+        public bool TeleportPressedThisFrame => _input.TeleportPressedThisFrame;
         private void Awake()
         {
             _layoutData = GetComponent<FactoryLayoutData>();
             Rig = FindFirstObjectByType<XROrigin>();
             _bodyTransformer = Rig.GetComponent<XRBodyTransformer>();
+            _input = Rig.GetComponent<XRPlayerInputController>();
             _interactors = Rig.GetComponentsInChildren<XRBaseInteractor>(true);
         }
 
@@ -89,7 +93,7 @@ namespace FactoryEnvironment
             Rig.MatchOriginUpCameraForward(Vector3.up, entrance.forward);
             Rig.MoveCameraToWorldLocation(entrance.position + Vector3.up * height);
             // Use the persistent rig's UI input module across content scene loads.
-            Rig.GetComponent<XR.XRPlayerInputController>().EnsureRayReady();
+            _input.EnsureRayReady();
         }
 
         private void Update()
@@ -167,6 +171,12 @@ namespace FactoryEnvironment
                 return;
             }
             throw new InvalidOperationException("No arrival for " + stage);
+        }
+
+        internal void TeleportTo(Transform arrival)
+        {
+            _input.RestoreViewTilt();
+            MoveTo(arrival);
         }
 
         private void MoveTo(Transform arrival)

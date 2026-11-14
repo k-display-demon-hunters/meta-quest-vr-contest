@@ -7,31 +7,47 @@ namespace ModelDesignScene.ModelBuilder
     internal sealed class VectorBlockMesh
     {
         private const int Primary = 1;
+        private const int SupplyFrame = 4;
         private readonly List<Vector3> _vertices = new List<Vector3>();
         private readonly List<Vector3> _normals = new List<Vector3>();
-        private readonly List<int>[] _triangles = { new List<int>(), new List<int>(), new List<int>(), new List<int>() };
+        private readonly List<int>[] _triangles = {
+            new List<int>(), new List<int>(), new List<int>(), new List<int>(), new List<int>()
+        };
 
         internal static string VectorCaption(int count)
         {
             return count > 8 ? $"8 shown / {count - 8} omitted" : "All shown";
         }
 
-        internal static Mesh CreateOutput(int height, int width, int elements, bool spatial, bool enlargedExample)
+        internal static Mesh CreateOutput(int height, int width, int elements, bool spatial, bool enlargedExample,
+            bool supply, bool squareElements)
         {
             VectorBlockMesh builder = new VectorBlockMesh();
             float spacing = enlargedExample ? 0.05f : 0.025f;
             float frameWidth = spatial ? Mathf.Max(0.12f, width * spacing + 0.04f) : 0.16f;
             float frameHeight = spatial ? Mathf.Max(0.12f, height * spacing + 0.04f) : 0.7f;
             float centerY = -0.08f + frameHeight * 0.5f;
-            builder.AddBox(new Vector3(0f, -0.105f, 0f),
-                new Vector3(Mathf.Max(0.4f, frameWidth + 0.06f), 0.03f, 0.24f), 0);
+            float baseWidth = Mathf.Max(0.4f, frameWidth + 0.06f);
+            int frameMaterial = supply ? SupplyFrame : Primary;
+            builder.AddBox(new Vector3(0f, -0.105f, 0f), new Vector3(baseWidth, 0.03f, 0.24f), 0);
+            if (supply)
+            {
+                // Four strips sit within the existing base footprint.
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    builder.AddBox(new Vector3(0f, -0.087f, side * 0.113f),
+                        new Vector3(baseWidth, 0.006f, 0.014f), SupplyFrame);
+                    builder.AddBox(new Vector3(side * (baseWidth - 0.014f) * 0.5f, -0.087f, 0f),
+                        new Vector3(0.014f, 0.006f, 0.212f), SupplyFrame);
+                }
+            }
             builder.AddBox(new Vector3(0f, -0.075f, -0.12f), new Vector3(0.38f, 0.06f, 0.012f), 0);
             for (int side = -1; side <= 1; side += 2)
             {
                 builder.AddBox(new Vector3(side * frameWidth * 0.5f, centerY, 0f),
-                    new Vector3(0.014f, frameHeight, 0.014f), Primary);
+                    new Vector3(0.014f, frameHeight, 0.014f), frameMaterial);
                 builder.AddBox(new Vector3(0f, centerY + side * frameHeight * 0.5f, 0f),
-                    new Vector3(frameWidth, 0.014f, 0.014f), Primary);
+                    new Vector3(frameWidth, 0.014f, 0.014f), frameMaterial);
             }
             if (spatial)
             {
@@ -52,7 +68,15 @@ namespace ModelDesignScene.ModelBuilder
                 for (int index = 0; index < shown; index++)
                 {
                     int slot = elements > 8 && index >= 4 ? index + 1 : index;
-                    builder.AddSphere(new Vector3(0f, centerY + ((slots - 1) * 0.5f - slot) * 0.065f, 0f), 0.022f);
+                    Vector3 center = new Vector3(0f, centerY + ((slots - 1) * 0.5f - slot) * 0.065f, 0f);
+                    if (squareElements)
+                    {
+                        builder.AddBox(center, new Vector3(0.086f, 0.039f, 0.019f), Primary);
+                    }
+                    else
+                    {
+                        builder.AddSphere(center, 0.022f);
+                    }
                 }
                 if (elements > 8)
                 {
@@ -62,7 +86,7 @@ namespace ModelDesignScene.ModelBuilder
                     }
                 }
             }
-            return builder.Build("Layer output");
+            return builder.Build("Layer output", supply ? SupplyFrame + 1 : SupplyFrame);
         }
 
         internal static Mesh CreateConnections(List<Vector3> points)
@@ -81,12 +105,12 @@ namespace ModelDesignScene.ModelBuilder
             return builder.Build("Layer flow arrows");
         }
 
-        private Mesh Build(string name)
+        private Mesh Build(string name, int subMeshCount = SupplyFrame)
         {
-            Mesh mesh = new Mesh { name = name, subMeshCount = 4 };
+            Mesh mesh = new Mesh { name = name, subMeshCount = subMeshCount };
             mesh.SetVertices(_vertices);
             mesh.SetNormals(_normals);
-            for (int index = 0; index < 4; index++)
+            for (int index = 0; index < subMeshCount; index++)
             {
                 mesh.SetTriangles(_triangles[index], index);
             }

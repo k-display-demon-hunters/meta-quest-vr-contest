@@ -12,6 +12,7 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private ModelConveyorController _conveyor;
         [SerializeField] private PlacementExampleController _placementExample;
         [SerializeField] private TrainingFlowController _trainingFlow;
+        [SerializeField] private Room3EntryGuide _entryGuide;
 
         private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
         private ModelBuilderManager _manager;
@@ -48,23 +49,29 @@ namespace ModelDesignScene.ModelBuilder
         }
 
         internal void CancelPlacementExample() => _placementExample.Cancel();
+        internal void CancelEntryGuide() => _entryGuide.CancelForInteraction();
 
-        internal void PlayTrainingFlow()
+        internal void PlayHologramFlow((Vector3 Center, Vector2 Extents, bool Trainable)[] frames,
+            bool training, float readyAt)
         {
-            List<ModelBlockController> blocks = new List<ModelBlockController>(_slots.Count + 2) { _inputBlock };
-            for (int index = 0; index < _slots.Count; index++)
+            if (frames.Length < 2) { return; }
+            var occupied = new List<(ModelBlockController Block, int Slot)>(_slots.Count);
+            if (training)
             {
-                ModelBlockController block = _slots[index];
-                if (block != null)
+                for (int slot = 0; slot < _slots.Count; slot++)
                 {
-                    blocks.Add(block);
+                    ModelBlockController block = _slots[slot];
+                    if (block != null) { occupied.Add((block, slot)); }
                 }
             }
-            blocks.Add(_outputBlock);
-            _trainingFlow.Play(blocks);
+            _trainingFlow.Play(frames, occupied, IsOriginalFlowBlock, training, readyAt);
         }
 
-        internal void FinishTrainingFlow() => _trainingFlow.FinishCurrentPass();
+        private bool IsOriginalFlowBlock(int slot, ModelBlockController block) => _slots[slot] == block;
+
+        internal void ShowEpochFlow(int epoch) => _trainingFlow.QueueEpoch(epoch);
+        internal void FinishTrainingFlow() => _trainingFlow.FinishTraining();
+        internal void FadeModelFlow() => _trainingFlow.Fade();
         internal void CancelTrainingFlow() => _trainingFlow.Cancel();
 
         internal void Initialize(ModelBuilderManager manager, ModelDefinition model)
@@ -91,6 +98,7 @@ namespace ModelDesignScene.ModelBuilder
             if (_initialized && _interactionEnabled)
             {
                 _conveyor.PreviewPlacement(_grabbedBlock);
+                _entryGuide.UpdateAvailability(CanPlayPlacementExample);
             }
         }
 
@@ -106,6 +114,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void EndInteraction()
         {
             _interactionEnabled = false;
+            _entryGuide.UpdateAvailability(false);
             _placementExample.Cancel();
             _trainingFlow.Cancel();
             if (!_initialized)
@@ -131,6 +140,36 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
+        internal (Vector3Int Grid, int Elements, Vector3 Origin)[] ReadHologramLayers()
+        {
+            var layers = new List<(Vector3Int Grid, int Elements, Vector3 Origin)>(_slots.Count + 2);
+            AddLayer(_inputBlock);
+            for (int slot = 0; slot < _slots.Count; slot++)
+            {
+                ModelBlockController block = _slots[slot];
+                if (block != null) { AddLayer(block); }
+            }
+            AddLayer(_outputBlock);
+            return layers.ToArray();
+
+            void AddLayer(ModelBlockController block)
+            {
+                layers.Add((block.SpatialOutputSize, block.VectorOutputSize, (block.FlowStart + block.FlowEnd) * 0.5f));
+            }
+        }
+
+        internal string[] ReadOutputSizes()
+        {
+            var sizes = new List<string> { _inputBlock.OutputSizeLabel };
+            for (int slot = 0; slot < _slots.Count; slot++)
+            {
+                ModelBlockController block = _slots[slot];
+                if (block != null) { sizes.Add(block.OutputSizeLabel); }
+            }
+            sizes.Add(_outputBlock.OutputSizeLabel);
+            return sizes.ToArray();
+        }
+
         internal void RefreshLabels()
         {
             foreach (ModelBlockController block in _blocks)
@@ -151,6 +190,7 @@ namespace ModelDesignScene.ModelBuilder
                 ModelBlockController block = _slots[slot];
                 if (block == null) continue;
                 block.RefreshLabel(inputChannels, inputHeight, inputWidth, inputElements);
+                _conveyor.SettingsControls[slot].RefreshLabel();
                 connections.Add(previousBlock.FlowEnd);
                 connections.Add(block.FlowStart);
                 previousBlock = block;
@@ -256,6 +296,7 @@ namespace ModelDesignScene.ModelBuilder
             {
                 return;
             }
+            CancelEntryGuide();
             _placementExample.Cancel();
             if (block.IsPalette)
             {

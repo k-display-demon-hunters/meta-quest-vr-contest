@@ -13,7 +13,6 @@ namespace CNNConvolution
         public static readonly Color PlacementMint = new Color32(98, 228, 217, 255);
 
         public static readonly Color CalculationAccent = new Color(1f, 0.86f, 0.57f);
-        public static readonly Color PendingValue = new Color(0.46f, 0.53f, 0.57f);
 
         public static Color Channel(int channel)
         {

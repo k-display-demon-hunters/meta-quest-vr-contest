@@ -2,7 +2,7 @@
 
 ## 현재 범위
 
-ROOM 1-2의 합성곱 단계 조작·다시 보기·결과 확인·종료는 `WorldUIButton` 원본의 중첩 인스턴스를 사용한다. 버튼은 `PixelCalculationUI.prefab`의 오른쪽 버튼판에 배치한다. `LessonUIController`는 사용할 수 있는 주 동작 버튼에 금색 테두리를 표시한다. 일시정지 중에는 체험 재개 버튼에 표시한다.
+ROOM 1-2의 합성곱 단계 조작(필터 자동 배치·자동으로 훑기)·일시정지·처음으로·종료는 `WorldUIButton` 원본의 중첩 인스턴스를 사용한다. 버튼은 `PixelCalculationUI.prefab`의 오른쪽 버튼판에 배치한다. `LessonUIController`는 사용할 수 있는 주 동작 버튼에 금색 테두리를 표시한다. 일시정지 중에는 체험 재개 버튼에 표시한다.
 
 | 파일 | 역할 |
 | --- | --- |

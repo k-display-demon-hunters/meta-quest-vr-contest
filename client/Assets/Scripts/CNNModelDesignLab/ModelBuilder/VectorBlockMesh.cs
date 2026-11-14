@@ -73,7 +73,9 @@ namespace ModelDesignScene.ModelBuilder
             }
             if (stacked && planes > 0)
             {
-                builder.AddOperationModels(type, operation, planes, baseWidth, baseDepth);
+                Vector3 topLeft = new Vector3(-halfStack * sideStep - frameWidth * 0.5f + 0.02f,
+                    centerY + frameHeight * 0.5f - 0.02f, -halfStack * depthStep);
+                builder.AddOperationModel(type, operation, topLeft);
             }
             if (!spatial)
             {
@@ -121,45 +123,41 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        private void AddOperationModels(LayerType type, Vector3Int operation, int planes, float baseWidth, float baseDepth)
+        private void AddOperationModel(LayerType type, Vector3Int operation, Vector3 topLeft)
         {
+            const float modelScale = 1.3f;
+            int firstVertex = _vertices.Count;
             bool convolution = type == LayerType.Conv2D;
-            int columns = Mathf.Min(8, planes);
-            int rows = (planes + columns - 1) / columns;
-            float pitch = Mathf.Min(0.085f, (baseWidth - 0.04f) / columns);
-            float cell = Mathf.Min(pitch * 0.76f / operation.x, 0.066f / operation.y);
-            float width = operation.x * cell;
-            float height = operation.y * cell;
-            float rail = Mathf.Min(0.003f, cell * 0.23f);
+            float width = operation.x * SpatialSpacing;
+            float height = operation.y * SpatialSpacing;
+            const float rail = 0.003f;
             int slices = convolution ? operation.z : 1;
             float sliceStep = Mathf.Min(0.008f, 0.021f / Mathf.Max(1, slices - 1));
-            for (int row = 0; row < rows; row++)
+            // Keep the back face in front of the nearest output plane.
+            Vector3 center = topLeft + new Vector3(width * 0.5f, -height * 0.5f,
+                -0.04f - (slices - 1) * sliceStep);
+            for (int slice = slices - 1; slice >= 0; slice--)
             {
-                int count = Mathf.Min(columns, planes - row * columns);
-                for (int index = 0; index < count; index++)
+                Vector3 face = center + Vector3.forward * (slice * sliceStep);
+                if (convolution)
                 {
-                    Vector3 center = new Vector3((index - (count - 1) * 0.5f) * pitch,
-                        -0.042f + height * 0.5f + row * 0.04f, -baseDepth * 0.5f - 0.013f + row * 0.025f);
-                    for (int slice = slices - 1; slice >= 0; slice--)
-                    {
-                        Vector3 face = center + Vector3.forward * (slice * sliceStep);
-                        if (convolution)
-                        {
-                            AddBox(face, new Vector3(width, height, sliceStep * 0.72f), Housing);
-                        }
-                        AddGridFrame(face, width, height, rail, Detail);
-                    }
-                    for (int column = 1; column < operation.x; column++)
-                    {
-                        AddBox(center + new Vector3(-width * 0.5f + column * cell, 0f, -sliceStep * 0.5f),
-                            new Vector3(rail, height, rail), Detail);
-                    }
-                    for (int line = 1; line < operation.y; line++)
-                    {
-                        AddBox(center + new Vector3(0f, -height * 0.5f + line * cell, -sliceStep * 0.5f),
-                            new Vector3(width, rail, rail), Detail);
-                    }
+                    AddBox(face, new Vector3(width, height, sliceStep * 0.72f), Housing);
                 }
+                AddGridFrame(face, width, height, rail, Detail);
+            }
+            for (int column = 1; column < operation.x; column++)
+            {
+                AddBox(center + new Vector3(-width * 0.5f + column * SpatialSpacing, 0f, -sliceStep * 0.5f),
+                    new Vector3(rail, height, rail), Detail);
+            }
+            for (int row = 1; row < operation.y; row++)
+            {
+                AddBox(center + new Vector3(0f, -height * 0.5f + row * SpatialSpacing, -sliceStep * 0.5f),
+                    new Vector3(width, rail, rail), Detail);
+            }
+            for (int index = firstVertex; index < _vertices.Count; index++)
+            {
+                _vertices[index] = topLeft + (_vertices[index] - topLeft) * modelScale;
             }
         }
 

@@ -145,6 +145,7 @@ Android의 활성 OpenXR 설정과 공용 리그에는 다음 값을 적용한�
 
 | 항목 | 적용값과 목적 |
 | --- | --- |
+| 지원 기기 | Quest 1은 비활성화하고 Quest 2·Pro·3·3S를 활성화한다. OpenXR 1.16.1에서 Symmetric Projection은 Quest 2 이상을 요구한다. |
 | Symmetric Projection | 활성화. 기존 Vulkan·Single Pass Instanced와 함께 양안 렌더링을 최적화한다. |
 | Multiview Render Regions | `Final Pass`. OpenXR 1.16.1의 `MetaQuestFeature` 검증 규칙은 `All Passes`와 자동 동적 해상도의 조합에서 `Final Pass`를 권장하므로 이 조합을 사용한다. 기존 Render Graph 활성 상태를 유지한다. |
 | Foveated Rendering API | `SRP Foveation`. Unity의 `Foveated Rendering` 기능을 켜고 Legacy 경로의 `Meta XR Foveation`은 끈다. |

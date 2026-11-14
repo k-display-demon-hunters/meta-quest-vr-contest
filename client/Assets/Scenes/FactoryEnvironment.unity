@@ -74642,7 +74642,7 @@ MonoBehaviour:
   _light: {fileID: 9201300017}
   _diffuser: {fileID: 9201300014}
   _diffuserMaterialIndex: 1
-  _interval: 5
+  _interval: 18
   _phaseDelay: 0
   _crackle: {fileID: 9201400001}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
@@ -74761,7 +74761,7 @@ MonoBehaviour:
   _light: {fileID: 9201300024}
   _diffuser: {fileID: 9201300021}
   _diffuserMaterialIndex: 1
-  _interval: 5
+  _interval: 18
   _phaseDelay: 2.5
   _crackle: {fileID: 9201400003}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
@@ -74880,7 +74880,8 @@ MonoBehaviour:
   _light: {fileID: 720000834}
   _diffuser: {fileID: 720003632}
   _diffuserMaterialIndex: 0
-  _phaseDelay: 0.45
+  _interval: 18
+  _phaseDelay: 5
   _crackle: {fileID: 9201400005}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
   _sparkMaterial: {fileID: 0}
@@ -74997,7 +74998,8 @@ MonoBehaviour:
   _light: {fileID: 720000883}
   _diffuser: {fileID: 720003652}
   _diffuserMaterialIndex: 0
-  _phaseDelay: 1.2
+  _interval: 18
+  _phaseDelay: 7.5
   _crackle: {fileID: 9201400007}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
   _sparkMaterial: {fileID: 0}
@@ -75114,7 +75116,8 @@ MonoBehaviour:
   _light: {fileID: 720000968}
   _diffuser: {fileID: 720003672}
   _diffuserMaterialIndex: 0
-  _phaseDelay: 2
+  _interval: 18
+  _phaseDelay: 10
   _crackle: {fileID: 9201400009}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
   _sparkMaterial: {fileID: 2100000, guid: 0c68b5a47e664a2f925467dd6dcb140d, type: 2}
@@ -75231,7 +75234,8 @@ MonoBehaviour:
   _light: {fileID: 720001017}
   _diffuser: {fileID: 720003692}
   _diffuserMaterialIndex: 0
-  _phaseDelay: 3.2
+  _interval: 18
+  _phaseDelay: 12.5
   _crackle: {fileID: 9201400011}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
   _sparkMaterial: {fileID: 0}
@@ -75348,7 +75352,8 @@ MonoBehaviour:
   _light: {fileID: 720001102}
   _diffuser: {fileID: 720003712}
   _diffuserMaterialIndex: 0
-  _phaseDelay: 4
+  _interval: 18
+  _phaseDelay: 15
   _crackle: {fileID: 9201400013}
   _crackleClip: {fileID: 8300000, guid: d5e7e430ff764e2ca47c611e3cc23752, type: 3}
   _sparkMaterial: {fileID: 0}

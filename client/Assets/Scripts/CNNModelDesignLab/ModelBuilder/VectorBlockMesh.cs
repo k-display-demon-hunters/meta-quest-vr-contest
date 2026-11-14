@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using ModelDesignScene.Model;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ModelDesignScene.ModelBuilder
 {
@@ -8,52 +10,81 @@ namespace ModelDesignScene.ModelBuilder
     {
         private const int Housing = 0;
         private const int Primary = 1;
+        private const int Detail = 2;
+        internal const float SpatialSpacing = 0.025f;
+        // A low-poly sphere keeps one visible marker per cell even across 16 output planes.
+        private static readonly Vector3[] DotNormals =
+        {
+            new Vector3(-1, 1.618034f, 0).normalized, new Vector3(1, 1.618034f, 0).normalized,
+            new Vector3(-1, -1.618034f, 0).normalized, new Vector3(1, -1.618034f, 0).normalized,
+            new Vector3(0, -1, 1.618034f).normalized, new Vector3(0, 1, 1.618034f).normalized,
+            new Vector3(0, -1, -1.618034f).normalized, new Vector3(0, 1, -1.618034f).normalized,
+            new Vector3(1.618034f, 0, -1).normalized, new Vector3(1.618034f, 0, 1).normalized,
+            new Vector3(-1.618034f, 0, -1).normalized, new Vector3(-1.618034f, 0, 1).normalized
+        };
+        private static readonly int[] DotTriangles =
+        {
+            0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
+            1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+            3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
+            4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1
+        };
         private readonly List<Vector3> _vertices = new List<Vector3>();
         private readonly List<Vector3> _normals = new List<Vector3>();
         private readonly List<int>[] _triangles = {
             new List<int>(), new List<int>(), new List<int>(), new List<int>()
         };
 
-        internal static Mesh CreateOutput(int height, int width, int elements, bool spatial, bool enlargedExample,
-            bool supply, bool squareElements)
+        internal static Mesh CreateOutput(Vector3Int shape, LayerType type, Vector3Int operation, bool supply)
         {
             VectorBlockMesh builder = new VectorBlockMesh();
-            float spacing = enlargedExample ? 0.05f : 0.025f;
-            float frameWidth = spatial ? Mathf.Max(0.12f, width * spacing + 0.04f) : 0.16f;
-            float frameHeight = spatial ? Mathf.Max(0.12f, height * spacing + 0.04f) : 0.7f;
+            bool stacked = type == LayerType.Conv2D || type == LayerType.MaxPooling2D;
+            bool spatial = stacked || type == LayerType.Input;
+            int height = shape.x;
+            int width = shape.y;
+            int planes = stacked ? shape.z : 1;
+            float frameWidth = spatial ? Mathf.Max(0.12f, width * SpatialSpacing + 0.04f) : 0.16f;
+            float frameHeight = spatial ? Mathf.Max(0.12f, height * SpatialSpacing + 0.04f) : 0.7f;
             float centerY = -0.08f + frameHeight * 0.5f;
-            float baseWidth = Mathf.Max(0.4f, frameWidth + 0.06f);
+            int gaps = Mathf.Max(1, planes - 1);
+            float depthStep = stacked ? Mathf.Min(0.064f, 0.32f / gaps) : 0f;
+            float sideStep = stacked ? StackWidth(frameWidth, planes) / gaps : 0f;
+            float halfStack = Mathf.Max(0, planes - 1) * 0.5f;
+            float baseWidth = Mathf.Max(0.4f, frameWidth + 0.06f + sideStep * halfStack * 2f);
+            float baseDepth = Mathf.Max(0.24f, depthStep * halfStack * 2f + 0.18f);
             int frameMaterial = supply ? Housing : Primary;
-            builder.AddBox(new Vector3(0f, -0.105f, 0f), new Vector3(baseWidth, 0.03f, 0.24f), Housing);
-            builder.AddBox(new Vector3(0f, -0.075f, -0.12f), new Vector3(0.38f, 0.06f, 0.012f), Housing);
-            for (int side = -1; side <= 1; side += 2)
+            builder.AddBox(new Vector3(0f, -0.105f, 0f), new Vector3(baseWidth, 0.03f, baseDepth), Housing);
+            builder.AddBox(new Vector3(0f, -0.075f, -baseDepth * 0.5f), new Vector3(0.38f, 0.06f, 0.012f), Housing);
+            for (int plane = 0; plane < Mathf.Max(1, planes); plane++)
             {
-                builder.AddBox(new Vector3(side * frameWidth * 0.5f, centerY, 0f),
-                    new Vector3(0.014f, frameHeight, 0.014f), frameMaterial);
-                builder.AddBox(new Vector3(0f, centerY + side * frameHeight * 0.5f, 0f),
-                    new Vector3(frameWidth, 0.014f, 0.014f), frameMaterial);
-            }
-            if (spatial)
-            {
+                float offset = plane - halfStack;
+                Vector3 center = new Vector3(offset * sideStep, centerY, offset * depthStep);
+                builder.AddGridFrame(center, frameWidth, frameHeight, 0.014f, frameMaterial);
                 for (int row = 0; row < height; row++)
                 {
                     for (int column = 0; column < width; column++)
                     {
-                        Vector3 cell = new Vector3((column - (width - 1) * 0.5f) * spacing,
-                            centerY + ((height - 1) * 0.5f - row) * spacing, 0f);
-                        builder.AddSphere(cell, enlargedExample ? 0.012f : 0.008f);
+                        Vector3 cell = center + new Vector3((column - (width - 1) * 0.5f) * SpatialSpacing,
+                            ((height - 1) * 0.5f - row) * SpatialSpacing, 0f);
+                        if (stacked) { builder.AddStackDot(cell); }
+                        else { builder.AddSphere(cell, 0.008f); }
                     }
                 }
             }
-            else
+            if (stacked && planes > 0)
             {
+                builder.AddOperationModels(type, operation, planes, baseWidth, baseDepth);
+            }
+            if (!spatial)
+            {
+                int elements = shape.z;
                 int shown = Mathf.Min(8, elements);
                 int slots = elements > 8 ? 9 : shown;
                 for (int index = 0; index < shown; index++)
                 {
                     int slot = elements > 8 && index >= 4 ? index + 1 : index;
                     Vector3 center = new Vector3(0f, centerY + ((slots - 1) * 0.5f - slot) * 0.065f, 0f);
-                    if (squareElements)
+                    if (supply && type == LayerType.Flatten)
                     {
                         builder.AddBox(center, new Vector3(0.086f, 0.039f, 0.019f), Primary);
                     }
@@ -71,6 +102,79 @@ namespace ModelDesignScene.ModelBuilder
                 }
             }
             return builder.Build("Layer output");
+        }
+
+        internal static float StackWidth(float frameWidth, int planes)
+        {
+            const float widthLimit = 0.79f; // Room 3 slots are 0.85 apart, including the base margin.
+            return Mathf.Min(Mathf.Max(0, planes - 1) * 0.02f, Mathf.Min(0.07f, widthLimit - frameWidth));
+        }
+
+        private void AddGridFrame(Vector3 center, float width, float height, float thickness, int material)
+        {
+            for (int side = -1; side <= 1; side += 2)
+            {
+                AddBox(center + new Vector3(side * width * 0.5f, 0f, 0f),
+                    new Vector3(thickness, height, thickness), material);
+                AddBox(center + new Vector3(0f, side * height * 0.5f, 0f),
+                    new Vector3(width, thickness, thickness), material);
+            }
+        }
+
+        private void AddOperationModels(LayerType type, Vector3Int operation, int planes, float baseWidth, float baseDepth)
+        {
+            bool convolution = type == LayerType.Conv2D;
+            int columns = Mathf.Min(8, planes);
+            int rows = (planes + columns - 1) / columns;
+            float pitch = Mathf.Min(0.085f, (baseWidth - 0.04f) / columns);
+            float cell = Mathf.Min(pitch * 0.76f / operation.x, 0.066f / operation.y);
+            float width = operation.x * cell;
+            float height = operation.y * cell;
+            float rail = Mathf.Min(0.003f, cell * 0.23f);
+            int slices = convolution ? operation.z : 1;
+            float sliceStep = Mathf.Min(0.008f, 0.021f / Mathf.Max(1, slices - 1));
+            for (int row = 0; row < rows; row++)
+            {
+                int count = Mathf.Min(columns, planes - row * columns);
+                for (int index = 0; index < count; index++)
+                {
+                    Vector3 center = new Vector3((index - (count - 1) * 0.5f) * pitch,
+                        -0.042f + height * 0.5f + row * 0.04f, -baseDepth * 0.5f - 0.013f + row * 0.025f);
+                    for (int slice = slices - 1; slice >= 0; slice--)
+                    {
+                        Vector3 face = center + Vector3.forward * (slice * sliceStep);
+                        if (convolution)
+                        {
+                            AddBox(face, new Vector3(width, height, sliceStep * 0.72f), Housing);
+                        }
+                        AddGridFrame(face, width, height, rail, Detail);
+                    }
+                    for (int column = 1; column < operation.x; column++)
+                    {
+                        AddBox(center + new Vector3(-width * 0.5f + column * cell, 0f, -sliceStep * 0.5f),
+                            new Vector3(rail, height, rail), Detail);
+                    }
+                    for (int line = 1; line < operation.y; line++)
+                    {
+                        AddBox(center + new Vector3(0f, -height * 0.5f + line * cell, -sliceStep * 0.5f),
+                            new Vector3(width, rail, rail), Detail);
+                    }
+                }
+            }
+        }
+
+        private void AddStackDot(Vector3 center)
+        {
+            int start = _vertices.Count;
+            foreach (Vector3 normal in DotNormals)
+            {
+                _vertices.Add(center + normal * 0.008f);
+                _normals.Add(normal);
+            }
+            foreach (int index in DotTriangles)
+            {
+                _triangles[Primary].Add(start + index);
+            }
         }
 
         internal static Mesh CreateConnections(List<Vector3> points)
@@ -91,7 +195,12 @@ namespace ModelDesignScene.ModelBuilder
 
         private Mesh Build(string name)
         {
-            Mesh mesh = new Mesh { name = name, subMeshCount = _triangles.Length };
+            Mesh mesh = new Mesh
+            {
+                name = name,
+                indexFormat = _vertices.Count > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16,
+                subMeshCount = _triangles.Length
+            };
             mesh.SetVertices(_vertices);
             mesh.SetNormals(_normals);
             for (int index = 0; index < _triangles.Length; index++)

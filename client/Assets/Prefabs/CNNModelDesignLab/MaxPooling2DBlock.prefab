@@ -190,8 +190,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.42, y: 0.207, z: 0.276}
-  m_Center: {x: 0, y: -0.0265, z: -0.003}
+  m_Size: {x: 0.565, y: 0.472, z: 0.5205}
+  m_Center: {x: 0, y: 0.086, z: -0.00925}
 --- !u!114 &1004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -392,7 +392,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "MAX POOL / 2 x 2\n4 x 4 x 3\n<size=19>1 of 3 channels shown</size>"
+  m_Text: "MAX POOL / 2 x 2\n4 x 4 x 3"
 --- !u!114 &1005
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -303,6 +303,7 @@ namespace ModelDesignScene.ModelBuilder
                 _supply.TryTakeBlock(block);
             }
             RemoveFromConveyor(block);
+            block.SetPose(block.transform.position, _conveyor.GetSlotPose(0).rotation);
             _grabbedBlock = block;
             _manager.NotifyChanged();
         }

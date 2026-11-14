@@ -492,6 +492,18 @@ Factory Environment 루트의 OcclusionArea는 로컬 중심 (0, 2, 8), 크기 (
 
 휴게실의 `Baked factory luminaires/Fixture shadow light 4`는 Mixed에서 Baked로 변경했다. 휴게실 시계의 `LoungeClockHourHand`, `LoungeClockMinuteHand`, `LoungeClockSecondHand`, `LoungeClockDial`은 Cast Shadows를 끄고 Receive Shadows는 유지한다. 바닥 종이와 다른 조명 설정은 유지한다. 2026-11-14 Unity 6000.3.24f1 Progressive CPU에서 약 506초에 조명 재베이크를 완료했다. 결과는 라이트맵 2개와 라이트 프로브 423개이며, 조명 데이터·텍스처·반사 프로브는 기존 Settings 및 Textures/FactoryEnvironment 경로를 사용한다. 시계의 시간 갱신 컴포넌트와 LoungeClockController.cs 및 .meta를 제거해 바늘은 저장된 각도로 고정한다. 시계 메시·배치는 유지하며 정적 오클루전 플래그는 이번 변경에서 추가하지 않았다. APK 빌드·Play·Quest 화면 및 성능 검증은 수행하지 않았다.
 
+### 휴게실 장식 단순화와 창문 폐쇄
+
+2026-11-14: 휴게실은 접근하지 않는 장식 구역으로 보고, 가구의 큰 형태를 남긴 채 작은 부품과 곡면을 단순화했다. `StaffLoungeFurnitureDetails`는 16,426→2,303삼각형, 21→15슬롯이며 `LoungeTableBeddingAndWarningTape`는 6,362→3,792삼각형, 7슬롯을 유지한다. 재사용 중인 재질과 메시 GUID를 유지하고, 남은 서브메시에 맞춰 Renderer 재질 배열을 정리했다. 입구의 경고 테이프·출입 차단과 고정 시계는 유지한다.
+
+바닥 작업복 3벌, 병 7개, 게임기 2대와 분리된 부품·케이블을 표시 메시에서 제거했다. 남쪽 벽의 게시판과 수납 선반·적재물을 결합 메시에서 제거하고 선반 충돌체도 제거했다. 입구 바깥의 휴게실 간판, 침대·가구의 충돌 영역과 주변 방의 바닥 종이는 유지한다. 씬에서 쓰지 않게 된 기존 소품 메시 원본은 이번 작업에서 삭제하지 않았다.
+
+북벽 창틀·유리를 제거하고 같은 개구부에 중심 (-19.2, 2.95, 24.6), 크기 (10, 1.4, 0.36)m의 불투명 벽과 충돌 영역을 배치했다. 기존 벽 패널 재질과 Unity 내장 Cube 메시를 사용하며 Occluder Static·Occludee Static·Contribute GI를 설정했다. 창문을 통해 외부 배경이 보이는 경로를 막지만, 다른 개구부나 큰 외곽 결합 메시의 렌더링까지 모두 제거하는 것은 아니다.
+
+휴게실 관련 활성 MeshRenderer 집계는 40→34개, 재질 슬롯 76→60개, 삼각형 46,505→21,152개다. 삼각형 집계에는 새 내장 Cube 12개 삼각형을 포함한다. 이 값은 씬 에셋 집계이며 실제 프레임의 Draw Call·FPS 측정 결과가 아니다. 에디터 Scene View에서 가구의 큰 형태, 바닥 소품·남쪽 선반 및 게시판 제거, 북벽 차폐를 확인했다. Play·APK 빌드·Quest 기기 테스트는 수행하지 않았다.
+
+이 구조 변경 후 Progressive CPU 조명 베이크를 약 466초에 완료했고 라이트맵 2개·라이트 프로브 423개를 갱신했다. 오클루전 베이크는 약 1.9초에 완료됐으며 새 차폐벽을 포함한 Renderer 367개·Portal 10개와 비어 있지 않은 PVS 데이터 37,248바이트를 확인했다. 조명·오클루전 결과는 기존 Settings·Textures 경로에 저장한다.
+
 ### 공장 배경·가구 재질 슬롯 병합
 
 ROOM #1·#3 배경과 ROOM #1·#2 가구의 Rubber 결합 메시 4개를 각각 8슬롯으로 정리했다. 기존 50슬롯이 32슬롯으로 감소했다. 같은 셰이더 설정과 텍스처를 쓰는 불투명 표면만 병합한다. 기본색·매끄러움·금속성·노멀 강도·발광색은 메시 UV3–UV5에 저장하고 Factory/Combined Surface Lit 셰이더에서 읽는다. 기존 정점 데이터, UV0/UV1, 삼각형, 씬 Renderer와 메시 GUID를 유지한다. 유리와 별도 텍스처를 사용하는 표면은 기존 재질을 사용한다. 실제 렌더링 외관과 Quest 성능은 확인 전이다.

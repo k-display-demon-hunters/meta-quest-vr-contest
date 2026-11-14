@@ -31,7 +31,7 @@
 
 백그라운드 진행 알림은 Controller의 큐에 담고 메인 스레드 `Update()`에서 UI로 전달한다. 학습·평가·추론 중 추가 실행을 거절하고 취소는 협력적으로 처리한다. 종료 시 Execution Manager가 Controller의 세대 번호·큐를 초기화하고 엔진을 Dispose한다. 세션은 취소를 요청하며 계산이 끝나기 전 자원을 다른 작업에서 재사용하지 않는다. 이전 세션·작업의 늦은 응답은 현재 화면을 갱신하지 못한다.
 
-새 학습은 새로운 가중치와 optimizer 상태로 시작하며 모델을 파일로 저장하지 않는다. CNNModelDesignLabManager.Progress는 학습 에포크 비율을 0~0.95로 보고하고 정상 결과를 받으면 1로 변경한다. 취소·실패·추론만으로 1을 설정하지 않는다. CanExit는 정상 학습 결과 반영, 작업 종료, 활성 상태를 요구한다. 세 체험은 ILearningExperience의 Progress(0~1), CanExit, ProgressChanged(float), ExitAvailabilityChanged(bool), EndSession()으로 Core 세션과 통신한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. 전체 진행률은 세 체험의 동일 비중 평균이다. 재방문·초기화로 누적 기록은 감소하지 않는다. 튜토리얼은 기존 완료 이벤트를 사용하며 전체 진행률에서 제외한다.
+새 학습은 새로운 가중치와 optimizer 상태로 시작하며 모델을 파일로 저장하지 않는다. CNNModelDesignLabManager.Progress는 학습 에포크 비율을 0~0.95로 보고한다. 정상 학습 결과를 5초간 표시한 뒤 1로 변경한다. CanExit는 이 결과 표시를 마쳤고 씬이 활성 상태이며 진행 중인 작업이 없을 때 열린다. 세 체험은 ILearningExperience의 Progress(0~1), CanExit, ProgressChanged(float), ExitAvailabilityChanged(bool), EndSession()으로 Core 세션과 통신한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. 전체 진행률은 세 체험의 동일 비중 평균이다. 재방문·초기화로 누적 기록은 감소하지 않는다. 튜토리얼은 기존 완료 이벤트를 사용하며 전체 진행률에서 제외한다.
 
 ## 지원 구조와 연산
 

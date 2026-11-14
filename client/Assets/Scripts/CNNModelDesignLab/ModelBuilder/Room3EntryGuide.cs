@@ -9,7 +9,6 @@ namespace ModelDesignScene.ModelBuilder
         [Header("Scene references")]
         [SerializeField] private ModelSupplyController _supply;
         [SerializeField] private ModelConveyorController _conveyor;
-        [SerializeField] private Renderer[] _supplyPads;
         [SerializeField] private Material _outlineMaterial;
         [SerializeField] private Bounds _entryVolume =
             new Bounds(new Vector3(-1.45f, 1.05f, -0.85f), new Vector3(4.05f, 2.7f, 2.35f));
@@ -35,7 +34,6 @@ namespace ModelDesignScene.ModelBuilder
         private bool _canPlay;
         private Coroutine _guide;
         private ModelBlockOutline[] _padOutlines;
-        private ModelBlockOutline[] _blockOutlines;
         private ModelBlockOutline[] _slotOutlines;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -100,37 +98,32 @@ namespace ModelDesignScene.ModelBuilder
 
         private IEnumerator Animate()
         {
-            ModelBlockController[] blocks = _supply.GetExampleBlocks();
-            _padOutlines = new ModelBlockOutline[_supplyPads.Length];
-            _blockOutlines = new ModelBlockOutline[blocks.Length];
+            var displays = _supply.GetExampleDisplays();
+            _padOutlines = new ModelBlockOutline[displays.Length];
             _slotOutlines = new ModelBlockOutline[_conveyor.SettingsControls.Count];
             for (int index = 0; index < _padOutlines.Length; index++)
             {
-                Renderer pad = _supplyPads[index];
-                _padOutlines[index] = CreateOutline(pad.transform, pad.localBounds, true);
-                _blockOutlines[index] = CreateOutline(blocks[index].transform, blocks[index].ExampleMesh.bounds, false);
+                _padOutlines[index] = CreateOutline(displays[index].Pad);
             }
             for (int index = 0; index < _slotOutlines.Length; index++)
             {
                 if (_conveyor.SettingsControls[index].Block != null) { continue; }
-                Renderer slot = _conveyor.GetSlotRenderer(index);
-                _slotOutlines[index] = CreateOutline(slot.transform, slot.localBounds, true);
+                _slotOutlines[index] = CreateOutline(_conveyor.GetSlotRenderer(index));
             }
 
             float padStep = Mathf.Max(0.01f, _padDuration - _padOverlap);
             for (int pass = 0; pass < _repeatCount; pass++)
             {
-                yield return Sweep(_padOutlines, _blockOutlines, _padDuration, padStep);
+                yield return Sweep(_padOutlines, _padDuration, padStep);
                 yield return new WaitForSecondsRealtime(_stagePause);
-                yield return Sweep(_slotOutlines, null, _slotDuration, Mathf.Max(0.01f, _slotInterval));
+                yield return Sweep(_slotOutlines, _slotDuration, Mathf.Max(0.01f, _slotInterval));
                 if (pass + 1 < _repeatCount) { yield return new WaitForSecondsRealtime(_repeatPause); }
             }
             _guide = null;
             ClearOutlines();
         }
 
-        private IEnumerator Sweep(ModelBlockOutline[] outlines, ModelBlockOutline[] paired,
-            float duration, float step)
+        private IEnumerator Sweep(ModelBlockOutline[] outlines, float duration, float step)
         {
             float end = duration + (outlines.Length - 1) * step;
             for (float elapsed = 0f; elapsed < end; elapsed += Time.unscaledDeltaTime)
@@ -140,21 +133,19 @@ namespace ModelDesignScene.ModelBuilder
                     float t = Mathf.Clamp01((elapsed - index * step) / duration);
                     float pulse = t > 0f && t < 1f ? Mathf.Sin(t * Mathf.PI) : 0f;
                     SetPulse(outlines[index], pulse);
-                    if (paired != null) { SetPulse(paired[index], pulse); }
                 }
                 yield return null;
             }
             for (int index = 0; index < outlines.Length; index++)
             {
                 SetPulse(outlines[index], 0f);
-                if (paired != null) { SetPulse(paired[index], 0f); }
             }
         }
 
-        private ModelBlockOutline CreateOutline(Transform target, Bounds bounds, bool horizontal)
+        private ModelBlockOutline CreateOutline(Renderer surface)
         {
             ModelBlockOutline outline = new ModelBlockOutline(transform, "Entry guide pulse", _outlineMaterial);
-            outline.Show(target, bounds, horizontal);
+            outline.Show(surface);
             SetPulse(outline, 0f);
             return outline;
         }
@@ -180,7 +171,6 @@ namespace ModelDesignScene.ModelBuilder
         private void ClearOutlines()
         {
             RemoveOutlines(ref _padOutlines);
-            RemoveOutlines(ref _blockOutlines);
             RemoveOutlines(ref _slotOutlines);
         }
 

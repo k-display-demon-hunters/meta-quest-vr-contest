@@ -108,6 +108,7 @@ namespace ModelDesignScene.Hologram
 
         private void Apply(float time, float opacity)
         {
+            if (_completed) { time = Mathf.Max(time, _riseEnds + LineSeconds); }
             float reveal = Mathf.Clamp01((time - _riseEnds) / LineSeconds);
             _properties.SetFloat(Elapsed, time);
             _properties.SetFloat(Opacity, opacity);
@@ -219,28 +220,14 @@ namespace ModelDesignScene.Hologram
             _labels = panel.GetComponent<CanvasGroup>();
             _labels.blocksRaycasts = false;
             _labels.interactable = false;
-            Color light = new Color32(234, 246, 255, 255);
-            AddLabel(panel.transform, "내 CNN 모델", Vector2.up * (layout.Top + 0.13f), 0.09f, 1.6f, light);
-            AddLabel(panel.transform, "연결선은 일부만 표시했어요 · 점 밝기는 실제 계산 값이 아니에요",
-                Vector2.up * (layout.Bottom - 0.29f), 0.044f, 3.0f, light);
-            _changedLabel = AddLabel(panel.transform, "구성이 바뀌었어요 · 다시 학습하면 반영돼요",
-                Vector2.up * (layout.Bottom - 0.37f), 0.047f, 2.8f, light);
-            _changedLabel.gameObject.SetActive(false);
+
+            BuildTitleCard(panel.transform, layout.Top);
 
             foreach (CnnHologramLayout.Layer layer in layout.Layers)
             {
-                float x = layer.Center.x;
-                AddLabel(panel.transform, layer.Name + "\n" + layer.Shape, new Vector2(x, layout.Bottom - 0.085f),
-                    0.055f, 0.58f, layer.Color);
-                string sampling = layer.SamplingLabel;
-                if (sampling.Length != 0)
+                if (!layer.IsSpatial && layer.Elements > layer.Count)
                 {
-                    AddLabel(panel.transform, sampling.Replace(" · ", "\n"), new Vector2(x, layout.Bottom - 0.197f),
-                        0.036f, 0.58f, light);
-                    if (!layer.IsSpatial)
-                    {
-                        AddLabel(panel.transform, "⋮", new Vector2(x, 0f), 0.058f, 0.08f, layer.Color);
-                    }
+                    AddLabel(panel.transform, "⋮", new Vector2(layer.Center.x, 0f), 0.058f, 0.08f, layer.Color);
                 }
                 if (!layer.IsOutput) { continue; }
                 for (int index = 0; index < layer.Count; index++)
@@ -252,16 +239,49 @@ namespace ModelDesignScene.Hologram
             }
         }
 
+        private void BuildTitleCard(Transform parent, float top)
+        {
+            var card = new GameObject("Hologram title card", typeof(RectTransform), typeof(Image),
+                typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            card.transform.SetParent(parent, false);
+            Image background = card.GetComponent<Image>();
+            background.rectTransform.pivot = new Vector2(0.5f, 0f);
+            background.rectTransform.anchoredPosition = Vector2.up * ((top + 0.025f) * 1000f);
+            background.color = new Color(0.073f, 0.082f, 0.085f, 0.96f);
+            background.raycastTarget = false;
+
+            VerticalLayoutGroup stack = card.GetComponent<VerticalLayoutGroup>();
+            stack.padding = new RectOffset(30, 30, 18, 18);
+            stack.spacing = 6f;
+            stack.childAlignment = TextAnchor.MiddleCenter;
+            stack.childControlWidth = stack.childControlHeight = true;
+            stack.childForceExpandWidth = stack.childForceExpandHeight = false;
+
+            ContentSizeFitter fit = card.GetComponent<ContentSizeFitter>();
+            fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            Color light = new Color32(234, 246, 255, 255);
+            CreateLabel(card.transform, "내 CNN 모델", 72, light);
+            CreateLabel(card.transform, "점과 연결선은 일부만 표시해요\n점의 밝기는 실제 계산값과 무관해요", 40, light);
+            _changedLabel = CreateLabel(card.transform, "구성이 바뀌었어요 · 다시 학습하면 반영돼요", 40, light);
+            _changedLabel.gameObject.SetActive(false);
+        }
+
         private Text AddLabel(Transform parent, string value, Vector2 position, float size, float width, Color color)
+        {
+            Text text = CreateLabel(parent, value, Mathf.RoundToInt(size * 1000f), color);
+            text.rectTransform.anchoredPosition = position * 1000f;
+            text.rectTransform.sizeDelta = new Vector2(width * 1000f, size * 2350f);
+            return text;
+        }
+
+        private Text CreateLabel(Transform parent, string value, int fontSize, Color color)
         {
             var entry = new GameObject("Hologram text", typeof(RectTransform), typeof(Text));
             entry.transform.SetParent(parent, false);
-            var rect = (RectTransform)entry.transform;
-            rect.anchoredPosition = position * 1000f;
-            rect.sizeDelta = new Vector2(width * 1000f, size * 2350f);
             Text text = entry.GetComponent<Text>();
             text.font = _font;
-            text.fontSize = Mathf.RoundToInt(size * 1000f);
+            text.fontSize = fontSize;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;

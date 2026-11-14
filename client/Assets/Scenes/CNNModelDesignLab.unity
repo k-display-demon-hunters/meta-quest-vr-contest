@@ -194,20 +194,23 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.ModelSupplyController
   _paletteRoot: {fileID: 2001}
-  _supplyFrame: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
   _paletteBlocks:
   - _type: 0
     _block: {fileID: 10202}
     _prefab: {fileID: 1005, guid: 52f56c67e07444e9b2671718174ff7a7, type: 3}
+    _displayPad: {fileID: 40011}
   - _type: 1
     _block: {fileID: 10302}
     _prefab: {fileID: 1005, guid: b0d744f78cee566eaa4aea288b4d08a4, type: 3}
+    _displayPad: {fileID: 40012}
   - _type: 2
     _block: {fileID: 10402}
     _prefab: {fileID: 1005, guid: 9a29f9db1bc1504c90af32e5ec2fa7e3, type: 3}
+    _displayPad: {fileID: 40013}
   - _type: 3
     _block: {fileID: 10502}
     _prefab: {fileID: 1005, guid: 21fbf6bbfa5a5afabb58a9564900cbd1, type: 3}
+    _displayPad: {fileID: 40014}
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0
@@ -233,7 +236,7 @@ Transform:
   m_GameObject: {fileID: 2000}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.333333, y: 0.9696, z: 1.84}
+  m_LocalPosition: {x: 1.4583333, y: 0.9696, z: 1.84}
   m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -896,11 +899,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -4.0
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.583333
+      value: 1.709333
       objectReference: {fileID: 0}
     - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1013,18 +1016,6 @@ PrefabInstance:
     - target: {fileID: 10701, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.975
-      objectReference: {fileID: 0}
-    - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 1401, guid: affc999fae1942bb9f3ea3973c6209bc, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.25
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1205,38 +1196,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3341, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -488
-      objectReference: {fileID: 0}
-    - target: {fileID: 3351, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -522
-      objectReference: {fileID: 0}
-    - target: {fileID: 3371, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -588
-      objectReference: {fileID: 0}
-    - target: {fileID: 3381, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -622
-      objectReference: {fileID: 0}
-    - target: {fileID: 3401, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -688
-      objectReference: {fileID: 0}
-    - target: {fileID: 3411, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -722
-      objectReference: {fileID: 0}
-    - target: {fileID: 3431, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -788
-      objectReference: {fileID: 0}
-    - target: {fileID: 3441, guid: 8726e384471f4c24be4220de714ea4d2, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -822
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1400,11 +1359,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.Room3EntryGuide
   _supply: {fileID: 1004}
   _conveyor: {fileID: 30002}
-  _supplyPads:
-  - {fileID: 40011}
-  - {fileID: 40012}
-  - {fileID: 40013}
-  - {fileID: 40014}
   _outlineMaterial: {fileID: 2100000, guid: 13c9b54c1d324059a0e451b77ab84f01, type: 2}
   _entryVolume:
     m_Center: {x: -1.45, y: 1.05, z: -0.85}

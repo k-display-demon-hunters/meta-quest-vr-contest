@@ -15,6 +15,8 @@ namespace ModelDesignScene
 {
     public sealed class CNNModelDesignLabManager : MonoBehaviour, ILearningExperience
     {
+        private const float TrainingResultDisplaySeconds = 5f;
+
         [SerializeField] private ModelBuilderManager _builder;
         [SerializeField] private ModelBlockSettingsManager _settings;
         [SerializeField] private ModelExecutionManager _execution;
@@ -23,6 +25,8 @@ namespace ModelDesignScene
         [SerializeField] private CnnHologramController _hologram;
 
         private bool _hologramTraining;
+        private float? _trainingResultEndsAt;
+        private bool IsShowingTrainingResult => _trainingResultEndsAt.HasValue;
 
         [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
 
@@ -30,6 +34,7 @@ namespace ModelDesignScene
         private bool CanEnterReality => CanExit && _execution.HasTrainedModel && !_builder.IsDragging
             && !_reality.IsOpen && !_reality.IsTransitioning;
         private bool CanPlayPlacementExample => _initialized && isActiveAndEnabled && !_execution.IsBusy
+            && !IsShowingTrainingResult
             && !_reality.IsOpen && !_reality.IsTransitioning && _builder.CanPlayPlacementExample;
         public System.Threading.Tasks.Task EnterRealityAsync()
         {
@@ -55,6 +60,7 @@ namespace ModelDesignScene
         private bool _progressionAvailable;
         public System.Collections.IEnumerator EndSession()
         {
+            _trainingResultEndsAt = null;
             _hologramTraining = false;
             _hologram.Clear();
             _builder.CancelTrainingFlow();
@@ -124,6 +130,10 @@ namespace ModelDesignScene
 
         private void LateUpdate()
         {
+            if (_trainingResultEndsAt is float endsAt && Time.unscaledTime >= endsAt)
+            {
+                FinishTrainingResultPresentation();
+            }
             if (_initialized)
             {
                 _controlPanel.SetRealityAvailable(CanEnterReality);
@@ -167,7 +177,7 @@ namespace ModelDesignScene
 
         private async void HandleTrainingStartRequested()
         {
-            if (!isActiveAndEnabled || _execution.IsBusy || _builder.IsDragging)
+            if (!isActiveAndEnabled || _execution.IsBusy || _builder.IsDragging || IsShowingTrainingResult)
             {
                 return;
             }
@@ -187,7 +197,7 @@ namespace ModelDesignScene
 
         private async void HandleInferenceRequested(string imageId)
         {
-            if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
+            if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel && !IsShowingTrainingResult)
             {
                 _builder.CancelPlacementExample();
                 await _execution.InferAsync(imageId);
@@ -215,6 +225,7 @@ namespace ModelDesignScene
                 if (_execution.State == ModelExecutionState.Training)
                 {
                     _trainingCompleted = false;
+                    _controlPanel.SetTrainingResultPresentation(false, false);
                     SetProgress(0f);
                     _validationIssues = System.Array.Empty<ValidationIssue>();
                     _hasValidationResult = true;
@@ -224,13 +235,6 @@ namespace ModelDesignScene
                 else if (_execution.State == ModelExecutionState.Completed)
                 {
                     RunPresentation(_builder.FinishTrainingFlow);
-                }
-                else if (_execution.State == ModelExecutionState.Inferring)
-                {
-                    if (!_reality.IsOpen && !_reality.IsTransitioning)
-                    {
-                        RunPresentation(() => _builder.PlayHologramFlow(_hologram.ReadFlowFrames(), false, _hologram.FlowReadyAt));
-                    }
                 }
                 else
                 {
@@ -286,14 +290,23 @@ namespace ModelDesignScene
 
         private void HandleTrainingCompleted(TrainingResult result)
         {
-            ModelExecutionDefinition submitted = _execution.SubmittedModel;
-            _trainingCompleted = result != null;
-            PublishProgressionState();
-            if (!_trainingCompleted) { return; }
+            if (result == null) { return; }
 
-            RunPresentation(() => SetProgress(1f));
+            _trainingResultEndsAt = Time.unscaledTime + TrainingResultDisplaySeconds;
+            _controlPanel.SetTrainingResultPresentation(true, false);
             RunPresentation(() => _controlPanel.ShowCompleted(result));
-            RunPresentation(() => RecordTrainedModel(submitted));
+            RunPresentation(() => RecordTrainedModel(_execution.SubmittedModel));
+        }
+
+        private void FinishTrainingResultPresentation()
+        {
+            _trainingResultEndsAt = null;
+            _hologram.Clear();
+            _builder.CancelTrainingFlow();
+            _trainingCompleted = true;
+            _controlPanel.SetTrainingResultPresentation(false, true);
+            SetProgress(1f);
+            PublishProgressionState();
         }
 
         private void RecordTrainedModel(ModelExecutionDefinition submitted)
@@ -356,6 +369,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _trainingResultEndsAt = null;
             _hologramTraining = false;
             _hologram.Clear();
             _controlPanel.OnExampleRequested -= HandleExampleRequested;

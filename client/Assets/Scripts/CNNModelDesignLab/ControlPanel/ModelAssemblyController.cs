@@ -17,8 +17,8 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Text _assemblyOutputSizes;
 
         private static readonly Color TextBright = new Color32(234, 246, 255, 255);
-        private static readonly Color TextMuted = new Color32(159, 179, 200, 255);
-        private static readonly Color TextInactive = new Color32(130, 151, 172, 255);
+        private static readonly Color TextMuted = new Color32(170, 185, 192, 255);
+        private static readonly Color TextInactive = new Color32(130, 146, 154, 255);
         private static readonly Color SlotText = new Color32(8, 12, 18, 255);
 
         internal int PlacedBlockCount { get; private set; }
@@ -45,7 +45,7 @@ namespace ModelDesignScene.ControlPanel
                 {
                     LayerType.Conv2D => ("CONV", new Color32(76, 141, 255, 255)),
                     LayerType.MaxPooling2D => ("POOL", new Color32(155, 107, 255, 255)),
-                    LayerType.Flatten => ("FLAT", new Color32(224, 64, 200, 255)),
+                    LayerType.Flatten => ("FLAT", new Color32(193, 119, 154, 255)),
                     LayerType.Dense => ("DENSE", new Color32(61, 220, 132, 255)),
                     _ => throw new ArgumentOutOfRangeException(nameof(layer))
                 };

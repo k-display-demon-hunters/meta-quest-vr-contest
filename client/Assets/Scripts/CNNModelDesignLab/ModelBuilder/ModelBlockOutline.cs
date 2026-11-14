@@ -26,28 +26,18 @@ namespace ModelDesignScene.ModelBuilder
             SetAppearance(Amber, 0.022f);
         }
 
-        internal void Show(Transform target, Bounds bounds, bool horizontal = false)
+        internal void Show(Renderer surface)
         {
-            // Follow the supply block's rotation and bob without rebuilding the outline each frame.
+            Transform target = surface.transform;
             _line.transform.SetParent(target, false);
+            Bounds bounds = surface.localBounds;
             Vector3 min = bounds.min;
             Vector3 max = bounds.max;
-            Vector3 offset = target.InverseTransformVector(
-                horizontal ? target.up * 0.018f : -target.forward * 0.018f);
-            if (horizontal)
-            {
-                _line.SetPosition(0, new Vector3(min.x, max.y, min.z) + offset);
-                _line.SetPosition(1, new Vector3(max.x, max.y, min.z) + offset);
-                _line.SetPosition(2, new Vector3(max.x, max.y, max.z) + offset);
-                _line.SetPosition(3, new Vector3(min.x, max.y, max.z) + offset);
-            }
-            else
-            {
-                _line.SetPosition(0, new Vector3(min.x, min.y, min.z) + offset);
-                _line.SetPosition(1, new Vector3(max.x, min.y, min.z) + offset);
-                _line.SetPosition(2, new Vector3(max.x, max.y, min.z) + offset);
-                _line.SetPosition(3, new Vector3(min.x, max.y, min.z) + offset);
-            }
+            Vector3 offset = target.InverseTransformVector(target.up * 0.018f);
+            _line.SetPosition(0, new Vector3(min.x, max.y, min.z) + offset);
+            _line.SetPosition(1, new Vector3(max.x, max.y, min.z) + offset);
+            _line.SetPosition(2, new Vector3(max.x, max.y, max.z) + offset);
+            _line.SetPosition(3, new Vector3(min.x, max.y, max.z) + offset);
         }
 
         internal void SetAppearance(Color color, float width)

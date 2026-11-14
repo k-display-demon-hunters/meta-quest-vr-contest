@@ -42,7 +42,7 @@ namespace FactoryEnvironment
 
         public XROrigin Rig { get; private set; }
         public Transform CameraTransform => Rig.Camera.transform;
-        public event Action TeleportRequested;
+        public bool TeleportPressedThisFrame => _input.TeleportPressedThisFrame;
         private void Awake()
         {
             _layoutData = GetComponent<FactoryLayoutData>();
@@ -56,14 +56,12 @@ namespace FactoryEnvironment
         {
             _sceneLoader.ContentUnloading += HandleContentUnloading;
             _areaController.AreaChanged += HandleAreaChanged;
-            _input.TeleportRequested += HandleTeleportRequested;
         }
 
         private void OnDisable()
         {
             _sceneLoader.ContentUnloading -= HandleContentUnloading;
             _areaController.AreaChanged -= HandleAreaChanged;
-            _input.TeleportRequested -= HandleTeleportRequested;
 #if UNITY_EDITOR
             if (_usesEditorSimulator)
             {
@@ -180,8 +178,6 @@ namespace FactoryEnvironment
             _input.RestoreViewTilt();
             MoveTo(arrival);
         }
-
-        private void HandleTeleportRequested() => TeleportRequested?.Invoke();
 
         private void MoveTo(Transform arrival)
         {

@@ -13,7 +13,7 @@ namespace Tablet
         [SerializeField] private TabletUIBuilder _interfacePrefab;
         [SerializeField] private Canvas _canvas;
         [SerializeField] private MeshFilter _body;
-        [SerializeField] private GameObject _rearLogo;
+        [SerializeField] private GameObject _visualRoot;
         private TabletUIBuilder _ui;
         private TabletVisualResources _resources;
         private TabletInputController _input;
@@ -131,9 +131,7 @@ namespace Tablet
         {
             _visible = !_visible;
             if (!_visible && _detail.IsOpen) { CloseQuit(); }
-            _body.gameObject.SetActive(_visible);
-            _canvas.gameObject.SetActive(_visible);
-            _rearLogo.SetActive(_visible);
+            _visualRoot.SetActive(_visible);
             if (!_visible) { SetInteraction(false); }
         }
 

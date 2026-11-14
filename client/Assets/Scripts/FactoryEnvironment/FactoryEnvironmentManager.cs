@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 namespace FactoryEnvironment
 {
     // Coordinates the current stage and travel.
+    [DefaultExecutionOrder(10)]
     public sealed class FactoryEnvironmentManager : MonoBehaviour
     {
         [FormerlySerializedAs("_navigationData")]
@@ -22,7 +23,6 @@ namespace FactoryEnvironment
         private TabletManager _tablet;
         private ParchmentManager _parchment;
         private readonly HashSet<Transform> _usedTeleportArrivals = new HashSet<Transform>();
-        private bool _teleportRequested;
         private LearningStageId _travelStage;
         private bool _tutorialAvailable;
 
@@ -42,8 +42,6 @@ namespace FactoryEnvironment
         private void OnEnable()
         {
             _tablet.StageMoveRequested += HandleStageMoveRequested;
-            _player.TeleportRequested += HandleTeleportRequested;
-            _areaController.AreaChecked += HandleAreaChecked;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
             _areaController.AreaChanged += HandleAreaChanged;
             _sceneLoader.StateChanged += HandleLoadingStateChanged;
@@ -57,9 +55,6 @@ namespace FactoryEnvironment
                 _tablet.StageMoveRequested -= HandleStageMoveRequested;
             }
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
-            _player.TeleportRequested -= HandleTeleportRequested;
-            _areaController.AreaChecked -= HandleAreaChecked;
-            _teleportRequested = false;
             _areaController.AreaChanged -= HandleAreaChanged;
             _sceneLoader.StateChanged -= HandleLoadingStateChanged;
             _sceneLoader.LoadFailed -= HandleLoadFailed;
@@ -71,26 +66,51 @@ namespace FactoryEnvironment
             SceneManager.SetActiveScene(gameObject.scene);
         }
 
-        private void HandleTeleportRequested() => _teleportRequested = true;
-
-        private void HandleAreaChecked()
+        private void LateUpdate()
         {
-            if (!_teleportRequested) { return; }
-            _teleportRequested = false;
-            if (!_sceneLoader.IsBusy && !_parchment.IsOpen)
+            // Read input after the independent area controller has updated this frame.
+            if (_player.TeleportPressedThisFrame) { TryTeleport(); }
+        }
+
+        private void TryTeleport()
+        {
+            if (!_sceneLoader.IsBusy && !_parchment.IsOpen && TryGetTeleportArrival(out Transform arrival))
             {
-                FactoryAreaId source = _areaController.GetTeleportSource();
-                foreach (FactoryLayoutData.TeleportPoint point in _layoutData.TeleportPoints)
-                {
-                    if (point.Source != source || !CanUseTeleportPoint(point)) { continue; }
-                    // Onward travel takes priority. Do not send the player backwards if it was already used.
-                    if (!_usedTeleportArrivals.Add(point.Arrival)) { break; }
-                    _teleportFeedback.Hide();
-                    _player.TeleportTo(point.Arrival);
-                    return;
-                }
+                _usedTeleportArrivals.Add(arrival);
+                _teleportFeedback.Hide();
+                _player.TeleportTo(arrival);
+                return;
             }
             _teleportFeedback.ShowDenied(_player.CameraTransform);
+        }
+
+        private bool TryGetTeleportArrival(out Transform arrival)
+        {
+            FactoryAreaId source = ResolveTeleportSource();
+            foreach (FactoryLayoutData.TeleportPoint point in _layoutData.TeleportPoints)
+            {
+                if (point.Source != source || !CanUseTeleportPoint(point)) { continue; }
+                // Keep the first eligible destination even when it has already been used.
+                arrival = point.Arrival;
+                return !_usedTeleportArrivals.Contains(arrival);
+            }
+            arrival = null;
+            return false;
+        }
+
+        private FactoryAreaId ResolveTeleportSource()
+        {
+            FactoryAreaId source = _areaController.CurrentArea.Id;
+            if (source != FactoryAreaId.InspectionRoom) { return source; }
+
+            foreach (FactoryLayoutData.Shutter shutter in _layoutData.Shutters)
+            {
+                if (shutter.Id != FactoryShutterId.ScreenToConvolution) { continue; }
+                Transform divider = shutter.Frame;
+                return Vector3.Dot(_player.CameraTransform.position - divider.position, divider.forward) > 0f
+                    ? FactoryAreaId.ConvolutionRoom : FactoryAreaId.ScreenRoom;
+            }
+            throw new InvalidOperationException("Missing ScreenToConvolution shutter.");
         }
 
         private bool CanUseTeleportPoint(FactoryLayoutData.TeleportPoint point)

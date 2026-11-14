@@ -42,7 +42,7 @@ namespace XR
 
         public bool DeveloperModeEnabled { get; private set; }
         public event Action<bool> DeveloperModeChanged;
-        public event Action TeleportRequested;
+        public bool TeleportPressedThisFrame => _teleport.WasPressedThisFrame();
 
         public void SetParchmentMovementBlocked(bool blocked)
         {
@@ -139,7 +139,6 @@ namespace XR
 
         private void Update()
         {
-            if (_teleport.WasPressedThisFrame()) { TeleportRequested?.Invoke(); }
             if (_developerMode.WasPressedThisFrame() && !_leftTrigger.IsPressed())
             {
                 DeveloperModeEnabled = !DeveloperModeEnabled;

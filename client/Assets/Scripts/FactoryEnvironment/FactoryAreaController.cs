@@ -21,7 +21,6 @@ namespace FactoryEnvironment
 
         public FactoryLayoutData.Area CurrentArea { get; private set; }
         public event Action<FactoryLayoutData.Area> AreaChanged;
-        internal event Action AreaChecked;
         public event Action<FactoryShutterId, bool> ShutterProximityChanged;
 
         public bool IsNearShutter(FactoryShutterId id) => _shutters[id].IsNear;
@@ -47,17 +46,6 @@ namespace FactoryEnvironment
             UpdateShutterPresence(position);
             UpdateArea(position);
             PublishShutterChanges();
-            AreaChecked?.Invoke();
-        }
-
-        internal FactoryAreaId GetTeleportSource()
-        {
-            if (CurrentArea.Id != FactoryAreaId.InspectionRoom) { return CurrentArea.Id; }
-
-            // The room spans both sides of the arch, outside the smaller experience volumes.
-            Transform divider = _shutters[FactoryShutterId.ScreenToConvolution].Data.Frame;
-            return Vector3.Dot(_player.position - divider.position, divider.forward) > 0f
-                ? FactoryAreaId.ConvolutionRoom : FactoryAreaId.ScreenRoom;
         }
 
         private void UpdateArea(Vector3 position)

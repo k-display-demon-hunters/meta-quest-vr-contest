@@ -370,7 +370,7 @@ FactoryLayoutData는 체험별 입출구 셔터 ID·경로·콘텐츠 기준점�
 | 복도 4 | 복도 4의 굽은 구간 `(21.2, 0, 33.15)` | 서쪽 (-X) | 모델 제작 완료 기록 |
 | ROOM #3 | 같은 방의 모델 제작 위치 `(22.42, 0.24, 12)` | 동쪽 (+X) | 방 안에서 사용 가능 |
 
-`FactoryPlayerController`는 공용 XR 입력의 요청을 `FactoryEnvironmentManager`에 전달한다. 씬 Manager는 해당 프레임의 구역 판정 후 완료 기록과 양피지 열람 여부를 조회하고, 성공 시 PlayerController에 도착점 이동을 요청한다. ROOM #3에서 복도 4로 이동할 때는 `LearningSessionManager.CanExitStage`로 현재 퇴장 가능 상태도 확인한다. 재학습 중에는 이 경로를 사용할 수 없으며, 미사용 상태라면 같은 방의 도착점으로 이동할 수 있다. ROOM #1의 체험 판정 볼륨 밖에서도 `FactoryAreaController`는 아치 셔터 방향을 기준으로 물리적인 두 구역을 구분해 B의 출발 구역을 반환한다. 도착하면 이동 전 눈높이를 유지하고, 스틱으로 준 상하 기울기를 복원한 뒤 도착점 방향에 맞춘다. 구역 진입에 따른 로딩은 기존 `AreaChanged`를 사용한다.
+`FactoryEnvironmentManager`는 실행 순서 10의 LateUpdate에서 `FactoryPlayerController.TeleportPressedThisFrame`을 조회한다. PlayerController는 공용 XR 입력의 같은 프로퍼티를 제공한다. AreaController는 기본 실행 순서의 자체 LateUpdate로 독립적으로 구역을 갱신하며, 별도 판정 완료 이벤트나 B 요청 대기 상태는 없다. B 입력이 있으면 TryTeleport → TryGetTeleportArrival 순서로 기존 완료·열람 조건과 도착점 사용 기록을 확인하고, 성공 시 PlayerController의 TeleportTo → 기존 MoveTo로 이동한다. ROOM #3에서 복도 4로 이동할 때는 `LearningSessionManager.CanExitStage`로 현재 퇴장 가능 상태도 확인한다. 재학습 중에는 이 경로를 사용할 수 없으며, 미사용 상태라면 같은 방의 도착점으로 이동할 수 있다. ROOM #1 공용 바닥에서는 씬 Manager의 ResolveTeleportSource가 기존 CurrentArea와 LayoutData.Shutters의 아치 Frame, 플레이어 카메라 위치로 양쪽을 구분한다. 목적지는 기존 LayoutData.TeleportPoints 순서를 사용하며 첫 유효 목적지가 사용된 경우 다른 후보로 넘어가지 않는다. 도착하면 이동 전 눈높이를 유지하고, 스틱으로 준 상하 기울기를 복원한 뒤 도착점 방향에 맞춘다. 구역 진입에 따른 로딩은 기존 `AreaChanged`를 사용한다.
 
 지원하지 않는 구역, 완료 조건 미충족, 사용한 지점 재요청, 양피지 열람 중, 콘텐츠 로딩 중에는 `FactoryTeleportFeedbackController`가 화면 중앙 안내를 2초간 표시한다. 안내 패널은 짧게 흔들리고 오른손 컨트롤러가 진동한다. 카메라 위치와 시선은 움직이지 않는다.
 

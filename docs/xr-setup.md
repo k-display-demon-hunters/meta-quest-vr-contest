@@ -7,7 +7,7 @@
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
 | [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿·EventSystem을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
-| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 시점 회전·기울기 복원·레이 선택 및 잡기 입력을 처리한다. 오른손 B는 `TeleportRequested`를 알린다. 왼손 Y 단독 입력은 `DeveloperModeEnabled`를 전환하고 `DeveloperModeChanged`를 알린다. FPS 표시 UI는 연결되어 있지 않다. |
+| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 시점 회전·기울기 복원·레이 선택 및 잡기 입력을 처리한다. 오른손 B는 `TeleportPressedThisFrame`으로 해당 프레임의 눌림 여부를 제공한다. 공장 Manager는 PlayerController를 통해 이 값을 조회하며 입력 전달 이벤트나 요청 대기 상태를 사용하지 않는다. 왼손 Y 단독 입력은 `DeveloperModeEnabled`를 전환하고 `DeveloperModeChanged`를 알린다. FPS 표시 UI는 연결되어 있지 않다. |
 | [XREditorSimulator](../client/Assets/Scripts/Core/XR/XREditorSimulator.cs) | 에디터에서 가상 HMD·컨트롤러를 생성하고 키보드·마우스 액션을 XRI 시뮬레이터에 연결한다. 위치·회전과 버튼·스틱 입력을 가상 XR 기기 상태로 바꾸므로 공용 리그가 실제 컨트롤러와 같은 입력 경로로 읽는다. 컴포넌트의 활성·비활성·파괴에 맞춰 기기와 액션의 수명을 관리한다. |
 
 ### 리그 초기화와 수명
@@ -93,7 +93,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 `TabletManager.SetAvailable(bool)`은 태블릿 루트의 활성 상태를 변경한다. 비활성화하면 전체 표시가 숨겨지고 `OnDisable()`에서 이벤트 구독과 입력을 해제하며 태블릿 탐색이 점유한 이동 입력을 반환한다. 다시 활성화하면 `OnEnable()`에서 구독과 입력을 복원하고 학습·양피지 표시를 갱신한다. 양피지 열람 중에는 기존 입력 중단 처리를 적용한다. `IsAvailable`은 태블릿 루트 자체의 활성 상태를 반환하며, 숨기는 동안에도 앱·설정·학습 데이터는 유지한다.
 
-사용자가 X를 눌러 태블릿을 숨기면 `TabletManager`가 본체·앞면 Canvas·뒷면 로고만 끈다. 루트가 활성 상태라 다시 X를 누르면 열 수 있다. 숨긴 동안 태블릿 탐색이 왼쪽 스틱 이동을 점유하지 않는다.
+태블릿 루트 아래의 `Tablet Visuals`에 본체·앞면 Canvas·뒷면 로고를 함께 둔다. 사용자가 X를 누르면 `TabletManager`가 `_visualRoot`로 연결한 `Tablet Visuals`만 한 번에 켜거나 끈다. Manager가 있는 태블릿 루트는 활성 상태를 유지하므로 다시 X를 누르면 열 수 있다. 표시용 부모의 로컬 위치·회전은 0, 스케일은 1이며 기존 자식의 위치·회전·크기는 유지한다. `_body`와 `_canvas` 참조는 본체 메시 생성과 화면 초기화에 계속 사용한다. 숨길 때 종료 확인창과 태블릿 조작 상태를 정리하며, 기존 스틱 중앙 복귀 조건에 따라 이동 입력을 반환한다. `SetAvailable`은 기존처럼 태블릿 루트 전체의 표시와 입력 활성 여부를 제어한다.
 
 포커스 우선순위는 종료 확인 → 설정 → 앱 화면이다. 메인 그룹에 앱 버튼·단계 카드·수집 목록·설정 버튼을 등록한다. 앱 전환 후 해당 앱 버튼으로 포커스를 돌린다. Trigger 탐색이 끝나고 스틱이 중앙으로 돌아와야 원래 이동 입력을 복원한다. 양피지 열람 동안 태블릿 입력은 중단하며 닫은 다음 프레임부터 기존 조작 상태·포커스를 복원한다.
 

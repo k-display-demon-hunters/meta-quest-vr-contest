@@ -8,7 +8,7 @@ namespace ModelDesignScene.Dataset
     {
         [SerializeField] private ModelDatasetController _controller;
 
-        public bool HasPreparationError => _controller.HasPreparationError;
+        public string PreparationError => _controller.PreparationError;
         public IReadOnlyList<DatasetSample> Samples => _controller.Samples;
         public TrainingData TrainingData => _controller.TrainingData;
 

@@ -159,6 +159,7 @@ namespace ModelDesignScene
         {
             if (CanPlayPlacementExample)
             {
+                _builder.CancelEntryGuide();
                 _settings.Close();
                 _builder.PlayPlacementExample();
             }
@@ -170,17 +171,10 @@ namespace ModelDesignScene
             {
                 return;
             }
+            _builder.CancelEntryGuide();
             _settings.Close();
             _builder.CancelPlacementExample();
-            try
-            {
-                await _execution.StartTrainingAsync(_model);
-            }
-            catch (System.Exception exception)
-            {
-                Debug.LogError($"[ERR-TRAIN] {exception}");
-                if (this != null) { _controlPanel.ShowExecutionFailure(ModelExecutionFailure.Training); }
-            }
+            await _execution.StartTrainingAsync(_model);
         }
 
         private async void HandleTrainingStopRequested()
@@ -193,9 +187,11 @@ namespace ModelDesignScene
 
         private async void HandleInferenceRequested(string imageId)
         {
-            if (!isActiveAndEnabled) { return; }
-            RunPresentation(_builder.CancelPlacementExample);
-            await _execution.InferAsync(imageId);
+            if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
+            {
+                _builder.CancelPlacementExample();
+                await _execution.InferAsync(imageId);
+            }
         }
 
         private async void HandleRealityRequested()
@@ -286,7 +282,7 @@ namespace ModelDesignScene
             if (!result.ImageId.StartsWith("reality:", System.StringComparison.Ordinal))
                 _controlPanel.ShowInference(result);
         }
-        private void HandleExecutionError(ModelExecutionFailure failure) => _controlPanel.ShowExecutionFailure(failure);
+        private void HandleExecutionError(string message) => _controlPanel.ShowError(message);
 
         private void HandleTrainingCompleted(TrainingResult result)
         {

@@ -12,6 +12,7 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private ModelConveyorController _conveyor;
         [SerializeField] private PlacementExampleController _placementExample;
         [SerializeField] private TrainingFlowController _trainingFlow;
+        [SerializeField] private Room3EntryGuide _entryGuide;
 
         private readonly HashSet<ModelBlockController> _blocks = new HashSet<ModelBlockController>();
         private ModelBuilderManager _manager;
@@ -48,6 +49,7 @@ namespace ModelDesignScene.ModelBuilder
         }
 
         internal void CancelPlacementExample() => _placementExample.Cancel();
+        internal void CancelEntryGuide() => _entryGuide.CancelForInteraction();
 
         internal void PlayHologramFlow((Vector3 Center, Vector2 Extents, bool Trainable)[] frames,
             bool training, float readyAt)
@@ -96,6 +98,7 @@ namespace ModelDesignScene.ModelBuilder
             if (_initialized && _interactionEnabled)
             {
                 _conveyor.PreviewPlacement(_grabbedBlock);
+                _entryGuide.UpdateAvailability(CanPlayPlacementExample);
             }
         }
 
@@ -111,6 +114,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void EndInteraction()
         {
             _interactionEnabled = false;
+            _entryGuide.UpdateAvailability(false);
             _placementExample.Cancel();
             _trainingFlow.Cancel();
             if (!_initialized)
@@ -292,6 +296,7 @@ namespace ModelDesignScene.ModelBuilder
             {
                 return;
             }
+            CancelEntryGuide();
             _placementExample.Cancel();
             if (block.IsPalette)
             {

@@ -49,9 +49,9 @@ namespace ModelDesignScene.ControlPanel
         public void Initialize(ModelDatasetManager dataset)
         {
             _controller.SetSamples(dataset.Samples);
-            if (dataset.HasPreparationError)
+            if (dataset.PreparationError != null)
             {
-                _controller.ShowExecutionFailure(ModelExecutionFailure.DatasetPreparation);
+                _controller.ShowDatasetPreparationFailure(dataset.PreparationError);
             }
         }
 
@@ -93,7 +93,7 @@ namespace ModelDesignScene.ControlPanel
             _controller.ShowState(state, hasTrainedModel, canInfer, canCancel);
         }
 
-        public void ShowExecutionFailure(ModelExecutionFailure failure) => _controller.ShowExecutionFailure(failure);
+        public void ShowError(string message) => _controller.ShowError(message);
 
         public void ShowRealityEntryFailure() => _controller.ShowRealityEntryFailure();
 

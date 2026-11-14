@@ -8,10 +8,10 @@
 
 | 폴더·진입점 | 내부 담당과 책임 |
 | --- | --- |
-| `ModelBuilder/ModelBuilderManager` | `ModelBuilderController`가 공급소·고정 Input/Output·컨베이어·블록을 관리한다. `ConveyorSlots`는 실제 블록의 슬롯 점유를, `ModelDefinition`은 같은 슬롯의 레이어 데이터를 보관한다. 설정 요청은 레이어와 팝업 위치를 이벤트로 전달한다. |
+| `ModelBuilder/ModelBuilderManager` | `ModelBuilderController`가 공급소·고정 Input/Output·컨베이어·블록과 입장 안내의 실행·중단을 조율한다. `ConveyorSlots`는 실제 블록의 슬롯 점유를, `ModelDefinition`은 같은 슬롯의 레이어 데이터를 보관한다. 설정 요청은 레이어와 팝업 위치를 이벤트로 전달한다. |
 | `BlockSettings/ModelBlockSettingsManager` | `ModelSettingsController`가 팝업을 열고 닫으며 설정값을 갱신한다. `BlockSettingsCatalog`·`BlockSettingsDefinition`은 블록 종류별 항목을 제공하고, `BlockSettingsPopup`·`LayerNumberSetting`이 입력을 처리한다. 삭제는 `OnDeleteRequested`로 요청한다. |
 | `Execution/ModelExecutionManager` | Dataset에서 실행 데이터를 받고 `ModelExecutionDefinitionBuilder`·`ModelExecutionValidator`로 실행 요청을 준비한다. `ModelExecutionController`는 실행 상태와 메인 스레드 결과 전달을, 하위 `Engine/CnnEngineManager`는 학습 세션을 관리한다. |
-| `ControlPanel/ModelControlPanelManager` | `ModelControlPanelController`가 구성 검사·학습·예측 페이지와 버튼을 연결한다. `ModelValidationController`, `ModelTrainingMetricsController`, `ModelInferenceResultsController`가 각 표시를 담당하고 `ModelMetricGraph`가 지표 그래프를 그린다. |
+| `ControlPanel/ModelControlPanelManager` | `ModelControlPanelController`가 페이지 전환·실행 버튼·상태와 오류 카드를 조율한다. `ModelAssemblyController`는 전달받은 슬롯·잡기 상태와 출력 크기로 조립 단계·미니맵·출력 크기를 표시한다. `ModelValidationController`, `ModelTrainingMetricsController`, `ModelInferenceResultsController`가 각 표시를 담당하고 `ModelMetricGraph`가 지표 그래프를 그린다. |
 | `Dataset/ModelDatasetManager` | `ModelDatasetController`가 MNIST 바이너리와 샘플 텍스처를 준비한다. `MnistDataset`은 파일 해석·정규화·split 분리를, `DatasetSample`은 화면에 필요한 ID·텍스처·정답을 담당한다. |
 | `Model/ModelDefinition` | 고정 Input·Output과 편집 슬롯 8개의 레이어를 소유한다. `LayerDefinition`은 레이어 설정과 변경 이벤트, `LayerLimits`는 입력 크기와 개별 설정 범위를 정의한다. |
 
@@ -69,11 +69,11 @@ Builder가 인접한 배치 블록의 연결 지점 쌍을 모아 Conveyor에 �
 
 씬 Manager가 검사 통과 후 `Training` 상태에서 제출된 실행 스냅샷을 홀로그램에 전달한다. Builder는 슬롯 순서대로 기존 블록 출력의 격자 크기·벡터 길이와 월드 위치를 읽어 준다. 씬의 `CnnHologramAnchor`에 연결된 `CnnHologramController`는 모든 층의 점과 연결선을 각각 하나의 메시로 그린다. 구조만 표시하며 점 밝기에는 학습·예측 값이 들어가지 않는다. 각 층은 바닥의 대응 블록 위에 표시한다. 공간 격자는 최대 3cm 공통 간격을 사용하고, 같은 층의 채널 판은 깊이 방향으로 19cm씩 벌린다. 연결선은 낮은 불투명도로 점보다 먼저 그려 점의 색을 읽기 쉽게 유지한다. 점은 최대 7,000개, 선은 최대 4,000개이고 제한을 넘기면 공간 격자와 연결을 샘플링한다.
 
-학습을 마치면 구조가 남는다. 제출 모델과 다른 구성으로 바꾸면 40% 밝기와 안내가 표시된다. 학습 취소·실패 시 0.6초 동안 사라지고, 재학습에는 새 스냅샷을 사용한다. 씬 비활성화·종료 시 생성물과 메시를 해제한다. 기존 바닥의 학습 흐름과 예측 연출은 각각 같은 경로에서 실행된다.
+학습을 마치면 구조가 남는다. 제출 모델과 다른 구성으로 바꾸면 40% 밝기와 안내가 표시된다. 학습 취소·실패 시 0.6초 동안 사라지고, 재학습에는 새 스냅샷을 사용한다. 씬 비활성화·종료 시 생성물과 메시를 해제한다. 학습과 내장 샘플 예측 연출은 같은 홀로그램 경로를 사용한다. 홀로그램은 기존 Execution의 `SubmittedModel`과 상태·학습 진행 이벤트를 사용하며, 실행 모듈의 상태 전이·비동기 실행 계약은 변경하지 않는다.
 
 ### 바닥 조립 슬롯과 공급 책상
 
-조립 행은 씬 루트 기준 Y=0, Z=0.82에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.82에 둔다. 공장에서는 콘텐츠 기준점이 월드 Y=0.24에 놓이고 배율 1.2를 적용한다. 조립 행과 공급 책상은 이전 공장 배치의 80% 크기로 단상에 정렬된다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 빈 슬롯의 글씨는 판 가운데에 배치한다. Conv·Max Pool·Dense를 놓으면 판 앞쪽 첫 줄에 슬롯 번호와 `설정 변경` 버튼을 두고, 아래 줄에 현재 설정값을 표시한다. 버튼에 여백을 포함한 Trigger Collider를 두고 레이가 닿으면 버튼 면을 밝힌다. Flatten에는 슬롯 번호만 표시한다. 설정값은 기존 모델 변경 후 블록 출력 표시를 갱신할 때 함께 갱신한다.
+조립 행은 씬 루트 기준 Y=0, Z=0.82에 두고 0.85 간격으로 8개 슬롯(X=-2.975…2.975)을 배치한다. 고정 Input과 Output은 X=-3.85와 3.85, Y=0.138, Z=0.82에 둔다. 공장에서는 콘텐츠 기준점이 월드 Y=0.24에 놓이고 배율 1.2를 적용한다. 조립 행과 공급 책상은 이전 공장 배치의 80% 크기로 단상에 정렬된다. 슬롯은 폭 0.84, 깊이 0.82, 높이 0.03인 낮은 판으로 표시한다. 빈 슬롯의 글씨는 판 가운데에 배치한다. 블록을 놓으면 판 앞쪽 첫 줄에 슬롯 번호와 `설정 변경` 버튼을 두고, Conv·Max Pool·Dense는 아래 줄에 현재 설정값도 표시한다. 버튼에 여백을 포함한 Trigger Collider를 두고 레이가 닿으면 버튼 면을 밝힌다. Flatten은 설정값 줄을 숨기지만 버튼으로 기존 팝업을 열어 삭제할 수 있다. 설정값은 기존 모델 변경 후 블록 출력 표시를 갱신할 때 함께 갱신한다.
 
 공급 책상은 조립 행과 동쪽 벽 사이에 두고 방 중앙을 향한다. 씬 루트 기준 위치는 (0.333333, 0.9696, 1.84)이고 공급대 그룹의 균일 배율은 0.8이다. 공급대는 긴 축 배율 1.7을 사용하며, 각 블록 아래에는 짙은 청록 기둥과 세로 청록선을 둔다. Conv·Pooling·Flatten·Dense 공급 블록과 보충 블록은 이 부모 아래 X=-1.6575, -0.5525, 0.5525, 1.6575, Y=0.118, Z=0에서 네 받침에 정렬된다. 블록을 슬롯에 놓으면 고정 Input·Output과 같은 루트 기준 배율 1로 정렬된다.
 
@@ -81,13 +81,15 @@ Builder가 인접한 배치 블록의 연결 지점 쌍을 모아 Conveyor에 �
 
 제어 패널은 공급 책상 왼쪽의 씬 루트 기준 (-4.0, 1.583333, 0.85)에 두고 방 중앙을 향한다. 앵커 배율 1.25로 축소를 상쇄해 화면의 물리적 크기(공장에서 약 2.59 × 2.02m)를 유지한다. 제목, 첫 사용 안내, 오른쪽 상태 표시, 하단 조작 안내의 글자와 영역을 넓혔다. 모델 검사 페이지의 첫 안내는 공급 책상에서 Grip으로 블록을 잡고 빈 슬롯에 놓는 두 단계다. 구성 오류가 있으면 위치·원인·수정 안내를 표시하며 여러 오류는 이전·다음 버튼으로 확인한다. 콘솔은 ROOM #1-2의 짙은 패널과 호박색 강조선, 청회색 버튼을 사용한다. 설명과 결과는 왼쪽에 표시한다. 오른쪽에는 모델 검사·학습 현황·숫자 예측 탭과 학습 시작·학습 중지·현실 숫자 인식 버튼을 각각 세로로 배치한다. 콘솔 머리글은 실행 상태를 표시한다. 가로 단계 탭으로 조립·학습·예측 화면을 전환한다. 조립 화면은 Grab·배치 상태로 할 일을 강조하며 기존 슬롯 상태와 블록 출력 크기를 읽어 표시한다.
 
-예시 애니메이션은 공급대 블록의 테두리를 콘솔과 같은 호박색으로 차례로 강조한 후 가장 넓은 Conv 블록을 고른다. 반투명 예시가 올라오면 빈 슬롯을 차례로 강조하고 그중 하나를 무작위로 선택해 예시 블록을 놓는 동작을 보여 준다. 시연이 끝나면 예시 블록과 강조선이 사라진다. 실제 배치·모델 검사·학습·체험 완료 상태에는 영향이 없다. 블록을 잡거나 학습·예측·AR로 전환하면 재생을 중단한다.
+예시 애니메이션은 공급대 블록의 테두리를 콘솔과 같은 호박색으로 차례로 강조한 후 가장 넓은 Conv 블록을 고른다. 반투명 예시가 올라오면 빈 슬롯을 차례로 강조하고 그중 하나를 무작위로 선택해 예시 블록을 놓는 동작을 보여 준다. 시연이 끝나면 예시 블록과 강조선이 사라진다. 실제 배치·모델 검사·학습·체험 완료 상태에는 영향이 없다. 블록을 잡거나 학습·예측·AR로 전환하면 재생을 중단한다. 예시와 입장 안내가 사용하는 `ModelBlockOutline`은 대상의 자식에 로컬 좌표로 선을 두어 공급 블록의 회전·부유를 따라가며, 중단 시 해당 연출의 Controller가 선을 제거한다.
 
-ROOM #3 입장 시선 안내는 모델 씬이 미리 로드되어도 플레이어 카메라가 서쪽 단상 진입 범위에 들어올 때까지 기다린다. 같은 공장 씬에서 한 번만 확인하며, 빈 모델에서 공급 받침 링과 블록 4개, 이어서 INPUT 쪽부터 빈 슬롯을 청록 테두리로 두 차례 강조한다. `Room3EntryGuide`는 Builder의 잡기 상태와 콘솔의 예시·학습 요청을 구독한다. 완료, 중단 또는 비활성화 시 안내 전용 테두리를 제거하며 기존 재질과 슬롯 상태는 유지한다. 씬의 `CNN Model Design` 루트에서 진입 범위·타이밍·색·밝기를 조절하고 Play 모드의 `Play Entry Guide`로 수동 확인할 수 있다.
+ROOM #3 입장 시선 안내는 모델 씬이 미리 로드되어도 플레이어 카메라가 서쪽 단상 진입 범위에 들어올 때까지 기다린다. 같은 공장 씬에서 한 번만 확인하며, 빈 모델에서 공급 받침 링과 블록 4개, 이어서 INPUT 쪽부터 빈 슬롯을 청록 테두리로 두 차례 강조한다. `ModelBuilderController`가 상호작용 가능 여부를 `Room3EntryGuide.UpdateAvailability`로 전달하고, 블록을 잡으면 직접 안내를 중단한다. 콘솔의 예시·학습 요청은 기존 씬 Manager가 받아 `ModelBuilderManager.CancelEntryGuide`를 호출한다. `Room3EntryGuide`는 Builder 내부의 공급소·컨베이어를 사용하며 Builder Manager나 콘솔을 참조·구독하지 않는다. 완료, 중단 또는 비활성화 시 안내 전용 테두리를 제거하며 기존 재질과 슬롯 상태는 유지한다. 씬의 `CNN Model Design` 루트에서 진입 범위·타이밍·색·밝기를 조절하고 Play 모드의 `Play Entry Guide`로 수동 확인할 수 있다.
 
 ## 실행 검증과 학습
 
-시작 버튼은 씬이 활성 상태이고 실행 중이 아니며 블록을 잡고 있지 않을 때 Execution에 요청한다. 오른쪽 상태 줄 아래에 세 단계 탭을 두고, 실행 영역에는 현재 상태에 따라 학습 시작 또는 학습 중지 버튼 하나를 표시한다. 학습 현황에는 진행률, 정확도·손실 그래프, 최종 테스트 수치를 표시한다. Execution은 Dataset 준비 오류를 먼저 처리하고, 현재 모델의 값 스냅샷과 원래 슬롯 대응표를 만든 뒤 구조를 검사한다. 첫 오류가 있으면 엔진을 실행하지 않고 슬롯 위치와 검사 종류를 전달한다. 모델 전체 오류에는 임의의 슬롯을 지정하지 않는다. 학습·샘플 예측·현실 모드 진입·데이터 준비 오류와 미분류 검사 결과는 콘솔 상단 카드에 한국어 안내와 오류 코드로 표시한다. 원문과 스택은 Unity 로그에 기록한다.
+시작 버튼은 씬이 활성 상태이고 실행 중이 아니며 블록을 잡고 있지 않을 때 Execution에 요청한다. 오른쪽 상태 줄 아래에 세 단계 탭을 두고, 실행 영역에는 현재 상태에 따라 학습 시작 또는 학습 중지 버튼 하나를 표시한다. 학습 현황에는 진행률, 정확도·손실 그래프, 최종 테스트 수치를 표시한다. Execution은 Dataset의 기존 `PreparationError` 문자열을 확인하고, 현재 모델의 값 스냅샷과 원래 슬롯 대응표를 만든 뒤 구조를 검사한다. 첫 오류가 있으면 엔진을 실행하지 않고 `ValidationIssue.SlotIndex`와 `Message`를 전달한다. 모델 전체 오류에는 임의의 슬롯을 지정하지 않는다.
+
+콘솔은 기존 실행 상태 이벤트로 학습·샘플 예측 요청을 구분하고, `OnError(string)`로 받은 오류 메시지를 Unity 로그에 남긴 뒤 해당 안내 카드를 표시한다. Dataset 준비 오류와 현실 모드 진입 오류도 콘솔의 카드로 표시한다. 오류 카드 종류는 ControlPanel 내부의 표시 상태이며 Execution·Dataset의 데이터 계약에 포함하지 않는다. 모델 구조 검사는 기존 메시지를 받아 구성 검사 페이지에서 위치·원인·수정 안내를 표시한다. Flatten·층 순서 오류는 한국어 안내로 대응하며, 별도 안내가 없는 커널·풀 크기 오류 등은 원래 검증 메시지를 표시한다.
 
 현재 검사는 Flatten 이전의 공간 레이어, 명시적 Flatten 한 번, Flatten 이후 Dense, 현재 입력 크기에 맞는 커널·풀 크기, 최종 Dense 4·Softmax를 확인한다. 첫 레이어를 Conv2D로 강제하지 않으므로 `Flatten → Output`도 구조상 허용한다. Dense 앞에 Flatten을 자동으로 추가하지 않는다. 빈 모델은 Flatten 누락으로 거절한다. 개별 값 범위는 `LayerLimits`가 관리하고, 모델 전체 연산량·파라미터 수의 별도 상한은 없다.
 
@@ -110,11 +112,11 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 | 연결 대상 | 현재 구성 |
 | --- | --- |
 | 씬 Manager | `_builder`, `_settings`, `_execution`, `_controlPanel`, `_dataset` |
-| `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어, 배치 예시와 학습 흐름 표시 Controller |
+| `ModelBuilderController` | 고정 Input·Output 블록, 공급소, 컨베이어, 배치 예시·학습 흐름·입장 안내 Controller |
 | `ModelConveyor.prefab` | 8개 블록 앵커, 슬롯 판과 설정 입력 영역. 자식 순서는 슬롯 순서와 대응한다. |
 | `PartsSupplyRack.prefab` 및 블록 프리팹 | 공급용 Conv·Pooling·Flatten·Dense와 고정 Input·Output 외형·Collider·잡기 구성 |
 | `SlotSettingsControl.prefab` / `BlockSettingsPopup.prefab` | 슬롯 입력·팝업 기준점과 레이어 설정 UI |
-| `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 화면 요소는 프리팹에, 패널 기준점은 씬에 저장한다. |
+| `ModelControlPanel.prefab` | 구성 검사·학습·예측 화면, 시작·중지 버튼과 하위 표시 Controller. 조립 페이지의 `ModelAssemblyController`가 기존 조립 UI 요소를 참조한다. 화면 요소는 프리팹에, 패널 기준점은 씬에 저장한다. |
 | `ModelDatasetController` | `_trainingDataset`, `_testDataset`으로 RGB 바이너리 연결. 평가 픽셀에서 샘플 텍스처 생성 |
 | `Prefabs/XR/XRPlayerRig.prefab` | 공용 입력 리그. 오른손 ray가 슬롯의 XRI 활성화 이벤트와 제어 패널·팝업의 UI 입력을 제공한다. |
 

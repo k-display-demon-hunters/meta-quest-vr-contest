@@ -50,12 +50,7 @@ namespace ModelDesignScene.ControlPanel
 
         [Header("Screen sections")]
         [SerializeField] private ModelValidationController _validation;
-        [SerializeField] private Text[] _assemblySteps;
-        [SerializeField] private Image[] _assemblyStepUnderlines;
-        [SerializeField] private Text[] _assemblySlotLabels;
-        [SerializeField] private Image[] _assemblySlotFills;
-        [SerializeField] private Graphic[] _assemblyEmptySlots;
-        [SerializeField] private Text _assemblyOutputSizes;
+        [SerializeField] private ModelAssemblyController _assembly;
         [SerializeField] private Text _exampleReason;
         [SerializeField] private Text _realityReason;
         [SerializeField] private ModelTrainingMetricsController _metrics;
@@ -64,7 +59,6 @@ namespace ModelDesignScene.ControlPanel
         [Header("Status colors")]
         private static readonly Color Cyan = new Color32(57, 230, 255, 255);
         private static readonly Color Yellow = new Color32(242, 201, 76, 255);
-        private static readonly Color TextBright = new Color32(234, 246, 255, 255);
         private static readonly Color TextMuted = new Color32(159, 179, 200, 255);
         private static readonly Color TextDisabled = new Color32(129, 148, 167, 255);
         private static readonly Color TabUnavailable = new Color32(130, 151, 172, 255);
@@ -74,14 +68,14 @@ namespace ModelDesignScene.ControlPanel
         private static readonly Color AvailableTabBorder = new Color32(46, 74, 99, 255);
         private static readonly Color UnavailableTabBorder = new Color32(34, 56, 76, 255);
         private static readonly Color ActionText = new Color32(26, 18, 6, 255);
-        private static readonly Color SlotText = new Color32(8, 12, 18, 255);
 
-        private enum ErrorCard { None, Training, Cancelling, SampleInference, Reality, Dataset, ModelCheck }
+        private enum ErrorCard { None, Training, Cancelling, SampleInference, Reality, Dataset }
 
         private ErrorCard _activeError;
+        // Execution reports Failed before its error message, so retain the request's card here.
+        private ErrorCard _executionError = ErrorCard.Training;
         private int _currentPage;
         private bool _hasIssues;
-        private int _placedBlockCount;
         private bool _isDragging;
         private bool _isBusy;
         private bool _hasTrainedModel;
@@ -149,26 +143,16 @@ namespace ModelDesignScene.ControlPanel
         internal void ShowModelValidation(IReadOnlyList<ValidationIssue> issues,
             IReadOnlyList<LayerDefinition> slotLayers, bool isDragging, bool hasValidationResult, bool focus = false)
         {
-            bool unmappedIssue = false;
-            foreach (ValidationIssue issue in issues)
-            {
-                if (issue.Kind != ValidationIssueKind.Unmapped) { continue; }
-                unmappedIssue = true;
-                break;
-            }
-            if (focus && unmappedIssue) { ShowErrorCard(ErrorCard.ModelCheck); }
-            else if (_activeError == ErrorCard.ModelCheck && (!unmappedIssue || isDragging)) { DismissError(); }
-
             bool wasInvalid = _hasIssues && !_isDragging;
             _hasIssues = issues.Count > 0;
             _isDragging = isDragging;
-            RefreshAssembly(slotLayers);
+            _assembly.ShowAssembly(slotLayers, isDragging);
             RefreshHeader();
             _validation.ShowValidation(issues, slotLayers, isDragging, hasValidationResult);
             if (_state == ModelExecutionState.Idle) { ShowAssemblyStatus(); }
             RefreshSecondaryReasons();
             RefreshStartButton();
-            if (!unmappedIssue && (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy)))
+            if (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy))
             {
                 ShowValidationPage();
             }
@@ -190,8 +174,8 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = false;
             _isDragging = false;
             _hasIssues = false;
-            RefreshAssembly(Array.Empty<LayerDefinition>());
-            _assemblyOutputSizes.text = string.Empty;
+            _assembly.ShowAssembly(Array.Empty<LayerDefinition>(), false);
+            _assembly.ShowOutputSizes(Array.Empty<string>());
             _state = ModelExecutionState.Idle;
             _hasTrainedModel = false;
             SetExampleAvailable(false);
@@ -250,6 +234,7 @@ namespace ModelDesignScene.ControlPanel
             switch (state)
             {
                 case ModelExecutionState.StartingTraining:
+                    _executionError = ErrorCard.Training;
                     _stateText.text = "학습 준비 중";
                     break;
                 case ModelExecutionState.Training:
@@ -263,6 +248,7 @@ namespace ModelDesignScene.ControlPanel
                     _stateText.text = "학습 완료";
                     break;
                 case ModelExecutionState.Inferring:
+                    _executionError = ErrorCard.SampleInference;
                     _stateText.text = "예측 중";
                     break;
                 case ModelExecutionState.Cancelled:
@@ -293,14 +279,17 @@ namespace ModelDesignScene.ControlPanel
             RefreshStartButton();
         }
 
-        internal void ShowExecutionFailure(ModelExecutionFailure failure)
+        internal void ShowError(string message)
         {
-            switch (failure)
-            {
-                case ModelExecutionFailure.Training: ShowErrorCard(ErrorCard.Training); break;
-                case ModelExecutionFailure.SampleInference: ShowSampleFailure(); break;
-                case ModelExecutionFailure.DatasetPreparation: ShowErrorCard(ErrorCard.Dataset); break;
-            }
+            Debug.LogError($"[ModelControlPanel] {message}");
+            if (_executionError == ErrorCard.SampleInference) { ShowSampleFailure(); }
+            else { ShowErrorCard(_executionError); }
+        }
+
+        internal void ShowDatasetPreparationFailure(string message)
+        {
+            _executionError = ErrorCard.Dataset;
+            ShowError(message);
         }
 
         internal void ShowRealityEntryFailure() => ShowErrorCard(ErrorCard.Reality);
@@ -325,8 +314,6 @@ namespace ModelDesignScene.ControlPanel
                     "다시 시도", "ERR-REALITY", true),
                 ErrorCard.Dataset => ("학습 데이터를 불러오지 못했어요", "진행자에게 알려 주세요.",
                     "", "ERR-DATA", false),
-                ErrorCard.ModelCheck => ("조립을 다시 확인해 주세요", "이 구성은 학습할 수 없어요.",
-                    "모델 검사 보기", "ERR-CHECK", false),
                 _ => throw new ArgumentOutOfRangeException(nameof(card))
             };
 
@@ -438,10 +425,6 @@ namespace ModelDesignScene.ControlPanel
             {
                 case ErrorCard.Training: HandleStartRequested(); break;
                 case ErrorCard.Reality: HandleRealityRequested(); break;
-                case ErrorCard.ModelCheck:
-                    DismissError();
-                    ShowValidationPage();
-                    break;
             }
         }
 
@@ -470,62 +453,14 @@ namespace ModelDesignScene.ControlPanel
 
         internal void ShowAssemblyOutputSizes(IReadOnlyList<string> sizes)
         {
-            int split = sizes.Count > 6 ? (sizes.Count + 1) / 2 : sizes.Count;
-            var output = new System.Text.StringBuilder();
-            for (int index = 0; index < sizes.Count; index++)
-            {
-                if (index == split) { output.Append(" →\n"); }
-                else if (index > 0) { output.Append(" → "); }
-                output.Append(sizes[index]);
-            }
-            _assemblyOutputSizes.text = output.ToString();
-        }
-
-        private void RefreshAssembly(IReadOnlyList<LayerDefinition> slotLayers)
-        {
-            _placedBlockCount = 0;
-            for (int index = 0; index < _assemblySlotLabels.Length; index++)
-            {
-                LayerDefinition layer = index < slotLayers.Count ? slotLayers[index] : null;
-                bool occupied = layer != null;
-                _assemblySlotFills[index].enabled = occupied;
-                _assemblyEmptySlots[index].enabled = !occupied;
-                Text label = _assemblySlotLabels[index];
-                if (!occupied)
-                {
-                    label.text = (index + 1).ToString();
-                    label.color = TabUnavailable;
-                    continue;
-                }
-
-                _placedBlockCount++;
-                (string name, Color32 fill) = layer.Type switch
-                {
-                    LayerType.Conv2D => ("CONV", new Color32(76, 141, 255, 255)),
-                    LayerType.MaxPooling2D => ("POOL", new Color32(155, 107, 255, 255)),
-                    LayerType.Flatten => ("FLAT", new Color32(224, 64, 200, 255)),
-                    LayerType.Dense => ("DENSE", new Color32(61, 220, 132, 255)),
-                    _ => throw new ArgumentOutOfRangeException(nameof(layer))
-                };
-                _assemblySlotFills[index].color = fill;
-                label.text = name;
-                label.color = SlotText;
-            }
-
-            int current = _isDragging ? 1 : _placedBlockCount > 0 ? 2 : 0;
-            for (int index = 0; index < _assemblySteps.Length; index++)
-            {
-                Text step = _assemblySteps[index];
-                step.color = index == current ? TextBright : index < current ? TextMuted : TabUnavailable;
-                step.fontStyle = index == current ? FontStyle.Bold : FontStyle.Normal;
-                _assemblyStepUnderlines[index].enabled = index == current;
-            }
+            _assembly.ShowOutputSizes(sizes);
         }
 
         private void ShowAssemblyStatus()
         {
-            _stateText.text = _isDragging || _placedBlockCount > 0 ? $"조립 중 · 블록 {_placedBlockCount}개" : "조립 대기";
-            _statusAccent.color = _isDragging || _placedBlockCount > 0 ? Amber : TextMuted;
+            int placedBlockCount = _assembly.PlacedBlockCount;
+            _stateText.text = _isDragging || placedBlockCount > 0 ? $"조립 중 · 블록 {placedBlockCount}개" : "조립 대기";
+            _statusAccent.color = _isDragging || placedBlockCount > 0 ? Amber : TextMuted;
         }
 
         private void RefreshSecondaryReasons()

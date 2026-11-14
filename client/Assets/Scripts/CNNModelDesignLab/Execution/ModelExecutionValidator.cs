@@ -1,7 +1,6 @@
 using System;
 using ModelDesignScene.Model;
 using ModelDesignScene.Execution.Engine;
-using UnityEngine;
 
 namespace ModelDesignScene.Execution
 {
@@ -22,8 +21,7 @@ namespace ModelDesignScene.Execution
             }
             if (data.Training.InputSize != definition.InputSize)
             {
-                Debug.LogError("[ERR-CHECK] Dataset shape does not match model input.");
-                issue = new ValidationIssue(null, ValidationIssueKind.Unmapped);
+                issue = new ValidationIssue(null, "Dataset shape does not match model input.");
                 return false;
             }
             request = new CnnTrainingRequest(definition, data, options);
@@ -42,8 +40,7 @@ namespace ModelDesignScene.Execution
             catch (ModelExecutionValidationException exception)
             {
                 int? slot = exception.LayerIndex.HasValue ? slotIndices[exception.LayerIndex.Value] : null;
-                Debug.LogError($"[ERR-CHECK] {exception}");
-                issue = new ValidationIssue(slot, exception.Kind);
+                issue = new ValidationIssue(slot, exception.Message);
                 return false;
             }
         }
@@ -52,7 +49,7 @@ namespace ModelDesignScene.Execution
         {
             if (definition.Layers.Count < 2)
             {
-                throw new ModelExecutionValidationException("Spatial layers require Flatten before Dense or Output.", kind: ValidationIssueKind.FlattenRequired);
+                throw new ModelExecutionValidationException("Spatial layers require Flatten before Dense or Output.");
             }
             int height = definition.Height;
             int width = definition.Width;
@@ -69,7 +66,7 @@ namespace ModelDesignScene.Execution
                     case LayerKind.Conv2D:
                         if (flattened)
                         {
-                            throw new ModelExecutionValidationException("Spatial layers cannot follow Dense or Flatten.", i, ValidationIssueKind.SpatialLayerAfterVector);
+                            throw new ModelExecutionValidationException("Spatial layers cannot follow Dense or Flatten.", i);
                         }
                         if (layer.Height > height || layer.Width > width)
                         {
@@ -81,7 +78,7 @@ namespace ModelDesignScene.Execution
                     case LayerKind.MaxPooling2D:
                         if (flattened)
                         {
-                            throw new ModelExecutionValidationException("Spatial layers cannot follow Dense or Flatten.", i, ValidationIssueKind.SpatialLayerAfterVector);
+                            throw new ModelExecutionValidationException("Spatial layers cannot follow Dense or Flatten.", i);
                         }
                         if (layer.Height > height || layer.Width > width)
                         {
@@ -93,14 +90,14 @@ namespace ModelDesignScene.Execution
                     case LayerKind.Flatten:
                         if (flattened)
                         {
-                            throw new ModelExecutionValidationException("Flatten requires spatial input.", i, ValidationIssueKind.SpatialInputRequired);
+                            throw new ModelExecutionValidationException("Flatten requires spatial input.", i);
                         }
                         flattened = true;
                         break;
                     case LayerKind.Dense:
                         if (!flattened)
                         {
-                            throw new ModelExecutionValidationException("Spatial layers require Flatten before Dense or Output.", i, ValidationIssueKind.FlattenRequired);
+                            throw new ModelExecutionValidationException("Spatial layers require Flatten before Dense or Output.", i);
                         }
                         break;
                     default:
@@ -120,13 +117,9 @@ namespace ModelDesignScene.Execution
     {
         internal int? LayerIndex { get; }
 
-        internal ValidationIssueKind Kind { get; }
-
-        internal ModelExecutionValidationException(string message, int? layerIndex = null,
-            ValidationIssueKind kind = ValidationIssueKind.Unmapped) : base(message)
+        internal ModelExecutionValidationException(string message, int? layerIndex = null) : base(message)
         {
             LayerIndex = layerIndex;
-            Kind = kind;
         }
     }
 }

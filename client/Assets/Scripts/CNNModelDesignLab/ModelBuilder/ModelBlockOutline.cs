@@ -19,7 +19,7 @@ namespace ModelDesignScene.ModelBuilder
             _line.sharedMaterial = material;
             _line.shadowCastingMode = ShadowCastingMode.Off;
             _line.receiveShadows = false;
-            _line.useWorldSpace = true;
+            _line.useWorldSpace = false;
             _line.positionCount = 4;
             _line.loop = true;
             _line.numCornerVertices = 4;
@@ -28,22 +28,25 @@ namespace ModelDesignScene.ModelBuilder
 
         internal void Show(Transform target, Bounds bounds, bool horizontal = false)
         {
+            // Follow the supply block's rotation and bob without rebuilding the outline each frame.
+            _line.transform.SetParent(target, false);
             Vector3 min = bounds.min;
             Vector3 max = bounds.max;
-            Vector3 offset = horizontal ? target.up * 0.018f : -target.forward * 0.018f;
+            Vector3 offset = target.InverseTransformVector(
+                horizontal ? target.up * 0.018f : -target.forward * 0.018f);
             if (horizontal)
             {
-                _line.SetPosition(0, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
-                _line.SetPosition(1, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _line.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, max.z)) + offset);
-                _line.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, max.z)) + offset);
+                _line.SetPosition(0, new Vector3(min.x, max.y, min.z) + offset);
+                _line.SetPosition(1, new Vector3(max.x, max.y, min.z) + offset);
+                _line.SetPosition(2, new Vector3(max.x, max.y, max.z) + offset);
+                _line.SetPosition(3, new Vector3(min.x, max.y, max.z) + offset);
             }
             else
             {
-                _line.SetPosition(0, target.TransformPoint(new Vector3(min.x, min.y, min.z)) + offset);
-                _line.SetPosition(1, target.TransformPoint(new Vector3(max.x, min.y, min.z)) + offset);
-                _line.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _line.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
+                _line.SetPosition(0, new Vector3(min.x, min.y, min.z) + offset);
+                _line.SetPosition(1, new Vector3(max.x, min.y, min.z) + offset);
+                _line.SetPosition(2, new Vector3(max.x, max.y, min.z) + offset);
+                _line.SetPosition(3, new Vector3(min.x, max.y, min.z) + offset);
             }
         }
 

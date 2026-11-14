@@ -183,6 +183,23 @@ MonoBehaviour:
   _errorActionLabel: {fileID: 3823}
   _dismissErrorButton: {fileID: 3834}
   _validation: {fileID: 2174}
+  _assembly: {fileID: 2175}
+  _exampleReason: {fileID: 902103}
+  _realityReason: {fileID: 902107}
+  _metrics: {fileID: 2544}
+  _inference: {fileID: 2864}
+--- !u!114 &2175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9685ffef6c64a628efccd0d19da72f9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ControlPanel.ModelAssemblyController
   _assemblySteps:
   - {fileID: 902127}
   - {fileID: 902135}
@@ -219,10 +236,6 @@ MonoBehaviour:
   - {fileID: 902291}
   - {fileID: 902303}
   _assemblyOutputSizes: {fileID: 902327}
-  _exampleReason: {fileID: 902103}
-  _realityReason: {fileID: 902107}
-  _metrics: {fileID: 2544}
-  _inference: {fileID: 2864}
 --- !u!114 &1005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1720,6 +1733,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2171}
   - component: {fileID: 2174}
+  - component: {fileID: 2175}
   m_Layer: 5
   m_Name: 01 Model Inspection
   m_TagString: Untagged
@@ -1810,7 +1824,6 @@ MonoBehaviour:
   _action: {fileID: 2263}
   _location: {fileID: 2203}
   _issueCount: {fileID: 2213}
-  _suggestedFix: {fileID: 2240}
   _diagnosticsTip: {fileID: 2270}
   _previousIssue: {fileID: 2284}
   _nextIssue: {fileID: 2304}

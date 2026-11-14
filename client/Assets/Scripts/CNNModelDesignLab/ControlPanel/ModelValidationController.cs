@@ -15,7 +15,6 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Text _action;
         [SerializeField] private Text _location;
         [SerializeField] private Text _issueCount;
-        [SerializeField] private GameObject _suggestedFix;
         [SerializeField] private GameObject _diagnosticsTip;
         [SerializeField] private Button _previousIssue;
         [SerializeField] private Button _nextIssue;
@@ -50,7 +49,7 @@ namespace ModelDesignScene.ControlPanel
                 for (int index = 0; index < _issues.Count; index++)
                 {
                     ValidationIssue candidate = _issues[index];
-                    if (candidate.Kind == previous.Kind && candidate.SlotIndex == previous.SlotIndex)
+                    if (candidate.Message == previous.Message && candidate.SlotIndex == previous.SlotIndex)
                     {
                         _issueIndex = index;
                         break;
@@ -77,7 +76,7 @@ namespace ModelDesignScene.ControlPanel
 
             ValidationIssue issue = _issues[_issueIndex];
             _location.text = GetIssueLocation(GetIssueLayer(issue));
-            DescribeIssue(issue.Kind, out string title, out string reason, out string action);
+            DescribeIssue(issue.Message, out string title, out string reason, out string action);
             _title.text = title;
             _reason.text = reason;
             _action.text = action;
@@ -119,28 +118,28 @@ namespace ModelDesignScene.ControlPanel
             }
         }
 
-        private static void DescribeIssue(ValidationIssueKind kind, out string title, out string reason, out string action)
+        private static void DescribeIssue(string message, out string title, out string reason, out string action)
         {
-            switch (kind)
+            switch (message)
             {
-                case ValidationIssueKind.FlattenRequired:
+                case "Spatial layers require Flatten before Dense or Output.":
                     title = "FLATTEN이 필요해요";
                     reason = "INPUT 이미지와 Conv·Pooling 결과는 공간 형태입니다. Dense·Output은 펼친 벡터를 입력받습니다.";
                     action = "이 Dense·Output 앞에 FLATTEN을 놓으세요.";
                     break;
-                case ValidationIssueKind.SpatialInputRequired:
+                case "Flatten requires spatial input.":
                     title = "이미 펼쳐진 입력이에요";
                     reason = "앞의 Flatten·Dense가 이미 벡터를 출력하므로 다시 Flatten할 수 없습니다.";
                     action = "이 FLATTEN을 빼거나 Conv·Pooling 다음, Dense 앞에 놓으세요.";
                     break;
-                case ValidationIssueKind.SpatialLayerAfterVector:
+                case "Spatial layers cannot follow Dense or Flatten.":
                     title = "Conv·Pooling의 위치를 바꾸세요";
                     reason = "Flatten·Dense 뒤에는 이미지 형태가 남아 있지 않습니다.";
                     action = "이 Conv·Pooling을 첫 FLATTEN·DENSE 앞으로 옮기세요.";
                     break;
                 default:
-                    title = "조립을 다시 확인해 주세요";
-                    reason = "이 구성은 학습할 수 없어요.";
+                    title = "모델 구성을 확인하세요";
+                    reason = string.IsNullOrWhiteSpace(message) ? "모델 구성에 확인이 필요한 문제가 있습니다." : message;
                     action = "표시된 블록의 순서와 설정을 확인한 뒤 다시 학습을 시작하세요.";
                     break;
             }

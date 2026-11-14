@@ -1,22 +1,14 @@
 namespace ModelDesignScene.Execution
 {
-    public enum ValidationIssueKind
-    {
-        Unmapped,
-        FlattenRequired,
-        SpatialInputRequired,
-        SpatialLayerAfterVector
-    }
-
     public sealed class ValidationIssue
     {
         public int? SlotIndex { get; }
-        public ValidationIssueKind Kind { get; }
+        public string Message { get; }
 
-        internal ValidationIssue(int? slotIndex, ValidationIssueKind kind)
+        internal ValidationIssue(int? slotIndex, string message)
         {
             SlotIndex = slotIndex;
-            Kind = kind;
+            Message = message;
         }
     }
 }

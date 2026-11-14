@@ -52,14 +52,14 @@ namespace ModelDesignScene.ModelBuilder
             Block = block;
             bool occupied = block != null;
             bool configurable = occupied && block.Layer.Type != LayerType.Flatten;
-            _hitArea.enabled = configurable;
-            _interactable.enabled = configurable;
-            _settingsButton.gameObject.SetActive(configurable);
+            // Flatten still uses the existing popup's delete action.
+            _hitArea.enabled = occupied;
+            _interactable.enabled = occupied;
+            _settingsButton.gameObject.SetActive(occupied);
             _settingValues.gameObject.SetActive(configurable);
-            _label.rectTransform.anchoredPosition = configurable ? _occupiedLabelPosition
-                : occupied ? new Vector2(0f, -100f) : Vector2.zero;
+            _label.rectTransform.anchoredPosition = occupied ? _occupiedLabelPosition : Vector2.zero;
             RefreshLabel();
-            if (!configurable)
+            if (!occupied)
             {
                 _hovered = false;
                 _pressedUntil = 0f;
@@ -71,8 +71,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             string slot = $"슬롯 {_slotIndex + 1}";
             LayerDefinition layer = Block == null ? null : Block.Layer;
-            _label.fontSize = layer == null || layer.Type == LayerType.Flatten
-                ? _emptyFontSize : _occupiedFontSize;
+            _label.fontSize = layer == null ? _emptyFontSize : _occupiedFontSize;
             _label.text = layer == null ? $"{slot}\n비어 있음" : slot;
             _settingValues.text = layer?.Type switch
             {

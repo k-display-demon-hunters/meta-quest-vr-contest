@@ -13,6 +13,7 @@ namespace ModelDesignScene.ModelBuilder
         public bool CanPlayPlacementExample => _controller.CanPlayPlacementExample;
         public void PlayPlacementExample() => _controller.PlayPlacementExample();
         public void CancelPlacementExample() => _controller.CancelPlacementExample();
+        public void CancelEntryGuide() => _controller.CancelEntryGuide();
         internal void PlayHologramFlow((Vector3 Center, Vector2 Extents, bool Trainable)[] frames,
             bool training, float readyAt) => _controller.PlayHologramFlow(frames, training, readyAt);
         public void ShowEpochFlow(int epoch) => _controller.ShowEpochFlow(epoch);

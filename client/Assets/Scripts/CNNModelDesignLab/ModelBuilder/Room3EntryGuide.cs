@@ -1,5 +1,4 @@
 using System.Collections;
-using ModelDesignScene.ControlPanel;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,10 +7,8 @@ namespace ModelDesignScene.ModelBuilder
     public sealed class Room3EntryGuide : MonoBehaviour
     {
         [Header("Scene references")]
-        [SerializeField] private ModelBuilderManager _builder;
         [SerializeField] private ModelSupplyController _supply;
         [SerializeField] private ModelConveyorController _conveyor;
-        [SerializeField] private ModelControlPanelManager _controlPanel;
         [SerializeField] private Renderer[] _supplyPads;
         [SerializeField] private Material _outlineMaterial;
         [SerializeField] private Bounds _entryVolume =
@@ -35,6 +32,7 @@ namespace ModelDesignScene.ModelBuilder
         private Camera _playerCamera;
         private bool _entryChecked;
         private bool _interactionStarted;
+        private bool _canPlay;
         private Coroutine _guide;
         private ModelBlockOutline[] _padOutlines;
         private ModelBlockOutline[] _blockOutlines;
@@ -43,15 +41,14 @@ namespace ModelDesignScene.ModelBuilder
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetEntryHistory() => _lastEntrySceneHandle = null;
 
-        private void OnEnable()
+        internal void UpdateAvailability(bool canPlay)
         {
-            _builder.OnChanged += HandleBuilderChanged;
-            _controlPanel.OnExampleRequested += CancelForInteraction;
-            _controlPanel.OnStartRequested += CancelForInteraction;
-        }
-
-        private void LateUpdate()
-        {
+            _canPlay = canPlay && isActiveAndEnabled;
+            if (!_canPlay)
+            {
+                StopGuide();
+                return;
+            }
             if (_entryChecked) { return; }
             if (_playerCamera == null) { _playerCamera = Camera.main; }
             if (_playerCamera == null ||
@@ -67,9 +64,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void OnDisable()
         {
-            _builder.OnChanged -= HandleBuilderChanged;
-            _controlPanel.OnExampleRequested -= CancelForInteraction;
-            _controlPanel.OnStartRequested -= CancelForInteraction;
+            _canPlay = false;
             StopGuide();
         }
 
@@ -83,7 +78,7 @@ namespace ModelDesignScene.ModelBuilder
         [ContextMenu("Play Entry Guide")]
         private void PlayEntryGuide()
         {
-            if (!Application.isPlaying || !isActiveAndEnabled || !_builder.CanPlayPlacementExample) { return; }
+            if (!Application.isPlaying || !isActiveAndEnabled || !_canPlay) { return; }
             StopGuide();
             _guide = StartCoroutine(Animate());
         }
@@ -97,12 +92,7 @@ namespace ModelDesignScene.ModelBuilder
             return false;
         }
 
-        private void HandleBuilderChanged()
-        {
-            if (_builder.IsDragging) { CancelForInteraction(); }
-        }
-
-        private void CancelForInteraction()
+        internal void CancelForInteraction()
         {
             _interactionStarted = true;
             StopGuide();

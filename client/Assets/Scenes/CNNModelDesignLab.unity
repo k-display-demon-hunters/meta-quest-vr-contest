@@ -1289,6 +1289,7 @@ MonoBehaviour:
   _conveyor: {fileID: 30002}
   _placementExample: {fileID: 61007}
   _trainingFlow: {fileID: 61008}
+  _entryGuide: {fileID: 61009}
 --- !u!114 &61003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1397,10 +1398,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3366f7c1df834be2a0d5bb8d6e797af3, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ModelDesignScene.ModelBuilder.Room3EntryGuide
-  _builder: {fileID: 61001}
   _supply: {fileID: 1004}
   _conveyor: {fileID: 30002}
-  _controlPanel: {fileID: 50003}
   _supplyPads:
   - {fileID: 40011}
   - {fileID: 40012}

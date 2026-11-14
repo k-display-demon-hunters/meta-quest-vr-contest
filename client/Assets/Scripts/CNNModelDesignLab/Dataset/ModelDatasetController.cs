@@ -15,7 +15,7 @@ namespace ModelDesignScene.Dataset
         private MnistDataset _dataset;
         private bool _initialized;
 
-        internal bool HasPreparationError { get; private set; }
+        internal string PreparationError { get; private set; }
         internal TrainingData TrainingData => _dataset.Data;
         internal IReadOnlyList<DatasetSample> Samples { get; private set; } = Array.Empty<DatasetSample>();
 
@@ -57,8 +57,7 @@ namespace ModelDesignScene.Dataset
             }
             catch (InvalidDataException exception)
             {
-                HasPreparationError = true;
-                Debug.LogError($"[ERR-DATA] {exception}");
+                PreparationError = "MNIST 데이터를 준비하지 못했습니다. " + exception.Message;
             }
         }
 

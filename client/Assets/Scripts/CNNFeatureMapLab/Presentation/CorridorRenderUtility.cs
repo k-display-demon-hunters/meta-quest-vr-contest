@@ -32,6 +32,13 @@ namespace FeatureMapCorridor
             target.SetPropertyBlock(_properties);
         }
 
+        internal Color KernelColor(float weight)
+        {
+            Color neutral = new Color32(91, 106, 118, 255);
+            Color sign = weight < 0 ? _theme.Negative : _theme.Cyan;
+            return Color.Lerp(neutral, sign, Mathf.Clamp01(Mathf.Abs(weight) * 2f));
+        }
+
         internal void Texture(Renderer target, Texture2D texture)
         {
             target.GetPropertyBlock(_properties);
@@ -53,11 +60,17 @@ namespace FeatureMapCorridor
                 {
                     continue;
                 }
-                Vector3 forward = billboard.position - camera.transform.position;
-                if (forward.sqrMagnitude > .0001f)
-                billboard.rotation = Quaternion.LookRotation(forward, Vector3.up);
+                FaceCamera(billboard, camera);
             }
         }
 
+        internal static void FaceCamera(Transform target, Camera camera)
+        {
+            Vector3 forward = target.position - camera.transform.position;
+            if (forward.sqrMagnitude > .0001f)
+            {
+                target.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            }
+        }
     }
 }

@@ -9,7 +9,7 @@
 | **InputPixels.png** / 입력 이미지 | 이전 경로: `client/Assets/Textures/CNNFeatureMapLab/InputPixels.png`; 2026-11-09 미사용 정리로 삭제, 현재 제출 대상 제외 | 기존 프로젝트 에셋. 원출처 URL·생성 도구·제작 방법·AI 보조 여부 미확인 | 제작자·권리자·라이선스 미확인 | Codex 보조로 이전 입력 맵·재질과 함께 삭제. 과거 출처 기록 보존 |
 | **OpeningBroadcast.png** / 오프닝 방송 정지 이미지 | `client/Assets/Textures/CNNScreenLab/OpeningBroadcast.png`; 이전 CNNScreenLab 원본 이미지 | 프로젝트의 `FactoryIntro/VillageDisplay` 셰이더를 Unity에서 뉴스 방송(_Channel=0), 재생 3초, 손상·간섭 0으로 렌더링. Codex 보조로 1024×576 PNG 추출 | 프로젝트 내부 절차적 방송 그래픽에서 제작. 외부 방송 영상·로고 사용 없음. 별도 공개 라이선스 지정 없음 | 원본 PNG 수정 없음. 픽셀 체험은 저해상도·블러 처리 후 동일 이미지에서 RGB 샘플링. 관찰은 원래 0~255, 계산 연습은 Codex 보조 코드로 0~3에 축소해 표시 |
 | **ColorDotPlate2.png** / 숫자 2 색점판 | `client/Assets/Textures/CNNScreenLab/ColorDotPlate2.png` · ROOM #1-1 픽셀 관찰 화면 및 RGB 샘플링 입력, ROOM #1-2 합성곱 체험의 입력 그림(같은 파일 참조, 사본 없음) | OpenAI ImageGen으로 숫자 2 색점판을 생성하고 청록·초록 점이 직사각형을 채우도록 편집 | 외부 이미지·로고 사용 없음. 제작물 권리자·공개 라이선스 미확인 | Codex 보조 생성·편집. 주황·빨강 숫자와 청록·초록 배경으로 구성 |
-| **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 구성 검사·학습·예측 UI와 바닥 슬롯 표기(굵은 스타일로 재사용), CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
+| **Noto Sans CJK KR Regular 2.004** / 폰트 | 시작 화면, 자막, UI, FactoryEnvironment의 정문·후문 및 튜토리얼·ROOM #1~#3 셔터 위 간판·직원 휴게실 간판·출입 금지 표지·표본 관측 콘솔 설명, CNNModelDesignLab 제작 콘솔의 구성 검사·학습·예측 UI, 바닥 슬롯 표기, 공급 책상 앞 명찰(굵은 스타일로 재사용) 및 학습 흐름 라벨, CNNScreenLab 안내·RGB 숫자 및 CNNConvolutionLab 전용 PixelCalculationUI의 R·G 학습/B 퀴즈 숫자 키패드·RGB 진행 카드와 ConvolutionWorkbench 고정 거치 명판·필터 배치 안내(굵은 스타일로 재사용) | [Noto CJK 공식 배포본](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf) | © 2014–2021 Adobe. [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE) | 폰트 원본 수정 없음 |
 | **Meta Quest Touch Plus 컨트롤러 모델·텍스처·재질·애니메이션 (Meta XR Core SDK 207.0.1)** | 공용 XRPlayerRig, FactoryTutorial 확대 안내 | [Meta XR Core 207.0.1](https://npm.developer.oculus.com/-/web/detail/com.meta.xr.sdk.core)의 `OVRControllerPrefab` 직접 참조. [공식 애니메이션 안내](https://developers.meta.com/vr/documentation/unity/controller-animations/) | Copyright (c) Meta Platforms, Inc. and affiliates. All rights reserved. [Meta Platform Technologies SDK License Agreement](https://developers.meta.com/horizon/licenses/oculussdk/) | 패키지 원본 수정 없음. Codex 보조로 프리팹 연결 및 프로젝트의 버튼 강조를 적용함 |
 | **Nanum Pen Script** / 폰트 | 기존 양피지 서체 에셋. 현재 양피지 화면에서는 사용하지 않음 | [Google Fonts 공식 자료](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/METADATA.pb) | © 2010 NHN Corporation. 디자인: Sandoll Communications Inc. [SIL Open Font License 1.1](https://github.com/google/fonts/blob/main/ofl/nanumpenscript/OFL.txt) | 폰트 원본 수정 없음 |
 | **Pretendard Regular / SemiBold** / 폰트 | FactoryEnvironment의 양피지 수집물 2개, 공용 ParchmentReader·TabletUI 프리팹, CNNRealityLab의 선택 안내·인식 패널·사용 안내 팝업·촬영/인식/복귀 버튼, 피처맵 복도의 한글 자막·라벨, CNNConvolutionLab 자막·버튼·계산 숫자(Regular), CNNArchiveOpening의 공장 입장 안내 간판(SemiBold) | [Pretendard 공식 저장소](https://github.com/orioncactus/pretendard) | © 2021 Kil Hyung-jin 및 원저작자. 동봉한 [SIL Open Font License 1.1](../client/Assets/Fonts/Pretendard/LICENSE.txt) | 공식 OTF 원본 수정 없음 |
@@ -21,7 +21,9 @@
 | **MNIST 숫자 이미지·정답** / 데이터 및 표시 이미지 | 기존 `Textures/CNNModelDesignLab/mnist-test-*.png` (보존, 현재 모델 제작 콘솔에서 미사용). 이전 흑백 런타임 데이터는 아래 컬러 데이터로 교체 | [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [Keras 공식 배포·권리 표기](https://keras.io/api/datasets/mnist/), [Keras 공식 로더](https://github.com/keras-team/keras/blob/v3.15.1/keras/src/datasets/mnist.py); 배포 URL: [mnist.npz](https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz). 확인: 2026-10-24 | Keras 공식 문서 표기: **Yann LeCun, Corinna Cortes**, 원본 NIST 데이터의 파생 데이터. [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). 이 프로젝트의 MNIST 부분집합 데이터도 같은 조건으로 제공 | Codex 보조로 원본 training에서 숫자별 첫 50장(500장), test에서 숫자별 첫 20장(200장)을 추출하고 원본 인덱스·정답·픽셀을 `.bytes`로 포장. 생성·합성 이미지 아님. 픽셀 수정 없음. 기존 표시 PNG는 원본 test에서 숫자별 첫 이미지이며 이번 작업에서 변경 없음 |
 | **MNIST 컬러 통합 데이터 600장·미리보기** | `mnist-color-data/images.npy`, `labels.npy`, `source_indices.npy`, `style_seeds.npy`, `MnistColor.bytes`, `MnistTraining.bytes`, `MnistTest.bytes`, `preview.png` | [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [CVDF 공식 배포](https://github.com/cvdfoundation/mnist), [권리 근거](https://keras.io/api/datasets/mnist/). 2026-11-07 확인 | Keras 표기 권리자 Yann LeCun, Corinna Cortes. 원본 및 컬러 파생 데이터·미리보기 [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). 합성 부분 별도 권리자 미확인 | Codex 보조 Python/NumPy/Pillow 제작. 원본 0~3 서로 다른 손글씨 각 150장에 RGB 색·점무늬 합성, 정답·형태 보존. 생성형 이미지 AI 미사용. 통합 600장을 training 480장·test 120장으로 분리한 RGB CMNT v2 파일도 제공. `client/Assets/Data/CNNModelDesignLab/MnistTraining.bytes`, `MnistTest.bytes`로 런타임 연결. 모델 제작 콘솔의 평가 120장 미리보기는 동일 RGB 픽셀에서 실행 중 생성하며 픽셀 내용 변경 없음. 추출 URL·시드·방법은 전용 폴더 README 참조 |
 
-셔터 개방 불가 안내판(`ShutterUnavailableSign.prefab`)과 ROOM #1 입구 바닥 홀로그램(`ShutterFloorHologram.prefab`)은 위 Noto Sans CJK KR Regular를 재사용합니다. 폰트 원본 수정은 없습니다.
+ROOM #1 내부 아치 문과 ROOM #1-2·#2·#3 출구의 개방 불가 안내판(`ShutterUnavailableSign.prefab`), ROOM #1·#2 입구 바닥 홀로그램(`ShutterFloorHologram.prefab`)은 위 Noto Sans CJK KR Regular를 재사용합니다. 폰트 원본 수정은 없습니다.
+
+FactoryEnvironment의 B 텔레포트 사용 불가 안내는 위 Noto Sans CJK KR Regular를 재사용합니다. 원출처·권리자·라이선스는 위 기록과 같고 폰트 원본 수정은 없습니다.
 
 공용 리그와 안내는 Meta XR Core SDK의 공식 프리팹을 직접 참조합니다. Codex 보조로 생성 인스턴스의 Touch Plus 본체 재질을 같은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat` 공유 참조로 연결했습니다. 모델·텍스처·재질·애니메이션 패키지 원본 수정이나 복제는 없습니다. 이전 추출본과 그 라이선스 사본 폴더는 삭제했습니다. 현재 사용하는 SDK 패키지의 `LICENSE.md`와 `NOTICE.txt` 원본은 유지합니다.
 
@@ -91,9 +93,11 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 
 ## 피처맵 복도
 
+- **Pretendard Regular OTF**. 기존 프로젝트 폰트를 Room 2의 판정 시작 버튼에 재사용한다. 제작자·저작권자·출처·SIL OFL 1.1은 위 Pretendard 기록을 따르며, 폰트 원본과 동봉 라이선스는 그대로 사용한다.
 - **JetBrains Mono Regular v2.304**. 피처맵 복도의 필터 가중치·출력 퍼센트 라벨에 사용한다. 공식 TTF를 수정 없이 사용했다. © 2020 The JetBrains Mono Project Authors. [원본 릴리스](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304), [동봉한 SIL OFL 1.1](../client/Assets/Fonts/JetBrainsMono/OFL.txt).
-- **16×16 컬러 숫자 입력·피처맵·출력 템플릿·격자·둥근 UI 텍스처**. `client/Assets/Textures/CNNFeatureMapLab/`의 Unity `.asset` 파일과 `FeatureMapCorridor.prefab`에서 사용한다. 숫자 패턴, 팔레트, 고정 시드와 더미 CNN 계산, 코드의 격자·라운드 사각형 수식으로 생성하던 결과를 2026-11-09 Codex 보조로 Unity 에디터에서 저장했다. 입력·맵은 실행 중 계산값에 따라 표시용 복사본을 갱신한다. 외부 이미지 파일 사용 없음. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
-- **복도 TMP 폰트 아틀라스**. `client/Assets/Fonts/CNNFeatureMapLab/Pretendard-Regular SDF.asset`, `JetBrainsMono-Regular SDF.asset`과 각 파일에 포함된 아틀라스에 사용한다. 기존 Pretendard Regular OTF 및 JetBrains Mono Regular TTF를 Unity TextMesh Pro의 `CreateFontAsset`으로 변환하고 Codex 보조로 저장했다. 원본 폰트 파일 수정 없음. 제작자·저작권자·SIL OFL 1.1 및 원출처는 위 Pretendard·JetBrains Mono 기록을 따르며, 기존 폰트 폴더의 라이선스 고지를 유지한다. 공용 양피지 본문에도 동일한 Pretendard SDF를 재사용한다.
+- **16×16 컬러 숫자 입력·피처맵·출력 템플릿·격자·둥근 UI 텍스처**. `client/Assets/Textures/CNNFeatureMapLab/`의 Unity `.asset` 파일과 `FeatureMapCorridor.prefab`에서 사용한다. 숫자 패턴, 팔레트, 고정 시드와 더미 CNN 계산, 코드의 격자·라운드 사각형 수식으로 생성하던 결과를 2026-11-09 Codex 보조로 Unity 에디터에서 저장했다. 입력·맵은 실행 중 계산값에 따라 표시용 복사본을 갱신한다. Room 2의 장치 위 설명 카드와 숫자 선택 버튼에는 기존 둥근 UI 배경을 그대로 사용한다. 외부 이미지 파일 사용 없음. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
+- **복도 TMP 폰트 아틀라스**. `client/Assets/Fonts/CNNFeatureMapLab/Pretendard-Regular SDF.asset`, `JetBrainsMono-Regular SDF.asset`과 각 파일에 포함된 아틀라스에 사용한다. 기존 Pretendard Regular OTF 및 JetBrains Mono Regular TTF를 Unity TextMesh Pro의 `CreateFontAsset`으로 변환하고 Codex 보조로 저장했다. 원본 폰트 파일 수정 없음. 제작자·저작권자·SIL OFL 1.1 및 원출처는 위 Pretendard·JetBrains Mono 기록을 따르며, 기존 폰트 폴더의 라이선스 고지를 유지한다. Room 2의 장치 위 설명 카드와 공용 양피지 본문에 동일한 Pretendard SDF를 사용한다.
+  Room 2 설명 카드의 제목·본문·버튼 크기를 조정하면서 기존 Pretendard 글꼴과 둥근 카드 배경을 재사용했다. 글꼴 및 배경 파일 수정 없음.
 
 - **CNNFeatureMapLab 검증 영상·스크린샷 (2026-11-09)**. Codex 작업 폴더의 `outputs/featuremap/CNNFeatureMap-clear.mp4` 및 같은 폴더의 검증 PNG. 기존 프로젝트의 실제 Unity Play 화면을 Codex 보조 임시 검증기로 렌더링하고 Unity MediaEncoder로 무음 MP4를 기록했다. 생성형 영상이나 외부 실사 영상이 아니며 게임 런타임 에셋으로 추가하지 않았다. 원본 에셋·폰트의 출처와 라이선스는 이 문서의 해당 기록을 따름. 녹화물의 법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
 
@@ -177,9 +181,15 @@ ROOM #2의 벽 하단과 ROOM #3 연결 복도에는 기존 `FormedConcrete_*`�
 
 두 이미지의 한글·영문 조판에 기존 `Fonts/NotoSansCJKkr-Regular.otf`를 재사용했다. 폰트 원본은 수정·복제하지 않았으며 원출처·권리자·SIL OFL 1.1은 위 **Noto Sans CJK KR Regular 2.004** 기록을 따른다. 기존 배포 라이선스 고지를 유지한다. 사용자 첨부 참고 이미지 자체는 런타임 에셋으로 복제하지 않았다.
 
+정문 아치형 간판에는 기존 Noto Sans CJK KR Regular를 굵게 표시하고, 녹색 프레임과 크림색 에나멜판에 기존 `FactoryPowderCoat_*` 텍스처를 재사용한다. 폰트·텍스처 원본은 그대로 사용하며, 출처와 라이선스는 위 폰트 및 공장 표면 텍스처 기록을 따른다.
+
+정문 왼쪽 벽의 대형 쓰레기통 두 개에는 기존 녹색·청색 도장, 철제 손잡이와 고무 재질을 사용했다. 재질이 참조하는 기존 `FactoryPowderCoat_*`, `BrushedAlloy_*`, `DarkIndustrialRubber_*` 텍스처의 원본과 출처·권리 정보는 위 표면 텍스처 기록을 따른다.
+
 ## 공장 조명 베이크
 
 `client/Assets/Textures/FactoryEnvironment/`의 `Lightmap-*_comp_*`와 `ReflectionProbe-*.exr`는 공장 씬의 고정 표면 조명, 그림자와 방별 반사에 사용한다. Codex AI 보조로 씬의 광원과 메시를 설정하고 Unity Progressive CPU Lightmapper와 반사 프로브로 다시 생성했다. 베이크 과정에서 외부 미디어를 추가하지 않았다. 제작자·법적 권리자는 미확인이며 별도 공개 라이선스를 지정하지 않았다.
+
+`client/Assets/Audio/FactoryEnvironment/ElectricalCrackle.wav`는 정문 벽등과 연결 복도등의 합선 효과음이다. Codex 보조로 JavaScript에서 사인파, 필터링한 난수, 짧은 감쇠 펄스를 조합해 24 kHz 모노 PCM16으로 신규 합성했다. 외부 샘플 사용 없음. 법적 권리자 미확인, 별도 공개 라이선스 지정 없음.
 
 ## 튜토리얼 사물함과 공장 선반 상자
 
@@ -242,3 +252,16 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 | `ConvolutionNarration_*.wav` 10개 | `Audio/CNNConvolutionLab/`, CNNConvolutionLab의 단계별 안내 음성 | Claude Code AI 보조. Windows System.Speech의 Microsoft Heami Desktop(ko-KR), 말하기 속도 +2로 프로젝트 안내 문구를 22.05 kHz 16-bit 모노 WAV로 합성. 문구는 [픽셀 관찰과 ROOM 1-2 체험](pixel-inspection.md)의 안내 음성 표에 기록 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성. 앞뒤 무음만 절단(앞 0.12초, 뒤 0.25초 유지). 2026-11-14 체험 간소화에 맞춰 같은 방법으로 6개를 다시 합성하거나 새로 합성하고, 빠진 단계의 음성은 삭제. 2026-11-15 그림 기반 체험으로 바꾸며 같은 방법으로 10개 전부를 ‘~입니다’ 어체 문구로 다시 합성(5개는 새 이름)하고, 빠진 단계의 음성 7개는 삭제 |
 
 같은 변경에서 받침대 명판, 상단 설명판, 오른쪽 목표·조작 안내 글을 제거했다. CNNConvolutionLab에서 Pretendard Regular는 자막·버튼·계산 숫자에, Noto Sans CJK KR Regular는 필터 손잡이 배치 안내에 계속 사용한다. 두 폰트의 원본과 배포용 라이선스 고지는 그대로다.
+
+## ROOM 1-1 관찰 안내 음성 (2026-11-13)
+
+| 에셋 | 사용 위치 | 생성 도구·제작 방법 | 제작자·권리자 / 라이선스 | 수정 |
+| --- | --- | --- | --- | --- |
+| Observation0–2.wav | `client/Assets/Audio/CNNScreenLab/`, 돋보기 조작·RGB 펼침·이동 비교 안내 | Codex 보조로 작성한 한국어 대사를 Windows System.Speech / Microsoft Heami Desktop으로 WAV 합성 | 음성 엔진 Microsoft. 생성 파일 권리·배포 조건 미확인, 별도 공개 라이선스 부여 없음 | 새 합성, 후처리 없음 |
+
+
+## 공장 조명 재베이크 (2026-11-14)
+
+기존 `Textures/FactoryEnvironment/Lightmap-*_comp_*`와 `ReflectionProbe-0~4.exr`를 휴게실 Baked 조명 설정을 포함해 다시 생성했다. Unity 6000.3.24f1 Progressive CPU Lightmapper 및 반사 프로브 베이크를 Codex AI 보조로 실행했다. 기존 씬의 메시·재질·광원을 사용했고 새 외부 미디어는 추가하지 않았다. 제작자·법적 권리자 미확인, 별도 공개 라이선스 지정 없음. 기존 에셋 출처와 라이선스 고지는 유지한다.
+
+휴게실 가구·침구 단순화, 바닥 소품·남쪽 게시판·선반 제거 및 북쪽 창문 차폐 후 같은 도구와 방식으로 조명·반사 프로브 이미지를 다시 베이크했다. 기존 생성 방법·권리 표기는 동일하다.

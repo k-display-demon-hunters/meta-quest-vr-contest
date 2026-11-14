@@ -19,32 +19,25 @@ namespace ModelDesignScene.ModelBuilder
             _line.sharedMaterial = material;
             _line.shadowCastingMode = ShadowCastingMode.Off;
             _line.receiveShadows = false;
-            _line.useWorldSpace = true;
+            _line.useWorldSpace = false;
             _line.positionCount = 4;
             _line.loop = true;
             _line.numCornerVertices = 4;
             SetAppearance(Amber, 0.022f);
         }
 
-        internal void Show(Transform target, Bounds bounds, bool horizontal = false)
+        internal void Show(Renderer surface)
         {
+            Transform target = surface.transform;
+            _line.transform.SetParent(target, false);
+            Bounds bounds = surface.localBounds;
             Vector3 min = bounds.min;
             Vector3 max = bounds.max;
-            Vector3 offset = horizontal ? target.up * 0.018f : -target.forward * 0.018f;
-            if (horizontal)
-            {
-                _line.SetPosition(0, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
-                _line.SetPosition(1, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _line.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, max.z)) + offset);
-                _line.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, max.z)) + offset);
-            }
-            else
-            {
-                _line.SetPosition(0, target.TransformPoint(new Vector3(min.x, min.y, min.z)) + offset);
-                _line.SetPosition(1, target.TransformPoint(new Vector3(max.x, min.y, min.z)) + offset);
-                _line.SetPosition(2, target.TransformPoint(new Vector3(max.x, max.y, min.z)) + offset);
-                _line.SetPosition(3, target.TransformPoint(new Vector3(min.x, max.y, min.z)) + offset);
-            }
+            Vector3 offset = target.InverseTransformVector(target.up * 0.018f);
+            _line.SetPosition(0, new Vector3(min.x, max.y, min.z) + offset);
+            _line.SetPosition(1, new Vector3(max.x, max.y, min.z) + offset);
+            _line.SetPosition(2, new Vector3(max.x, max.y, max.z) + offset);
+            _line.SetPosition(3, new Vector3(min.x, max.y, max.z) + offset);
         }
 
         internal void SetAppearance(Color color, float width)

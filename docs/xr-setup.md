@@ -7,18 +7,28 @@
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
 | [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿·EventSystem을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
-| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 입력을 시점 회전·정면 복원·레이 전환으로 바꾸고 Trigger를 uGUI 클릭에 연결한다. 씬 전환이나 `EnsureRayReady()` 호출 시 UI 모듈 등록이 끊겼으면 복원한다. Grip을 누른 동안 오른손 레이가 가리킨 대상을 잡도록 설정하며 물체의 이동은 XRI의 오른손 부착점을 따른다. 이야기 중 입력 제한과 입구 안내의 ray 유지도 반영하며 비활성화 시 변경한 레이 설정을 반환한다. |
+| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 시점 회전·기울기 복원·레이 선택 및 잡기 입력을 처리한다. 오른손 B는 `TeleportPressedThisFrame`으로 해당 프레임의 눌림 여부를 제공한다. 공장 Manager는 PlayerController를 통해 이 값을 조회하며 입력 전달 이벤트나 요청 대기 상태를 사용하지 않는다. 왼손 Y 단독 입력은 `DeveloperModeEnabled`를 전환하고 `DeveloperModeChanged`를 알린다. FPS 표시 UI는 연결되어 있지 않다. |
 | [XREditorSimulator](../client/Assets/Scripts/Core/XR/XREditorSimulator.cs) | 에디터에서 가상 HMD·컨트롤러를 생성하고 키보드·마우스 액션을 XRI 시뮬레이터에 연결한다. 위치·회전과 버튼·스틱 입력을 가상 XR 기기 상태로 바꾸므로 공용 리그가 실제 컨트롤러와 같은 입력 경로로 읽는다. 컴포넌트의 활성·비활성·파괴에 맞춰 기기와 액션의 수명을 관리한다. |
 
 ### 리그 초기화와 수명
 
 1. `PersistentXRPlayerRig.Awake()`가 먼저 실행되어 기존 리그를 확인한다. 중복 인스턴스는 즉시 비활성화한 뒤 파괴한다.
 2. 유지할 리그는 부모에서 분리하고 `DontDestroyOnLoad`로 등록한다. 프리팹의 활성 자식 `EventSystem`에 EventSystem과 XRUIInputModule이 미리 구성되어 있으며 리그와 함께 유지된다. `XRPlayerInputController`가 없으면 추가한다.
-3. `XRPlayerInputController.Awake()`는 `XROrigin`, Camera Offset, 시작 정면과 입력 액션을 준비한다. `EnsureRayReady()`는 오른손 `XRRayInteractor`와 카메라를 찾아 연결한다.
+3. `XRPlayerInputController.Awake()`는 `XROrigin`, Camera Offset의 초기 회전과 입력 액션을 준비한다. `EnsureRayReady()`는 오른손 `XRRayInteractor`와 카메라를 찾아 연결한다.
 4. 새 씬의 중복 리그는 `PersistentXRPlayerRig.Awake()`에서 먼저 비활성화하므로 자식 EventSystem도 활성 입력 환경으로 등록되지 않는다. 기존 카메라·추적·태블릿·UI 입력 환경은 유지되며, 리그 위치 변경은 각 씬의 진행 코드에서 처리한다.
 5. `sceneLoaded`와 `EnsureRayReady()`는 오른손 ray의 UI 모듈 등록을 확인하고, 필요한 경우 인터랙터나 잡기 상태를 끊지 않고 다시 연결한다. 체험 씬을 언로드해도 공용 EventSystem과 XRUIInputModule은 제거되지 않는다.
 
 `SubsystemRegistration`에서 정적 리그 참조를 초기화하므로 도메인 재로드를 끈 에디터 실행에서도 이전 참조를 재사용하지 않는다.
+
+### 주사율 요청과 지속 확인
+
+Android 기기에서는 `PersistentXRPlayerRig.OnEnable()`이 `MonitorDisplayRefreshRate()` 코루틴을 시작하고 `OnDisable()`에서 중지한다. 앱이 일시 정지되지 않고 포커스를 가진 동안 1초마다 `OVRPlugin.systemDisplayFrequency`로 실제 주사율을 조회한다. SDK 조회 실패값 0에서는 요청을 보류하고 계속 조회한다. Unity 에디터에서는 실행하지 않는다.
+
+120Hz가 아니면 요청하고, 미적용 상태가 이어지면 요청 간격을 3→5→10초로 늘려 최대 10초 간격으로 계속 재요청한다. `[XR] Requested display refresh rate: 120 Hz.` 로그에는 마지막 실제 조회값과 다음 재시도 간격을 함께 남긴다. SDK setter는 호출 결과를 반환하지 않으므로 요청 로그를 성공으로 취급하지 않는다. 실제 조회값이 120Hz와 0.1Hz 미만 차이일 때만 `[XR] Confirmed display refresh rate: 120 Hz.` 로그를 남기고 요청을 멈추며, 상태 조회는 계속한다.
+
+확인 이후 주사율이 내려가거나 조회 불가가 되면 마지막 상태를 경고로 기록하고, 마지막 120Hz 확인 시점에서 약 10초의 대기를 둔 뒤 10초 간격으로 재요청한다. `OVRPlugin.powerSaving`이 참이면 요청을 보류하고 상태 조회를 계속하며, 전력 절약 상태 변화만 로그로 남긴다. 이 신호는 모든 발열 제한을 판별하지 않으며 OS의 주사율 제한을 해제하지 않는다. `OnApplicationPause`와 `OnApplicationFocus` 변화 시 재확인을 예약하고, 앱 복귀 후 다음 조회에서 실제 주사율을 다시 확인한다. 복귀 시 재시도 간격은 초기화하되 전력 절약 상태에서는 계속 보류한다. 코루틴을 추가로 시작하지 않으므로 복귀 이벤트가 겹쳐도 중복 루프를 만들지 않는다.
+
+영속 리그가 유지되므로 씬 이동 때마다 재시작하지 않는다. 조회 간격과 재요청 시간은 `WaitForSecondsRealtime`과 `Time.realtimeSinceStartup`을 사용하여 게임 시간 배율에 영향을 받지 않는다. 120Hz 확인은 실제 120fps 유지나 이후 주사율 유지까지 보장하지 않는다. 이 지속 확인·재요청 변경의 Unity 실행·컴파일·테스트·빌드 및 기기 검증은 수행하지 않았다.
 
 ### 컨트롤러 모델과 태블릿 표시
 
@@ -32,7 +42,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `CinematicMovementController`는 연출 중 이동·잡기와 레이 표시를 제어한다. `CinematicInputController`는 트리거를 2초간 눌러 건너뛰는 입력을 처리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
 
-클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
+클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 Trigger 조합은 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
 ### 추적과 이동
 
@@ -40,7 +50,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 수평 이동은 `ContinuousMoveProvider → LocomotionMediator → XRBodyTransformer`가 처리한다. 이동 기준은 카메라의 전방이며 공용 스틱 이동 속도는 5m/s다. 리그 프리팹과 `XRProjectSetup`의 생성 기본값에 같은 속도를 적용한다. 비행·중력은 사용하지 않는다. 리그의 CharacterController와 XRBodyTransformer의 충돌 이동을 사용해 스틱 이동 중 벽을 통과하지 않게 한다. 캡슐 반경은 0.2m이며 높이와 중심은 XRI가 HMD 위치에 맞춰 갱신한다. 실제 사용자가 몸을 움직이는 물리적 이동은 제한하지 않는다. 왼손 이동 액션은 리그 프리팹에 직렬화되어 있다. 에디터 FPS 모드의 WASD 몸 이동 속도도 5m/s다. 시뮬레이터의 축 이동 속도 0.2에 몸 이동 배율 25을 적용하며, 손 조작 모드의 축 이동 속도는 0.2로 유지한다.
 
-`XRPlayerInputController`는 수평 회전을 리그에, 수직 회전을 Camera Offset에 적용한다. `_turnSpeed`는 회전 속도, `_maximumPitch`는 스틱으로 추가하는 수직 회전의 한계다. `RestoreFrontView()`는 카메라 위치를 유지하며 시작 정면과 초기 Camera Offset 회전을 복원한다.
+`XRPlayerInputController`는 수평 회전을 리그에, 수직 회전을 Camera Offset에 적용한다. `_turnSpeed`는 회전 속도, `_maximumPitch`는 스틱으로 추가하는 수직 회전의 한계다. `RestoreViewTilt()`는 현재 머리 위치와 수평 시선 방향을 보존하며 Camera Offset의 초기 회전을 복원하고 스틱으로 추가한 상하 기울기를 해제한다. 실제 HMD의 추적 회전은 유지한다. 시선이 수직에 가까워 수평 방향을 정의할 수 없으면 좌우 방향 보정을 생략한다.
 
 ### 레이와 잡기
 
@@ -48,7 +58,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 - `XRGrabInteractable`은 XRI의 오른손 레이와 부착점으로 잡는다. 잡은 물체는 잡기 시작한 거리에서 오른손의 위치·방향 변화를 따라 이동한다.
 - 레이 계산과 선 표시 모두 오른손을 기준으로 유지한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
 - 레이 비활성화는 선 표시와 인터랙터를 함께 끄므로 현재 선택도 해제된다.
-- `TutorialInputSuppressed`는 공통 시점·레이 전환 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 왼손 Grip은 앱을 종료하지 않으며, 태블릿 설정의 앱 종료 확인창에서 종료한다. 사용 흐름은 [오프닝·엔딩 구현](cnn-documentary-cinematics.md)에 있다.
+- `TutorialInputSuppressed`는 공통 시점 입력 처리를 막는다. 연출에서 레이 표시와 상호작용은 `CinematicMovementController`가 제어한다. 앱 종료는 태블릿 설정의 확인창에서 처리한다.
 
 `OnDisable()`은 씬 로드 이벤트 구독과 입력 액션을 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction을 해제한다.
 
@@ -64,7 +74,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 | --- | --- |
 | TabletManager | 태블릿 모듈 진입점. SetAvailable로 표시와 입력 활성화를 관리하고, 앱·설정·종료 확인창, 학습 스냅샷 표시와 이동 요청, 공용 양피지 열람 연결을 조율한다. |
 | TabletUIBuilder | 저장된 프리팹의 UI 참조·버튼 콜백·표면 스타일·앱 선택 표시를 연결한다. |
-| TabletInputController | 기존 Trigger+스틱 탐색, X 선택, Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
+| TabletInputController | X 단독 표시 전환 요청, Trigger + 스틱 탐색, Trigger + X 선택, Trigger + Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
 | TabletLearningController | Core 세션의 읽기 전용 LearningProgressSnapshot으로 현재 단계·완료 표시·진행률·이동 버튼을 갱신한다. 이동 시작·실패·완료 안내 문구와 표시용 스냅샷 캐시만 소유하며, 완료 기록을 변경하거나 씬을 로드하지 않는다. |
 | TabletParchmentController | 공용 수집 상태를 조회해 보유 문서만 빈틈 없이 목록에 표시하고 선택 시 재열람을 요청한다. |
 | TabletSettingsController | 밝기·음량·진동·선택 문서 인덱스를 기존 PlayerPrefs 키로 읽고 저장한다. |
@@ -82,6 +92,8 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 ### 포커스·양피지·설정
 
 `TabletManager.SetAvailable(bool)`은 태블릿 루트의 활성 상태를 변경한다. 비활성화하면 전체 표시가 숨겨지고 `OnDisable()`에서 이벤트 구독과 입력을 해제하며 태블릿 탐색이 점유한 이동 입력을 반환한다. 다시 활성화하면 `OnEnable()`에서 구독과 입력을 복원하고 학습·양피지 표시를 갱신한다. 양피지 열람 중에는 기존 입력 중단 처리를 적용한다. `IsAvailable`은 태블릿 루트 자체의 활성 상태를 반환하며, 숨기는 동안에도 앱·설정·학습 데이터는 유지한다.
+
+태블릿 루트 아래의 `Tablet Visuals`에 본체·앞면 Canvas·뒷면 로고를 함께 둔다. 사용자가 X를 누르면 `TabletManager`가 `_visualRoot`로 연결한 `Tablet Visuals`만 한 번에 켜거나 끈다. Manager가 있는 태블릿 루트는 활성 상태를 유지하므로 다시 X를 누르면 열 수 있다. 표시용 부모의 로컬 위치·회전은 0, 스케일은 1이며 기존 자식의 위치·회전·크기는 유지한다. `_body`와 `_canvas` 참조는 본체 메시 생성과 화면 초기화에 계속 사용한다. 숨길 때 종료 확인창과 태블릿 조작 상태를 정리하며, 기존 스틱 중앙 복귀 조건에 따라 이동 입력을 반환한다. `SetAvailable`은 기존처럼 태블릿 루트 전체의 표시와 입력 활성 여부를 제어한다.
 
 포커스 우선순위는 종료 확인 → 설정 → 앱 화면이다. 메인 그룹에 앱 버튼·단계 카드·수집 목록·설정 버튼을 등록한다. 앱 전환 후 해당 앱 버튼으로 포커스를 돌린다. Trigger 탐색이 끝나고 스틱이 중앙으로 돌아와야 원래 이동 입력을 복원한다. 양피지 열람 동안 태블릿 입력은 중단하며 닫은 다음 프레임부터 기존 조작 상태·포커스를 복원한다.
 
@@ -105,7 +117,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 태블릿은 에디터 시뮬레이터와 실기기 모두 같은 왼손 grip 기준 위치·크기를 유지한다. 태블릿 조작 시작·종료에 따라 태블릿만 따로 이동하거나 축소하지 않는다.
 
-태블릿 루트는 왼손 grip 기준 로컬 위치 (0, 0.12, 0.04)m, 회전 (35, 0, 0)°를 사용한다. 화면 앞면인 로컬 -Z 방향이 grip 기준 위쪽으로도 향하도록 X축에 +35°를 적용해, 컨트롤러를 들었을 때 화면을 보기 위한 손목 꺾임을 줄인다. 본체·Canvas·후면 로고는 같은 루트 회전을 따른다. 이 설정은 공용 XRPlayerRig 프리팹에 저장되며 에디터와 실기기에 동일하게 적용된다. 2026-11-13 변경은 프리팹 Transform과 참조를 정적으로 검토했으며 Unity 실행·컴파일·테스트·빌드 및 Quest 착용 확인은 수행하지 않았다. 실기기에서의 최종 가독성과 편안함은 확인 전이다.
+태블릿 루트는 왼손 grip 기준 로컬 위치 (0, 0.12, 0.04)m, 회전 (55, 0, 0)°를 사용한다. 화면 앞면인 로컬 -Z 방향이 grip 기준 위쪽으로도 향하도록 X축에 +55°를 적용해, 컨트롤러를 들었을 때 화면을 보기 위한 손목 꺾임을 줄인다. 본체·Canvas·후면 로고는 같은 루트 회전을 따른다. 이 설정은 공용 XRPlayerRig 프리팹에 저장되며 에디터와 실기기에 동일하게 적용된다. 2026-11-13 변경은 프리팹 Transform과 참조를 정적으로 검토했으며 Unity 실행·컴파일·테스트·빌드 및 Quest 착용 확인은 수행하지 않았다. 실기기에서의 최종 가독성과 편안함은 확인 전이다.
 
 ## 프로젝트 설정 코드
 
@@ -120,6 +132,28 @@ Unity 버전은 [ProjectVersion.txt](../client/ProjectSettings/ProjectVersion.tx
 | [QuestSetup.Configure](../client/Assets/Editor/QuestSetup.cs) | `Tools > CNN > Configure Quest VR`를 `XRProjectSetup.ConfigureProject()`에 연결한다. |
 
 `ConfigureProject()`는 Android 자동 XR 초기화, IL2CPP·ARM64, 최소 API 32, Target API 자동 선택, Vulkan·Linear·Single Pass Instanced를 적용한다. Android에는 Meta Quest와 Touch Plus 프로필을 활성화하고 Mobile URP의 HDR을 끄며 MSAA를 4로 설정한다. Standalone 자동 XR 초기화는 시뮬레이터 사용을 위해 꺼 둔다.
+
+### Android 입력·렌더링 지연 설정
+
+활성 [OpenXRPackageSettings.asset](../client/Assets/XR/Settings/OpenXRPackageSettings.asset)의 Android 설정은 `Latency Optimization = Prioritize Input Polling`을 사용한다. Android의 Meta Quest Support에는 `Late Latching (Vulkan)`을 활성화하고 `Late Latching Debug Mode`는 비활성화한다. 프레임 동기화를 입력 처리 전에 수행하고, 렌더링에는 최신 추적 자세를 추가로 반영하도록 설정했다. 근거는 Meta의 [입력 타이밍 권장](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings/#latency-optimization)과 [Late Latching 권장](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings-quest/#late-latching-vulkan)이다.
+
+공용 리그의 카메라·양손 `TrackedPoseDriver`는 기존 `UpdateAndBeforeRender`를 유지한다. Standalone 입력 타이밍과 120Hz 요청 로직은 변경하지 않았다. 이 변경은 저장된 설정과 참조를 정적으로 확인했으며, Unity 실행·컴파일·테스트·빌드 및 Quest에서의 지연·프레임 성능·잡기 동작 검증은 수행하지 않았다.
+
+### Android 렌더링 부하 설정
+
+Android의 활성 OpenXR 설정과 공용 리그에는 다음 값을 적용한다.
+
+| 항목 | 적용값과 목적 |
+| --- | --- |
+| Symmetric Projection | 활성화. 기존 Vulkan·Single Pass Instanced와 함께 양안 렌더링을 최적화한다. |
+| Multiview Render Regions | `Final Pass`. OpenXR 1.16.1의 `MetaQuestFeature` 검증 규칙은 `All Passes`와 자동 동적 해상도의 조합에서 `Final Pass`를 권장하므로 이 조합을 사용한다. 기존 Render Graph 활성 상태를 유지한다. |
+| Foveated Rendering API | `SRP Foveation`. Unity의 `Foveated Rendering` 기능을 켜고 Legacy 경로의 `Meta XR Foveation`은 끈다. |
+| Foveation 강도 | Android 기기에서 `PersistentXRPlayerRig.Start()`가 XR display subsystem의 `foveatedRenderingLevel`을 `0.5`로 설정한다. Quest의 Medium에 해당하며, 시선 추적 플래그를 켜지 않아 고정 중심 방식을 사용한다. |
+| Automatic Viewport Dynamic Resolution | 활성화. 최소 `0.7`, 최대 `0.8`로 제한하고 공용 Main Camera의 `Allow Dynamic Resolution`을 켠다. OpenXR가 런타임 권장 해상도를 반영한다. |
+
+동적 해상도 상한은 기존 Mobile URP `Render Scale = 0.8`과 같게 두었다. OpenXR 기능이 초기화될 때 URP render scale을 상한으로 설정하므로 0.8에 다시 0.8을 곱하는 구성이 아니다. 하한 0.7과 Foveation Medium은 글자와 주변부 화질 저하를 제한하면서 GPU 여유를 확보하기 위해 선택한 시작값이며, 공식 고정 권장 수치나 실기기 측정 결과는 아니다. OVRManager의 별도 동적 해상도 제어는 사용하지 않는다.
+
+근거는 Meta의 [Quest 렌더링 설정](https://developers.meta.com/vr/documentation/unity/unity-openxr-settings-quest/), Unity OpenXR 1.16의 [SRP Foveation 구성·런타임 강도](https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/foveatedrendering.html), 설치된 OpenXR 1.16.1의 `MetaQuestFeature`·`AutomaticDynamicResolutionFeature` 구현이다. 설정·참조·코드 차이를 정적으로 확인했으며 Unity 실행·컴파일·테스트·빌드와 Quest 실기기 성능·화질 확인은 수행하지 않았다.
 
 ## Quest 3S Touch Plus 표시
 

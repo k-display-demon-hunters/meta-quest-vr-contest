@@ -143,6 +143,7 @@ namespace CinematicEditor
             Assign(interaction, "_movement", gate);
             Assign(interaction, "_controls", controls);
             Assign(sequence,"_presentation",presentation); Assign(sequence,"_interaction",interaction); Assign(sequence,"_content",_content); Assign(sequence,"_model",result);
+            Assign(sequence,"_transitionPrefab",AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Common/SceneTransition.prefab").GetComponent<CinematicTransitionController>());
             Value(sequence,"_ending",ending); Value(sequence,"_destination",ending?"CNNArchiveOpening":"FactoryEnvironment");
             Assign(presentation, ending ? "_endingView" : "_openingView", world); Assign(presentation,"_audio",audio); Assign(presentation,"_type",type);
             Assign(world,"_world",stage);

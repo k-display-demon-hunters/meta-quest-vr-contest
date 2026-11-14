@@ -6,12 +6,15 @@ namespace FeatureMapCorridor
     [Serializable]
     internal sealed class FeatureMapRoundController
     {
+        private const float FilterSplitDuration = .9f;
         [SerializeField] private FilterStackController _filter;
         [SerializeField] private RoundResultsController _results;
         private FeatureMapDisplayController _display;
         private RoundCalculationResult _data;
         private float _started;
         private Vector3 _destination;
+        private Transform _calculationAnchor;
+        private Vector3 _operationPosition;
         internal Vector3 Destination => _destination;
         internal int Layer => _data.Layer;
         internal int Map => _data.Map;
@@ -21,6 +24,7 @@ namespace FeatureMapCorridor
         internal bool IsOutput => _data.IsOutput;
         internal RoundCalculationResult Data => _data;
         internal Vector3 FilterPosition => _filter.Root.localPosition;
+        internal Vector3 FilterLessonPanelPosition => _filter.Root.TransformPoint(Vector3.up * 1.65f);
         internal bool PresentationPending => _presentationReadyAt.HasValue;
 
         internal event Action<bool> FilterPressed;
@@ -47,24 +51,40 @@ namespace FeatureMapCorridor
             _filter.InputClicked -= OnInputClicked;
         }
         private void OnFilter(bool expanded) => FilterPressed?.Invoke(expanded);
-        internal void Prepare(RoundCalculationResult data, Transform anchor)
+        internal void Prepare(RoundCalculationResult data, Transform anchor, Vector3 operationPosition = default)
         {
             _presentationReadyAt = null;
             _data = data;
+            _calculationAnchor = anchor;
+            _operationPosition = operationPosition;
             _destination = _display.Destination(Layer, Map, data.Digit);
-            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map), _destination, anchor);
+            _filter.Configure(data, _display.Sources(Layer), IsOutput ? null : _display.Map(Layer, Map),
+                _destination, anchor, _display.InputChannelSpacing);
             _results.Configure(data, _display);
         }
 
-        internal void Show(LessonStep step, bool filterInput)
+        internal void Show(LessonStep step, bool animateFilterOpening)
         {
             _displayedStep = step;
             _started = Time.unscaledTime;
-            _presentationReadyAt = filterInput ? _started + .7f : null;
+            _presentationReadyAt = null;
+            if (Layer == 1)
+            {
+                _display.MoveInputChannelsToCalculation(_calculationAnchor, FilterSplitDuration, animateFilterOpening);
+            }
 
             _filter.ShowCards((IsOutput || step == LessonStep.FilterOpened) && (step is LessonStep.FilterIntro or LessonStep.FilterOpened
                 or LessonStep.Scan or LessonStep.Explain));
-            if (!filterInput)
+            if (animateFilterOpening && (Layer is 1 or 3))
+            {
+                _filter.PlaySplit(_operationPosition, FilterSplitDuration);
+                _presentationReadyAt = _started + FilterSplitDuration;
+            }
+            else if (animateFilterOpening)
+            {
+                _presentationReadyAt = _started + .7f;
+            }
+            else
             {
                 _filter.SetExpanded(step != LessonStep.FilterIntro, true);
             }
@@ -110,9 +130,9 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Tick(float now)
+        internal void Tick(float now, Camera camera)
         {
-            _filter.Tick(now);
+            _filter.Tick(now, camera);
             _results.Tick(_displayedStep, now - _started);
             if (_presentationReadyAt is float readyAt && now >= readyAt)
             {

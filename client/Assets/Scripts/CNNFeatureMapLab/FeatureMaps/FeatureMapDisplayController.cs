@@ -15,18 +15,26 @@ namespace FeatureMapCorridor
         [SerializeField] private InputPanelController _input;
         [SerializeField] private MapLayerView[] _layers;
         [SerializeField] private OutputStageController _output;
+        [SerializeField] private Transform[] _stageRoots;
+        [SerializeField] private Transform _inputRoot;
         private FeatureMapPanelController[][] _maps;
+        private readonly Pose[] _poolingHome = new Pose[2];
+        private readonly Pose[] _poolingTargets = new Pose[2];
+        private bool _poolingBesideFilter;
+        private bool _poolingMoving;
+        private float _poolingMoveStarted;
         private CorridorRenderUtility _visuals;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
-        internal Vector3 InputPictureHint => _input.Picture.Position + Vector3.up * 1.2f;
+        internal Pose InputLessonPanelPose => LessonPanelAbove(_input.Picture);
+        internal Pose OutputLessonPanelPose => _output.LessonPanelPose;
         internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);
+        internal float InputChannelSpacing => _input.ChannelSpacing;
+        internal void FollowInputChannels(Transform filterAnchor, Vector3 viewerPosition) =>
+            _input.FollowTowardsCalculation(filterAnchor, viewerPosition);
+        internal void MoveInputChannelsToCalculation(Transform filterAnchor, float duration, bool animate) =>
+            _input.MoveToCalculation(filterAnchor, duration, animate);
         private FeatureMapSnapshot _snapshot;
-        private readonly List<int> _outputInputs = new List<int>();
-        private float _outputRevealStarted;
-        private int _outputCellsShown;
-        internal bool RevealingOutputInputs => _outputInputs.Count != 0;
-        internal event Action OutputStarted;
         internal event Action<string> ButtonPressed;
         internal event Action<string> InputClicked;
         internal string HoverName
@@ -55,7 +63,12 @@ namespace FeatureMapCorridor
                     _maps[l][m].Bind(visuals, showEmptyGrid: true);
                 }
             }
-            _output.Bind(visuals, _input, _maps[2], () => OutputStarted?.Invoke());
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
+            {
+                Transform panel = Map(2, channel).Root;
+                _poolingHome[channel] = new Pose(panel.localPosition, panel.localRotation);
+            }
+            _output.Bind(visuals, _input, _maps[2], snapshot);
             ShowSnapshot(snapshot);
             RestoreResults(new HashSet<MapId>());
         }
@@ -65,7 +78,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed += OnButton;
             _input.Enable();
             _input.Picture.InputClicked += OnInputClicked;
-            _output.Enable();
         }
 
         internal void Disable()
@@ -73,7 +85,6 @@ namespace FeatureMapCorridor
             _input.ButtonPressed -= OnButton;
             _input.Disable();
             _input.Picture.InputClicked -= OnInputClicked;
-            _output.Disable();
         }
 
         private void OnButton(string text) => ButtonPressed?.Invoke(text);
@@ -81,14 +92,12 @@ namespace FeatureMapCorridor
         internal void ShowSnapshot(FeatureMapSnapshot snapshot)
         {
             _snapshot = snapshot;
-            _outputInputs.Clear();
             _input.Draw(snapshot.Input);
             _output.SetData(snapshot);
         }
 
         internal void RestoreResults(IReadOnlyCollection<MapId> revealed)
         {
-            _outputInputs.Clear();
             for (int layer = 1; layer <= _maps.Length; layer++)
             for (int map = 0; map < _snapshot.MapCount(layer); map++)
             {
@@ -100,32 +109,23 @@ namespace FeatureMapCorridor
         internal void DrawResult(int layer, int map, int shown, int only = -1, int always = -1) =>
             Map(layer, map).UpdateMap(_snapshot.Values(layer, map), _snapshot.Scale(layer, map), shown, only, always);
 
-        internal void RevealOutputInput(int map)
-        {
-            _outputInputs.Add(map);
-            _outputRevealStarted = Time.unscaledTime;
-            _outputCellsShown = -1;
-        }
+        internal void SetResultVisible(int layer, int map, bool visible) =>
+            Map(layer, map).Root.gameObject.SetActive(visible);
 
-        private void UpdateOutputInputs(float now)
+        internal Pose ResultLessonPanelPose(int layer, int map) => LessonPanelAbove(Map(layer, map));
+
+        private static Pose LessonPanelAbove(FeatureMapPanelController panel)
         {
-            if (!RevealingOutputInputs) return;
-            int count = _snapshot.Size(3) * _snapshot.Size(3);
-            int shown = Mathf.FloorToInt(Mathf.Clamp01(now - _outputRevealStarted) * count);
-            if (shown == _outputCellsShown) return;
-            _outputCellsShown = shown;
-            foreach (int map in _outputInputs)
-            {
-                DrawResult(3, map, shown);
-            }
-            if (shown == count) _outputInputs.Clear();
+            Transform root = panel.Root;
+            var offset = new Vector3(0, panel.Width * .5f + .52f, -.025f);
+            return new Pose(root.TransformPoint(offset), root.rotation);
         }
 
         internal void Tick(float now)
         {
+            UpdatePoolingSourcePositions(now);
             _input.Tick(now);
             _output.Tick(now);
-            UpdateOutputInputs(now);
         }
 
         internal FeatureMapPanelController Map(int layer, int map) => _maps[layer-1][map];
@@ -135,12 +135,68 @@ namespace FeatureMapCorridor
         }
         : _maps[layer-2];
         internal Vector3 Destination(int layer, int map, int digit) => layer == 4 ? _output.Tin(digit)+Vector3.up*.4f : Map(layer, map).Position;
-        internal void SetOutputStartAvailable(bool available) => _output.SetStartAvailable(available);
-        internal void HighlightLayer(int zone)
+        internal void ArrangePoolingSources(Transform secondConvAnchor, bool showBesideFilter)
         {
-            for (int l = 0;l<_maps.Length;l++) foreach (var panel in _maps[l])
+            if (_poolingBesideFilter == showBesideFilter) return;
+            _poolingBesideFilter = showBesideFilter;
+            _poolingMoving = showBesideFilter;
+            _poolingMoveStarted = Time.unscaledTime;
+
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
             {
-                panel.Frame(l+1 == zone ? _visuals.Theme.Cyan : (Color?)null);
+                Transform panel = Map(2, channel).Root;
+                if (showBesideFilter)
+                {
+                    float x = channel == 0 ? -.91f : .91f;
+                    Vector3 worldTarget = secondConvAnchor.TransformPoint(x, -1.3f, -.62f);
+                    _poolingTargets[channel] = new Pose(panel.parent.InverseTransformPoint(worldTarget),
+                        Quaternion.Inverse(panel.parent.rotation) * secondConvAnchor.rotation);
+                }
+                else
+                {
+                    Pose home = _poolingHome[channel];
+                    panel.SetLocalPositionAndRotation(home.position, home.rotation);
+                    panel.localScale = Vector3.one;
+                }
+            }
+        }
+
+        private void UpdatePoolingSourcePositions(float now)
+        {
+            if (!_poolingMoving) return;
+            float progress = Mathf.Clamp01((now - _poolingMoveStarted) / 1.35f);
+            float t = Mathf.SmoothStep(0f, 1f, progress);
+            _poolingMoving = progress < 1f;
+            for (int channel = 0; channel < _poolingHome.Length; channel++)
+            {
+                Pose home = _poolingHome[channel];
+                Pose target = _poolingTargets[channel];
+                Transform panel = Map(2, channel).Root;
+                panel.SetLocalPositionAndRotation(Vector3.Lerp(home.position, target.position, t),
+                    Quaternion.Slerp(home.rotation, target.rotation, t));
+                panel.localScale = Vector3.one * Mathf.Lerp(1f, .72f, t);
+            }
+        }
+
+        internal void HighlightLayer(int zone, bool showingOutputDetails)
+        {
+            bool showFirstExperiences = zone is 0 or 1;
+            _inputRoot.gameObject.SetActive(showFirstExperiences);
+            for (int i = 0; i < _stageRoots.Length; i++)
+            {
+                bool visible = i switch
+                {
+                    0 => zone == 1,
+                    1 => zone is 2 or 3,
+                    2 => zone == 3 || (zone == 4 && showingOutputDetails),
+                    _ => zone == 4
+                };
+                _stageRoots[i].gameObject.SetActive(visible);
+            }
+            foreach (var layer in _maps)
+            foreach (var panel in layer)
+            {
+                panel.Frame();
             }
         }
 
@@ -150,7 +206,6 @@ namespace FeatureMapCorridor
 
             if (!data.IsOutput)
             {
-                Map(data.Layer, data.Map).Frame(_visuals.Theme.Amber);
                 if (step is LessonStep.Merge)
                 {
                     Map(data.Layer, data.Map).Cell(data.Index, _visuals.Theme.Yellow);
@@ -164,8 +219,8 @@ namespace FeatureMapCorridor
             var colors = data.Layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             for (int i = 0;i<sources.Length;i++)
             {
-                sources[i].Frame(colors[i]);
-                if (data.Layer != 1)
+                if (data.Layer == 1) sources[i].Frame(colors[i]);
+                if (data.IsOutput)
                 {
                     sources[i].Badge(FeatureMapLabels.Marks[i]+" "+FeatureMapLabels.MapId(data.Layer-1, i), colors[i]);
                 }
@@ -197,7 +252,10 @@ namespace FeatureMapCorridor
                 if (data.Layer != 1)
                 {
                     source.Frame();
-                    source.Badge("", _visuals.Theme.Dim);
+                    if (data.IsOutput)
+                    {
+                        source.Badge("", _visuals.Theme.Dim);
+                    }
                 }
             }
         }
@@ -211,6 +269,7 @@ namespace FeatureMapCorridor
         internal void CompleteOutput() => _output.Complete();
         internal void Dispose()
         {
+            _output.Dispose();
             _input.Dispose();
             foreach (var layer in _maps) foreach (var panel in layer)
             {

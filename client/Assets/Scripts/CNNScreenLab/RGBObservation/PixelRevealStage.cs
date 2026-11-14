@@ -16,6 +16,7 @@ namespace CNNScreen
         [SerializeField] private float _revealDuration = 2f;
         private IReadOnlyList<Color32> _pixels;
         private int _rows;
+        private int _imageColumns;
         private Vector2Int _selected;
         private MaterialPropertyBlock _properties;
         public PixelObservationPhase Phase { get; private set; }
@@ -34,6 +35,7 @@ namespace CNNScreen
             _rgbValues.Initialize();
             _pixels = pixels;
             _rows = rows;
+            _imageColumns = columns;
             _selected = selected;
             _properties = new MaterialPropertyBlock();
             _pixelRoot.SetActive(false);
@@ -43,6 +45,11 @@ namespace CNNScreen
         {
             SetPhase(PixelObservationPhase.Revealing);
             StartCoroutine(Reveal(patch));
+        }
+        public void UpdatePatch(PixelPatchData patch)
+        {
+            _rgbStack.UpdatePatch(patch);
+            _rgbValues.UpdateValues(patch);
         }
         public void ResetStage()
         {
@@ -56,7 +63,7 @@ namespace CNNScreen
         {
             SetPhase(PixelObservationPhase.Unfolding);
             _rgbValues.ShowValues(patch);
-            yield return _rgbStack.Unfold(patch, _columns.Length, _rows, _selected);
+            yield return _rgbStack.Unfold(patch, _imageColumns, _rows, _selected);
             SetPhase(PixelObservationPhase.Revealed);
             PixelsRevealed?.Invoke();
         }

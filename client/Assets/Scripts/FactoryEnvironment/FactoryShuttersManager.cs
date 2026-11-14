@@ -111,7 +111,16 @@ namespace FactoryEnvironment
                 shutter.Close();
             }
 
-            shutter.SetUnavailable(isNear && !canOpen);
+            bool unavailable = isNear && !canOpen;
+            if (unavailable && id == FactoryShutterId.FeatureMapEntrance)
+            {
+                var (experienceIncomplete, parchmentMissing) = GetEntryRequirements(LearningStageId.FeatureMap);
+                shutter.SetUnavailable(true, experienceIncomplete, parchmentMissing);
+            }
+            else
+            {
+                shutter.SetUnavailable(unavailable);
+            }
         }
 
         private bool CanOpenShutter(FactoryShutterId id)
@@ -130,18 +139,24 @@ namespace FactoryEnvironment
 
         private bool CanEnterStage(LearningStageId stage)
         {
+            var (experienceIncomplete, parchmentMissing) = GetEntryRequirements(stage);
+            return !experienceIncomplete && !parchmentMissing;
+        }
+
+        private (bool ExperienceIncomplete, bool ParchmentMissing) GetEntryRequirements(LearningStageId stage)
+        {
             LearningStageId previous = LearningStageId.None;
             foreach (LearningStageDefinition definition in LearningStageCatalog.Stages)
             {
                 if (definition.Id == stage)
                 {
-                    return (previous == LearningStageId.None || _availableStages.Contains(previous))
-                        && _parchment.HasCollectedAll(definition.EntranceParchmentIds);
+                    return (previous != LearningStageId.None && !_availableStages.Contains(previous),
+                        !_parchment.HasCollectedAll(definition.EntranceParchmentIds));
                 }
                 previous = definition.Id;
             }
             // Exit follows the last learning stage and has no entrance parchment.
-            return stage == LearningStageId.Exit && _availableStages.Contains(previous);
+            return (stage != LearningStageId.Exit || !_availableStages.Contains(previous), false);
         }
 
         private FactoryShutterController GetShutter(FactoryShutterId id) =>

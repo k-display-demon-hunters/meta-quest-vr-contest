@@ -1286,7 +1286,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "숫자 0~3 중 하나를 프레임에 맞춰 주세요"
+  m_Text: "숫자 한 자리가 잘리지 않도록 프레임 중앙에 맞춰 주세요."
 --- !u!1 &30150
 GameObject:
   m_ObjectHideFlags: 0
@@ -1365,7 +1365,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "촬영 범위 안내 · 아직 촬영하지 않습니다"
+  m_Text: "카메라 준비 중"
 --- !u!1 &30160
 GameObject:
   m_ObjectHideFlags: 0
@@ -2133,7 +2133,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "현재 모델 입력 · 28×28"
+  m_Text: "모델에 전달한 이미지 · 28×28"
 --- !u!1 &30320
 GameObject:
   m_ObjectHideFlags: 0
@@ -2831,7 +2831,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "숫자별 예측 확률(Softmax) · 전체 정확도가 아닙니다"
+  m_Text: "숫자별 예측 확률 · 지금 촬영한 이미지에 대한 예측입니다"
 --- !u!1 &30420
 GameObject:
   m_ObjectHideFlags: 0
@@ -4250,7 +4250,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2023, guid: a77aaf51b52449738343f861a881419a, type: 3}
       propertyPath: m_Text
-      value: "1. 숫자 0~3 중 하나를 프레임 안에 맞춰 촬영하세요.\n2. 입력을 확인한 뒤 인식하기를 누르세요.\n3. 결과를 확인하고 다시 촬영하거나 모델방으로 돌아갈 수 있습니다."
+      value: "1. 숫자 한 자리가 잘리지 않도록 프레임 중앙에 맞추고 촬영하세요.\n2. 입력을 확인한 뒤 인식하기를 누르세요.\n3. 결과를 확인하고 다시 촬영하거나 모델방으로 돌아갈 수 있습니다."
       objectReference: {fileID: 0}
     - target: {fileID: 2021, guid: a77aaf51b52449738343f861a881419a, type: 3}
       propertyPath: m_AnchoredPosition.y

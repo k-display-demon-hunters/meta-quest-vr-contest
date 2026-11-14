@@ -9,6 +9,10 @@ namespace FeatureMapCorridor
         internal int RequiredRoundIndex { get; set; }
         internal bool MandatoryRound { get; set; }
         internal bool ShowingOutputDetails { get; set; }
+        internal bool AdditionalFiltersAccepted { get; set; }
+        internal bool ExploringAdditionalFilters { get; set; }
+        internal bool Filter33Completed { get; set; }
+        internal bool Filter34Completed { get; set; }
         internal MapId ActiveRound { get; set; }
         internal LessonStep Step { get; set; }
         internal float Progress { get; set; }

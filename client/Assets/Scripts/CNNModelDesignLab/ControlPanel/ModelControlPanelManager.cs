@@ -46,12 +46,15 @@ namespace ModelDesignScene.ControlPanel
 
         public void SetRealityAvailable(bool available) => _controller.SetRealityAvailable(available);
 
+        internal void SetTrainingResultPresentation(bool showing, bool highlightReality) =>
+            _controller.SetTrainingResultPresentation(showing, highlightReality);
+
         public void Initialize(ModelDatasetManager dataset)
         {
             _controller.SetSamples(dataset.Samples);
             if (dataset.PreparationError != null)
             {
-                _controller.ShowError(dataset.PreparationError);
+                _controller.ShowDatasetPreparationFailure(dataset.PreparationError);
             }
         }
 
@@ -60,6 +63,8 @@ namespace ModelDesignScene.ControlPanel
         {
             _controller.ShowModelValidation(issues, slotLayers, isDragging, hasValidationResult, focus);
         }
+
+        internal void ShowAssemblyOutputSizes(IReadOnlyList<string> sizes) => _controller.ShowAssemblyOutputSizes(sizes);
 
         public void ResetTraining()
         {
@@ -91,10 +96,9 @@ namespace ModelDesignScene.ControlPanel
             _controller.ShowState(state, hasTrainedModel, canInfer, canCancel);
         }
 
-        public void ShowError(string message)
-        {
-            _controller.ShowError(message);
-        }
+        public void ShowError(string message) => _controller.ShowError(message);
+
+        public void ShowRealityEntryFailure() => _controller.ShowRealityEntryFailure();
 
         public void ShowCancelled()
         {

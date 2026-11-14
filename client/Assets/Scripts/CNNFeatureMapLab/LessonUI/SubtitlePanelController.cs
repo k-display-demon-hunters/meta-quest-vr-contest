@@ -3,7 +3,6 @@ using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace FeatureMapCorridor
 {
@@ -15,15 +14,18 @@ namespace FeatureMapCorridor
         [SerializeField] private TMP_Text _body;
         [SerializeField] private WorldUIButtonController _previous;
         [SerializeField] private WorldUIButtonController _next;
-        private float _targetYaw;
-        private float _fromYaw;
-        private float _displayYaw;
-        private float _motion;
-        private bool _placed;
-        private Vector3 _displayScale;
+        private Vector3 _panelScale;
+        private Vector2 _headerSize;
+        private float _headerFontSizeMax;
+        private Vector3 _previousScale;
+        private Vector3 _nextScale;
         internal void Bind(Action previous, Action next)
         {
-            _displayScale = _root.localScale;
+            _panelScale = _root.localScale;
+            _headerSize = _header.rectTransform.sizeDelta;
+            _headerFontSizeMax = _header.fontSizeMax;
+            _previousScale = _previous.transform.localScale;
+            _nextScale = _next.transform.localScale;
             _buttons.Add(_previous.GetComponent<Button>(), previous);
             _buttons.Add(_next.GetComponent<Button>(), next);
         }
@@ -49,10 +51,30 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal void Show(string header, string body, bool previous, string next, string previousLabel = LessonContent.Previous)
+        internal void Show(string header, string body, bool previous, string next, string previousLabel = LessonContent.Previous,
+            bool separateHeader = false, bool emphasizeHeading = false, bool enlargeButtons = false)
         {
             _header.text = header;
             _body.text = body;
+            bool showButtons = previous || next != null;
+            _header.rectTransform.sizeDelta = _headerSize + (emphasizeHeading ? new Vector2(0, 22) : Vector2.zero);
+            _header.fontSizeMax = _headerFontSizeMax + (emphasizeHeading ? 20 : 0);
+            _header.rectTransform.anchoredPosition = new Vector2(0, showButtons ? 177 : 103);
+            _body.rectTransform.anchoredPosition = new Vector2(0,
+                showButtons ? (header.Length > 0 ? 12 : 26) : (header.Length > 0 ? -34 : 0));
+            if (emphasizeHeading)
+            {
+                _header.rectTransform.anchoredPosition = new Vector2(0, showButtons ? 155 : 115);
+                _body.rectTransform.anchoredPosition = new Vector2(0, showButtons ? 24 : -20);
+            }
+            else if (separateHeader)
+            {
+                _header.rectTransform.anchoredPosition = new Vector2(0, 170);
+                _body.rectTransform.anchoredPosition = new Vector2(0, -12);
+            }
+            float buttonScale = enlargeButtons ? 1.2f : 1f;
+            _previous.transform.localScale = _previousScale * buttonScale;
+            _next.transform.localScale = _nextScale * buttonScale;
             _previous.gameObject.SetActive(previous);
             if (previous)
             {
@@ -65,47 +87,11 @@ namespace FeatureMapCorridor
             }
         }
 
-        internal void Track(Camera camera, float delta)
+        internal void SetPose(Pose pose, float scale)
         {
-            Transform view = camera.transform;
-            Vector3 heading = Vector3.ProjectOnPlane(view.forward, Vector3.up);
-            // Keep the last horizontal direction when looking almost straight up or down.
-            float yaw = heading.sqrMagnitude >= .01f
-                ? Mathf.Atan2(heading.x, heading.z) * Mathf.Rad2Deg
-                : _placed ? _targetYaw : view.eulerAngles.y;
-            if (!_placed)
-            {
-                _targetYaw = yaw;
-                _fromYaw = yaw;
-                _displayYaw = yaw;
-                _motion = 1;
-                _placed = true;
-            }
-            else if (Mathf.Abs(Mathf.DeltaAngle(_targetYaw, yaw)) > 35f)
-            {
-                _fromYaw = _displayYaw;
-                _targetYaw = yaw;
-                _motion = 0;
-            }
-
-            _motion = Mathf.Min(1f, _motion + delta * 2f);
-            _displayYaw = Mathf.LerpAngle(_fromYaw, _targetYaw, Mathf.SmoothStep(0f, 1f, _motion));
-            float downwardAngle = camera.stereoEnabled ? 18f : Mathf.Clamp(camera.fieldOfView * .5f - 11f, 10f, 18f);
-            Quaternion placement = Quaternion.Euler(downwardAngle, _displayYaw, 0f);
-            Vector3 offset = placement * Vector3.forward * 1.6f;
-            _root.SetPositionAndRotation(view.position+offset, Quaternion.LookRotation(offset, Vector3.up));
-            Vector3 parentScale = _root.parent.lossyScale;
-            _root.localScale = new Vector3(_displayScale.x/parentScale.x, _displayScale.y/parentScale.y, _displayScale.z/parentScale.z);
+            _root.SetPositionAndRotation(pose.position, pose.rotation);
+            _root.localScale = _panelScale * scale;
         }
-
-        internal void SetVisible(bool visible)
-        {
-            if (!visible)
-            {
-                _placed = false;
-            }
-
-            _root.gameObject.SetActive(visible);
-        }
+        internal void SetVisible(bool visible) => _root.gameObject.SetActive(visible);
     }
 }

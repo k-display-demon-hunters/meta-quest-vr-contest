@@ -30,9 +30,14 @@ namespace FeatureMapCorridor
         private int _count;
         private int _layer;
         private float _motionStart;
+        private float _motionDuration;
+        private float _cardSpacing;
         private bool _expanded;
         private bool _animating;
         private bool _connected;
+        private bool _allowLinks;
+        private bool LinksReady => _root.gameObject.activeSelf && _allowLinks && _expanded &&
+            _connected && (_layer != 1 || !_animating);
         private Quaternion _savedRotation;
         internal event Action<bool> ExpansionChanged;
         internal Transform Root => _root;
@@ -145,14 +150,17 @@ namespace FeatureMapCorridor
         {
         }
 
-        internal void Configure(RoundCalculationResult calculation, FeatureMapPanelController[] sources, FeatureMapPanelController result, Vector3 destination, Transform anchor)
+        internal void Configure(RoundCalculationResult calculation, FeatureMapPanelController[] sources,
+            FeatureMapPanelController result, Vector3 destination, Transform anchor, float inputChannelSpacing)
         {
             int layer = calculation.Layer;
             _layer = layer;
+            _allowLinks = layer != 3 || calculation.Map >= 2;
             _sources = sources;
             _result = result;
             _colors = layer == 1 ? CorridorTheme.Rgb : CorridorTheme.Pairs;
             _count = sources.Length;
+            _cardSpacing = layer == 1 ? inputChannelSpacing : _spreadSpacing;
             for (int i = 0; i < _count; i++)
             {
                 _card[i].gameObject.SetActive(true);
@@ -198,10 +206,21 @@ namespace FeatureMapCorridor
             ExpansionChanged?.Invoke(true);
         }
 
-        internal void SetExpanded(bool expanded, bool instant)
+        internal void PlaySplit(Vector3 origin, float duration)
+        {
+            Vector3 originInStack = _root.InverseTransformPoint(origin);
+            for (int i = 0; i < _count; i++)
+            {
+                _card[i].localPosition = originInStack + Folded(i);
+            }
+            SetExpanded(true, false, duration);
+        }
+
+        internal void SetExpanded(bool expanded, bool instant, float duration = .5f)
         {
             _expanded = expanded;
             _motionStart = Time.unscaledTime;
+            _motionDuration = duration;
             _animating = !instant;
             _cover.gameObject.SetActive(!expanded);
             _title.gameObject.SetActive(expanded);
@@ -217,25 +236,29 @@ namespace FeatureMapCorridor
                     _card[i].localPosition = expanded ? Spread(i) : Folded(i);
                 }
             }
-            SetLinks(expanded && _connected);
+            SetLinks(LinksReady);
         }
 
         private Vector3 Folded(int i) => _foldedPositions[i];
-        private Vector3 Spread(int i) => Vector3.right*(i-(_count-1)*.5f)*_spreadSpacing;
+        private Vector3 Spread(int i) => Vector3.right*(i-(_count-1)*.5f)*_cardSpacing;
         private void SetLinks(bool enabled)
         {
             for (int i = 0; i < _links.Length; i++)
             {
                 _links[i].enabled = enabled && i < _count;
             }
-            _resultLink.enabled = enabled && _result != null;
+            _resultLink.enabled = enabled && _layer != 1 && _result != null;
         }
 
-        internal void ShowCards(bool visible) => _root.gameObject.SetActive(visible);
+        internal void ShowCards(bool visible)
+        {
+            _root.gameObject.SetActive(visible);
+            SetLinks(LinksReady);
+        }
         internal void DimDuringScan(bool dim)
         {
             _connected = !dim;
-            SetLinks(!dim && _expanded);
+            SetLinks(LinksReady);
             if (!_expanded)
             {
                 return;
@@ -257,20 +280,31 @@ namespace FeatureMapCorridor
             SetLinks(false);
         }
 
-        internal void Tick(float now)
+        internal void Tick(float now, Camera camera)
         {
             if (!_root.gameObject.activeSelf)
             {
                 return;
             }
+            if (_layer != 1 && _allowLinks)
+            {
+                CorridorRenderUtility.FaceCamera(_root, camera);
+            }
             if (_animating)
             {
-                float t = Mathf.Clamp01((now-_motionStart)/.5f);
+                float t = Mathf.Clamp01((now - _motionStart) / _motionDuration);
+                float progress = Mathf.SmoothStep(0, 1, t);
                 for (int i = 0; i < _count; i++)
-                _card[i].localPosition = Vector3.Lerp(_starts[i], _expanded ? Spread(i) : Folded(i), Mathf.SmoothStep(0, 1, t));
+                {
+                    _card[i].localPosition = Vector3.Lerp(_starts[i], _expanded ? Spread(i) : Folded(i), progress);
+                }
                 _animating = t < 1;
+                if (!_animating)
+                {
+                    SetLinks(LinksReady);
+                }
             }
-            if (!_expanded || !_connected)
+            if (!LinksReady)
             {
                 return;
             }
@@ -280,7 +314,7 @@ namespace FeatureMapCorridor
                 _links[i].SetPosition(0, _sources[i].Root.position);
                 _links[i].SetPosition(1, _card[i].position);
             }
-            if (_result == null)
+            if (!_resultLink.enabled)
             {
                 return;
             }

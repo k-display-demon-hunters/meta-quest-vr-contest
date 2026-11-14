@@ -12,9 +12,10 @@ namespace FeatureMapCorridor
         internal int Digit, Layer, Map, Winner, WinnerPercent;
         internal LessonStep Step;
         internal bool CanGoBack, Mandatory, WaitingForFilter, FilterPending, IsLastStep, ShowingOutputDetails;
+        internal bool OfferAdditionalFilters, ExploringAdditionalFilters;
         internal Vector3 HintPosition;
+        internal Pose LessonPanelPose;
         internal RoundCalculationResult Calculation;
-        internal PoolingCalculationResult Pooling;
     }
     internal readonly struct RecapInfo
     {

@@ -17,6 +17,21 @@ namespace CNNScreen
         public event Action<int, float> ProgressChanged;
 
         public void Hide() { _content.SetActive(false); }
+        public void UpdatePatch(PixelPatchData patch)
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    Color32 pixel = patch[i];
+                    int value = c == 0 ? pixel.r : c == 1 ? pixel.g : pixel.b;
+                    Color color = c == 0 ? new Color(value / 255f, 0, 0, 0.9f)
+                        : c == 1 ? new Color(0, value / 255f, 0, 0.9f) : new Color(0, 0, value / 255f, 0.9f);
+                    _properties.SetColor("_BaseColor", color);
+                    _blocks[c * 9 + i].SetPropertyBlock(_properties);
+                }
+            }
+        }
         public IEnumerator Unfold(PixelPatchData patch, int columns, int rows, Vector2Int selected)
         {
             _content.SetActive(true);
@@ -29,16 +44,8 @@ namespace CNNScreen
             {
                 _layers[c].localPosition = source;
                 _layers[c].localScale = Vector3.one * initialScale;
-                for (int i = 0; i < 9; i++)
-                {
-                    Color32 pixel = patch[i];
-                    int value = c == 0 ? pixel.r : c == 1 ? pixel.g : pixel.b;
-                    Color color = c == 0 ? new Color(value / 255f, 0, 0, 0.9f)
-                        : c == 1 ? new Color(0, value / 255f, 0, 0.9f) : new Color(0, 0, value / 255f, 0.9f);
-                    _properties.SetColor("_BaseColor", color);
-                    _blocks[c * 9 + i].SetPropertyBlock(_properties);
-                }
             }
+            UpdatePatch(patch);
             float elapsed = 0;
             while (elapsed < 2.6f)
             {

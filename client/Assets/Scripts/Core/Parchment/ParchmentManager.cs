@@ -23,6 +23,7 @@ namespace Parchment
         private const float CollectionDistance = 3f;
         private readonly PickupRegistration[] _pickups = new PickupRegistration[ParchmentCatalog.All.Count];
         private readonly bool[] _collected = new bool[ParchmentCatalog.All.Count];
+        private readonly bool[] _read = new bool[ParchmentCatalog.All.Count];
         private ParchmentReaderController _prefab;
         private ParchmentReaderController _reader;
         private Camera _camera;
@@ -49,6 +50,7 @@ namespace Parchment
         private void OnDisable() => Close();
         // Acquisition is committed only by the reader's final-page completion, not by the initial click.
         public bool HasCollected(int index) => index >= 0 && index < _collected.Length && _collected[index];
+        public bool HasRead(int index) => _read[index];
         private bool Collect(int index)
         {
             if (index < 0 || index >= _collected.Length || _collected[index]) { return false; }
@@ -128,7 +130,8 @@ namespace Parchment
         }
         private void Complete()
         {
-            // A parchment is acquired only after its final page has been completed.
+            // Tablet travel can grant ownership without completing the reader.
+            _read[_index] = true;
             Collect(_index);
             Close();
         }

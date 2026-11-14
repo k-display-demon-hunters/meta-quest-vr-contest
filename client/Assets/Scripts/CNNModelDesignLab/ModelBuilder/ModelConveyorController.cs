@@ -91,6 +91,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             Pose pose = GetSlotPose(slot);
             block.SetPose(pose.position, pose.rotation);
+            block.SetOutputLabelVisible(true);
             RefreshSlot(slot);
         }
 

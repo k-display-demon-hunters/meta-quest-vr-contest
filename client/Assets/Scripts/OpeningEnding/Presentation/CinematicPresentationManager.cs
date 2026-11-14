@@ -45,6 +45,7 @@ namespace Cinematic
                 _duration = content.EndingSchedule.Duration;
                 _endingView.Bind(model, content.Example, content.Provenance, head);
                 _ending = new EndingSequence(content.EndingSchedule, _endingView, _archive, _audio, Recognize, Pulse);
+                _endingView.Finish();
             }
             else
             {
@@ -59,6 +60,7 @@ namespace Cinematic
         {
             if (_opening != null) { _openingView.AlignToViewer(); }
             _opening?.Begin();
+            if (_ending != null) { _audio.BeginEnding(); }
             Evaluate(0f);
         }
 

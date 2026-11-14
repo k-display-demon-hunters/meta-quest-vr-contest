@@ -2,62 +2,16 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
-
 namespace UI
 {
-    // Lives on the existing persistent rig, with no static/global instance or project setting changes.
     public sealed class SceneTransitionController : MonoBehaviour
     {
-        private Image _blackout;
-        private Camera _camera;
-        private string _destination;
         private AsyncOperation _operation;
-        private int? _openingRunId;
-        private float _reportedProgress;
-        private float _nextWaitReport;
-
-        internal static SceneTransitionController Begin(Camera camera, Transform rig, string destination, int? openingRunId)
-        {
-            GameObject overlay = new GameObject("Archive transition", typeof(RectTransform));
-            overlay.transform.SetParent(rig, false);
-            SceneTransitionController transition = overlay.AddComponent<SceneTransitionController>();
-            transition._openingRunId = openingRunId;
-            transition._destination = destination;
-            transition.Initialize(camera);
-            if (openingRunId.HasValue) { SceneManager.sceneLoaded += transition.HandleSceneLoaded; }
-            transition.Log("FadeOutStarted");
-            transition.StartCoroutine(transition.LoadWithFade(destination));
-            return transition;
-        }
-
-        internal bool IsLoading { get; private set; }
         internal bool Succeeded { get; private set; }
-
-        private void Initialize(Camera camera)
-        {
-            _camera = camera;
-            Canvas canvas = gameObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = camera;
-            canvas.planeDistance = camera.nearClipPlane + .04f;
-            canvas.sortingOrder = 32000;
-            GameObject overlay = new GameObject("Blackout", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            overlay.transform.SetParent(transform, false);
-            RectTransform rect = (RectTransform)overlay.transform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            _blackout = overlay.GetComponent<Image>();
-            _blackout.raycastTarget = false;
-            _blackout.color = new Color(0f, 0f, 0f, 0f);
-        }
-
         public static bool CanLoad(string sceneName)
         {
 #if UNITY_EDITOR
@@ -69,12 +23,9 @@ namespace UI
             return Application.CanStreamedLevelBeLoaded(sceneName);
         }
 
-        private IEnumerator LoadWithFade(string sceneName)
+        internal void Prepare(string sceneName)
         {
-            IsLoading = true;
-            yield return Fade(0f, 1f);
-            Log("FadeOutCompleted");
-            Log($"LoadStarted destination={sceneName}");
+            if (!CanLoad(sceneName)) { return; }
             AsyncOperation operation = null;
             try
             {
@@ -94,83 +45,20 @@ namespace UI
             {
                 Debug.LogException(exception, this);
             }
-            if (operation != null)
+            if (operation == null)
             {
-                _operation = operation;
-                _nextWaitReport = Time.realtimeSinceStartup + 5f;
-                yield return operation;
-                _operation = null;
-                Log($"LoadCompleted activeScene={SceneManager.GetActiveScene().name}");
-                yield return null;
+                return;
             }
-            else
-            {
-                Log($"LoadFailed destination={sceneName}");
-            }
-            yield return Fade(1f, 0f);
-            Succeeded = operation != null;
-            LogViewState($"FadeInCompleted success={Succeeded}");
-            IsLoading = false;
-            if (Succeeded)
-            {
-                Destroy(gameObject);
-            }
+            _operation = operation;
+            operation.allowSceneActivation = false;
         }
-
-        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        internal IEnumerator Activate()
         {
-            if (scene.name == _destination)
-            {
-                Log($"SceneLoaded scene={scene.name} mode={mode}");
-            }
+            if (_operation == null) { yield break; }
+            _operation.allowSceneActivation = true;
+            yield return _operation;
+            yield return null;
+            Succeeded = true;
         }
-
-        private void Update()
-        {
-            if (!_openingRunId.HasValue || _operation == null) { return; }
-            float progress = _operation.progress;
-            float now = Time.realtimeSinceStartup;
-            if (progress - _reportedProgress < .1f && now < _nextWaitReport) { return; }
-            _reportedProgress = progress;
-            _nextWaitReport = now + 5f;
-            LogViewState($"Loading progress={progress:F2}");
-        }
-
-        private void OnDestroy()
-        {
-            if (!_openingRunId.HasValue) { return; }
-            SceneManager.sceneLoaded -= HandleSceneLoaded;
-            if (IsLoading) { Log($"DestroyedDuringTransition destination={_destination}"); }
-        }
-
-        private void LogViewState(string message)
-        {
-            if (!_openingRunId.HasValue) { return; }
-            bool cameraActive = _camera != null && _camera.isActiveAndEnabled;
-            Log($"{message} activeScene={SceneManager.GetActiveScene().name} " +
-                $"cameraActive={cameraActive} blackout={_blackout.color.a:F2}");
-        }
-
-        private void Log(string message)
-        {
-            if (_openingRunId.HasValue)
-            {
-                Debug.Log($"[Opening][run={_openingRunId.Value}][transition={GetInstanceID()}] {message}", this);
-            }
-        }
-
-        private IEnumerator Fade(float from, float to)
-        {
-            const float duration = .25f;
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                _blackout.color = new Color(0f, 0f, 0f, Mathf.Lerp(from, to, elapsed / duration));
-                yield return null;
-            }
-            _blackout.color = new Color(0f, 0f, 0f, to);
-        }
-
     }
 }

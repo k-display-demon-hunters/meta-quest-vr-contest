@@ -1,8 +1,5 @@
-using System;
-using UI;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace FeatureMapCorridor
 {
@@ -14,6 +11,8 @@ namespace FeatureMapCorridor
         [SerializeField] private TMP_Text[] _percent = new TMP_Text[3];
         [SerializeField] private Transform[] _templates = new Transform[3];
         [SerializeField] private LineRenderer[] _templateFrame = new LineRenderer[3];
+        [SerializeField] private Renderer[] _templatePlates;
+        private Texture2D[] _templateTextures;
         [SerializeField] private Transform[] _columns = new Transform[3];
         [SerializeField] private TMP_Text[] _scoreLabels = new TMP_Text[3];
         [SerializeField] private LineRenderer[] _streams = new LineRenderer[3];
@@ -51,20 +50,17 @@ namespace FeatureMapCorridor
         [SerializeField] private Transform _staging;
         [SerializeField] private Transform[] _tankAnchors = new Transform[3];
         [SerializeField] private Transform[] _answerAnchors = new Transform[3];
-        [SerializeField] private WorldUIButtonController _startButton;
         private Vector3[] _liquidPosition = new Vector3[3];
         private Vector3[] _liquidScale = new Vector3[3];
         private Vector3[] _columnPosition = new Vector3[3];
         private Vector3[] _columnScale = new Vector3[3];
         private Vector3 _tankPosition;
         private Vector3 _tankScale;
-        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, Action onStartRequested)
+        internal void Bind(CorridorRenderUtility visuals, InputPanelController input, FeatureMapPanelController[] last, FeatureMapSnapshot snapshot)
         {
             _visuals = visuals;
             _input = input;
             _last = last;
-            _buttons.Add(_startButton.GetComponent<Button>(), onStartRequested);
-            _startButton.Hide();
             for (int i = 0; i < 3; i++)
             {
                 _liquidPosition[i] = _liquid[i].localPosition;
@@ -91,21 +87,63 @@ namespace FeatureMapCorridor
             {
                 _evidencePlates[i].gameObject.SetActive(false);
             }
+            DrawTemplates(snapshot);
             Reset();
         }
 
-        private readonly CorridorButtonBindings _buttons = new CorridorButtonBindings();
-
-        internal void Enable() => _buttons.Enable();
-        internal void Disable() => _buttons.Disable();
-        internal void SetStartAvailable(bool available) => _startButton.gameObject.SetActive(available);
 
         private OutputStageController()
         {
         }
 
-        internal Vector3 Tin(int digit) => _root.InverseTransformPoint(_tankAnchors[digit-1].TransformPoint(Vector3.up*2.5f));
+        internal Vector3 Tin(int digit) => _root.InverseTransformPoint(_tankAnchors[digit-1].TransformPoint(Vector3.up * 1.75f));
         internal Vector3 AnswerDestination => _root.InverseTransformPoint(_answerAnchors[_winner].position);
+        internal Pose LessonPanelPose => new Pose(
+            _tankAnchors[1].position + _root.TransformVector(new Vector3(0f, 4.63f, -.35f)), _root.rotation);
+        private void DrawTemplates(FeatureMapSnapshot snapshot)
+        {
+            int size = snapshot.Size(3);
+            int mapCount = snapshot.MapCount(3);
+            _templateTextures = new Texture2D[_templatePlates.Length];
+            var pixels = new Color32[size * size];
+            for (int digit = 0; digit < _templates.Length; digit++)
+            {
+                float scale = .001f;
+                for (int map = 0; map < mapCount; map++)
+                for (int cell = 0; cell < pixels.Length; cell++)
+                {
+                    scale = Mathf.Max(scale, Mathf.Abs(snapshot.TemplateWeight(digit, map, cell)));
+                }
+
+                for (int map = 0; map < mapCount; map++)
+                {
+                    int plate = digit * mapCount + map;
+                    var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+                    {
+                        filterMode = FilterMode.Point,
+                        wrapMode = TextureWrapMode.Clamp
+                    };
+                    for (int cell = 0; cell < pixels.Length; cell++)
+                    {
+                        int flipped = (size - 1 - cell / size) * size + cell % size;
+                        pixels[flipped] = CorridorTheme.MapColor(snapshot.TemplateWeight(digit, map, cell) / scale);
+                    }
+                    texture.SetPixels32(pixels);
+                    texture.Apply(false, true);
+                    _templateTextures[plate] = texture;
+                    _visuals.Texture(_templatePlates[plate], texture);
+                }
+            }
+        }
+
+        internal void Dispose()
+        {
+            foreach (var texture in _templateTextures)
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+        }
+
         private Vector3 StagingPosition => _root.InverseTransformPoint(_staging.position);
         internal void SetData(FeatureMapSnapshot snapshot)
         {
@@ -146,7 +184,7 @@ namespace FeatureMapCorridor
                 _scoreLabels[i].gameObject.SetActive(false);
                 _streams[i].enabled = false;
                 SetFill(i, 0);
-                _percent[i].text = "";
+                _percent[i].gameObject.SetActive(false);
             }
             UpdateTank(1);
         }
@@ -162,7 +200,7 @@ namespace FeatureMapCorridor
                 _columns[i].gameObject.SetActive(true);
                 _scoreLabels[i].gameObject.SetActive(true);
                 SetScore(i, 0);
-                _visuals.Paint(_templateFrame[i], new Color(.38f, .89f, .85f, .22f));
+                _visuals.Paint(_templateFrame[i], new Color32(103, 117, 123, 255));
             }
         }
 
@@ -173,9 +211,6 @@ namespace FeatureMapCorridor
             for (int i = 0; i < 3; i++)
             {
                 SetScore(i, 1);
-                Color color = Color.Lerp(_visuals.Theme.Cyan, _visuals.Theme.Amber, Mathf.Clamp01(_scores[i]));
-                color.a = .4f;
-                _visuals.Paint(_templateFrame[i], color);
             }
         }
 
@@ -219,9 +254,6 @@ namespace FeatureMapCorridor
             {
                 float level = Mathf.Clamp01((phase-i-.4f)*1.6667f);
                 SetScore(i, level);
-                Color color = Color.Lerp(_visuals.Theme.Cyan, _visuals.Theme.Amber, Mathf.Clamp01(_scores[i])*level);
-                color.a = .22f+level*.18f;
-                _visuals.Paint(_templateFrame[i], color);
             }
         }
 
@@ -232,6 +264,7 @@ namespace FeatureMapCorridor
             _fillDuration = shareTank ? 3 : .8f;
             for (int i = 0; i < 3; i++)
             {
+                _percent[i].gameObject.SetActive(true);
                 _fromFill[i] = shareTank ? 0 : _currentFill[i];
                 _fill[i] = _probabilities[i];
                 _streams[i].enabled = shareTank;
@@ -343,7 +376,7 @@ namespace FeatureMapCorridor
             if (_flying)
             {
                 float t = Mathf.Clamp01((now-_flightStarted)/2.6f);
-                _answer.localPosition = Vector3.Lerp(_answerFrom, AnswerDestination, t)+Vector3.up*(12*t*(1-t));
+                _answer.localPosition = Vector3.Lerp(_answerFrom, AnswerDestination, t)+Vector3.up * (4 * t * (1 - t));
                 _flying = t < 1;
             }
             else

@@ -13,9 +13,10 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private BoxCollider _hitArea;
         [SerializeField] private Text _label;
         [SerializeField] private Transform _popupAnchor;
-        [SerializeField] private Vector2 _occupiedLabelPosition;
+        [SerializeField] private RectTransform _settingsButton;
+        [SerializeField] private Image _buttonFace;
 
-        private Color _idleLabelColor;
+        private Color _idleButtonColor;
         private int _slotIndex;
         private bool _hovered;
         private float _pressedUntil;
@@ -27,7 +28,7 @@ namespace ModelDesignScene.ModelBuilder
 
         private void Awake()
         {
-            _idleLabelColor = _label.color;
+            _idleButtonColor = _buttonFace.color;
             _interactable.activated.AddListener(HandleActivated);
             _interactable.hoverEntered.AddListener(HandleHoverEntered);
             _interactable.hoverExited.AddListener(HandleHoverExited);
@@ -43,33 +44,41 @@ namespace ModelDesignScene.ModelBuilder
         {
             Block = block;
             bool occupied = block != null;
+            // Flatten still uses the existing popup's delete action.
             _hitArea.enabled = occupied;
             _interactable.enabled = occupied;
-            _label.rectTransform.anchoredPosition = occupied ? _occupiedLabelPosition : Vector2.zero;
-            _label.text = occupied ? $"슬롯 {_slotIndex + 1} · 설정" : $"슬롯 {_slotIndex + 1}\n비어 있음";
+            _settingsButton.gameObject.SetActive(occupied);
+            _label.gameObject.SetActive(!occupied);
+            RefreshLabel();
             if (!occupied)
             {
                 _hovered = false;
                 _pressedUntil = 0f;
             }
-            RefreshLabelColor();
+            RefreshButtonColor();
         }
 
-        private void RefreshLabelColor()
+        internal void RefreshLabel()
         {
-            _label.color = Time.unscaledTime < _pressedUntil ? Color.white
-                : _hovered ? UI.SceneUIStyle.Accent : _idleLabelColor;
+            string slot = $"슬롯 {_slotIndex + 1}";
+            _label.text = $"{slot}\n비어 있음";
         }
 
-        private void HandleHoverEntered(HoverEnterEventArgs args) { _hovered = true; RefreshLabelColor(); }
-        private void HandleHoverExited(HoverExitEventArgs args) { _hovered = _interactable.isHovered; RefreshLabelColor(); }
+        private void RefreshButtonColor()
+        {
+            _buttonFace.color = Time.unscaledTime < _pressedUntil ? new Color32(28, 115, 117, 255)
+                : _hovered ? new Color32(32, 102, 104, 255) : _idleButtonColor;
+        }
+
+        private void HandleHoverEntered(HoverEnterEventArgs args) { _hovered = true; RefreshButtonColor(); }
+        private void HandleHoverExited(HoverExitEventArgs args) { _hovered = _interactable.isHovered; RefreshButtonColor(); }
 
         private void Update()
         {
             if (_pressedUntil > 0f && Time.unscaledTime >= _pressedUntil)
             {
                 _pressedUntil = 0f;
-                RefreshLabelColor();
+                RefreshButtonColor();
             }
         }
 
@@ -77,7 +86,7 @@ namespace ModelDesignScene.ModelBuilder
         {
             _hovered = false;
             _pressedUntil = 0f;
-            RefreshLabelColor();
+            RefreshButtonColor();
         }
 
         private void HandleActivated(ActivateEventArgs args)
@@ -95,7 +104,7 @@ namespace ModelDesignScene.ModelBuilder
             }
 
             _pressedUntil = Time.unscaledTime + 0.12f;
-            RefreshLabelColor();
+            RefreshButtonColor();
             OnSettingsRequested?.Invoke(this);
         }
 

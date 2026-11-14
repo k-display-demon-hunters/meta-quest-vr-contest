@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using ModelDesignScene.Model;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace ModelDesignScene.ModelBuilder
 {
@@ -46,20 +45,21 @@ namespace ModelDesignScene.ModelBuilder
             return true;
         }
 
-        internal ModelBlockController[] GetExampleBlocks()
+        internal (ModelBlockController Block, Renderer Pad)[] GetExampleDisplays()
         {
-            ModelBlockController[] blocks = new ModelBlockController[_paletteBlocks.Length];
-            for (int index = 0; index < blocks.Length; index++)
+            (ModelBlockController, Renderer)[] displays = new (ModelBlockController, Renderer)[_paletteBlocks.Length];
+            for (int index = 0; index < displays.Length; index++)
             {
-                blocks[index] = _paletteBlocks[index].Block;
+                PaletteBlock entry = _paletteBlocks[index];
+                displays[index] = (entry.Block, entry.DisplayPad);
             }
-            return blocks;
+            return displays;
         }
 
         private void InitializeBlock(ModelBlockController block, PaletteBlock entry)
         {
             entry.SetBlock(block);
-            block.Initialize(_createLayer(entry.Type), true, entry.Nameplate, entry.ExampleCaption);
+            block.Initialize(_createLayer(entry.Type), true);
             _paletteSlots.Add(block, new Pose(block.transform.localPosition, block.transform.localRotation));
             OnBlockCreated?.Invoke(block);
         }
@@ -70,15 +70,13 @@ namespace ModelDesignScene.ModelBuilder
             [SerializeField] private LayerType _type;
             [SerializeField] private ModelBlockController _block;
             [SerializeField] private ModelBlockController _prefab;
-            [SerializeField] private Text _nameplate;
-            [SerializeField] private Text _exampleCaption;
+            [SerializeField] private Renderer _displayPad;
 
             public LayerType Type => _type;
             public ModelBlockController Block => _block;
             public void SetBlock(ModelBlockController block) => _block = block;
             public ModelBlockController Prefab => _prefab;
-            public Text Nameplate => _nameplate;
-            public Text ExampleCaption => _exampleCaption;
+            public Renderer DisplayPad => _displayPad;
         }
     }
 }

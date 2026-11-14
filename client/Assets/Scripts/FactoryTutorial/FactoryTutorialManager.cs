@@ -11,8 +11,8 @@ namespace FactoryTutorial
     {
         private static readonly string[] Titles =
         {
-            "수리 준비부터 해볼까요?", "버튼 선택", "이동과 방향 전환", "물체 잡기", "정면 맞추기",
-            "나의 미션 도우미", "태블릿 항목 이동", "X · 선택", "Y · 뒤로", "설정 열기",
+            "수리 준비부터 해볼까요?", "버튼 선택", "이동과 방향 전환", "물체 잡기", "시점 기울기 복원",
+            "나의 미션 도우미", "태블릿 항목 이동", "트리거 + X · 선택", "트리거 + Y · 뒤로", "설정 열기",
             "이제 준비됐어요!"
         };
         private static readonly string[] Instructions =
@@ -21,13 +21,13 @@ namespace FactoryTutorial
             "오른손으로 버튼을 가리키고\n검지 버튼(트리거)을 누르세요.",
             "왼쪽 조이스틱으로 이동해요.\n오른쪽 조이스틱으로 돌아보세요.",
             "오른손 옆면 버튼(그립)을\n눌러 잡고, 놓아 내려놓으세요.",
-            "오른손 A 버튼으로\n정면을 다시 맞추세요.",
-            "태블릿에서 진행률·지도를 보고,\n학습 단계 이동과 양피지 재열람을 해요.",
+            "오른손 A 버튼으로\n스틱으로 기울인 시점을 복원하세요.",
+            "왼손 X로 태블릿을 켜거나 숨겨요.\n태블릿에서 지도와 진행률을 볼 수 있어요.",
             "왼손 트리거를 누른 채\n조이스틱으로 항목을 고르세요.",
-            "왼손 X 버튼을 눌러\n선택한 항목을 여세요.",
-            "왼손 Y 버튼을 눌러\n이전 화면으로 돌아가세요.",
+            "왼손 트리거를 누른 채 X를 눌러\n선택한 항목을 여세요.",
+            "왼손 트리거를 누른 채 Y를 눌러\n이전 화면으로 돌아가세요.",
             "왼손 메뉴 버튼으로\n밝기와 음량을 조절하세요.",
-            "배운 조작으로\n공장 수리를 시작해 볼까요?"
+            "오른손 B로 지정 지점에 이동해요.\n아직 이동할 수 없으면 안내가 떠요."
         };
         private FactoryTutorialVisualController _visuals;
         [SerializeField] private FactoryTutorialPanelController _panel;
@@ -36,7 +36,6 @@ namespace FactoryTutorial
         private XRPlayerInputController _playerInput;
         private bool _initialized;
         private bool _ownsRay;
-        private bool _previousForcedRay;
         private bool _previousInputSuppressed;
         private InputAction _startGuide;
         private int _page;
@@ -180,10 +179,8 @@ namespace FactoryTutorial
                 return;
             }
             _playerInput.EnsureRayReady();
-            _previousForcedRay = _playerInput.TutorialRayForcedOn;
             _previousInputSuppressed = _playerInput.TutorialInputSuppressed;
             _playerInput.TutorialInputSuppressed = _page == 0 || _previousInputSuppressed;
-            _playerInput.TutorialRayForcedOn = true;
             _ownsRay = true;
         }
 
@@ -195,7 +192,6 @@ namespace FactoryTutorial
             }
             if (_playerInput != null)
             {
-                _playerInput.TutorialRayForcedOn = _previousForcedRay;
                 _playerInput.TutorialInputSuppressed = _previousInputSuppressed;
             }
             _ownsRay = false;

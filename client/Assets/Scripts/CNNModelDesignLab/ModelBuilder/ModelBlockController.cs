@@ -19,14 +19,29 @@ namespace ModelDesignScene.ModelBuilder
         private Mesh _outputMesh;
         private Vector3Int _visualShape = new Vector3Int(-1, -1, -1);
         private bool _visualSpatial;
-        private bool _visualEnlarged;
+        private Vector3Int _visualOperation;
         private bool _visualSupply;
 
         private float FlowHeight => _visualSpatial
-            ? -0.08f + Mathf.Max(0.12f, _visualShape.x * 0.025f + 0.04f) * 0.5f : 0.27f;
+            ? -0.08f + Mathf.Max(0.12f, _visualShape.x * VectorBlockMesh.SpatialSpacing + 0.04f) * 0.5f
+            : 0.27f;
 
-        internal Vector3 FlowStart => transform.TransformPoint(new Vector3(_collider.center.x - VisualBounds.size.x * 0.5f - 0.015f, FlowHeight, 0.04f));
-        internal Vector3 FlowEnd => transform.TransformPoint(new Vector3(_collider.center.x + VisualBounds.size.x * 0.5f + 0.015f, FlowHeight, 0.04f));
+        private float FlowHalfWidth
+        {
+            get
+            {
+                if (_visualOperation == Vector3Int.zero)
+                {
+                    return VisualBounds.extents.x + 0.015f;
+                }
+
+                float frameWidth = Mathf.Max(0.12f, _visualShape.y * VectorBlockMesh.SpatialSpacing + 0.04f);
+                return (frameWidth + VectorBlockMesh.StackWidth(frameWidth, _visualShape.z)) * 0.5f + 0.015f;
+            }
+        }
+
+        internal Vector3 FlowStart => transform.TransformPoint(new Vector3(-FlowHalfWidth, FlowHeight, 0.04f));
+        internal Vector3 FlowEnd => transform.TransformPoint(new Vector3(FlowHalfWidth, FlowHeight, 0.04f));
 
         private Rigidbody _rigidbody;
         private bool _interactionEnabled;
@@ -36,10 +51,10 @@ namespace ModelDesignScene.ModelBuilder
         private const float SupplyBobHeight = 0.01f;
         private const float SupplyBobFrequency = 0.5f;
         private int _inputChannels = LayerLimits.InputChannels;
-        private int _inputHeight = 8;
-        private int _inputWidth = 8;
+        private int _inputHeight;
+        private int _inputWidth;
         private bool _hasInputShape;
-        private int _inputElements = 16;
+        private int _inputElements;
 
         internal event Action<ModelBlockController> OnGrabbed;
         internal event Action<ModelBlockController, bool> OnReleased;
@@ -91,6 +106,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void Initialize(LayerDefinition layer, bool isPalette)
         {
             Layer = layer;
+            SetExampleInput(layer.Type);
             IsPalette = isPalette;
             if (isPalette)
             {
@@ -112,6 +128,27 @@ namespace ModelDesignScene.ModelBuilder
         internal void SetOutputLabelVisible(bool visible)
         {
             _label.transform.parent.gameObject.SetActive(visible);
+        }
+
+        private void SetExampleInput(LayerType type)
+        {
+            _inputHeight = LayerLimits.InputHeight;
+            _inputWidth = LayerLimits.InputWidth;
+            if (type != LayerType.MaxPooling2D && type != LayerType.Flatten)
+            {
+                return;
+            }
+
+            LayerDefinition conv = LayerDefinition.CreateDefault(LayerType.Conv2D);
+            _inputHeight -= conv.Height - 1;
+            _inputWidth -= conv.Width - 1;
+            _inputChannels = conv.Filters;
+            if (type == LayerType.Flatten)
+            {
+                LayerDefinition pool = LayerDefinition.CreateDefault(LayerType.MaxPooling2D);
+                _inputHeight /= pool.Height;
+                _inputWidth /= pool.Width;
+            }
         }
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
@@ -156,6 +193,7 @@ namespace ModelDesignScene.ModelBuilder
             int height = _inputHeight;
             int width = _inputWidth;
             int channels = _inputChannels;
+            bool stacked = Layer.Type == LayerType.Conv2D || Layer.Type == LayerType.MaxPooling2D;
             int elements = 0;
             string title;
             switch (Layer.Type)
@@ -167,8 +205,8 @@ namespace ModelDesignScene.ModelBuilder
                     title = "INPUT / RGB";
                     break;
                 case LayerType.Conv2D:
-                    height = Mathf.Max(0, (_hasInputShape ? height : LayerLimits.InputHeight) - Layer.Height + 1);
-                    width = Mathf.Max(0, (_hasInputShape ? width : LayerLimits.InputWidth) - Layer.Width + 1);
+                    height = Mathf.Max(0, height - Layer.Height + 1);
+                    width = Mathf.Max(0, width - Layer.Width + 1);
                     channels = channels > 0 && height > 0 && width > 0 ? Layer.Filters : 0;
                     title = $"CONV / {Layer.Height} x {Layer.Width} / {Layer.Activation}";
                     break;
@@ -179,7 +217,7 @@ namespace ModelDesignScene.ModelBuilder
                     title = $"MAX POOL / {Layer.Height} x {Layer.Width}";
                     break;
                 case LayerType.Flatten:
-                    elements = (_hasInputShape ? height * width : 16) * channels;
+                    elements = height * width * channels;
                     title = "FLATTEN / same element count";
                     break;
                 case LayerType.Dense:
@@ -203,7 +241,6 @@ namespace ModelDesignScene.ModelBuilder
             string displayDetail = spatial switch
             {
                 true when channels == 0 => "Spatial output unavailable",
-                true when channels > 1 && Layer.Type != LayerType.Input => $"1 of {channels} channels shown",
                 false when elements == 0 => "Input unavailable",
                 false when elements > 8 => $"8 shown / {elements - 8} omitted",
                 _ => ""
@@ -213,20 +250,19 @@ namespace ModelDesignScene.ModelBuilder
             {
                 _label.text += $"\n<size=19>{displayDetail}</size>";
             }
-            bool enlargedExample = IsPalette && Layer.Type == LayerType.MaxPooling2D;
-            Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, elements);
-            if (_visualShape == shape && _visualSpatial == spatial && _visualEnlarged == enlargedExample
+            Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, spatial ? channels : elements);
+            Vector3Int operation = stacked ? new Vector3Int(Layer.Width, Layer.Height, _inputChannels) : Vector3Int.zero;
+            if (_visualShape == shape && _visualSpatial == spatial && _visualOperation == operation
                 && _visualSupply == IsPalette)
             {
                 return;
             }
             _visualShape = shape;
             _visualSpatial = spatial;
-            _visualEnlarged = enlargedExample;
+            _visualOperation = operation;
             _visualSupply = IsPalette;
             Mesh previousMesh = _outputMesh;
-            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial, enlargedExample,
-                IsPalette, IsPalette && Layer.Type == LayerType.Flatten);
+            _outputMesh = VectorBlockMesh.CreateOutput(shape, Layer.Type, operation, IsPalette);
             _surface.sharedMesh = _outputMesh;
             _collider.center = _outputMesh.bounds.center;
             VisualBounds = new Bounds(_collider.center, _outputMesh.bounds.size + new Vector3(0.02f, 0.02f, 0.03f));

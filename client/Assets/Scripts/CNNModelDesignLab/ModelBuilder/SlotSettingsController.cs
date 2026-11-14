@@ -1,5 +1,4 @@
 using System;
-using ModelDesignScene.Model;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -14,15 +13,10 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private BoxCollider _hitArea;
         [SerializeField] private Text _label;
         [SerializeField] private Transform _popupAnchor;
-        [SerializeField] private Vector2 _occupiedLabelPosition;
         [SerializeField] private RectTransform _settingsButton;
         [SerializeField] private Image _buttonFace;
-        [SerializeField] private Text _settingValues;
-
-        [SerializeField, Min(1)] private int _occupiedFontSize = 32;
 
         private Color _idleButtonColor;
-        private int _emptyFontSize;
         private int _slotIndex;
         private bool _hovered;
         private float _pressedUntil;
@@ -35,7 +29,6 @@ namespace ModelDesignScene.ModelBuilder
         private void Awake()
         {
             _idleButtonColor = _buttonFace.color;
-            _emptyFontSize = _label.fontSize;
             _interactable.activated.AddListener(HandleActivated);
             _interactable.hoverEntered.AddListener(HandleHoverEntered);
             _interactable.hoverExited.AddListener(HandleHoverExited);
@@ -51,13 +44,11 @@ namespace ModelDesignScene.ModelBuilder
         {
             Block = block;
             bool occupied = block != null;
-            bool configurable = occupied && block.Layer.Type != LayerType.Flatten;
             // Flatten still uses the existing popup's delete action.
             _hitArea.enabled = occupied;
             _interactable.enabled = occupied;
             _settingsButton.gameObject.SetActive(occupied);
-            _settingValues.gameObject.SetActive(configurable);
-            _label.rectTransform.anchoredPosition = occupied ? _occupiedLabelPosition : Vector2.zero;
+            _label.gameObject.SetActive(!occupied);
             RefreshLabel();
             if (!occupied)
             {
@@ -70,16 +61,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void RefreshLabel()
         {
             string slot = $"슬롯 {_slotIndex + 1}";
-            LayerDefinition layer = Block == null ? null : Block.Layer;
-            _label.fontSize = layer == null ? _emptyFontSize : _occupiedFontSize;
-            _label.text = layer == null ? $"{slot}\n비어 있음" : slot;
-            _settingValues.text = layer?.Type switch
-            {
-                LayerType.Conv2D => $"필터 {layer.Filters} · {layer.Height}×{layer.Width} · {layer.Activation}",
-                LayerType.MaxPooling2D => $"{layer.Height}×{layer.Width}",
-                LayerType.Dense => $"뉴런 {layer.Units} · {layer.Activation}",
-                _ => string.Empty
-            };
+            _label.text = $"{slot}\n비어 있음";
         }
 
         private void RefreshButtonColor()

@@ -190,8 +190,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.77, y: 0.757, z: 0.276}
-  m_Center: {x: 0, y: 0.2485, z: -0.003}
+  m_Size: {x: 0.89, y: 0.797, z: 0.508}
+  m_Center: {x: 0, y: 0.2485, z: -0.002999999}
 --- !u!114 &1004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -392,7 +392,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "CONV / 3 x 3 / ReLU\n26 x 26 x 4\n<size=19>1 of 4 channels shown</size>"
+  m_Text: "CONV / 3 x 3 / ReLU\n26 x 26 x 4"
 --- !u!114 &1005
 MonoBehaviour:
   m_ObjectHideFlags: 0

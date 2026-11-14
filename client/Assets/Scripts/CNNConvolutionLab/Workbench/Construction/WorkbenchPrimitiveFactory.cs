@@ -10,15 +10,13 @@ namespace CNNConvolution
         private readonly Transform _root;
         private readonly Font _font;
         private readonly Camera _camera;
-        private readonly SideNumberController _sideNumbers;
         private readonly Material _material;
 
-        public WorkbenchPrimitiveFactory(Transform root, Font font, SideNumberController sideNumbers)
+        public WorkbenchPrimitiveFactory(Transform root, Font font)
         {
             _root = root;
             _font = font;
             _camera = Camera.main;
-            _sideNumbers = sideNumbers;
             _material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             _material.SetFloat("_Smoothness", 0.08f);
             _material.SetFloat("_SpecularHighlights", 0);
@@ -109,28 +107,24 @@ namespace CNNConvolution
             label.color = Color.white;
             label.raycastTarget = false;
             label.text = value;
-            if (parent.name == "Number tile" && parent.Find("Tile mesh").localScale.z >= 0.08f)
-            {
-                // Only thick input/result blocks have room for readable side numerals.
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    Text copy = Instantiate(label, parent);
-                    copy.name = "Side value";
-                    copy.transform.localScale = Vector3.one * 0.001f;
-                    float halfWidth = parent.Find("Tile mesh").localScale.x * 0.5f;
-                    copy.transform.localPosition = new Vector3(side * (halfWidth + 0.002f), 0, 0);
-                    copy.transform.localRotation = Quaternion.Euler(0, -side * 90, 0);
-                    copy.rectTransform.sizeDelta = new Vector2(115, 100);
-                    copy.resizeTextForBestFit = true;
-                    copy.resizeTextMinSize = 40;
-                    copy.resizeTextMaxSize = 52;
-                    // Each side needs its own world-space Canvas outside the front label canvas.
-                    Canvas sideCanvas = copy.gameObject.AddComponent<Canvas>();
-                    sideCanvas.renderMode = RenderMode.WorldSpace;
-                    _sideNumbers.Register(label, copy);
-                }
-            }
             return label;
+        }
+
+        // A flat picture surface. UI images draw unlit, so pixel colours are shown as they are.
+        public RawImage Picture(Transform parent, Vector3 position, float width, float height)
+        {
+            GameObject canvasObject = new GameObject("Picture", typeof(RectTransform), typeof(Canvas));
+            canvasObject.transform.SetParent(parent, false);
+            canvasObject.transform.localPosition = position;
+            canvasObject.transform.localScale = Vector3.one * 0.001f;
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = _camera;
+            RawImage image = new GameObject("Image", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
+            image.transform.SetParent(canvasObject.transform, false);
+            image.rectTransform.sizeDelta = new Vector2(width, height) * 1000f;
+            image.raycastTarget = false;
+            return image;
         }
 
         public void Frame(Transform parent, float width, float height, float depth, Color color, float edge = 0.018f)

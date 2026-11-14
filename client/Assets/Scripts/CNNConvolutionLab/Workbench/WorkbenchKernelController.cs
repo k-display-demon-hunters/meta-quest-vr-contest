@@ -9,21 +9,19 @@ namespace CNNConvolution
     // Workbench implementation: physical input and presentation, without lesson-stage state.
     internal sealed class WorkbenchKernelController : IDisposable
     {
-        private static readonly Vector3 CompactLayerStep = new Vector3(-0.035f, 0.065f, 0.10f);
-        private const float LayerSpreadStart = 0.12f;
-        private const float LayerSpreadEnd = 0.75f;
+        private const float FrameWidth = 0.57f;
+        private const float FrameHeight = 0.51f;
+        private static readonly Vector3 LayerStep = new Vector3(-0.035f, 0.065f, 0.05f);
+        private static readonly Vector3 CellSize = new Vector3(0.17f, 0.15f, 0.002f);
+        // Weight labels sit in the upper right of each cell so the picture stays visible under the filter.
+        private static readonly Vector3 WeightOffset = new Vector3(0.035f, 0.04f, 0f);
 
         private readonly Transform _root;
-        // The filter rests in the input group so it is shown, hidden and moved together with the input.
+        // The filter rests in the input group so it is shown, hidden and moved together with the picture.
         private readonly Transform _dock;
         private readonly Transform _kernel;
-        private readonly Text _kernelTitle;
         private readonly Transform _kernelTitlePlate;
         private readonly Text[] _weights = new Text[9];
-        private readonly Transform[] _slices = new Transform[3];
-        private readonly Transform[,] _sliceLinkMeshes = new Transform[2, 2];
-        private Vector3 _layerStep;
-        private readonly Text[,] _channelWeights = new Text[3, 9];
         private readonly MeshRenderer[] _gripAccents;
         private readonly Transform _home;
         private readonly Transform _target;
@@ -41,11 +39,13 @@ namespace CNNConvolution
         public bool IsSelected => _grab.isSelected;
         public bool IsHovered => _grab.isHovered;
         internal float PlacementGhostPeriod { get; }
+        // The filter is built at a fixed size and scaled so its frame covers exactly 3×3 picture cells.
+        internal Vector3 Scale { get; }
         public event Action Grabbed;
         public event Action Released;
 
         public WorkbenchKernelController(WorkbenchPrimitiveFactory factory, Transform root, Transform dock, Transform home, Transform target,
-            Material placementPreviewMaterial, float placementGhostPeriod)
+            float windowSize, Material placementPreviewMaterial, float placementGhostPeriod)
         {
             _root = root;
             _dock = dock;
@@ -54,32 +54,25 @@ namespace CNNConvolution
             _target = target;
             _placementPreviewMaterial = placementPreviewMaterial;
             PlacementGhostPeriod = placementGhostPeriod;
-            _kernel = factory.Root("Fixed weight slice");
+            Scale = new Vector3(windowSize / FrameWidth, windowSize / FrameHeight, windowSize / FrameWidth);
+            _kernel = factory.Root("Filter");
             _kernel.SetParent(dock, false);
+            _kernel.localScale = Scale;
             _gripAccents = FilterFrame(factory, _kernel);
-            _slices[0] = _kernel;
-            _kernelTitlePlate = factory.PanelHeading(_home);
-            _kernelTitle = factory.Caption(_kernelTitlePlate, "필터 하나 · RGB 세 층", new Vector3(0, 0, -0.027f), 0.88f);
-            _kernelTitle.fontSize = WorkbenchColors.HeadingFontSize;
-            for (int i = 0; i < 9; i++)
+            _kernelTitlePlate = factory.FormulaPlate("Filter title", 0.62f);
+            _kernelTitlePlate.SetParent(_home, false);
+            _kernelTitlePlate.localPosition = new Vector3(0f, 0.27f, -0.025f);
+            Text title = factory.Caption(_kernelTitlePlate, "필터 · 빨강 층 1/9", new Vector3(0, 0, -0.027f), 0.6f);
+            title.fontSize = WorkbenchColors.HeadingFontSize;
+            // Only the red layer carries weights; the green and blue layers behind it weigh nothing.
+            for (int index = 0; index < _weights.Length; index++)
             {
-                Transform tile = CreateWeightTile(_kernel, i);
-                _weights[i] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
-                _weights[i].fontSize = 32;
-                _channelWeights[0, i] = _weights[i];
+                Transform tile = factory.Tile(_kernel, WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + WeightOffset,
+                    new Vector3(0.09f, 0.06f, 0.025f), WorkbenchColors.PanelFace);
+                _weights[index] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.09f);
+                _weights[index].fontSize = 40;
             }
-            for (int channel = 1; channel < 3; channel++)
-            {
-                Transform slice = CreateLinkedSlice(_kernel, channel);
-                _slices[channel] = slice;
-                for (int index = 0; index < 9; index++)
-                {
-                    Transform tile = CreateWeightTile(slice, index);
-                    _channelWeights[channel, index] = factory.Caption(tile, "", new Vector3(0, 0, -0.018f), 0.045f);
-                    _channelWeights[channel, index].fontSize = 32;
-                }
-            }
-            ApplyLayerStep(CompactLayerStep);
+            for (int channel = 1; channel < 3; channel++) { CreateLinkedSlice(channel); }
 
             BoxCollider collider = _kernel.gameObject.AddComponent<BoxCollider>();
             collider.size = new Vector3(0.60f, 0.54f, 0.04f);
@@ -104,84 +97,70 @@ namespace CNNConvolution
         public Pose Pose => new Pose(_kernel.position, _kernel.rotation);
         public Pose HomePose => new Pose(_home.position, _home.rotation);
         public Pose TargetPose => new Pose(_target.position, _target.rotation);
-        public Vector3 CellPosition(int index) => _factory.LocalPoint(_weights[index].transform.position);
-        public Vector3 LocalPosition => _factory.LocalPoint(_kernel.position);
-        public Vector3 ChannelPosition(int channel) => _factory.LocalPoint(_slices[channel].position);
+        public Vector3 CellPosition(int index) => _factory.LocalPoint(
+            _kernel.TransformPoint(WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + Vector3.back * 0.03f));
 
-        public bool IsWithinTarget(float radius) =>
-            _target.InverseTransformPoint(_kernel.position).sqrMagnitude <= radius * radius;
+        // While a constrained move is held: where the hand asks the filter to be. The caller decides
+        // which position the filter actually takes.
+        public Vector3 RequestedPosition => _kernelAtGrab + _grabAttach.position - _handAtGrab;
+
+        // Depth is ignored: a filter held in front of the target counts as being over it.
+        public bool IsWithinTarget(float radius)
+        {
+            Vector3 offset = _target.InverseTransformPoint(_kernel.position);
+            offset.z = 0f;
+            return offset.sqrMagnitude <= radius * radius;
+        }
+
+        public void SetTarget(Pose pose) => _target.SetPositionAndRotation(pose.position, pose.rotation);
 
         public void SetTitleVisible(bool visible) => _kernelTitlePlate.gameObject.SetActive(visible);
 
-        public void SetWeights(ConvolutionCalculation calculation)
+        public void SetWeights(PictureConvolution convolution)
         {
-            for (int channel = 0; channel < 3; channel++)
-            {
-                for (int index = 0; index < 9; index++)
-                {
-                    _channelWeights[channel, index].text = calculation.Weight(index).ToString();
-                }
-            }
-            ShowChannel(0);
+            foreach (Text weight in _weights) { weight.text = convolution.WeightLabel(0); }
+        }
+
+        public void ResetToHome()
+        {
+            // A cancelled grab can leave the filter detached and switched off.
             _kernel.gameObject.SetActive(true);
-            _kernelTitle.text = "필터 하나 · RGB 세 층";
-        }
-
-        public void ShowChannel(int channel)
-        {
-            for (int other = 0; other < 3; other++)
-            {
-                for (int index = 0; index < 9; index++)
-                {
-                    _channelWeights[other, index].transform.parent.parent.gameObject.SetActive(other == channel);
-                }
-            }
-        }
-
-        public void ConstrainToSegment(Pose start, Pose target)
-        {
-            Vector3 segment = target.position - start.position;
-            Vector3 requested = _kernelAtGrab + _grabAttach.position - _handAtGrab;
-            float amount = Mathf.Clamp01(Vector3.Dot(requested - start.position, segment) / segment.sqrMagnitude);
-            SetPose(new Pose(start.position + segment * amount, target.rotation));
+            RestoreParent();
+            SetPose(HomePose);
         }
 
         public void SetConstrainedMove(bool constrained)
         {
             _constrainedMove = constrained;
-            // During the one-cell exercise this controller owns position. XR still owns selection,
+            // During a constrained move the lesson owns the position. XR still owns selection,
             // but its Dynamic/OnBeforeRender passes must not overwrite the constrained pose.
             _grab.trackPosition = !constrained;
         }
 
-        public float DistanceTo(Pose target) => _root.InverseTransformVector(_kernel.position - target.position).magnitude;
-
         public void AttachHighlight(Transform highlight, int index)
         {
             highlight.SetParent(_kernel, false);
-            highlight.localPosition = WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + new Vector3(0.052f, 0.052f, -0.026f);
+            highlight.localPosition = WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + Vector3.back * 0.026f;
             highlight.gameObject.SetActive(true);
         }
 
         public void AttachGripArrow(Transform arrow)
         {
             arrow.SetParent(_kernel, false);
-            arrow.localScale = Vector3.one * 0.45f;
-            arrow.localPosition = new Vector3(0, 0.41f, -0.04f);
+            arrow.localPosition = new Vector3(0, 0.50f, -0.04f);
         }
 
         internal Transform CreatePlacementGhost()
         {
             Transform ghost = _factory.Root("Filter placement ghost");
             ghost.SetParent(_target, false);
-            // Keep the overlay behind the foreground number labels.
+            ghost.localScale = Scale;
+            // Keep the overlay behind the filter once it is placed.
             ghost.localPosition = Vector3.forward * 0.025f;
-            Vector3 tileSize = InputGridController.CellSize;
-            tileSize.z = 0.002f;
             for (int index = 0; index < _weights.Length; index++)
             {
                 Transform tile = _factory.Tile(ghost, WorkbenchPrimitiveFactory.GridCellPosition(index, 3),
-                    tileSize, WorkbenchColors.PlacementMint);
+                    CellSize, WorkbenchColors.PlacementMint);
                 MeshRenderer renderer = tile.GetComponentInChildren<MeshRenderer>();
                 renderer.sharedMaterial = _placementPreviewMaterial;
                 renderer.SetPropertyBlock(null);
@@ -190,59 +169,29 @@ namespace CNNConvolution
             return ghost;
         }
 
-        private Transform CreateLinkedSlice(Transform parent, int channel)
+        // The green and blue layers are frames behind the red one, joined to it at the top corners.
+        private void CreateLinkedSlice(int channel)
         {
             Transform slice = _factory.Root("RGB filter slice " + channel);
-            slice.SetParent(parent, false);
-            _factory.Frame(slice, 0.57f, 0.51f, 0.026f, WorkbenchColors.Channel(channel), 0.012f);
-            // Connect the layers visually. The front frame still carries the grab handle.
-            for (int corner = 0; corner < _sliceLinkMeshes.GetLength(1); corner++)
+            slice.SetParent(_kernel, false);
+            slice.localPosition = LayerStep * channel;
+            _factory.Frame(slice, FrameWidth, FrameHeight, 0.026f, WorkbenchColors.Channel(channel), 0.012f);
+            Quaternion linkRotation = Quaternion.LookRotation(LayerStep);
+            Vector3 linkSize = new Vector3(0.009f, 0.009f, LayerStep.magnitude);
+            for (int side = -1; side <= 1; side += 2)
             {
-                Transform link = _factory.Tile(parent, Vector3.zero, Vector3.one, WorkbenchColors.PanelFrame);
-                _sliceLinkMeshes[channel - 1, corner] = link.GetChild(0);
+                Vector3 frameCorner = new Vector3(side * FrameWidth * 0.5f, FrameHeight * 0.5f, 0f);
+                Transform mesh = _factory.Tile(_kernel, Vector3.zero, Vector3.one, WorkbenchColors.PanelFrame).GetChild(0);
+                mesh.SetLocalPositionAndRotation(frameCorner + LayerStep * (channel - 0.5f), linkRotation);
+                mesh.localScale = linkSize;
             }
-
-            return slice;
-        }
-
-        internal void RefreshLayerSpacing()
-        {
-            float distance = _root.InverseTransformVector(_kernel.position - _home.position).magnitude;
-            float spread = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(LayerSpreadStart, LayerSpreadEnd, distance));
-            ApplyLayerStep(Vector3.Lerp(CompactLayerStep, InputGridController.ChannelOffset(1), spread));
-        }
-
-        private void ApplyLayerStep(Vector3 step)
-        {
-            if (_layerStep.Equals(step)) return;
-
-            _layerStep = step;
-            Quaternion linkRotation = Quaternion.LookRotation(step);
-            Vector3 linkSize = new Vector3(0.009f, 0.009f, step.magnitude);
-            for (int channel = 1; channel < _slices.Length; channel++)
-            {
-                _slices[channel].localPosition = step * channel;
-                for (int corner = 0; corner < _sliceLinkMeshes.GetLength(1); corner++)
-                {
-                    Transform mesh = _sliceLinkMeshes[channel - 1, corner];
-                    Vector3 frameCorner = new Vector3(corner == 0 ? -0.285f : 0.285f, 0.255f, 0f);
-                    mesh.SetLocalPositionAndRotation(frameCorner + step * (channel - 0.5f), linkRotation);
-                    mesh.localScale = linkSize;
-                }
-            }
-        }
-
-        private Transform CreateWeightTile(Transform parent, int index)
-        {
-            Vector3 position = WorkbenchPrimitiveFactory.GridCellPosition(index, 3) + new Vector3(0.052f, 0.052f, 0);
-            return _factory.Tile(parent, position, new Vector3(0.045f, 0.045f, 0.025f), WorkbenchColors.PanelFace);
         }
 
         private MeshRenderer[] FilterFrame(WorkbenchPrimitiveFactory factory, Transform parent)
         {
             Color metal = WorkbenchColors.PanelFrame;
-            // Leave the input numerals visible when the offset filter lies over them.
-            factory.Frame(parent, 0.57f, 0.51f, 0.026f, metal, 0.012f);
+            // Leave the picture visible when the filter lies over it.
+            factory.Frame(parent, FrameWidth, FrameHeight, 0.026f, metal, 0.012f);
             for (int side = -1; side <= 1; side += 2)
             {
                 factory.Tile(parent, new Vector3(side * 0.075f, 0.282f, 0), new Vector3(0.018f, 0.048f, 0.035f), metal);
@@ -268,7 +217,6 @@ namespace CNNConvolution
             _kernel.SetPositionAndRotation(pose.position, pose.rotation);
             _body.position = pose.position;
             _body.rotation = pose.rotation;
-            RefreshLayerSpacing();
         }
 
         public void SetGrabEnabled(bool enabled)

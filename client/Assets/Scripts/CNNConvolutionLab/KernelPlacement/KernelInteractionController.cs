@@ -48,7 +48,7 @@ namespace CNNConvolution
             _moving = false;
             _kernel.SetGrabEnabled(true);
             ShowState(PlacementState.Waiting);
-            _ui.Caption = "필터 손잡이를 잡아 입력의 왼쪽 위 점선에 놓으세요.";
+            _ui.Caption = "필터 손잡이를 잡아 그림 위 점선에 놓아 주세요.";
             _narration.Play(NarrationCue.PlaceFilter);
             _ui.ShowSkip(true);
             while (!_aligned)
@@ -64,7 +64,7 @@ namespace CNNConvolution
             _active = false;
             _kernel.SetGrabEnabled(false);
             _ui.ShowSkip(false);
-            _ui.Caption = "배치 완료 · 필터가 왼쪽 위 아홉 칸을 덮었어요.";
+            _ui.Caption = "배치 완료 · 필터가 그림의 가로세로 세 칸을 덮었습니다.";
             _narration.Play(NarrationCue.FilterPlaced);
             yield return _playback.Wait(0.45f);
             yield return _narration.WaitUntilDone();
@@ -168,11 +168,11 @@ namespace CNNConvolution
             {
                 case PlacementState.Waiting: message = "필터 손잡이를 Grip으로 잡아 주세요."; break;
                 case PlacementState.Hovered: message = "Grip을 누른 채 필터를 옮겨 주세요."; break;
-                case PlacementState.Moving: message = "점선 테두리 안으로 옮겨 주세요."; break;
-                case PlacementState.Ready: message = "여기에 놓으면 배치돼요."; break;
-                case PlacementState.Returning: message = "시작 위치로 돌아가요. 다시 잡아 주세요."; break;
-                case PlacementState.Settling: message = "필터를 맞추고 있어요."; break;
-                case PlacementState.Complete: message = "배치 완료 · 같은 위치끼리 계산해요."; break;
+                case PlacementState.Moving: message = "그림 위 점선 안으로 옮겨 주세요."; break;
+                case PlacementState.Ready: message = "여기에 놓으면 배치됩니다."; break;
+                case PlacementState.Returning: message = "시작 위치로 돌아갑니다. 다시 잡아 주세요."; break;
+                case PlacementState.Settling: message = "필터를 맞추고 있습니다."; break;
+                case PlacementState.Complete: message = "배치 완료 · 겹친 칸끼리 계산합니다."; break;
                 default: return;
             }
             bool ready = state == PlacementState.Ready || state == PlacementState.Settling || state == PlacementState.Complete;

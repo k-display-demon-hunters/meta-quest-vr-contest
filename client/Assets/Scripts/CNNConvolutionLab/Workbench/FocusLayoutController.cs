@@ -5,19 +5,16 @@ namespace CNNConvolution
 {
     internal enum FocusLayout
     {
-        Input,
-        InputAndProducts,
-        Products,
-        InputAndOutput,
-        Output,
-        Meaning
+        Picture,
+        PictureAndFormula,
+        PictureAndMap
     }
 
     // Shows only the panel groups a lesson stage needs, at the focus slots saved in the prefab.
     internal sealed class FocusLayoutController
     {
-        // Group order: input, products, output, equations, meaning.
-        private const int Input = 0, Products = 1, Output = 2, Equations = 3;
+        // Group order: input, formula, output.
+        private const int Input = 0, Formula = 1;
         private const float LeaveDuration = 0.4f;
         private const float EnterDuration = 0.35f;
         // Never reach zero scale: child poses are still read while a group shrinks.
@@ -25,23 +22,16 @@ namespace CNNConvolution
 
         private readonly Transform[] _groups;
         private readonly Transform _inputCenter, _inputSide;
-        private readonly Transform _gridCenter, _gridSide;
-        private readonly Transform _equationCenter, _equationSide;
-        private readonly Transform _meaningSlot;
+        private readonly Transform _gridSide;
         private readonly LessonPlayback _playback;
 
-        public FocusLayoutController(Transform inputGroup, Transform productsGroup, Transform outputGroup, Transform equationGroup,
-            Transform meaningGroup, Transform inputCenter, Transform inputSide, Transform gridCenter, Transform gridSide,
-            Transform equationCenter, Transform equationSide, Transform meaningSlot, LessonPlayback playback)
+        public FocusLayoutController(Transform inputGroup, Transform formulaGroup, Transform outputGroup,
+            Transform inputCenter, Transform inputSide, Transform gridSide, LessonPlayback playback)
         {
-            _groups = new[] { inputGroup, productsGroup, outputGroup, equationGroup, meaningGroup };
+            _groups = new[] { inputGroup, formulaGroup, outputGroup };
             _inputCenter = inputCenter;
             _inputSide = inputSide;
-            _gridCenter = gridCenter;
             _gridSide = gridSide;
-            _equationCenter = equationCenter;
-            _equationSide = equationSide;
-            _meaningSlot = meaningSlot;
             _playback = playback;
         }
 
@@ -124,23 +114,17 @@ namespace CNNConvolution
             }
         }
 
+        // The picture is always shown; the formula and the feature map take turns beside it.
         private Transform Slot(int group, FocusLayout layout)
         {
-            bool paired = layout == FocusLayout.InputAndProducts || layout == FocusLayout.InputAndOutput;
             switch (group)
             {
                 case Input:
-                    return paired ? _inputSide : layout == FocusLayout.Input ? _inputCenter : null;
-                case Products:
-                    return layout == FocusLayout.InputAndProducts ? _gridSide
-                        : layout == FocusLayout.Products ? _gridCenter : null;
-                case Output:
-                    return layout == FocusLayout.InputAndOutput ? _gridSide
-                        : layout == FocusLayout.Output ? _gridCenter : null;
-                case Equations:
-                    return paired ? _equationSide : layout == FocusLayout.Products ? _equationCenter : null;
+                    return layout == FocusLayout.Picture ? _inputCenter : _inputSide;
+                case Formula:
+                    return layout == FocusLayout.PictureAndFormula ? _gridSide : null;
                 default:
-                    return layout == FocusLayout.Meaning ? _meaningSlot : null;
+                    return layout == FocusLayout.PictureAndMap ? _gridSide : null;
             }
         }
     }

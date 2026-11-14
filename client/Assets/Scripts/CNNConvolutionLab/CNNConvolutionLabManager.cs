@@ -13,8 +13,9 @@ namespace CNNConvolution
         [SerializeField] private LessonNarrationController _narration;
         [SerializeField] private WorkbenchBuilder _spatial;
         [SerializeField] private Font _font;
+        // The picture Room 1-1 showed as pixels; here one filter draws a feature out of it.
+        [SerializeField] private Texture2D _picture;
         private ConvolutionPracticeManager _practice;
-        private const float CalculationProgressLimit = 0.95f;
         private bool _started;
         private bool _completed;
 
@@ -26,13 +27,12 @@ namespace CNNConvolution
 
         private void Awake()
         {
-            _practice = new ConvolutionPracticeManager(_ui, _narration, _spatial, _font);
+            _practice = new ConvolutionPracticeManager(_ui, _narration, _spatial, _font, _picture);
         }
 
         private void OnEnable()
         {
             _practice.FinishRequested += FinishPractice;
-            _practice.FirstOutputRecorded += HandleFirstOutput;
             _practice.Subscribe();
             _practice.RestartRequested += RestartPractice;
             if (_started && !_completed)
@@ -80,22 +80,13 @@ namespace CNNConvolution
         private IEnumerator RunLesson()
         {
             yield return _practice.PlaceFilter();
-            yield return _practice.RunFirstWindow();
-            yield return _practice.MoveAndQuiz();
-            yield return _practice.BeginAutomaticCalculation();
-            SetProgress(2f / 9f * CalculationProgressLimit);
-            yield return _practice.WaitForNarration();
-            for (int index = 2; index < 9; index++)
-            {
-                yield return _practice.CalculateWindow(index);
-                SetProgress((index + 1f) / 9f * CalculationProgressLimit);
-            }
-
-            yield return _practice.ConfirmResult();
-            yield return _practice.ShowMeaning();
+            SetProgress(0.2f);
+            yield return _practice.CalculateFirstOutput();
+            SetProgress(0.45f);
+            yield return _practice.SweepPicture();
+            SetProgress(0.9f);
+            yield return _practice.ExplainOutput();
         }
-
-        private void HandleFirstOutput() => SetProgress(1f / 9f * CalculationProgressLimit);
 
         private void FinishPractice()
         {
@@ -113,7 +104,6 @@ namespace CNNConvolution
         private void OnDisable()
         {
             _practice.FinishRequested -= FinishPractice;
-            _practice.FirstOutputRecorded -= HandleFirstOutput;
             _practice.Unsubscribe();
             _practice.RestartRequested -= RestartPractice;
             StopPractice();

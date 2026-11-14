@@ -46,6 +46,9 @@ namespace CNNConvolution.Editor
             fields.FindProperty("_spatial").objectReferenceValue = spatial;
             fields.FindProperty("_font").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NotoSansCJKkr-Regular.otf");
+            // The same picture Room 1-1 shows as pixels.
+            fields.FindProperty("_picture").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/CNNScreenLab/ColorDotPlate2.png");
             fields.ApplyModifiedPropertiesWithoutUndo();
             manager.enabled = true;
             root.SetActive(true);

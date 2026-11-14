@@ -8,26 +8,13 @@ namespace CNNConvolution
     {
         PlaceFilter,
         FilterPlaced,
-        MultiplyIntro,
-        MultiplyFirstCell,
-        MultiplyCenterCell,
-        MultiplyDone,
-        ChannelSum,
-        GreenChannel,
-        BlueChannel,
-        RgbSum,
-        FirstOutput,
-        Checkpoint,
-        MoveFilter,
-        Quiz,
-        QuizWrong,
-        QuizCorrect,
-        AutoIntro,
-        NextRow,
-        AllDone,
-        MeaningDetector,
-        MeaningScore,
-        MeaningMap,
+        FormulaTerms,
+        OutputValue,
+        SweepStart,
+        AutoFill,
+        Summary,
+        FeatureMap,
+        NextStage,
         Finished
     }
 
@@ -47,9 +34,12 @@ namespace CNNConvolution
             _held = _clips[(int)cue];
         }
 
+        // True while a line is waiting, speaking or paused.
+        public bool IsBusy => _held != null || _paused || _voice.isPlaying;
+
         public IEnumerator WaitUntilDone()
         {
-            while (_held != null || _paused || _voice.isPlaying) { yield return null; }
+            while (IsBusy) { yield return null; }
         }
 
         public void SetPaused(bool paused)

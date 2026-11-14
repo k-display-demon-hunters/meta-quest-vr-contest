@@ -26,6 +26,7 @@ namespace CNNConvolution
             _hint = hint;
             _ghost = kernel.CreatePlacementGhost();
             _ghostTiles = _ghost.GetComponentsInChildren<MeshRenderer>(true);
+            // The arrow, outline and check mark are drawn in the filter's own units and scaled with it.
             _gripArrow = factory.Root("Grip arrow");
             kernel.AttachGripArrow(_gripArrow);
             factory.Tile(_gripArrow, Vector3.zero, new Vector3(0.035f, 0.18f, 0.025f), Color.cyan);
@@ -50,12 +51,12 @@ namespace CNNConvolution
                 for (int segment = -2; segment <= 2; segment++)
                 {
                     factory.Tile(_placementDashed, new Vector3(segment * 0.11f, side * 0.27f, -0.035f),
-                        new Vector3(0.060f, 0.008f, 0.010f), waiting);
+                        new Vector3(0.060f, 0.02f, 0.010f), waiting);
                     factory.Tile(_placementDashed, new Vector3(side * 0.30f, segment * 0.10f, -0.035f),
-                        new Vector3(0.008f, 0.055f, 0.010f), waiting);
+                        new Vector3(0.02f, 0.055f, 0.010f), waiting);
                 }
             }
-            factory.Frame(_placementSolid, 0.60f, 0.54f, 0.014f, ready, 0.008f);
+            factory.Frame(_placementSolid, 0.60f, 0.54f, 0.014f, ready, 0.02f);
             _placementSolid.localPosition = new Vector3(0, 0, -0.035f);
             Transform shortStroke = factory.Tile(_placementCheck, new Vector3(0.40f, -0.28f, -0.05f),
                 new Vector3(0.022f, 0.075f, 0.015f), ready);
@@ -66,6 +67,7 @@ namespace CNNConvolution
             _placementSolid.gameObject.SetActive(false);
             _placementCheck.gameObject.SetActive(false);
             _dropTarget.SetParent(target, false);
+            _dropTarget.localScale = kernel.Scale;
             _dropTarget.gameObject.SetActive(false);
         }
 

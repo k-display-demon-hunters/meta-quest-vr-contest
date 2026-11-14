@@ -8,16 +8,13 @@ namespace FactoryEnvironment
         private const float FaultDuration = 0.42f;
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly AnimationCurve Flicker = new AnimationCurve(
-            new Keyframe(0f, 0.08f), new Keyframe(0.055f, 0.06f),
-            new Keyframe(0.09f, 0.76f), new Keyframe(0.125f, 0.29f),
-            new Keyframe(0.18f, 0.12f), new Keyframe(SecondDischarge, 0.04f),
-            new Keyframe(0.27f, 0.86f), new Keyframe(0.32f, 0.41f),
+            new Keyframe(0f, 1f), new Keyframe(FaultDuration * 0.5f, 0.8f),
             new Keyframe(FaultDuration, 1f));
 
         [SerializeField] private Light _light;
         [SerializeField] private Renderer _diffuser;
         [SerializeField] private int _diffuserMaterialIndex;
-        [SerializeField, Min(1f)] private float _interval = 7f;
+        [SerializeField, Min(1f)] private float _interval = 18f;
         [SerializeField] private float _phaseDelay;
         [SerializeField] private AudioSource _crackle;
         [SerializeField] private AudioClip _crackleClip;
@@ -97,23 +94,12 @@ namespace FactoryEnvironment
                 _sparks.Emit(_sparkCount / 2);
             }
 
-            float brightness = Flicker.Evaluate(elapsed);
-            if (_sparks == null)
-            {
-                SetBrightness(brightness);
-                return;
-            }
-
-            float firstFlash = Mathf.Clamp01(1f - elapsed / 0.065f);
-            float secondFlash = elapsed >= SecondDischarge
-                ? 0.65f * Mathf.Clamp01(1f - (elapsed - SecondDischarge) / 0.055f)
-                : 0f;
-            SetBrightness(brightness, 2.5f * Mathf.Max(firstFlash, secondFlash));
+            SetBrightness(Flicker.Evaluate(elapsed));
         }
 
-        private void SetBrightness(float brightness, float flash = 0f)
+        private void SetBrightness(float brightness)
         {
-            _light.intensity = _lightIntensity * (brightness + flash);
+            _light.intensity = _lightIntensity * brightness;
             Color diffuserColor = _diffuserColor * brightness;
             diffuserColor.a = _diffuserColor.a;
             _diffuserProperties.SetColor(BaseColor, diffuserColor);

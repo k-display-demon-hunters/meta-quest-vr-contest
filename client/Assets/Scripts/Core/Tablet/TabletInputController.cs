@@ -35,6 +35,7 @@ namespace Tablet
         private readonly Func<FocusGroup> _activeGroup;
         private readonly Func<RectTransform> _canvasRect;
         public event Action<bool> InteractionRequested;
+        public event Action VisibilityToggleRequested;
         public event Action SettingsRequested;
         public event Action BackRequested;
         public event Action<Selectable, bool> FocusChanged;
@@ -139,11 +140,11 @@ namespace Tablet
             _stick.Enable();
         }
 
-        public void Tick()
+        public void Tick(bool visible)
         {
             bool navigating = _trigger.IsPressed();
             Vector2 stick = _stick.ReadValue<Vector2>();
-            if (navigating)
+            if (navigating && visible)
             {
                 if (!_isInteracting)
                 {
@@ -157,20 +158,23 @@ namespace Tablet
                 ReleaseMovement();
             }
 
+            if (!navigating && _xButton.WasPressedThisFrame())
+            {
+                VisibilityToggleRequested?.Invoke();
+                return;
+            }
+            if (!visible) { return; }
+
             if (_menuButton.WasPressedThisFrame())
             {
                 SettingsRequested?.Invoke();
             }
-            else if (_yButton.WasPressedThisFrame())
+            else if (navigating && _yButton.WasPressedThisFrame())
             {
                 BackRequested?.Invoke();
             }
-            else if (_xButton.WasPressedThisFrame())
+            else if (navigating && _xButton.WasPressedThisFrame())
             {
-                if (!_isInteracting)
-                {
-                    InteractionRequested?.Invoke(true);
-                }
                 if (ActiveTargets[_focusIndex].Control is Button button && button.IsActive() && button.IsInteractable())
                 {
                     button.onClick.Invoke();

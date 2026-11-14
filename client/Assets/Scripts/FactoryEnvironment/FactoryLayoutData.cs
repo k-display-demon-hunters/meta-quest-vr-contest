@@ -87,6 +87,20 @@ namespace FactoryEnvironment
             public FactoryShutterId ExitShutter => _exitShutter;
         }
 
+        [Serializable]
+        internal sealed class TeleportPoint
+        {
+            [SerializeField] private FactoryAreaId _source;
+            [SerializeField] private Transform _arrival;
+            [SerializeField] private LearningStageId _requiredCompletion;
+            [SerializeField] private LearningStageId _requiredParchmentStage;
+
+            public FactoryAreaId Source => _source;
+            public Transform Arrival => _arrival;
+            public LearningStageId RequiredCompletion => _requiredCompletion;
+            public LearningStageId RequiredParchmentStage => _requiredParchmentStage;
+        }
+
         private readonly FactoryAreaId[] _areaOrder =
         {
             FactoryAreaId.FrontCourtToTutorialRoom,
@@ -125,9 +139,11 @@ namespace FactoryEnvironment
         [SerializeField] private Transform _entrance;
         [FormerlySerializedAs("_destinations")]
         [SerializeField] private StageSpace[] _stageSpaces;
+        [SerializeField] private TeleportPoint[] _teleportPoints;
 
         public Transform Entrance => _entrance;
         public ReadOnlySpan<StageSpace> StageSpaces => _stageSpaces;
+        internal ReadOnlySpan<TeleportPoint> TeleportPoints => _teleportPoints;
 
         public StageSpace GetStageSpace(LearningStageId id)
         {

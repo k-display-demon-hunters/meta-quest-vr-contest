@@ -7,7 +7,7 @@
 | 파일·클래스 | 역할과 처리 방식 |
 | --- | --- |
 | [PersistentXRPlayerRig](../client/Assets/Scripts/Core/XR/PersistentXRPlayerRig.cs) | 가장 먼저 깨어난 리그를 `DontDestroyOnLoad`로 유지하고, 새 씬에서 생성된 중복 리그는 카메라·입력이 동작하기 전에 비활성화·제거한다. 유지할 리그에 공통 입력 컴포넌트가 없으면 추가한다. 카메라·양손·태블릿·EventSystem을 포함한 리그 전체가 씬 이동 뒤에도 같은 인스턴스로 남는다. |
-| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 입력을 시점 회전·기울기 복원·레이 전환으로 바꾸고 Trigger를 uGUI 클릭에 연결한다. 씬 전환이나 `EnsureRayReady()` 호출 시 UI 모듈 등록이 끊겼으면 복원한다. Grip을 누른 동안 오른손 레이가 가리킨 대상을 잡도록 설정하며 물체의 이동은 XRI의 오른손 부착점을 따른다. 이야기 중 입력 제한과 입구 안내의 ray 유지도 반영하며 비활성화 시 변경한 레이 설정을 반환한다. |
+| [XRPlayerInputController](../client/Assets/Scripts/Core/XR/XRPlayerInputController.cs) | 오른손 시점 회전·기울기 복원·레이 선택 및 잡기 입력을 처리한다. 오른손 B는 `TeleportRequested`를 알린다. 왼손 Y 단독 입력은 `DeveloperModeEnabled`를 전환하고 `DeveloperModeChanged`를 알린다. FPS 표시 UI는 연결되어 있지 않다. |
 | [XREditorSimulator](../client/Assets/Scripts/Core/XR/XREditorSimulator.cs) | 에디터에서 가상 HMD·컨트롤러를 생성하고 키보드·마우스 액션을 XRI 시뮬레이터에 연결한다. 위치·회전과 버튼·스틱 입력을 가상 XR 기기 상태로 바꾸므로 공용 리그가 실제 컨트롤러와 같은 입력 경로로 읽는다. 컴포넌트의 활성·비활성·파괴에 맞춰 기기와 액션의 수명을 관리한다. |
 
 ### 리그 초기화와 수명
@@ -42,7 +42,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 픽셀 관찰·합성곱에는 별도 UI 입력 환경의 생성·해제 호출이 없다. 모델 설계는 슬롯의 `SlotSettingsController`가 XRI 활성화 이벤트를 직접 받고 오른손·잡기 상태·UI 우선순위에 따른 입력 제한을 처리한다. 오프닝·엔딩의 `CinematicMovementController`는 연출 중 이동·잡기와 레이 표시를 제어한다. `CinematicInputController`는 트리거를 2초간 눌러 건너뛰는 입력을 처리한다. 이들 씬은 EventSystem·XRUIInputModule을 생성·삭제하거나 공용 UI Trigger 바인딩을 교체하지 않는다.
 
-클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 스틱 탐색·X 선택은 기존 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
+클릭 전달은 `XRRayInteractor → XRUIInputModule → Button.onClick → 해당 UI Controller` 순서다. 각 Canvas는 XR용 TrackedDeviceGraphicRaycaster로 입력을 판정하며 버튼 콜백 연결은 각 UI에 둔다. 픽셀 관찰·합성곱 씬과 합성곱 안내 프리팹, 출력 위치 퀴즈의 런타임 선택 영역도 같은 구성을 사용한다. ScreenLabBuilder와 ConvolutionLabBuilder는 이 구성을 생성한다. 태블릿의 왼손 Trigger 조합은 `TabletInputController`가 담당한다. 공용 리그를 배치한 씬의 단독 실행도 동일한 프리팹을 사용한다. 공용 리그가 없는 `CNNConvolutionLab`과 `FactoryTutorial`은 공장에 로드되어 유지 중인 리그를 사용한다.
 
 ### 추적과 이동
 
@@ -58,7 +58,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 - `XRGrabInteractable`은 XRI의 오른손 레이와 부착점으로 잡는다. 잡은 물체는 잡기 시작한 거리에서 오른손의 위치·방향 변화를 따라 이동한다.
 - 레이 계산과 선 표시 모두 오른손을 기준으로 유지한다. 잡는 동안에도 오른손 스틱은 시점을 회전시키며, XRI의 부착점 거리 조절은 비활성화한다.
 - 레이 비활성화는 선 표시와 인터랙터를 함께 끄므로 현재 선택도 해제된다.
-- `TutorialInputSuppressed`는 공통 시점·레이 전환 입력 처리를 막고, `TutorialRayForcedOn`은 튜토리얼 동안 레이를 켠 상태로 유지한다. 왼손 Grip은 앱을 종료하지 않으며, 태블릿 설정의 앱 종료 확인창에서 종료한다. 사용 흐름은 [오프닝·엔딩 구현](cnn-documentary-cinematics.md)에 있다.
+- `TutorialInputSuppressed`는 공통 시점 입력 처리를 막는다. 연출에서 레이 표시와 상호작용은 `CinematicMovementController`가 제어한다. 앱 종료는 태블릿 설정의 확인창에서 처리한다.
 
 `OnDisable()`은 씬 로드 이벤트 구독과 입력 액션을 해제하고 변경했던 레이 설정을 복원한다. `OnDestroy()`는 InputAction을 해제한다.
 
@@ -74,7 +74,7 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 | --- | --- |
 | TabletManager | 태블릿 모듈 진입점. SetAvailable로 표시와 입력 활성화를 관리하고, 앱·설정·종료 확인창, 학습 스냅샷 표시와 이동 요청, 공용 양피지 열람 연결을 조율한다. |
 | TabletUIBuilder | 저장된 프리팹의 UI 참조·버튼 콜백·표면 스타일·앱 선택 표시를 연결한다. |
-| TabletInputController | 기존 Trigger+스틱 탐색, X 선택, Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
+| TabletInputController | X 단독 표시 전환 요청, Trigger + 스틱 탐색, Trigger + X 선택, Trigger + Y 뒤로, Menu 설정. 비활성 항목을 건너뛰며 포커스 테두리를 표시한다. |
 | TabletLearningController | Core 세션의 읽기 전용 LearningProgressSnapshot으로 현재 단계·완료 표시·진행률·이동 버튼을 갱신한다. 이동 시작·실패·완료 안내 문구와 표시용 스냅샷 캐시만 소유하며, 완료 기록을 변경하거나 씬을 로드하지 않는다. |
 | TabletParchmentController | 공용 수집 상태를 조회해 보유 문서만 빈틈 없이 목록에 표시하고 선택 시 재열람을 요청한다. |
 | TabletSettingsController | 밝기·음량·진동·선택 문서 인덱스를 기존 PlayerPrefs 키로 읽고 저장한다. |
@@ -92,6 +92,8 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 ### 포커스·양피지·설정
 
 `TabletManager.SetAvailable(bool)`은 태블릿 루트의 활성 상태를 변경한다. 비활성화하면 전체 표시가 숨겨지고 `OnDisable()`에서 이벤트 구독과 입력을 해제하며 태블릿 탐색이 점유한 이동 입력을 반환한다. 다시 활성화하면 `OnEnable()`에서 구독과 입력을 복원하고 학습·양피지 표시를 갱신한다. 양피지 열람 중에는 기존 입력 중단 처리를 적용한다. `IsAvailable`은 태블릿 루트 자체의 활성 상태를 반환하며, 숨기는 동안에도 앱·설정·학습 데이터는 유지한다.
+
+사용자가 X를 눌러 태블릿을 숨기면 `TabletManager`가 본체·앞면 Canvas·뒷면 로고만 끈다. 루트가 활성 상태라 다시 X를 누르면 열 수 있다. 숨긴 동안 태블릿 탐색이 왼쪽 스틱 이동을 점유하지 않는다.
 
 포커스 우선순위는 종료 확인 → 설정 → 앱 화면이다. 메인 그룹에 앱 버튼·단계 카드·수집 목록·설정 버튼을 등록한다. 앱 전환 후 해당 앱 버튼으로 포커스를 돌린다. Trigger 탐색이 끝나고 스틱이 중앙으로 돌아와야 원래 이동 입력을 복원한다. 양피지 열람 동안 태블릿 입력은 중단하며 닫은 다음 프레임부터 기존 조작 상태·포커스를 복원한다.
 

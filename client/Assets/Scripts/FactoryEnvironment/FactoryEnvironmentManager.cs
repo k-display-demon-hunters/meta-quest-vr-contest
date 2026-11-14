@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using Learning;
+using Parchment;
 using Tablet;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -16,7 +18,11 @@ namespace FactoryEnvironment
         [SerializeField] private FactoryAreaController _areaController;
         [SerializeField] private LearningSessionManager _session;
         [SerializeField] private FactoryPlayerController _player;
+        [SerializeField] private FactoryTeleportFeedbackController _teleportFeedback;
         private TabletManager _tablet;
+        private ParchmentManager _parchment;
+        private readonly HashSet<Transform> _usedTeleportArrivals = new HashSet<Transform>();
+        private bool _teleportRequested;
         private LearningStageId _travelStage;
         private bool _tutorialAvailable;
 
@@ -30,11 +36,14 @@ namespace FactoryEnvironment
         private void Awake()
         {
             _tablet = FindFirstObjectByType<TabletManager>();
+            _parchment = FindFirstObjectByType<ParchmentManager>();
         }
 
         private void OnEnable()
         {
             _tablet.StageMoveRequested += HandleStageMoveRequested;
+            _player.TeleportRequested += HandleTeleportRequested;
+            _areaController.AreaChecked += HandleAreaChecked;
             _session.StageAvailabilityChanged += HandleStageAvailabilityChanged;
             _areaController.AreaChanged += HandleAreaChanged;
             _sceneLoader.StateChanged += HandleLoadingStateChanged;
@@ -48,6 +57,9 @@ namespace FactoryEnvironment
                 _tablet.StageMoveRequested -= HandleStageMoveRequested;
             }
             _session.StageAvailabilityChanged -= HandleStageAvailabilityChanged;
+            _player.TeleportRequested -= HandleTeleportRequested;
+            _areaController.AreaChecked -= HandleAreaChecked;
+            _teleportRequested = false;
             _areaController.AreaChanged -= HandleAreaChanged;
             _sceneLoader.StateChanged -= HandleLoadingStateChanged;
             _sceneLoader.LoadFailed -= HandleLoadFailed;
@@ -57,6 +69,42 @@ namespace FactoryEnvironment
         {
             // OnEnable runs before an asynchronously loaded scene becomes available.
             SceneManager.SetActiveScene(gameObject.scene);
+        }
+
+        private void HandleTeleportRequested() => _teleportRequested = true;
+
+        private void HandleAreaChecked()
+        {
+            if (!_teleportRequested) { return; }
+            _teleportRequested = false;
+            if (!_sceneLoader.IsBusy && !_parchment.IsOpen)
+            {
+                FactoryAreaId source = _areaController.GetTeleportSource();
+                foreach (FactoryLayoutData.TeleportPoint point in _layoutData.TeleportPoints)
+                {
+                    if (point.Source != source || !CanUseTeleportPoint(point)) { continue; }
+                    // Onward travel takes priority. Do not send the player backwards if it was already used.
+                    if (!_usedTeleportArrivals.Add(point.Arrival)) { break; }
+                    _teleportFeedback.Hide();
+                    _player.TeleportTo(point.Arrival);
+                    return;
+                }
+            }
+            _teleportFeedback.ShowDenied(_player.CameraTransform);
+        }
+
+        private bool CanUseTeleportPoint(FactoryLayoutData.TeleportPoint point)
+        {
+            if (point.RequiredCompletion != LearningStageId.None && !_session.IsCompleted(point.RequiredCompletion))
+            {
+                return false;
+            }
+            if (point.RequiredParchmentStage == LearningStageId.None) { return true; }
+            foreach (int documentId in LearningStageCatalog.Get(point.RequiredParchmentStage).EntranceParchmentIds)
+            {
+                if (!_parchment.HasRead(documentId)) { return false; }
+            }
+            return true;
         }
 
         private void HandleAreaChanged(FactoryLayoutData.Area area)

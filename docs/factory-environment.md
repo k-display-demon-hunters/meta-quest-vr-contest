@@ -353,6 +353,26 @@ FactoryAreaController에는 별도의 Area 클래스나 직렬화된 구역 목�
 
 FactoryLayoutData는 체험별 입출구 셔터 ID·경로·콘텐츠 기준점을 StageSpace로 묶어 StageSpaces와 GetStageSpace(stage)로 제공한다. LayoutData는 내부 Shutter 클래스로 셔터 데이터 형식을 직접 정의하고 _shutters에 보관하며 Shutters로 제공한다. FactoryShutterId도 FactoryAreaId와 같이 FactoryLayoutData.cs에서 정의한다. 외부 셔터 데이터 형식이나 셔터 동작 컴포넌트에 의존하지 않는다. ShutterController 참조는 ShuttersManager의 배열에만 연결한다. Screen 출구와 Convolution 입구는 동일한 ScreenToConvolution ID를 사용하며, 후문 구역의 출구 ID는 None이다. ShuttersManager는 실제 Controller 배열을 사용하므로 공유 문을 중복 등록하지 않고 존재하지 않는 후문 출구도 참조하지 않는다. ROOM #1에서 두 체험 구역 볼륨 밖의 공용 바닥은 InspectionRoom이다. Screen 볼륨은 중심 X=-16, 폭 5.6m로 Convolution 볼륨과 겹치지 않는다. LearningStageCatalog는 체험 목록·씬 이름·양피지 조건을 제공한다.
 
+## B 텔레포트
+
+오른손 B(에디터 `2`)는 공장 내 선택 이동이다. `FactoryLayoutData`의 텔레포트 항목은 출발 구역, 도착 Transform, 필요한 체험 완료와 양피지 열람을 연결한다. 아래 좌표는 바닥 기준 X, Y, Z(m)다. 각 도착점은 공장 씬이 유지되는 동안 B로 한 번만 사용할 수 있다. 같은 구역에서 여러 항목의 조건을 충족하면 다음 구역으로 가는 항목을 우선한다. 그 도착점을 이미 사용했다면 사용 불가 안내를 표시한다.
+
+| 출발 구역 | 도착 지점 | 방향 | 필요 조건 |
+| --- | --- | --- | --- |
+| 정문 앞마당 | 튜토리얼실 서쪽 `(-7.3, 0, 0.15)` | 서쪽 (-X) | 바로 사용 가능 |
+| 튜토리얼실 | ROOM #1 입구 통로의 양피지 01 앞 `(-9.35, 0, 0)` | 서쪽 (-X) | 튜토리얼 완료 |
+| 튜토리얼실 또는 ROOM #1 입구 통로 | ROOM #1-1 `(-14.3, 0, -2.15)` | 서쪽 (-X) | 튜토리얼 완료, 양피지 01 열람 완료 |
+| ROOM #1-1 | ROOM #1-2 `(-23, 0, -1.75)` | 서쪽 (-X) | 픽셀 관찰 완료, 양피지 01 열람 완료 |
+| ROOM #1-1 | 같은 구역의 픽셀 관찰 위치 `(-14.3, 0, -2.15)` | 서쪽 (-X) | 튜토리얼 완료, 양피지 01 열람 완료 |
+| ROOM #1-2 또는 복도 2 | 복도 2의 굽은 구간 `(-25.9, 0, 11.85)` | 동쪽 (+X) | 합성곱 완료, 양피지 01 열람 완료 |
+| ROOM #1-2 | 같은 구역의 합성곱 위치 `(-23, 0, -1.75)` | 서쪽 (-X) | 픽셀 관찰 완료, 양피지 01 열람 완료 |
+| ROOM #3 또는 복도 4 | 복도 4의 굽은 구간 `(21.2, 0, 33.15)` | 서쪽 (-X) | 모델 제작 완료 |
+| ROOM #3 | 같은 방의 모델 제작 위치 `(22.42, 0.24, 12)` | 동쪽 (+X) | 방 안에서 사용 가능 |
+
+`FactoryPlayerController`는 공용 XR 입력의 요청을 `FactoryEnvironmentManager`에 전달한다. 씬 Manager는 해당 프레임의 구역 판정 후 완료 기록과 양피지 열람 여부를 조회하고, 성공 시 PlayerController에 도착점 이동을 요청한다. ROOM #1의 체험 판정 볼륨 밖에서도 `FactoryAreaController`는 아치 셔터 방향을 기준으로 물리적인 두 구역을 구분해 B의 출발 구역을 반환한다. 도착하면 이동 전 눈높이를 유지하고, 스틱으로 준 상하 기울기를 복원한 뒤 도착점 방향에 맞춘다. 구역 진입에 따른 로딩은 기존 `AreaChanged`를 사용한다.
+
+지원하지 않는 구역, 완료 조건 미충족, 사용한 지점 재요청, 양피지 열람 중, 콘텐츠 로딩 중에는 `FactoryTeleportFeedbackController`가 화면 중앙 안내를 2초간 표시한다. 안내 패널은 짧게 흔들리고 오른손 컨트롤러가 진동한다. 카메라 위치와 시선은 움직이지 않는다.
+
 ## 구역 이름과 공간 범위
 
 구역 식별 enum FactoryAreaId는 FactoryLayoutData.cs 파일의 FactoryEnvironment namespace에 클래스와 나란히 정의한다. Area.Id와 LayoutData의 순서·구역 조회가 이 타입을 사용한다. CurrentArea와 AreaChanged는 FactoryLayoutData.Area 객체를 사용한다. 통로의 Area ID와 씬 오브젝트 이름은 연결된 두 공간의 이름을 사용한다. 숫자로만 구분하던 통로 이름을 FrontCourtToTutorialRoom, TutorialRoomToInspectionRoom, InspectionRoomToFeatureMapRoom, FeatureMapRoomToModelDesignRoom, ModelDesignRoomToRearCourt로 변경했다. ID의 직렬화 숫자는 유지한다. 외부의 서쪽·동쪽 바닥은 Outside(ID 8) 한 항목의 두 floorVolumes로 묶고, FrontCourt와 RearCourt는 별도 Area로 유지한다.

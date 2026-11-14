@@ -30,6 +30,7 @@ namespace Learning
         public event Action<LearningProgressSnapshot> StateChanged;
         public event Action<LearningStageId, bool> StageAvailabilityChanged;
         public bool CanTravel => isActiveAndEnabled && _factory.CanTravel;
+        public bool IsCompleted(LearningStageId stage) => _progress.IsCompleted(stage);
         public LearningProgressSnapshot GetSnapshot() => _progress.CreateSnapshot(_factory.CurrentStage, CanTravel);
 
         private void Awake()

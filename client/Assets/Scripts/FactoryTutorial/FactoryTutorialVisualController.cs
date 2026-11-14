@@ -103,15 +103,16 @@ namespace FactoryTutorial
             device.TryGetFeatureValue(CommonUsages.secondaryButton, out bool y);
             device.TryGetFeatureValue(CommonUsages.menuButton, out bool menu);
             if (stick.magnitude < 0.2f) { _stickCentered = true; }
-            if (_page >= 6 && _page <= 9 && trigger > 0.5f && stick.magnitude > 0.5f && _stickCentered)
+            bool navigating = trigger > 0.5f;
+            if (_page >= 6 && _page <= 9 && navigating && stick.magnitude > 0.5f && _stickCentered)
             {
                 _selection = (_selection + (stick.y > 0 ? 2 : 1)) % _rows.Length;
                 _stickCentered = false;
                 RefreshRows();
-                _status.text = "항목이 이동했어요. X로 선택할 수 있어요.";
+                _status.text = "트리거를 누른 채 X로 선택할 수 있어요.";
             }
-            if (_page >= 6 && _page <= 9 && x && !_lastX) { _tabletTitle.text = "선택: " + _rows[_selection].text; _status.text = "X · 선택했어요"; }
-            if (_page >= 6 && _page <= 9 && y && !_lastY) { _tabletTitle.text = "태블릿 · 조작 연습 그림"; _status.text = "Y · 뒤로 돌아왔어요"; }
+            if (_page >= 6 && _page <= 9 && navigating && x && !_lastX) { _tabletTitle.text = "선택: " + _rows[_selection].text; _status.text = "트리거 + X · 선택했어요"; }
+            if (_page >= 6 && _page <= 9 && navigating && y && !_lastY) { _tabletTitle.text = "태블릿 · 조작 연습 그림"; _status.text = "트리거 + Y · 뒤로 돌아왔어요"; }
             if (_page >= 6 && _page <= 9 && menu && !_lastMenu) { _tabletTitle.text = "설정 · 밝기 / 음량"; _status.text = "Menu · 실제 태블릿에서도 설정이 열려요"; }
             _lastX = x; _lastY = y; _lastMenu = menu;
             if (_page >= 1 && _page <= 4 && ((_left != null && _left.CuePerformed) || (_right != null && _right.CuePerformed)))

@@ -181,6 +181,7 @@ MonoBehaviour:
   _interfacePrefab: {fileID: 100483, guid: 35e506bd42375315850d29d8b99c55aa, type: 3}
   _canvas: {fileID: 810502}
   _body: {fileID: 810203}
+  _rearLogo: {fileID: 981000000}
 --- !u!1 &810200
 GameObject:
   m_ObjectHideFlags: 0

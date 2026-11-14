@@ -13,6 +13,7 @@ namespace Tablet
         [SerializeField] private TabletUIBuilder _interfacePrefab;
         [SerializeField] private Canvas _canvas;
         [SerializeField] private MeshFilter _body;
+        [SerializeField] private GameObject _rearLogo;
         private TabletUIBuilder _ui;
         private TabletVisualResources _resources;
         private TabletInputController _input;
@@ -25,6 +26,7 @@ namespace Tablet
         private int _inputResumeFrame = -1;
         private bool _interactionBeforeReader;
         private int _focusBeforeReader;
+        private bool _visible = true;
         public bool IsAvailable => gameObject.activeSelf;
         public event Action<LearningStageId> StageMoveRequested;
 
@@ -63,6 +65,7 @@ namespace Tablet
             _reader.Closed += RestoreAfterParchment;
             _reader.Collected += RefreshCollection;
             _input.InteractionRequested += SetInteraction;
+            _input.VisibilityToggleRequested += ToggleVisibility;
             _input.SettingsRequested += ToggleSettings;
             _input.BackRequested += GoBack;
             _ui.SettingsButton.onClick.AddListener(ToggleSettings);
@@ -89,6 +92,7 @@ namespace Tablet
             _reader.Closed -= RestoreAfterParchment;
             _reader.Collected -= RefreshCollection;
             _input.InteractionRequested -= SetInteraction;
+            _input.VisibilityToggleRequested -= ToggleVisibility;
             _input.SettingsRequested -= ToggleSettings;
             _input.BackRequested -= GoBack;
             _ui.SettingsButton.onClick.RemoveListener(ToggleSettings);
@@ -102,7 +106,7 @@ namespace Tablet
             _ui.QuitConfirm.onClick.RemoveListener(ConfirmQuit);
             _input.Disable();
         }
-        private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(); } }
+        private void Update() { if (!_reader.IsOpen && Time.frameCount > _inputResumeFrame) { _input.Tick(_visible); } }
 
         public void SetAvailable(bool available)
         {
@@ -123,6 +127,15 @@ namespace Tablet
         }
         private void ShowApp(int index) { _ui.ShowApp(index); _input.ResetFocus(index); }
         private void SetInteraction(bool active) => _input.SetInteraction(active, _ui.SelectedApp);
+        private void ToggleVisibility()
+        {
+            _visible = !_visible;
+            _body.gameObject.SetActive(_visible);
+            _canvas.gameObject.SetActive(_visible);
+            _rearLogo.SetActive(_visible);
+            if (!_visible) { SetInteraction(false); }
+        }
+
         private void ToggleSettings()
         {
             _detail.Close();

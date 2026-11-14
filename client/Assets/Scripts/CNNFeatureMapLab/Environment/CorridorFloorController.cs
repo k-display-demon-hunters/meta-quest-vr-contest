@@ -31,7 +31,7 @@ namespace FeatureMapCorridor
 
         internal void Highlight(int zone)
         {
-            _outputLabel.gameObject.SetActive(zone < 0 || zone >= 4);
+            _outputLabel.gameObject.SetActive(zone == 4);
             for (int i = 0; i < _zoneSurfaces.Length; i++)
             {
                 _zoneSurfaces[i].sharedMaterial = i == zone ? _activeSurface : _idleSurface;
@@ -42,7 +42,7 @@ namespace FeatureMapCorridor
                 for (int line = 0; line < 2; line++)
                 {
                     TMP_Text label = _names[(i-1)*2+line];
-                    label.gameObject.SetActive(i == 1 ? zone == 1 : zone < 0 || i <= zone);
+                    label.gameObject.SetActive(i == 1 ? zone == 1 : i <= zone);
                     label.color = i == zone ? ActiveLabelColor : IdleLabelColor;
                     label.transform.localScale = _nameScales[(i-1)*2+line] * (i == zone ? 1.08f : 1);
                 }

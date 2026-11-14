@@ -463,8 +463,8 @@ namespace FeatureMapCorridor
                 new[] { inputR, inputG, inputB },
                 new[]
                 {
-                    new SavedConvMap(conv1State0Map0, new RoundCalculationResult(1, 0, 3, 196, 16, new[] { conv1State0Map0Source0, conv1State0Map0Source1, conv1State0Map0Source2 }, Array.Empty<float[]>(), new[] { 1.0510118f, 0.124721579f, 0.57090199f }, new[] { 1.04150593f, -0.113223538f, -0.166274503f }, 0.612007916f, -0.150000006f)),
-                    new SavedConvMap(conv1State0Map1, new RoundCalculationResult(1, 1, 3, 148, 16, new[] { conv1State0Map1Source0, conv1State0Map1Source1, conv1State0Map1Source2 }, Array.Empty<float[]>(), new[] { 1.75168622f, 0.748329461f, 0.913443208f }, new[] { -0.707921505f, 0.738917708f, 0.913443208f }, 0.744439423f, -0.200000003f)),
+                    new SavedConvMap(conv1State0Map0, new RoundCalculationResult(1, 0, 3, 196, 16, new[] { conv1State0Map0Source0, conv1State0Map0Source1, conv1State0Map0Source2 }, Array.Empty<float[]>(), new[] { 1.0510118f, 0.124721579f, 0.57090199f }, new[] { 1.04150593f, -0.113223538f, -0.166274503f }, 0.612007916f, -0.150000006f, FirstKernels[0])),
+                    new SavedConvMap(conv1State0Map1, new RoundCalculationResult(1, 1, 3, 148, 16, new[] { conv1State0Map1Source0, conv1State0Map1Source1, conv1State0Map1Source2 }, Array.Empty<float[]>(), new[] { 1.75168622f, 0.748329461f, 0.913443208f }, new[] { -0.707921505f, 0.738917708f, 0.913443208f }, 0.744439423f, -0.200000003f, FirstKernels[1])),
                 },
                 new[] { pool0, pool1 },
                 new[] { new PoolingCalculationResult(196, 50, 0, 0.612007916f, 0.541984379f, 0.333137274f, 0.472196102f, 0.612007916f), new PoolingCalculationResult(132, 34, 2, 0.723733425f, 0.556078553f, 0.744439423f, 0.689631462f, 0.744439423f) },

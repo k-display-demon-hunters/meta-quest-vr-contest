@@ -6,6 +6,8 @@ namespace FeatureMapCorridor
     [Serializable]
     internal sealed class CorridorCameraController
     {
+        private const float RoomEntrance = -15.75f;
+        private const float RoomHalfWidth = 11.32f;
         [SerializeField] private Transform _root;
         private Camera _camera;
         internal Camera Camera => _camera;
@@ -27,7 +29,7 @@ namespace FeatureMapCorridor
                 return;
             }
             Vector3 view = _root.InverseTransformPoint(_camera.transform.position);
-            bool inside = Mathf.Abs(view.x) <= 7.12f && view.z >= -13.4f && view.z <= 29.48716981f;
+            bool inside = Mathf.Abs(view.x) <= RoomHalfWidth && view.z >= RoomEntrance && view.z <= 29.48716981f;
             if (Visible == inside)
             {
                 return;

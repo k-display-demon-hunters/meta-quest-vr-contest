@@ -32,6 +32,13 @@ namespace FeatureMapCorridor
             target.SetPropertyBlock(_properties);
         }
 
+        internal Color KernelColor(float weight)
+        {
+            Color neutral = new Color32(91, 106, 118, 255);
+            Color sign = weight < 0 ? _theme.Negative : _theme.Cyan;
+            return Color.Lerp(neutral, sign, Mathf.Clamp01(Mathf.Abs(weight) * 2f));
+        }
+
         internal void Texture(Renderer target, Texture2D texture)
         {
             target.GetPropertyBlock(_properties);

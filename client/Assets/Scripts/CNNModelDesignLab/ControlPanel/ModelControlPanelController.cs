@@ -17,11 +17,12 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Text _headerTitle;
         [SerializeField] private Button _exampleButton;
         [SerializeField] private Text _stateText;
-        [SerializeField] private Text _statusText;
-        [SerializeField] private Image _statusAccent;
+        [SerializeField] private Text _statusAccent;
         [SerializeField] private GameObject _modelChangedNotice;
         [SerializeField] private GameObject[] _pages;
-        [SerializeField] private Image[] _tabAccents;
+        [SerializeField] private Image[] _tabBackgrounds;
+        [SerializeField] private Image[] _tabBorders;
+        [SerializeField] private Text[] _tabLabels;
         [SerializeField] private Button _validationTab;
         [SerializeField] private Button _trainingTab;
         [SerializeField] private Button _predictionTab;
@@ -29,31 +30,62 @@ namespace ModelDesignScene.ControlPanel
         [Header("Actions and request errors")]
         [SerializeField] private Button _realityButton;
         [SerializeField] private Button _startTrainingButton;
-        [SerializeField] private Outline _startTrainingOutline;
+        [SerializeField] private Text _stopTrainingLabel;
+        [SerializeField] private Image[] _exampleBorder;
+        [SerializeField] private Image[] _realityBorder;
+        [SerializeField] private Image[] _startTrainingBorder;
+        [SerializeField] private Image[] _stopTrainingBorder;
+        [SerializeField] private Text _exampleLabel;
+        [SerializeField] private Text _realityLabel;
         [SerializeField] private Button _stopTrainingButton;
         [SerializeField] private Text _startTrainingLabel;
         [SerializeField] private GameObject _errorPanel;
+        [SerializeField] private Image[] _errorBorder;
+        [SerializeField] private Text _errorTitle;
         [SerializeField] private Text _errorText;
-        [SerializeField] private ScrollRect _errorScroll;
+        [SerializeField] private Text _errorCode;
+        [SerializeField] private Button _errorActionButton;
+        [SerializeField] private Text _errorActionLabel;
         [SerializeField] private Button _dismissErrorButton;
-        [SerializeField] private Button _errorValidationButton;
 
         [Header("Screen sections")]
         [SerializeField] private ModelValidationController _validation;
+        [SerializeField] private Text[] _assemblySteps;
+        [SerializeField] private Image[] _assemblyStepUnderlines;
+        [SerializeField] private Text[] _assemblySlotLabels;
+        [SerializeField] private Image[] _assemblySlotFills;
+        [SerializeField] private Graphic[] _assemblyEmptySlots;
+        [SerializeField] private Text _assemblyOutputSizes;
+        [SerializeField] private Text _exampleReason;
+        [SerializeField] private Text _realityReason;
         [SerializeField] private ModelTrainingMetricsController _metrics;
         [SerializeField] private ModelInferenceResultsController _inference;
 
         [Header("Status colors")]
-        [SerializeField] private Color _readyColor = new Color(0.25f, 0.84f, 0.69f);
-        [SerializeField] private Color _problemColor = new Color(1f, 0.7f, 0.36f);
-        [SerializeField] private Color _neutralColor = new Color(0.73f, 0.48f, 0.21f);
+        private static readonly Color Cyan = new Color32(57, 230, 255, 255);
+        private static readonly Color Yellow = new Color32(242, 201, 76, 255);
+        private static readonly Color TextBright = new Color32(234, 246, 255, 255);
+        private static readonly Color TextMuted = new Color32(159, 179, 200, 255);
+        private static readonly Color TextDisabled = new Color32(129, 148, 167, 255);
+        private static readonly Color TabUnavailable = new Color32(130, 151, 172, 255);
+        private static readonly Color Amber = new Color32(255, 181, 71, 255);
+        private static readonly Color PanelFill = new Color32(16, 38, 58, 255);
+        private static readonly Color SelectedTabText = new Color32(4, 34, 43, 255);
+        private static readonly Color AvailableTabBorder = new Color32(46, 74, 99, 255);
+        private static readonly Color UnavailableTabBorder = new Color32(34, 56, 76, 255);
+        private static readonly Color ActionText = new Color32(26, 18, 6, 255);
+        private static readonly Color SlotText = new Color32(8, 12, 18, 255);
 
+        private enum ErrorCard { None, Training, Cancelling, SampleInference, Reality, Dataset, ModelCheck }
+
+        private ErrorCard _activeError;
         private int _currentPage;
-        private bool _showIntro;
         private bool _hasIssues;
-        private bool _hasPlacedBlock;
+        private int _placedBlockCount;
         private bool _isDragging;
         private bool _isBusy;
+        private bool _hasTrainedModel;
+        private ModelExecutionState _state;
 
         internal event Action OnExampleRequested;
         internal event Action OnRealityRequested;
@@ -72,11 +104,11 @@ namespace ModelDesignScene.ControlPanel
             _startTrainingButton.onClick.AddListener(HandleStartRequested);
             _stopTrainingButton.onClick.AddListener(HandleStopRequested);
             _dismissErrorButton.onClick.AddListener(DismissError);
-            _errorValidationButton.onClick.AddListener(InspectModel);
+            _errorActionButton.onClick.AddListener(HandleErrorAction);
             _metrics.Initialize();
             _inference.Initialize();
             _inference.OnInferenceRequested += HandleInferenceRequested;
-            _inference.OnError += ShowError;
+            _inference.OnError += ShowSampleFailure;
             ResetSessionUI();
         }
 
@@ -87,11 +119,27 @@ namespace ModelDesignScene.ControlPanel
             OnExampleRequested?.Invoke();
         }
 
-        internal void SetExampleAvailable(bool available) => _exampleButton.interactable = available;
+        internal void SetExampleAvailable(bool available)
+        {
+            _exampleButton.interactable = available;
+            SetSecondaryStyle(_exampleBorder, _exampleLabel, available);
+            RefreshSecondaryReasons();
+        }
 
-        private void HandleRealityRequested() => OnRealityRequested?.Invoke();
+        private void HandleRealityRequested()
+        {
+            if (!isActiveAndEnabled || !_realityButton.interactable) { return; }
+            DismissError();
+            OnRealityRequested?.Invoke();
+        }
 
-        internal void SetRealityAvailable(bool available) => _realityButton.interactable = available;
+        internal void SetRealityAvailable(bool available)
+        {
+            _realityButton.interactable = available;
+            SetSecondaryStyle(_realityBorder, _realityLabel, available);
+            RefreshSecondaryReasons();
+            if (_activeError == ErrorCard.Reality) { _errorActionButton.interactable = available; }
+        }
 
         internal void SetSamples(IReadOnlyList<DatasetSample> samples)
         {
@@ -101,27 +149,26 @@ namespace ModelDesignScene.ControlPanel
         internal void ShowModelValidation(IReadOnlyList<ValidationIssue> issues,
             IReadOnlyList<LayerDefinition> slotLayers, bool isDragging, bool hasValidationResult, bool focus = false)
         {
+            bool unmappedIssue = false;
+            foreach (ValidationIssue issue in issues)
+            {
+                if (issue.Kind != ValidationIssueKind.Unmapped) { continue; }
+                unmappedIssue = true;
+                break;
+            }
+            if (focus && unmappedIssue) { ShowErrorCard(ErrorCard.ModelCheck); }
+            else if (_activeError == ErrorCard.ModelCheck && (!unmappedIssue || isDragging)) { DismissError(); }
+
             bool wasInvalid = _hasIssues && !_isDragging;
             _hasIssues = issues.Count > 0;
             _isDragging = isDragging;
-            _hasPlacedBlock = false;
-            foreach (LayerDefinition layer in slotLayers)
-            {
-                if (layer != null)
-                {
-                    _hasPlacedBlock = true;
-                    break;
-                }
-            }
-            _showIntro = !isDragging && !_hasIssues && !_hasPlacedBlock;
+            RefreshAssembly(slotLayers);
             RefreshHeader();
             _validation.ShowValidation(issues, slotLayers, isDragging, hasValidationResult);
-            _statusText.text = isDragging ? "블록 배치 중"
-                : _hasIssues ? "수정 필요 · " + issues.Count + "곳"
-                : _showIntro ? "모델 만들기 안내" : hasValidationResult ? "실행 전 검사 완료" : "실행 전 검사 대기";
-            _statusAccent.color = isDragging || _showIntro || !hasValidationResult ? _neutralColor : _hasIssues ? _problemColor : _readyColor;
+            if (_state == ModelExecutionState.Idle) { ShowAssemblyStatus(); }
+            RefreshSecondaryReasons();
             RefreshStartButton();
-            if (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy))
+            if (!unmappedIssue && (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy)))
             {
                 ShowValidationPage();
             }
@@ -143,14 +190,16 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = false;
             _isDragging = false;
             _hasIssues = false;
-            _hasPlacedBlock = false;
-            _showIntro = true;
-            _exampleButton.interactable = false;
-            _statusText.text = "모델 만들기 안내";
-            _statusAccent.color = _neutralColor;
+            RefreshAssembly(Array.Empty<LayerDefinition>());
+            _assemblyOutputSizes.text = string.Empty;
+            _state = ModelExecutionState.Idle;
+            _hasTrainedModel = false;
+            SetExampleAvailable(false);
+            SetSecondaryStyle(_realityBorder, _realityLabel, _realityButton.interactable);
             _validation.ShowValidation(Array.Empty<ValidationIssue>(), Array.Empty<LayerDefinition>(), false, false);
             _stopTrainingButton.interactable = false;
-            _stateText.text = string.Empty;
+            ShowTrainingAction(false);
+            ShowAssemblyStatus();
             SetModelChanged(false);
             DismissError();
             RefreshStartButton();
@@ -160,6 +209,10 @@ namespace ModelDesignScene.ControlPanel
         internal void ShowProgress(TrainingProgress progress)
         {
             _metrics.ShowProgress(progress);
+            if (_state == ModelExecutionState.Training && progress != null)
+            {
+                _stateText.text = $"학습 중 · 에포크 {progress.Epoch}/{progress.Epochs}";
+            }
         }
 
         internal void ShowCompleted(TrainingResult result)
@@ -169,7 +222,7 @@ namespace ModelDesignScene.ControlPanel
                 return;
             }
             _metrics.ShowCompleted(result);
-            _stateText.text = "학습 완료 · 숫자 예측 화면에서 새로운 이미지를 확인하세요.";
+            _stateText.text = "학습 완료";
             DismissError();
             ShowTrainingPage();
         }
@@ -185,54 +238,124 @@ namespace ModelDesignScene.ControlPanel
 
         internal void ShowState(ModelExecutionState state, bool hasTrainedModel, bool canInfer, bool canCancel)
         {
+            _state = state;
+            _hasTrainedModel = hasTrainedModel;
             _isBusy = state == ModelExecutionState.StartingTraining
                 || state == ModelExecutionState.Training || state == ModelExecutionState.CancellingTraining
                 || state == ModelExecutionState.Inferring;
+            if (_activeError == ErrorCard.Cancelling && state != ModelExecutionState.CancellingTraining)
+            {
+                HideErrorCard();
+            }
             switch (state)
             {
                 case ModelExecutionState.StartingTraining:
-                    _stateText.text = "모델 학습을 준비하는 중…";
+                    _stateText.text = "학습 준비 중";
                     break;
                 case ModelExecutionState.Training:
-                    _stateText.text = "학습 중 · 완료된 에포크의 지표를 표시합니다.";
+                    _stateText.text = "학습 중";
                     break;
                 case ModelExecutionState.CancellingTraining:
-                    _stateText.text = "학습을 취소하는 중…";
+                    _stateText.text = "학습 멈추는 중";
+                    ShowErrorCard(ErrorCard.Cancelling);
                     break;
                 case ModelExecutionState.Completed:
-                    _stateText.text = "학습 완료 · 숫자 예측 화면에서 새로운 이미지를 확인하세요.";
+                    _stateText.text = "학습 완료";
                     break;
                 case ModelExecutionState.Inferring:
-                    _stateText.text = "선택한 이미지의 예측을 기다립니다…";
+                    _stateText.text = "예측 중";
                     break;
                 case ModelExecutionState.Cancelled:
-                    _stateText.text = "학습을 중지했습니다. 구성을 바꾸거나 다시 시작할 수 있습니다.";
+                    _stateText.text = "학습 취소됨";
                     break;
                 case ModelExecutionState.Failed:
-                    _stateText.text = "요청 실패 · 화면에 표시된 원인과 안내를 확인하세요.";
+                    _stateText.text = "학습 멈춤";
                     break;
                 default:
-                    _stateText.text = hasTrainedModel ? "학습된 모델이 있습니다. 이미지를 선택해 예측해 보세요."
-                        : string.Empty;
+                    ShowAssemblyStatus();
                     break;
             }
             _stopTrainingButton.interactable = canCancel;
+            ShowTrainingAction(canCancel || state == ModelExecutionState.CancellingTraining);
+            if (state != ModelExecutionState.Idle)
+            {
+                _statusAccent.color = state switch
+                {
+                    ModelExecutionState.StartingTraining or ModelExecutionState.Training => Amber,
+                    ModelExecutionState.Completed or ModelExecutionState.Inferring => Cyan,
+                    ModelExecutionState.Failed => Yellow,
+                    _ => TextMuted
+                };
+            }
+            RefreshSecondaryReasons();
+            RefreshTabStyles();
             _inference.SetAvailability(hasTrainedModel, canInfer);
             RefreshStartButton();
         }
 
-        internal void ShowError(string message)
+        internal void ShowExecutionFailure(ModelExecutionFailure failure)
         {
-            _errorText.text = string.IsNullOrWhiteSpace(message) ? "요청을 완료하지 못했습니다." : message;
-            _errorPanel.SetActive(true);
-            _errorScroll.StopMovement();
-            _errorScroll.content.anchoredPosition = Vector2.zero;
+            switch (failure)
+            {
+                case ModelExecutionFailure.Training: ShowErrorCard(ErrorCard.Training); break;
+                case ModelExecutionFailure.SampleInference: ShowSampleFailure(); break;
+                case ModelExecutionFailure.DatasetPreparation: ShowErrorCard(ErrorCard.Dataset); break;
+            }
+        }
+
+        internal void ShowRealityEntryFailure() => ShowErrorCard(ErrorCard.Reality);
+
+        private void ShowSampleFailure()
+        {
             _inference.ClearPendingPrediction();
+            if (_activeError != ErrorCard.Cancelling) { ShowErrorCard(ErrorCard.SampleInference); }
+        }
+
+        private void ShowErrorCard(ErrorCard card)
+        {
+            var (title, reason, action, code, canDismiss) = card switch
+            {
+                ErrorCard.Training => ("학습이 중간에 멈췄어요", "조립한 모델에는 문제가 없어요. 다시 학습해 보세요.",
+                    "다시 학습하기", "ERR-TRAIN", true),
+                ErrorCard.Cancelling => ("학습을 멈추는 중이에요", "잠시 후 다시 시작할 수 있어요.",
+                    "", "", false),
+                ErrorCard.SampleInference => ("예측하지 못했어요", "다른 샘플을 고르거나 다시 눌러 보세요.",
+                    "", "ERR-INFER", true),
+                ErrorCard.Reality => ("현실 숫자 인식을 열지 못했어요", "헤드셋 연결과 카메라 상태를 확인한 뒤 다시 시도해 주세요.",
+                    "다시 시도", "ERR-REALITY", true),
+                ErrorCard.Dataset => ("학습 데이터를 불러오지 못했어요", "진행자에게 알려 주세요.",
+                    "", "ERR-DATA", false),
+                ErrorCard.ModelCheck => ("조립을 다시 확인해 주세요", "이 구성은 학습할 수 없어요.",
+                    "모델 검사 보기", "ERR-CHECK", false),
+                _ => throw new ArgumentOutOfRangeException(nameof(card))
+            };
+
+            _activeError = card;
+            Color borderColor = card == ErrorCard.Cancelling
+                ? new Color32(106, 139, 158, 255) : Yellow;
+            foreach (Image edge in _errorBorder) { edge.color = borderColor; }
+            _errorTitle.text = title;
+            _errorText.text = reason;
+            _errorCode.text = code;
+            _errorCode.gameObject.SetActive(code.Length > 0);
+            _errorActionLabel.text = action;
+            _errorActionButton.gameObject.SetActive(action.Length > 0);
+            _errorActionButton.interactable = card switch
+            {
+                ErrorCard.Training => _startTrainingButton.interactable,
+                ErrorCard.Reality => _realityButton.interactable,
+                _ => true
+            };
+            _dismissErrorButton.gameObject.SetActive(canDismiss);
+
+            RectTransform close = (RectTransform)_dismissErrorButton.transform;
+            close.anchoredPosition = new Vector2(action.Length > 0 ? 276f : 28f, close.anchoredPosition.y);
+            _errorPanel.SetActive(true);
         }
 
         internal void ShowCancelled()
         {
-            _stateText.text = "학습 취소됨 · 그래프에는 취소 전 완료된 에포크만 남아 있습니다.";
+            _stateText.text = "학습 취소됨";
             DismissError();
             _inference.ResetTraining();
         }
@@ -246,8 +369,28 @@ namespace ModelDesignScene.ControlPanel
         {
             bool canStart = !_isBusy && !_isDragging;
             _startTrainingButton.interactable = canStart;
-            _startTrainingOutline.enabled = canStart && _hasPlacedBlock;
-            _startTrainingLabel.text = _isDragging ? "블록을 먼저 놓아 주세요" : _hasIssues ? "구성 문제 확인하기" : "학습 시작";
+            if (_activeError == ErrorCard.Training) { _errorActionButton.interactable = canStart; }
+            SetTrainingStyle(_startTrainingBorder, _startTrainingLabel, canStart);
+            _startTrainingLabel.text = "▶ 학습 시작";
+        }
+
+        private void ShowTrainingAction(bool showStop)
+        {
+            _startTrainingButton.gameObject.SetActive(!showStop);
+            _stopTrainingButton.gameObject.SetActive(showStop);
+            SetTrainingStyle(_stopTrainingBorder, _stopTrainingLabel, _stopTrainingButton.interactable);
+        }
+
+        private static void SetSecondaryStyle(Image[] border, Text label, bool available)
+        {
+            foreach (Image edge in border) { edge.color = available ? Cyan : AvailableTabBorder; }
+            label.color = available ? Cyan : TextDisabled;
+        }
+
+        private static void SetTrainingStyle(Image[] border, Text label, bool available)
+        {
+            foreach (Image edge in border) { edge.enabled = !available; }
+            label.color = available ? ActionText : TextDisabled;
         }
 
         private void HandleStartRequested()
@@ -276,12 +419,30 @@ namespace ModelDesignScene.ControlPanel
         private void ShowValidationPage() { ShowPage(0); }
         private void ShowTrainingPage() { ShowPage(1); }
         private void ShowPredictionPage() { ShowPage(2); }
-        private void DismissError() { _errorPanel.SetActive(false); }
-
-        private void InspectModel()
+        private void DismissError()
         {
-            DismissError();
-            ShowValidationPage();
+            // Other controls may still be usable while the engine finishes cancelling.
+            if (_activeError == ErrorCard.Cancelling && _isBusy) { return; }
+            HideErrorCard();
+        }
+
+        private void HideErrorCard()
+        {
+            _activeError = ErrorCard.None;
+            _errorPanel.SetActive(false);
+        }
+
+        private void HandleErrorAction()
+        {
+            switch (_activeError)
+            {
+                case ErrorCard.Training: HandleStartRequested(); break;
+                case ErrorCard.Reality: HandleRealityRequested(); break;
+                case ErrorCard.ModelCheck:
+                    DismissError();
+                    ShowValidationPage();
+                    break;
+            }
         }
 
         private void ShowPage(int page)
@@ -291,13 +452,103 @@ namespace ModelDesignScene.ControlPanel
             for (int index = 0; index < _pages.Length; index++)
             {
                 _pages[index].SetActive(index == page);
-                _tabAccents[index].enabled = index == page;
             }
+            RefreshTabStyles();
+        }
+
+        private void RefreshTabStyles()
+        {
+            for (int index = 0; index < _tabLabels.Length; index++)
+            {
+                bool selected = index == _currentPage;
+                bool unavailable = index == 2 && !_hasTrainedModel;
+                _tabBorders[index].color = selected ? Cyan : unavailable ? UnavailableTabBorder : AvailableTabBorder;
+                _tabBackgrounds[index].color = selected ? Cyan : PanelFill;
+                _tabLabels[index].color = selected ? SelectedTabText : unavailable ? TabUnavailable : TextMuted;
+            }
+        }
+
+        internal void ShowAssemblyOutputSizes(IReadOnlyList<string> sizes)
+        {
+            int split = sizes.Count > 6 ? (sizes.Count + 1) / 2 : sizes.Count;
+            var output = new System.Text.StringBuilder();
+            for (int index = 0; index < sizes.Count; index++)
+            {
+                if (index == split) { output.Append(" →\n"); }
+                else if (index > 0) { output.Append(" → "); }
+                output.Append(sizes[index]);
+            }
+            _assemblyOutputSizes.text = output.ToString();
+        }
+
+        private void RefreshAssembly(IReadOnlyList<LayerDefinition> slotLayers)
+        {
+            _placedBlockCount = 0;
+            for (int index = 0; index < _assemblySlotLabels.Length; index++)
+            {
+                LayerDefinition layer = index < slotLayers.Count ? slotLayers[index] : null;
+                bool occupied = layer != null;
+                _assemblySlotFills[index].enabled = occupied;
+                _assemblyEmptySlots[index].enabled = !occupied;
+                Text label = _assemblySlotLabels[index];
+                if (!occupied)
+                {
+                    label.text = (index + 1).ToString();
+                    label.color = TabUnavailable;
+                    continue;
+                }
+
+                _placedBlockCount++;
+                (string name, Color32 fill) = layer.Type switch
+                {
+                    LayerType.Conv2D => ("CONV", new Color32(76, 141, 255, 255)),
+                    LayerType.MaxPooling2D => ("POOL", new Color32(155, 107, 255, 255)),
+                    LayerType.Flatten => ("FLAT", new Color32(224, 64, 200, 255)),
+                    LayerType.Dense => ("DENSE", new Color32(61, 220, 132, 255)),
+                    _ => throw new ArgumentOutOfRangeException(nameof(layer))
+                };
+                _assemblySlotFills[index].color = fill;
+                label.text = name;
+                label.color = SlotText;
+            }
+
+            int current = _isDragging ? 1 : _placedBlockCount > 0 ? 2 : 0;
+            for (int index = 0; index < _assemblySteps.Length; index++)
+            {
+                Text step = _assemblySteps[index];
+                step.color = index == current ? TextBright : index < current ? TextMuted : TabUnavailable;
+                step.fontStyle = index == current ? FontStyle.Bold : FontStyle.Normal;
+                _assemblyStepUnderlines[index].enabled = index == current;
+            }
+        }
+
+        private void ShowAssemblyStatus()
+        {
+            _stateText.text = _isDragging || _placedBlockCount > 0 ? $"조립 중 · 블록 {_placedBlockCount}개" : "조립 대기";
+            _statusAccent.color = _isDragging || _placedBlockCount > 0 ? Amber : TextMuted;
+        }
+
+        private void RefreshSecondaryReasons()
+        {
+            _exampleReason.text = _exampleButton.interactable ? "" : _isDragging ? "블록을 놓은 뒤 사용"
+                : _state is ModelExecutionState.StartingTraining or ModelExecutionState.Training
+                    or ModelExecutionState.CancellingTraining ? "학습 중에는 쓸 수 없어요" : "";
+            _realityReason.text = !_realityButton.interactable && !_hasTrainedModel ? "학습 후 사용" : "";
+            _exampleReason.gameObject.SetActive(_exampleReason.text.Length > 0);
+            _realityReason.gameObject.SetActive(_realityReason.text.Length > 0);
+            SetSecondaryLabelPosition(_exampleLabel, _exampleReason.gameObject.activeSelf);
+            SetSecondaryLabelPosition(_realityLabel, _realityReason.gameObject.activeSelf);
+        }
+
+        private static void SetSecondaryLabelPosition(Text label, bool withReason)
+        {
+            RectTransform rect = label.rectTransform;
+            rect.sizeDelta = new Vector2(rect.sizeDelta.x, withReason ? 42f : 78f);
         }
 
         private void RefreshHeader()
         {
-            _headerTitle.text = _currentPage == 0 && _showIntro ? "블록으로 모델을 만들어 보세요" : "모델 조립 콘솔";
+            _headerTitle.text = "숫자를 읽는 CNN 만들기";
         }
 
         private void OnDestroy()
@@ -310,9 +561,9 @@ namespace ModelDesignScene.ControlPanel
             _startTrainingButton.onClick.RemoveListener(HandleStartRequested);
             _stopTrainingButton.onClick.RemoveListener(HandleStopRequested);
             _dismissErrorButton.onClick.RemoveListener(DismissError);
-            _errorValidationButton.onClick.RemoveListener(InspectModel);
+            _errorActionButton.onClick.RemoveListener(HandleErrorAction);
             _inference.OnInferenceRequested -= HandleInferenceRequested;
-            _inference.OnError -= ShowError;
+            _inference.OnError -= ShowSampleFailure;
         }
     }
 }

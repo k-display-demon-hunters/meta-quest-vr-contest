@@ -10,7 +10,7 @@ namespace ModelDesignScene.ControlPanel
     public sealed class ModelValidationController : MonoBehaviour
     {
         [SerializeField] private Text _title;
-        [SerializeField] private GameObject _introInstructions;
+        [SerializeField] private GameObject _diagnosticDetails;
         [SerializeField] private Text _reason;
         [SerializeField] private Text _action;
         [SerializeField] private Text _location;
@@ -20,9 +20,9 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private Button _previousIssue;
         [SerializeField] private Button _nextIssue;
         [SerializeField] private Image _statusAccent;
-        [SerializeField] private Color _readyColor = new Color(0.22f, 0.8f, 0.59f);
-        [SerializeField] private Color _problemColor = new Color(1f, 0.68f, 0.22f);
-        [SerializeField] private Color _placingColor = new Color(0.73f, 0.48f, 0.21f);
+        [SerializeField] private Color _readyColor = new Color32(57, 230, 255, 255);
+        [SerializeField] private Color _problemColor = new Color32(242, 201, 76, 255);
+        [SerializeField] private Color _placingColor = new Color32(106, 139, 158, 255);
 
         private IReadOnlyList<ValidationIssue> _issues = Array.Empty<ValidationIssue>();
         private IReadOnlyList<LayerDefinition> _slotLayers = Array.Empty<LayerDefinition>();
@@ -50,7 +50,7 @@ namespace ModelDesignScene.ControlPanel
                 for (int index = 0; index < _issues.Count; index++)
                 {
                     ValidationIssue candidate = _issues[index];
-                    if (candidate.Message == previous.Message && candidate.SlotIndex == previous.SlotIndex)
+                    if (candidate.Kind == previous.Kind && candidate.SlotIndex == previous.SlotIndex)
                     {
                         _issueIndex = index;
                         break;
@@ -63,67 +63,21 @@ namespace ModelDesignScene.ControlPanel
         private void RefreshView()
         {
             bool showProblem = !_isDragging && _issues.Count > 0;
-            int occupiedCount = 0;
-            foreach (LayerDefinition layer in _slotLayers)
-            {
-                if (layer != null)
-                {
-                    occupiedCount++;
-                }
-            }
-
-            bool showIntro = !_isDragging && !showProblem && occupiedCount == 0;
             bool showIssueNavigation = showProblem && _issues.Count > 1;
-            _introInstructions.SetActive(showIntro);
-            _title.gameObject.SetActive(!showIntro);
-            _reason.gameObject.SetActive(!showIntro);
-            _location.gameObject.SetActive(!showIntro);
-            _suggestedFix.SetActive(!showIntro);
+            _diagnosticDetails.SetActive(showProblem);
             _diagnosticsTip.SetActive(showIssueNavigation);
             _previousIssue.gameObject.SetActive(showIssueNavigation);
             _nextIssue.gameObject.SetActive(showIssueNavigation);
-            _previousIssue.interactable = showProblem && _issueIndex > 0;
-            _nextIssue.interactable = showProblem && _issueIndex + 1 < _issues.Count;
+            _previousIssue.interactable = showIssueNavigation && _issueIndex > 0;
+            _nextIssue.interactable = showIssueNavigation && _issueIndex + 1 < _issues.Count;
             _issueCount.text = showProblem ? $"문제 {_issueIndex + 1} / {_issues.Count}"
-                : _isDragging ? "배치 중" : _hasValidationResult ? "검사 완료" : "검사 대기";
-            if (showIntro)
-            {
-                _statusAccent.color = _placingColor;
-                _issueCount.text = "처음 시작하기";
-                return;
-            }
-            if (_isDragging)
-            {
-                _statusAccent.color = _placingColor;
-                _title.text = "블록을 배치하고 있어요";
-                _location.text = "빈 슬롯에 놓기";
-                _reason.text = "잡은 블록을 바닥의 빈 슬롯 위로 옮겨 주세요.";
-                _action.text = "Grip을 놓으면 슬롯에 붙습니다. 슬롯 밖이나 이미 찬 슬롯에 놓으면 블록이 삭제됩니다.";
-                return;
-            }
-            if (!showProblem)
-            {
-                if (!_hasValidationResult)
-                {
-                    _statusAccent.color = _placingColor;
-                    _title.text = "학습 시작 시 모델을 검사합니다";
-                    _location.text = $"INPUT → {occupiedCount}개 블록 → OUTPUT";
-                    _reason.text = "원하는 블록과 설정값을 배치하세요. 아직 전체 모델 검사를 진행하지 않았습니다.";
-                    _action.text = "학습 시작을 누르면 층 순서와 입력 크기를 검사합니다.";
-                    return;
-                }
-                _statusAccent.color = _readyColor;
-                _title.text = "블록 순서 확인 완료";
-                _location.text = $"INPUT → {occupiedCount}개 블록 → OUTPUT";
-                _reason.text = "블록 순서와 모델 크기 검사를 통과했습니다. 학습 결과는 학습·검증 지표에서 확인하세요.";
-                _action.text = "학습 시작을 누르세요. Conv·Pooling 뒤에 Dense·Output을 둘 때는 Flatten이 필요합니다.";
-                return;
-            }
+                : _isDragging ? "배치 중" : _hasValidationResult ? "블록 순서 확인 완료" : "실행 전 검사 대기";
+            _statusAccent.color = showProblem ? _problemColor : _hasValidationResult ? _readyColor : _placingColor;
+            if (!showProblem) { return; }
 
             ValidationIssue issue = _issues[_issueIndex];
-            _statusAccent.color = _problemColor;
             _location.text = GetIssueLocation(GetIssueLayer(issue));
-            DescribeIssue(issue.Message, out string title, out string reason, out string action);
+            DescribeIssue(issue.Kind, out string title, out string reason, out string action);
             _title.text = title;
             _reason.text = reason;
             _action.text = action;
@@ -165,28 +119,28 @@ namespace ModelDesignScene.ControlPanel
             }
         }
 
-        private static void DescribeIssue(string message, out string title, out string reason, out string action)
+        private static void DescribeIssue(ValidationIssueKind kind, out string title, out string reason, out string action)
         {
-            switch (message)
+            switch (kind)
             {
-                case "Spatial layers require Flatten before Dense or Output.":
+                case ValidationIssueKind.FlattenRequired:
                     title = "FLATTEN이 필요해요";
                     reason = "INPUT 이미지와 Conv·Pooling 결과는 공간 형태입니다. Dense·Output은 펼친 벡터를 입력받습니다.";
                     action = "이 Dense·Output 앞에 FLATTEN을 놓으세요.";
                     break;
-                case "Flatten requires spatial input.":
+                case ValidationIssueKind.SpatialInputRequired:
                     title = "이미 펼쳐진 입력이에요";
                     reason = "앞의 Flatten·Dense가 이미 벡터를 출력하므로 다시 Flatten할 수 없습니다.";
                     action = "이 FLATTEN을 빼거나 Conv·Pooling 다음, Dense 앞에 놓으세요.";
                     break;
-                case "Spatial layers cannot follow Dense or Flatten.":
+                case ValidationIssueKind.SpatialLayerAfterVector:
                     title = "Conv·Pooling의 위치를 바꾸세요";
                     reason = "Flatten·Dense 뒤에는 이미지 형태가 남아 있지 않습니다.";
                     action = "이 Conv·Pooling을 첫 FLATTEN·DENSE 앞으로 옮기세요.";
                     break;
                 default:
-                    title = "모델 구성을 확인하세요";
-                    reason = string.IsNullOrWhiteSpace(message) ? "모델 구성에 확인이 필요한 문제가 있습니다." : message;
+                    title = "조립을 다시 확인해 주세요";
+                    reason = "이 구성은 학습할 수 없어요.";
                     action = "표시된 블록의 순서와 설정을 확인한 뒤 다시 학습을 시작하세요.";
                     break;
             }

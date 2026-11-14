@@ -8,6 +8,7 @@ using ModelDesignScene.Execution;
 using ModelDesignScene.Execution.Engine;
 using ModelDesignScene.ControlPanel;
 using ModelDesignScene.Dataset;
+using ModelDesignScene.Hologram;
 using UnityEngine;
 
 namespace ModelDesignScene
@@ -19,6 +20,9 @@ namespace ModelDesignScene
         [SerializeField] private ModelExecutionManager _execution;
         [SerializeField] private ModelControlPanelManager _controlPanel;
         [SerializeField] private ModelDatasetManager _dataset;
+        [SerializeField] private CnnHologramController _hologram;
+
+        private bool _hologramTraining;
 
         [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
 
@@ -51,6 +55,8 @@ namespace ModelDesignScene
         private bool _progressionAvailable;
         public System.Collections.IEnumerator EndSession()
         {
+            _hologramTraining = false;
+            _hologram.Clear();
             _builder.CancelTrainingFlow();
             _execution.CloseSession();
             yield break;
@@ -166,7 +172,15 @@ namespace ModelDesignScene
             }
             _settings.Close();
             _builder.CancelPlacementExample();
-            await _execution.StartTrainingAsync(_model);
+            try
+            {
+                await _execution.StartTrainingAsync(_model);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError($"[ERR-TRAIN] {exception}");
+                if (this != null) { _controlPanel.ShowExecutionFailure(ModelExecutionFailure.Training); }
+            }
         }
 
         private async void HandleTrainingStopRequested()
@@ -179,11 +193,9 @@ namespace ModelDesignScene
 
         private async void HandleInferenceRequested(string imageId)
         {
-            if (isActiveAndEnabled && !_execution.IsBusy && _execution.HasTrainedModel)
-            {
-                _builder.CancelPlacementExample();
-                await _execution.InferAsync(imageId);
-            }
+            if (!isActiveAndEnabled) { return; }
+            RunPresentation(_builder.CancelPlacementExample);
+            await _execution.InferAsync(imageId);
         }
 
         private async void HandleRealityRequested()
@@ -195,7 +207,8 @@ namespace ModelDesignScene
             }
             catch (System.Exception exception)
             {
-                if (this != null) { _controlPanel.ShowError(exception.Message); }
+                Debug.LogError($"[ERR-REALITY] {exception}");
+                if (this != null) { _controlPanel.ShowRealityEntryFailure(); }
             }
         }
 
@@ -210,16 +223,24 @@ namespace ModelDesignScene
                     _validationIssues = System.Array.Empty<ValidationIssue>();
                     _hasValidationResult = true;
                     _controlPanel.ResetTraining();
-                    _builder.PlayTrainingFlow();
+                    RunPresentation(ShowStructureHologram);
                 }
                 else if (_execution.State == ModelExecutionState.Completed)
                 {
-                    _builder.FinishTrainingFlow();
+                    RunPresentation(_builder.FinishTrainingFlow);
+                }
+                else if (_execution.State == ModelExecutionState.Inferring)
+                {
+                    if (!_reality.IsOpen && !_reality.IsTransitioning)
+                    {
+                        RunPresentation(() => _builder.PlayHologramFlow(_hologram.ReadFlowFrames(), false, _hologram.FlowReadyAt));
+                    }
                 }
                 else
                 {
-                    _builder.CancelTrainingFlow();
+                    RunPresentation(_builder.FadeModelFlow);
                 }
+                UpdateStructureHologramState(_execution.State);
                 _controlPanel.ShowState(_execution.State, _execution.HasTrainedModel,
                     !_execution.IsBusy && _execution.HasTrainedModel, _execution.CanCancel);
                 _modelUIIsDirty = true;
@@ -227,9 +248,36 @@ namespace ModelDesignScene
             }
         }
 
+        private void ShowStructureHologram()
+        {
+            _builder.RefreshLabels();
+            _hologram.Show(_execution.SubmittedModel, _builder.ReadHologramLayers());
+            _hologramTraining = true;
+            _builder.PlayHologramFlow(_hologram.ReadFlowFrames(), true, _hologram.FlowReadyAt);
+        }
+
+        private void UpdateStructureHologramState(ModelExecutionState state)
+        {
+            if (!_hologramTraining) { return; }
+            switch (state)
+            {
+                case ModelExecutionState.Completed:
+                    _hologramTraining = false;
+                    _hologram.Complete();
+                    break;
+                case ModelExecutionState.CancellingTraining:
+                case ModelExecutionState.Cancelled:
+                case ModelExecutionState.Failed:
+                    _hologramTraining = false;
+                    _hologram.Fade();
+                    break;
+            }
+        }
+
         private void HandleTrainingProgress(TrainingProgress progress)
         {
-            _controlPanel.ShowProgress(progress);
+            RunPresentation(() => _controlPanel.ShowProgress(progress));
+            RunPresentation(() => _builder.ShowEpochFlow(progress.Epoch));
             SetProgress(progress.Epochs > 0 ? 0.95f * progress.Epoch / progress.Epochs : 0f);
         }
         private void HandleTrainingCancelled() => _controlPanel.ShowCancelled();
@@ -238,28 +286,40 @@ namespace ModelDesignScene
             if (!result.ImageId.StartsWith("reality:", System.StringComparison.Ordinal))
                 _controlPanel.ShowInference(result);
         }
-        private void HandleExecutionError(string message) => _controlPanel.ShowError(message);
+        private void HandleExecutionError(ModelExecutionFailure failure) => _controlPanel.ShowExecutionFailure(failure);
 
         private void HandleTrainingCompleted(TrainingResult result)
         {
-            _controlPanel.ShowCompleted(result);
+            ModelExecutionDefinition submitted = _execution.SubmittedModel;
             _trainingCompleted = result != null;
-            if (_trainingCompleted)
-            {
-                SetProgress(1f);
-                List<string> layers = new List<string> { "INPUT" };
-                foreach (LayerDefinition layer in _model.Layers)
-                {
-                    if (layer == null) { continue; }
-                    string label = layer.Type.ToString();
-                    if (layer.Type == LayerType.Conv2D) { label += "\n" + layer.Filters + " × " + layer.Height + "×" + layer.Width; }
-                    if (layer.Type == LayerType.Dense) { label += "\n" + layer.Units; }
-                    layers.Add(label);
-                }
-                layers.Add("OUTPUT");
-                _cinematicResult.Record(layers);
-            }
             PublishProgressionState();
+            if (!_trainingCompleted) { return; }
+
+            RunPresentation(() => SetProgress(1f));
+            RunPresentation(() => _controlPanel.ShowCompleted(result));
+            RunPresentation(() => RecordTrainedModel(submitted));
+        }
+
+        private void RecordTrainedModel(ModelExecutionDefinition submitted)
+        {
+            List<string> layers = new List<string> { "INPUT" };
+            // The final definition is the fixed OUTPUT classifier.
+            for (int i = 0; i < submitted.Layers.Count - 1; i++)
+            {
+                CnnLayerDefinition layer = submitted.Layers[i];
+                string label = layer.Kind == LayerKind.MaxPooling2D ? nameof(LayerType.MaxPooling2D) : layer.Kind.ToString();
+                if (layer.Kind == LayerKind.Conv2D) { label += "\n" + layer.Units + " × " + layer.Height + "×" + layer.Width; }
+                if (layer.Kind == LayerKind.Dense) { label += "\n" + layer.Units; }
+                layers.Add(label);
+            }
+            layers.Add("OUTPUT");
+            _cinematicResult.Record(layers);
+        }
+
+        private static void RunPresentation(System.Action action)
+        {
+            try { action(); }
+            catch (System.Exception exception) { Debug.LogError(exception); }
         }
 
         private void PublishProgressionState()
@@ -272,7 +332,6 @@ namespace ModelDesignScene
 
         private void HandleModelChanged()
         {
-            _builder.CancelTrainingFlow();
             _validationIssues = System.Array.Empty<ValidationIssue>();
             _hasValidationResult = false;
             _modelUIIsDirty = true;
@@ -290,15 +349,19 @@ namespace ModelDesignScene
         {
             _modelUIIsDirty = false;
             _builder.RefreshLabels();
+            _controlPanel.ShowAssemblyOutputSizes(_builder.ReadOutputSizes());
             _settings.Refresh();
             _controlPanel.ShowModelValidation(_validationIssues, _model.Layers,
                 _builder.IsDragging, _hasValidationResult);
-            _controlPanel.SetModelChanged(_execution.SubmittedModel != null
-                && !_execution.MatchesSubmittedModel(_model));
+            bool changed = _execution.SubmittedModel != null && !_execution.MatchesSubmittedModel(_model);
+            _controlPanel.SetModelChanged(changed);
+            _hologram.SetAssemblyMatches(!changed);
         }
 
         private void OnDisable()
         {
+            _hologramTraining = false;
+            _hologram.Clear();
             _controlPanel.OnExampleRequested -= HandleExampleRequested;
             _controlPanel.OnRealityRequested -= HandleRealityRequested;
             _trainingCompleted = false;

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using ModelDesignScene.Model;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace ModelDesignScene.ModelBuilder
 {
@@ -10,6 +9,7 @@ namespace ModelDesignScene.ModelBuilder
     {
         [SerializeField] private Transform _paletteRoot;
         [SerializeField] private PaletteBlock[] _paletteBlocks;
+        [SerializeField] private Material _supplyFrame;
 
         private readonly Dictionary<ModelBlockController, Pose> _paletteSlots = new Dictionary<ModelBlockController, Pose>();
         private readonly Dictionary<LayerType, PaletteBlock> _paletteByType = new Dictionary<LayerType, PaletteBlock>();
@@ -59,7 +59,7 @@ namespace ModelDesignScene.ModelBuilder
         private void InitializeBlock(ModelBlockController block, PaletteBlock entry)
         {
             entry.SetBlock(block);
-            block.Initialize(_createLayer(entry.Type), true, entry.Nameplate, entry.ExampleCaption);
+            block.Initialize(_createLayer(entry.Type), true, _supplyFrame);
             _paletteSlots.Add(block, new Pose(block.transform.localPosition, block.transform.localRotation));
             OnBlockCreated?.Invoke(block);
         }
@@ -70,15 +70,11 @@ namespace ModelDesignScene.ModelBuilder
             [SerializeField] private LayerType _type;
             [SerializeField] private ModelBlockController _block;
             [SerializeField] private ModelBlockController _prefab;
-            [SerializeField] private Text _nameplate;
-            [SerializeField] private Text _exampleCaption;
 
             public LayerType Type => _type;
             public ModelBlockController Block => _block;
             public void SetBlock(ModelBlockController block) => _block = block;
             public ModelBlockController Prefab => _prefab;
-            public Text Nameplate => _nameplate;
-            public Text ExampleCaption => _exampleCaption;
         }
     }
 }

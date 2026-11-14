@@ -18,20 +18,26 @@ namespace ModelDesignScene.ModelBuilder
         [SerializeField] private BoxCollider _collider;
         [SerializeField] private Text _outputCaption;
         private Mesh _outputMesh;
+        private MeshRenderer _supplyRenderer;
+        private Material[] _assemblyMaterials;
         private Vector3Int _visualShape = new Vector3Int(-1, -1, -1);
         private bool _visualSpatial;
         private bool _visualEnlarged;
-        private Text _paletteNameplate;
-        private Text _paletteCaption;
+        private bool _visualSupply;
 
         private float FlowHeight => _visualSpatial
             ? -0.08f + Mathf.Max(0.12f, _visualShape.x * 0.025f + 0.04f) * 0.5f : 0.27f;
 
-        internal Vector3 FlowStart => transform.TransformPoint(new Vector3(_collider.center.x - _collider.size.x * 0.5f - 0.015f, FlowHeight, 0.04f));
-        internal Vector3 FlowEnd => transform.TransformPoint(new Vector3(_collider.center.x + _collider.size.x * 0.5f + 0.015f, FlowHeight, 0.04f));
+        internal Vector3 FlowStart => transform.TransformPoint(new Vector3(_collider.center.x - VisualBounds.size.x * 0.5f - 0.015f, FlowHeight, 0.04f));
+        internal Vector3 FlowEnd => transform.TransformPoint(new Vector3(_collider.center.x + VisualBounds.size.x * 0.5f + 0.015f, FlowHeight, 0.04f));
 
         private Rigidbody _rigidbody;
         private bool _interactionEnabled;
+        private Pose _supplyIdlePose;
+        private float _supplyIdleStarted;
+        private const float SupplyTurnSpeed = 15f;
+        private const float SupplyBobHeight = 0.01f;
+        private const float SupplyBobFrequency = 0.5f;
         private int _inputChannels = LayerLimits.InputChannels;
         private int _inputHeight = 8;
         private int _inputWidth = 8;
@@ -44,7 +50,10 @@ namespace ModelDesignScene.ModelBuilder
         internal LayerDefinition Layer { get; private set; }
         internal bool IsPalette { get; private set; }
         internal Mesh ExampleMesh => _surface.sharedMesh;
-        internal Bounds VisualBounds => new Bounds(_collider.center, _collider.size);
+        internal string OutputSizeLabel { get; private set; }
+        internal Vector3Int SpatialOutputSize { get; private set; }
+        internal int VectorOutputSize { get; private set; }
+        internal Bounds VisualBounds { get; private set; }
         internal bool IsGrabbed => _grabInteractable.isSelected;
         internal bool IsFixed => Layer != null && (Layer.Type == LayerType.Input || Layer.Type == LayerType.Output);
         public bool canProcess => isActiveAndEnabled;
@@ -65,14 +74,39 @@ namespace ModelDesignScene.ModelBuilder
             _grabInteractable.selectExited.AddListener(HandleReleased);
         }
 
-        internal void Initialize(LayerDefinition layer, bool isPalette, Text paletteNameplate = null, Text paletteCaption = null)
+        private void Update()
+        {
+            if (!IsPalette || IsGrabbed)
+            {
+                return;
+            }
+
+            float elapsed = Time.unscaledTime - _supplyIdleStarted;
+            Transform parent = transform.parent;
+            float localHeight = SupplyBobHeight / parent.lossyScale.y;
+            Vector3 position = _supplyIdlePose.position + Vector3.up *
+                (localHeight * Mathf.Sin(elapsed * SupplyBobFrequency * 2f * Mathf.PI));
+            Quaternion rotation = Quaternion.AngleAxis(elapsed * SupplyTurnSpeed % 360f, Vector3.up)
+                * _supplyIdlePose.rotation;
+            SetPose(parent.TransformPoint(position), parent.rotation * rotation);
+        }
+
+        internal void Initialize(LayerDefinition layer, bool isPalette, Material supplyFrame = null)
         {
             Layer = layer;
             IsPalette = isPalette;
-            _paletteNameplate = paletteNameplate;
-            _paletteCaption = paletteCaption;
-            _label.enabled = !isPalette;
-            _outputCaption.enabled = !isPalette;
+            if (isPalette)
+            {
+                _supplyRenderer = _surface.GetComponent<MeshRenderer>();
+                _assemblyMaterials = _supplyRenderer.sharedMaterials;
+                Material[] supplyMaterials = new Material[_assemblyMaterials.Length + 1];
+                Array.Copy(_assemblyMaterials, supplyMaterials, _assemblyMaterials.Length);
+                supplyMaterials[_assemblyMaterials.Length] = supplyFrame;
+                _supplyRenderer.sharedMaterials = supplyMaterials;
+                _supplyIdlePose = new Pose(transform.localPosition, transform.localRotation);
+                _supplyIdleStarted = Time.unscaledTime;
+            }
+            SetOutputLabelsVisible(IsFixed);
             name = isPalette ? layer.Type + " Supply" : layer.Type + " Block";
             RefreshLabel();
         }
@@ -80,12 +114,15 @@ namespace ModelDesignScene.ModelBuilder
         internal void TakeFromPalette()
         {
             IsPalette = false;
-            _paletteNameplate = null;
-            _paletteCaption = null;
-            _label.enabled = true;
-            _outputCaption.enabled = true;
+            _supplyRenderer.sharedMaterials = _assemblyMaterials;
             _grabInteractable.retainTransformParent = false;
             RefreshLabel();
+        }
+
+        internal void SetOutputLabelsVisible(bool visible)
+        {
+            _label.transform.parent.gameObject.SetActive(visible);
+            _outputCaption.transform.parent.gameObject.SetActive(visible);
         }
 
         public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
@@ -169,31 +206,35 @@ namespace ModelDesignScene.ModelBuilder
             {
                 height = width = 0;
             }
+            SpatialOutputSize = spatial ? new Vector3Int(width, height, channels) : Vector3Int.zero;
+            VectorOutputSize = elements;
+            OutputSizeLabel = spatial ? (channels > 0 ? $"{height}×{width}×{channels}" : "—")
+                : elements > 0 ? elements.ToString() : "—";
             string shapeLabel = spatial ? $"{height} × {width} × {channels}" : $"{elements} elements";
             _label.text = title + "\n" + shapeLabel
                 + (!_hasInputShape && !IsFixed ? "\nExample" : "");
             _outputCaption.text = spatial
                 ? (channels > 0 ? (Layer.Type == LayerType.Input ? "RGB / 3 channels shown" : $"{channels} channels / 1 shown") : "Spatial output unavailable")
                 : (elements > 0 ? VectorBlockMesh.VectorCaption(elements) : "Input unavailable");
-            if (IsPalette)
-            {
-                _paletteNameplate.text = string.Join("\n", title.Split(new[] { " / " }, 2, StringSplitOptions.None));
-                _paletteCaption.text = "Example\n" + shapeLabel + "\n" + _outputCaption.text;
-            }
             bool enlargedExample = IsPalette && Layer.Type == LayerType.MaxPooling2D;
             Vector3Int shape = new Vector3Int(spatial ? height : 0, spatial ? width : 0, elements);
-            if (_visualShape == shape && _visualSpatial == spatial && _visualEnlarged == enlargedExample)
+            if (_visualShape == shape && _visualSpatial == spatial && _visualEnlarged == enlargedExample
+                && _visualSupply == IsPalette)
             {
                 return;
             }
             _visualShape = shape;
             _visualSpatial = spatial;
             _visualEnlarged = enlargedExample;
+            _visualSupply = IsPalette;
             Mesh previousMesh = _outputMesh;
-            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial, enlargedExample);
+            _outputMesh = VectorBlockMesh.CreateOutput(shape.x, shape.y, elements, spatial, enlargedExample,
+                IsPalette, IsPalette && Layer.Type == LayerType.Flatten);
             _surface.sharedMesh = _outputMesh;
             _collider.center = _outputMesh.bounds.center;
-            _collider.size = _outputMesh.bounds.size + new Vector3(0.02f, 0.02f, 0.03f);
+            VisualBounds = new Bounds(_collider.center, _outputMesh.bounds.size + new Vector3(0.02f, 0.02f, 0.03f));
+            _collider.size = VisualBounds.size;
+            if (!IsFixed) { _collider.size += new Vector3(0.06f, 0.04f, 0.10f); }
             if (Layer.Type == LayerType.Input)
             {
                 foreach (MeshFilter channelSurface in _inputChannelSurfaces)
@@ -202,6 +243,7 @@ namespace ModelDesignScene.ModelBuilder
                 }
                 _collider.center += new Vector3(0.04f, 0f, 0.12f);
                 _collider.size += new Vector3(0.08f, 0f, 0.24f);
+                VisualBounds = new Bounds(_collider.center, _collider.size);
             }
             if (previousMesh != null)
             {

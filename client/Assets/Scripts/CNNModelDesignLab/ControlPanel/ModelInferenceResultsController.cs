@@ -27,8 +27,8 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private RawImage _selectedPreview;
         [SerializeField] private Button _previousPageButton;
         [SerializeField] private Button _nextPageButton;
-        [SerializeField] private Color _sampleColor = new Color(0.12f, 0.18f, 0.24f);
-        [SerializeField] private Color _selectedSampleColor = new Color(0.14f, 0.43f, 0.51f);
+        [SerializeField] private Color _sampleColor = new Color32(16, 38, 58, 255);
+        [SerializeField] private Color _selectedSampleColor = new Color32(33, 76, 98, 255);
 
         private readonly List<DatasetSample> _availableSamples = new List<DatasetSample>();
         private UnityAction[] _sampleListeners;
@@ -40,7 +40,7 @@ namespace ModelDesignScene.ControlPanel
         private bool _initialized;
 
         internal event Action<string> OnInferenceRequested;
-        internal event Action<string> OnError;
+        internal event Action OnError;
 
         internal void Initialize()
         {
@@ -168,9 +168,8 @@ namespace ModelDesignScene.ControlPanel
         private void RejectPrediction(string message)
         {
             ClearPrediction();
-            _predictionText.text = "예측 결과 확인 필요";
-            _predictionHint.text = message;
-            OnError?.Invoke(message);
+            Debug.LogError($"[ERR-INFER] {message}");
+            OnError?.Invoke();
         }
 
         private void RefreshSamples()

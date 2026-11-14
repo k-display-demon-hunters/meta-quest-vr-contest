@@ -18,6 +18,13 @@ namespace ModelDesignScene.Execution
         Failed
     }
 
+    public enum ModelExecutionFailure
+    {
+        Training,
+        SampleInference,
+        DatasetPreparation
+    }
+
     public sealed class ModelExecutionController : MonoBehaviour
     {
         private ConcurrentQueue<Action> _pending = new ConcurrentQueue<Action>();
@@ -38,7 +45,7 @@ namespace ModelDesignScene.Execution
         internal event Action<TrainingResult> OnTrainingCompleted;
         internal event Action OnTrainingCancelled;
         internal event Action<InferenceResult> OnInferenceCompleted;
-        internal event Action<string> OnError;
+        internal event Action<ModelExecutionFailure> OnError;
 
         internal event Action OnSessionCloseRequested;
 
@@ -52,7 +59,7 @@ namespace ModelDesignScene.Execution
         }
 
         internal async Task StartTrainingAsync(ModelExecutionDefinition definition,
-            Func<Action<TrainingProgress>, Task<TrainingResult>> startTraining)
+            Func<Action<TrainingProgress>, Task<TrainingResult>> startTraining, Action cancelTraining)
         {
             ConcurrentQueue<Action> pending = _pending;
             int generation = _sessionGeneration;
@@ -60,21 +67,21 @@ namespace ModelDesignScene.Execution
             ModelExecutionDefinition previousModel = SubmittedModel;
             bool accepted = false;
             SubmittedModel = definition;
-            SetState(ModelExecutionState.StartingTraining);
-            if (!IsCurrent(generation, operation))
-            {
-                return;
-            }
-            if (State == ModelExecutionState.CancellingTraining)
-            {
-                // A state listener can cancel before the worker has been scheduled.
-                SubmittedModel = previousModel;
-                CompleteCancellation(generation, operation);
-                return;
-            }
-
             try
             {
+                SetState(ModelExecutionState.StartingTraining);
+                if (!IsCurrent(generation, operation))
+                {
+                    return;
+                }
+                if (State == ModelExecutionState.CancellingTraining)
+                {
+                    // A state listener can cancel before the worker has been scheduled.
+                    SubmittedModel = previousModel;
+                    CompleteCancellation(generation, operation);
+                    return;
+                }
+
                 Task<TrainingResult> training = startTraining(
                     progress => pending.Enqueue(() =>
                     {
@@ -84,7 +91,23 @@ namespace ModelDesignScene.Execution
                         }
                     }));
                 accepted = true;
-                SetState(ModelExecutionState.Training);
+                try
+                {
+                    SetState(ModelExecutionState.Training);
+                }
+                catch (Exception)
+                {
+                    // The worker owns the engine until its task ends, even if Unity UI setup fails.
+                    SetRecoveryState(ModelExecutionState.CancellingTraining);
+                    cancelTraining();
+                    try
+                    {
+                        await training.ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (Exception workerException) { Debug.LogError(workerException); }
+                    throw;
+                }
                 TrainingResult result = await training.ConfigureAwait(false);
                 pending.Enqueue(() =>
                 {
@@ -92,7 +115,7 @@ namespace ModelDesignScene.Execution
                     {
                         return;
                     }
-                    SetState(ModelExecutionState.Completed);
+                    SetRecoveryState(ModelExecutionState.Completed);
                     if (IsCurrent(generation, operation))
                     {
                         OnTrainingCompleted?.Invoke(result);
@@ -105,14 +128,14 @@ namespace ModelDesignScene.Execution
             }
             catch (Exception exception)
             {
+                Debug.LogError($"[ERR-TRAIN] {exception}");
                 pending.Enqueue(() =>
                 {
                     if (!accepted && IsCurrent(generation, operation))
                     {
                         SubmittedModel = previousModel;
                     }
-                    ReportFailure(generation, operation,
-                        "학습 또는 평가를 완료하지 못했습니다. " + exception.Message);
+                    ReportFailure(generation, operation, ModelExecutionFailure.Training);
                 });
             }
         }
@@ -123,22 +146,25 @@ namespace ModelDesignScene.Execution
             {
                 return false;
             }
-            SetState(ModelExecutionState.CancellingTraining);
+            SetRecoveryState(ModelExecutionState.CancellingTraining);
             return true;
         }
 
-        internal async Task InferAsync(Func<Task<InferenceResult>> startInference)
+        internal async Task<InferenceResult> InferAsync(Func<Task<InferenceResult>> startInference,
+            bool propagateFailure = false)
         {
             ConcurrentQueue<Action> pending = _pending;
             int generation = _sessionGeneration;
             int operation = ++_operationGeneration;
-            SetState(ModelExecutionState.Inferring);
-            if (!IsCurrent(generation, operation))
-            {
-                return;
-            }
             try
             {
+                SetState(ModelExecutionState.Inferring);
+                if (!IsCurrent(generation, operation))
+                {
+                    if (propagateFailure) { throw new OperationCanceledException(); }
+                    return null;
+                }
+
                 InferenceResult result = await startInference().ConfigureAwait(false);
                 pending.Enqueue(() =>
                 {
@@ -146,21 +172,27 @@ namespace ModelDesignScene.Execution
                     {
                         return;
                     }
-                    SetState(ModelExecutionState.Completed);
+                    SetRecoveryState(ModelExecutionState.Completed);
                     if (IsCurrent(generation, operation))
                     {
                         OnInferenceCompleted?.Invoke(result);
                     }
                 });
+                return result;
             }
             catch (OperationCanceledException)
             {
                 pending.Enqueue(() => CompleteCancellation(generation, operation));
+                if (propagateFailure) { throw; }
+                return null;
             }
             catch (Exception exception)
             {
+                if (!propagateFailure) { Debug.LogError($"[ERR-INFER] {exception}"); }
                 pending.Enqueue(() => ReportFailure(generation, operation,
-                    "이미지를 예측하지 못했습니다. " + exception.Message));
+                    propagateFailure ? (ModelExecutionFailure?)null : ModelExecutionFailure.SampleInference));
+                if (propagateFailure) { throw; }
+                return null;
             }
         }
 
@@ -171,20 +203,21 @@ namespace ModelDesignScene.Execution
             // The old worker retains its own queue until it exits, never the next session's queue.
             _pending = new ConcurrentQueue<Action>();
             SubmittedModel = null;
-            SetState(ModelExecutionState.Idle);
+            SetRecoveryState(ModelExecutionState.Idle);
         }
 
-        internal void RejectTraining(string message)
+        internal void RejectTrainingForDataset()
         {
-            SetState(ModelExecutionState.Failed);
-            OnError?.Invoke(message);
+            SetRecoveryState(ModelExecutionState.Failed);
+            OnError?.Invoke(ModelExecutionFailure.DatasetPreparation);
         }
 
         internal void RejectInference(string message)
         {
-            // Release the sample UI that was disabled while submitting the request.
-            OnStateChanged?.Invoke();
-            OnError?.Invoke(message);
+            // Restore a locally disabled sample list without replaying an active operation's start.
+            if (!IsBusy) { NotifyRecoveryState(); }
+            Debug.LogError($"[ERR-INFER] {message}");
+            OnError?.Invoke(ModelExecutionFailure.SampleInference);
         }
 
         private bool IsCurrent(int generation, int operation)
@@ -199,23 +232,23 @@ namespace ModelDesignScene.Execution
             {
                 return;
             }
-            SetState(ModelExecutionState.Cancelled);
+            SetRecoveryState(ModelExecutionState.Cancelled);
             if (IsCurrent(generation, operation))
             {
                 OnTrainingCancelled?.Invoke();
             }
         }
 
-        private void ReportFailure(int generation, int operation, string message)
+        private void ReportFailure(int generation, int operation, ModelExecutionFailure? failure)
         {
             if (!IsCurrent(generation, operation))
             {
                 return;
             }
-            SetState(ModelExecutionState.Failed);
-            if (IsCurrent(generation, operation))
+            SetRecoveryState(ModelExecutionState.Failed);
+            if (IsCurrent(generation, operation) && failure.HasValue)
             {
-                OnError?.Invoke(message);
+                OnError?.Invoke(failure.Value);
             }
         }
 
@@ -227,6 +260,19 @@ namespace ModelDesignScene.Execution
             }
             State = state;
             OnStateChanged?.Invoke();
+        }
+
+        private void SetRecoveryState(ModelExecutionState state)
+        {
+            if (State == state) { return; }
+            State = state;
+            NotifyRecoveryState();
+        }
+
+        private void NotifyRecoveryState()
+        {
+            try { OnStateChanged?.Invoke(); }
+            catch (Exception exception) { Debug.LogError(exception); }
         }
 
         private void OnDisable()

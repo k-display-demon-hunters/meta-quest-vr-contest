@@ -52,7 +52,7 @@ namespace ModelDesignScene.Execution
             remove => _controller.OnInferenceCompleted -= value;
         }
 
-        public event Action<string> OnError
+        public event Action<ModelExecutionFailure> OnError
         {
             add => _controller.OnError += value;
             remove => _controller.OnError -= value;
@@ -83,9 +83,9 @@ namespace ModelDesignScene.Execution
             {
                 return Task.CompletedTask;
             }
-            if (_dataset.PreparationError != null)
+            if (_dataset.HasPreparationError)
             {
-                _controller.RejectTraining(_dataset.PreparationError);
+                _controller.RejectTrainingForDataset();
                 return Task.CompletedTask;
             }
             ModelExecutionDefinition definition = ModelExecutionDefinitionBuilder.Build(model, out int?[] slots);
@@ -101,7 +101,7 @@ namespace ModelDesignScene.Execution
                 _engine = new CnnEngineManager();
             }
             CnnEngineManager engine = _engine;
-            return _controller.StartTrainingAsync(definition, progress => engine.TrainAsync(request, progress));
+            return _controller.StartTrainingAsync(definition, progress => engine.TrainAsync(request, progress), engine.Cancel);
         }
 
         public Task CancelTrainingAsync()
@@ -118,6 +118,7 @@ namespace ModelDesignScene.Execution
         {
             if (!isActiveAndEnabled || !_controller.isActiveAndEnabled || IsBusy)
             {
+                _controller.RejectInference("지금은 예측을 시작할 수 없습니다. 잠시 후 다시 선택하세요.");
                 return Task.CompletedTask;
             }
             if (!HasTrainedModel)
@@ -134,20 +135,12 @@ namespace ModelDesignScene.Execution
             return _controller.InferAsync(() => engine.InferAsync(input, imageId));
         }
 
-        public async Task<InferenceResult> InferExternalAsync(float[] input, string requestId)
+        public Task<InferenceResult> InferExternalAsync(float[] input, string requestId)
         {
             if (!isActiveAndEnabled || IsBusy || !HasTrainedModel)
                 throw new InvalidOperationException("The trained model is not available for inference.");
-            InferenceResult result = null;
-            Exception failure = null;
             CnnEngineManager engine = _engine;
-            await _controller.InferAsync(async () =>
-            {
-                try { result = await engine.InferAsync(input, requestId); return result; }
-                catch (Exception exception) { failure = exception; throw; }
-            });
-            if (failure != null) { throw failure; }
-            return result;
+            return _controller.InferAsync(() => engine.InferAsync(input, requestId), propagateFailure: true);
         }
 
         public void CloseSession()

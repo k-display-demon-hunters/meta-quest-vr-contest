@@ -113,7 +113,9 @@ Meta 확인 자료는 [SDK 약관](https://developers.meta.com/vr/licenses/oculu
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리·수정 |
 | --- | --- | --- | --- |
 | PostOffice1989.png | 삭제됨, 제출 대상 제외. 이전 사용 위치는 CNNArchiveOpening 기록판. | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 사람 없는 1989년 한국 우체국, 눈높이 1.6m 정면 다큐멘터리 사진, 오래된 목재 창구·우편 선반·CRT·형광등·테라조, 자연광과 실사 질감. | AI 생성 재구성, 실제 기록사진 아님. 생성 도구를 권리자로 단정하지 않음; 권리자 미확인, 별도 공개 라이선스 지정 없음. 생성 PNG 원본 저장, Unity 셰이더로 흑백/밝기/그레인 표시. |
-| EverydayVisionAtlas.png | `Textures/OpeningEnding`, 8개 엔딩 기록판 및 사진 소품 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
+| EndingZipAndTranslation.png | Textures/OpeningEnding, 엔딩 우편번호 및 카메라 번역 장면 | Codex 보조, OpenAI 내장 image_gen. 손글씨 우편번호 20501이 적힌 봉투와 휴대폰 화면의 가상 간판 번역을 위아래로 생성. | AI 생성 재구성, 실제 기록사진과 제품 화면이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. Unity UV로 각 장면을 표시. |
+| EndingBaseballUpscale.png | Textures/OpeningEnding, 엔딩 2026 업스케일링 컷 | Codex 보조, OpenAI 내장 image_gen. 1990년대 야구 중계풍 실사 16:9, 타자의 등번호 23이 중앙에 보이는 가상 경기, 방송사 로고·점수판 제외. | 권리자 미확인, 별도 공개 라이선스 지정 없음. Unity에서 같은 생성 이미지의 저해상도 밉과 원본을 비교선으로 전환하는 설명 연출. |
+| EverydayVisionAtlas.png | `Textures/OpeningEnding`, 엔딩의 은행 수표 컷 및 이전 기록판 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 4×2 무테 사진 아틀라스, 수표·사진 분류·휴대폰·주차장·청소기·도로·X-ray·고양이를 촬영하는 폰, 사람/가짜 캐릭터 없이 실사풍. | AI 생성, 실제 사건·시대 기록이 아님. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 수정 없이 Unity UV로 각 칸 표시. |
 | ArchiveMaterials.png | `Textures/OpeningEnding`, 엔딩 소품의 목재·종이 재질 | OpenAI 내장 `image_gen`, Codex 보조 생성. 프롬프트: 2×2 정사영 재질 아틀라스, 낡은 꿀색 참나무·회색 베이지 테라조·상아색 회벽·크림색 종이, 균일 조명, 글자 없음. | AI 생성 재질. 권리자 미확인, 별도 공개 라이선스 지정 없음. 원본 그대로, 재질별 UV 선택·색 곱셈. |
 | ArchiveCrowd.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 군중 공간 음향. | [Indoor adult murmur, large group.wav](https://freesound.org/people/SpliceSound/sounds/260123/), 공개 HQ MP3 미리듣기 파일. 라이선스 원문 확인: 2026-11-09. | **SpliceSound**, **CC0 1.0**. 원본 파일 내용 변경 없음. Unity에서 위치별 재생 시작 시점·음량·필터 조절. 한국어/1989년 우체국 실녹음이라고 주장하지 않음. |
 | ArchivePrinter.mp3 | 삭제됨, 제출 대상 제외. 이전 사용 위치는 오프닝의 우체국 프린터. | [old dot-matrix printer](https://freesound.org/people/viertelnachvier/sounds/181420/), Epson LX-400 실제 녹음의 공개 HQ MP3. 라이선스 원문 확인: 2026-11-09. | **viertelnachvier**, **CC0 1.0**. 원본 파일 수정 없음; 장면에서는 일부 구간만 재생. |
@@ -128,7 +130,7 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 | --- | --- | --- | --- | --- |
 | PostOffice1989WithClerks.png | Textures/OpeningEnding, 이전 오프닝 기록판 | Codex 보조, OpenAI 내장 image_gen. 1989년 한국 우체국에서 봉투를 정리하는 가상의 직원과 손님을 실사 다큐멘터리 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본, 실제 기록사진 아님 |
 | FaceRecognition2015Portrait.png | Textures/OpeningEnding, 엔딩 얼굴 인식 기록판 | Codex 보조, OpenAI 내장 image_gen. 2010년대 실내에서 카메라를 바라보는 가상의 인물을 실사 사진 풍으로 생성 | 권리자 미확인, 별도 공개 라이선스 지정 없음 | 생성 PNG 원본 |
-| ArchiveVoiceEnding01–04.wav | Audio/OpeningEnding, 엔딩 자막별 Voice | Codex 보조, Windows System.Speech의 Microsoft Heami Desktop(ko-KR)으로 프로젝트 대사를 22.05 kHz 16-bit 모노 WAV로 합성 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 대사 구간에 맞춰 무음·속도 조정, 일부 긴 구절은 축약 |
+| ArchiveVoiceEnding01–04.wav | 이전 엔딩 음성. 프로젝트에서 제거되어 제출 대상 제외 | Codex 보조, Windows System.Speech의 Microsoft Heami Desktop(ko-KR)으로 프로젝트 대사를 22.05 kHz 16-bit 모노 WAV로 합성 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 대사 구간에 맞춰 무음·속도 조정, 일부 긴 구절은 축약 |
 
 ## 미국 우체국 오프닝
 
@@ -139,7 +141,7 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 - **OpeningCrowd.mp3**: [4177569399의 Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/)에서 CC0 표기를 재확인했다. 프로젝트 파일은 사용자 제공 Pixabay 파일이므로 원본과의 동일성까지 확인한 것은 아니다. 기존 파일은 유지하며 재생 음량·공간화·저역 통과 설정을 조정한다.
 - **OpeningNarration01–06.wav**: 사용자도 제작 서비스·목소리를 확인하지 못함. 제작자·권리자·공개 배포 허용 조건은 **미확인**이며, 사용자 제공 파일이라는 사실만으로 배포 권한을 인정하지 않는다. 파일은 유지하며 내레이션 출력 설정만 조정한다.
 - **OpeningScore.wav / Suno Vintage Electro Swing**: 사용자 답변은 “아마 유료구독은 아니었을 것”. 생성 당시 플랜과 개별 이용권은 확인되지 않았다. [Suno 공식 권리 안내](https://help.suno.com/en/articles/2416769)와 [배포 안내](https://help.suno.com/en/articles/2410177)에 따르면 무료 생성물은 비상업적 이용에 제한되며 사후 구독만으로 상업 이용권이 자동 소급되지 않는다. **상업적 배포 권한 미확인**. 경진대회 제출·전시·주최 측 재배포를 비상업적 이용이라고 임의 판단하지 않는다. 사용 곡의 생성 시점 약관·계정 권한과 대회 조건을 별도로 대조해야 한다.
-- **ArchiveVoiceEnding01–04.wav / Windows Heami Desktop TTS**: 기존 생성 경로는 Windows System.Speech이며 Azure 유료 TTS가 아니다. Heami 출력물의 공개 배포·상업 이용 허용 근거는 **미확인**. Azure TTS 조건을 이 파일에 적용하지 않는다. 원본은 유지하며 음성 출력 설정만 조정한다.
+- **ArchiveVoiceEnding01–04.wav / Windows Heami Desktop TTS**: 기존 합성 음성은 프로젝트에서 제거했다. 현재 엔딩 내레이션은 아래 EndingNarration01–05.wav 항목을 참고한다.
 
 위 미확인 음원은 사용 가능 판정을 내린 자료가 아니다. 공개 배포 전에 제작 서비스·생성 당시 조건을 확인하거나 권한이 확인된 음원으로 교체해야 한다. 현재 작업은 배포·게시를 수행하지 않는다.
 
@@ -148,10 +150,14 @@ EBS 영상은 연표 이동·전환 리듬을 참고했으며 영상·음악·�
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| PostOffice_US_1989.png | 이전 오프닝 우체국 전경. 현재 엔딩 초기화에서 기록판에 연결 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |
+| PostOffice_US_1989.png | 이전 오프닝 우체국 전경 | OpenAI 내장 image_gen, Codex 보조. 1989년 미국 우체국의 가상 내부 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | PNG 원본. 이전 연출에서 Unity로 전체 확대와 창구 줌인 |
 | PostOfficeStamp.mp4, PostOfficeStampPlate.png, PostOfficeStampedEnvelope.png | 삭제됨, 제출 대상 제외. 이전 오프닝 도장 동작 및 우편번호 인식에 사용 | Codex 보조. OpenAI 내장 image_gen으로 우체국 전경을 참고한 봉투 사진과 도장을 쥔 손을 생성하고 FFmpeg로 손동작, 도장 자국, 인식 표시 합성 | 권리자 미확인. 별도 공개 라이선스 지정 없음 | 무음 H.264 컷 및 정지 프레임 |
 | OpeningCrowd.mp3 | 오프닝 우체국 군중 소리 | [Pixabay의 Group Talking](https://pixabay.com/sound-effects/people-group-talking-68823/), 사용자 제공 파일. [Freesound 원본](https://freesound.org/people/4177569399/sounds/449487/) | 4177569399, Pixabay Content License 표시, Freesound 원본 CC0 | 원본 파일 그대로, 0초부터 재생 |
+| EndingNarration01–05.wav | 엔딩 대사 5개 | 사용자가 제공한 2026-11-14 화면 녹화의 Typecast 합성 음성을 Codex 보조로 추출 | 음성 제공 서비스 Typecast. 음성 권리자와 공개 배포 조건 미확인 | 대사별 절단, 모노 48 kHz PCM WAV 변환, 10 dB 증폭 |
+| EndingNarrationIntro.wav, EndingNarrationUpscale.wav, EndingNarrationOutro.wav | 엔딩 첫 모델, 2026 야구, 마지막 모델 | 사용자가 제공한 2026-11-15 03:19:56 화면 녹화에서 준성 음성 추출. | Typecast 합성 음성. 음성 권리자와 공개 배포 조건 미확인. | 48 kHz 모노 PCM WAV, 게인 조정, 2026 컷 재생 속도 1.16배, 마지막 모델 앞의 구간 안내 삭제. |
+| EndingNarrationFace.wav, EndingNarrationSign.wav, EndingNarrationBaseball.wav | 엔딩 얼굴, 간판, 야구 컷 | 사용자가 제공한 2026-11-15 03:54:53 화면 녹화에서 준성 음성 추출. | Typecast 합성 음성. 음성 권리자와 공개 배포 조건 미확인. | 대사별 절단, 48 kHz 모노 PCM WAV, 10 dB 증폭. |
 | OpeningNarration01–06.wav | 오프닝 대사 | 사용자 화면 녹화에서 오디오 추출. 녹음·합성 방식과 음성 제공 서비스 미확인 | 제작자·권리자·배포 조건 미확인 | 대사별 절단, 모노 WAV 변환 및 게인 조절 |
+| EndingScore.wav | 엔딩 배경음악 | 사용자가 제공한 2026-11-14 23:56:53 화면 녹화의 Suno 곡 「1989」에서 Codex 보조로 오디오 추출 | Suno 생성. 생성 당시 계정 플랜과 공개 배포 조건 미확인 | 시작 구간 21.05초 편집, 스테레오 48 kHz PCM WAV 변환, 10 dB 증폭, 페이드 인·아웃 |
 | OpeningScore.wav | 오프닝 음악 | 사용자가 Suno에서 생성한 [Vintage Electro Swing](https://suno.com/s/X1UheAwttpqtFZhR)의 화면 녹화에서 오디오 추출 | Suno 생성. 계정의 사용 조건 및 공개 배포 권한 미확인 | 앞 무음 절단, 35초 편집, 페이드 및 게인 조절 |
 | OpeningTimelinePulse.wav | 오프닝 연도표 3.5초 | Codex 보조 Python PCM 합성. 낮은 사인파 펄스와 짧은 감쇠를 연도 카운트다운 속도에 맞춰 합성 | 프로젝트 제작, 별도 공개 라이선스 지정 없음 | 사용자가 고른 C 시안, 24kHz 모노 WAV |
 

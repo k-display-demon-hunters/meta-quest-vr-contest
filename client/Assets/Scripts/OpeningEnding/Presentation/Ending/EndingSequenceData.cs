@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Cinematic
 {
@@ -11,16 +12,16 @@ namespace Cinematic
             public CinematicText.ArchiveClip Clip;
             public string Year;
             public string Label;
-            public int PropIndex;
+            public Rect Focus;
             public double Duration;
+            public bool ShowUpscaleComparison;
         }
 
-        public float IntroImpact = 2.8f;
-        public float MontageStart = 3f;
         public MontageEntry[] Montage;
-        public double RecognitionStart = 15f;
-        public double ModelStart = 16.6f;
-        public double ModelEnd = 18f;
-        public float Duration = 20f;
+        public double IntroDuration = 3.2;
+        public double OutroDuration = 7.6;
+        public double QuietDuration = 1.5;
+        public CinematicText.Line Intro;
+        public CinematicText.Line Outro;
     }
 }

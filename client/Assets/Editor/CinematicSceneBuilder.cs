@@ -70,40 +70,70 @@ namespace CinematicEditor
                 _content.Opening[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/OpeningEnding/OpeningNarration{i + 1:D2}.wav");
             _content.OpeningCrowd = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningCrowd.mp3");
             _content.OpeningScore = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningScore.wav");
-            _content.Ending = new[] {
-                Line(.4,2.8,"1989년,\n숫자 하나를 읽던 눈은"),
-                Line(0,1.6,"그리고 오늘,", CinematicText.CaptionAnchor.Recognition),
-                Line(.2,1.4,"{A:당신이 만든 눈.}", CinematicText.CaptionAnchor.Model),
-                Line(.2,2,"그 시선의 끝에,\n당신의 CNN이 있다.", CinematicText.CaptionAnchor.Closing) };
-            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/PostOffice_US_1989.png");
-            Texture2D montage = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/OpeningEnding/EverydayVisionAtlas.png");
-            _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_US_1989", Still=post, Source="OpenAI image_gen · 1989년 미국 우체국 분위기 재구성 · 실제 기록사진 아님" };
-            string[] years = { "1998", "2012", "2015", "2018", "2020", "2022", "2024", "2026" };
-            string[] labels = { "725", "사진 분류", "얼굴", "12가 3456", "양말 · 전선", "표지판 30", "확인 필요", "고양이" };
-            double[] durations = { 1.8, 1.6, 1.4, 1.3, 1.2, 1.2, 1.2, 1.3 };
-            _content.EndingSchedule.Montage = new EndingSequenceData.MontageEntry[years.Length];
-            for (int i = 0; i < years.Length; i++)
+            _content.Ending = new[]
             {
-                _content.EndingSchedule.Montage[i] = new EndingSequenceData.MontageEntry
-                {
-                    Year = years[i],
-                    Label = labels[i],
-                    PropIndex = i,
-                    Duration = durations[i],
-                    Clip = new CinematicText.ArchiveClip
-                    {
-                        Id = "END_" + years[i],
-                        Still = montage,
-                        UV = new Rect((i % 4) * .25f, i < 4 ? .5f : 0, .25f, .5f),
-                        Duration = 2,
-                        Source = "OpenAI image_gen · 일상 속 시각 인식 재구성 · 연도는 연출용, 기술 최초 출시 연도가 아님"
-                    }
-                };
+                Line(0.2, 3.16, "초기 CNN은 봉투 위\n우편번호를 읽었습니다."),
+                Line(3.24, 5.96, "이후 수표에 적힌 금액을 읽고,"),
+                Line(6.04, 8.66, "사진 속에서 사람의 얼굴을 찾아내고"),
+                Line(8.74, 12.56, "카메라로 낯선 간판의 글자를 읽어 번역하고"),
+                Line(12.78, 17.6, "저해상도 영상을 더 선명하게 만듭니다")
+            };
+
+            for (int i = 0; i < 2; i++)
+            {
+                _content.Ending[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>(
+                    $"Assets/Audio/OpeningEnding/EndingNarration{i + 1:D2}.wav");
             }
+
+            _content.EndingSchedule.Intro = Line(.15, 3.15, "오늘, 여러분은 숫자를 읽는 CNN을 만들었습니다.");
+            _content.EndingSchedule.Outro = Line(.3, 7.2, "CNN은 지금 이 시간에도 세상을 읽고 있습니다.");
+
+            _content.EndingSchedule.Intro.Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationIntro.wav");
+            _content.Ending[2].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationFace.wav");
+            _content.Ending[3].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationSign.wav");
+            _content.Ending[4].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationBaseball.wav");
+            _content.EndingSchedule.Outro.Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationOutro.wav");
+
+            const string texturePath = "Assets/Textures/OpeningEnding/";
+            Texture2D post = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "PostOffice_US_1989.png");
+            Texture2D newMontage = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "EndingZipAndTranslation.png");
+            Texture2D cheque = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "EverydayVisionAtlas.png");
+            Texture2D face = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "FaceRecognition2015Portrait.png");
+            _content.PostOffice = new CinematicText.ArchiveClip { Id="PO_US_1989", Still=post, Source="OpenAI image_gen · 1989년 미국 우체국 분위기 재구성 · 실제 기록사진 아님" };
+            Texture2D baseball = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath + "EndingBaseballUpscale.png");
+            var upscale = EndingCut("2026", "UPSCALE", "AI 업스케일링", baseball, new Rect(0,0,1,1), new Rect(.397f,.394f,.174f,.242f), 5.2);
+            upscale.ShowUpscaleComparison = true;
+            _content.EndingSchedule.Montage = new[]
+            {
+                EndingCut("1989", "ZIP", "봉투의 손글씨 우편번호", newMontage, new Rect(0,.5f,1,.5f), new Rect(.33f,.40f,.34f,.14f), 3.2),
+                EndingCut("1998", "CHEQUE", "은행 수표의 손글씨 금액", cheque, new Rect(0,.5f,.25f,.5f), new Rect(.67f,.25f,.2f,.08f), 2.8),
+                EndingCut("2016", "FACE", "사진 속 얼굴 감지", face, new Rect(0,0,1,1), new Rect(.37f,.22f,.25f,.56f), 2.7),
+                EndingCut("2019", "TEXT", "카메라로 글자를 읽어 번역", newMontage, new Rect(0,0,1,.5f), new Rect(.36f,.40f,.28f,.17f), 3.9),
+                upscale
+            };
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");
             _content.Rewind=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningTimelinePulse.wav"); _content.Stamp=Audio("Stamp"); _content.Beep=Audio("Beep");
             EditorUtility.SetDirty(_content);
         }
+        private static EndingSequenceData.MontageEntry EndingCut(string year, string id, string label,
+            Texture2D still, Rect uv, Rect focus, double duration)
+        {
+            return new EndingSequenceData.MontageEntry
+            {
+                Year = year,
+                Label = label,
+                Focus = focus,
+                Duration = duration,
+                Clip = new CinematicText.ArchiveClip
+                {
+                    Id = $"END_{year}_{id}",
+                    Still = still,
+                    UV = uv,
+                    Source = "OpenAI image_gen · " + label + " 재구성"
+                }
+            };
+        }
+
         private static AudioClip Audio(string name) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/Archive"+name+".wav");
 
         private static void Build(bool ending, CinematicModelResult result)
@@ -172,7 +202,9 @@ namespace CinematicEditor
                 captionCanvas.gameObject.SetActive(false);
             }
             Text caption=TextAt(captionCanvas.transform,"Provenance",_content.Provenance,Vector2.zero,ending ? archiveCaptionSize : new Vector2(1600,175),ending ? 21 : 42);
-            caption.color=ending ? new Color(.75f,.72f,.63f) : new Color(.98f,.95f,.87f); Assign(world,"_caption",caption);
+            caption.color=ending ? new Color(.75f,.72f,.63f) : new Color(.98f,.95f,.87f);
+            if (ending) { captionCanvas.gameObject.SetActive(false); }
+            else { Assign(world,"_caption",caption); }
             Transform timeline=Root("Rewinding history",stage);
             for(int i=0;i<15;i++)
             {
@@ -186,7 +218,7 @@ namespace CinematicEditor
             for(int i=0;i<10;i++)
             {
                 Vector3 p=new Vector3((i%5-2)*.72f,1.3f+(i/5)*.65f,3.8f+(i%2)*.35f);
-                Transform box=Recognition(stage,"Recognition "+i,p+new Vector3(0,0,-.03f),new Vector2(.45f,.27f),_green,i==0?"12345":(12000+i*173).ToString()); boxes.Add(box);
+                Transform box=Recognition(stage,"Recognition "+i,p+new Vector3(0,0,-.03f),new Vector2(.45f,.27f),_green,ending?"":i==0?"12345":(12000+i*173).ToString()); boxes.Add(box);
             }
             Array(world,"_boxes",boxes);
             Vector3 digitPosition = new Vector3(0, ending ? 1.9f : 1.25f, 2.4f);
@@ -230,29 +262,50 @@ namespace CinematicEditor
                 BuildOpeningEntrance(factory, world);
             }
             Assign(world,"_factory",factory);
-            List<Transform> eraProps=new List<Transform>();
-            for(int i=0;i<8;i++)
-            {
-                Transform prop=Root("Era prop "+_content.EndingSchedule.Montage.Single(entry => entry.PropIndex == i).Year,stage); prop.localPosition=new Vector3(0,0,1.8f);
-                BuildEraProp(prop,i); eraProps.Add(prop);
-            }
-            Array(world,"_eraProps",eraProps);
+            Array(world,"_eraProps",new List<Transform>());
             Transform network=Root("Your CNN miniature",stage); network.localPosition=new Vector3(0,1.75f,2.4f);
-            Recognition(network,"Amber frame",Vector3.zero,new Vector2(2.4f,1.0f),_amber,"");
+            Transform modelFrame=Recognition(network,ending?"Model recognition frame":"Amber frame",Vector3.zero,new Vector2(2.4f,1.0f),_amber,"");
             List<Transform> layers=new List<Transform>(); List<Text> labels=new List<Text>();
+            List<MeshRenderer> cards = new List<MeshRenderer>();
             for(int i=0;i<10;i++)
             {
                 Transform layer=Root("Layer "+i,network); layer.localPosition=new Vector3((i-4.5f)*.14f,0,0); layers.Add(layer);
-                for(int j=0;j<4;j++) {Box("Feature slice",layer,new Vector3(j*.012f,0,j*.025f),new Vector3(.07f,.28f-(i%3)*.035f,.008f),i==9?_amber:_cyan);}
-                Canvas c=CanvasAt(layer,"Label",new Vector3(0,-.28f,-.02f),new Vector2(160,180),.0013f);
-                labels.Add(TextAt(c.transform,"Layer name","",Vector2.zero,new Vector2(160,180),26));
+                if (ending)
+                {
+                    Transform card = Box("Layer card", layer, Vector3.zero, new Vector3(.26f, .22f, .024f), _cyan);
+                    cards.Add(card.GetComponent<MeshRenderer>());
+                    Canvas canvas = CanvasAt(layer, "Label", new Vector3(0, 0, -.018f), new Vector2(184, 120), .0013f);
+                    Text label = TextAt(canvas.transform, "Layer name", "", Vector2.zero, new Vector2(184, 120), 46);
+                    label.color = new Color32(0x04, 0x0B, 0x13, 0xFF);
+                    label.fontStyle = FontStyle.Bold;
+                    label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    labels.Add(label);
+                    layer.gameObject.SetActive(false);
+                }
+                else
+                {
+                    for(int j=0;j<4;j++) {Box("Feature slice",layer,new Vector3(j*.012f,0,j*.025f),new Vector3(.07f,.28f-(i%3)*.035f,.008f),i==9?_amber:_cyan);}
+                    Canvas c=CanvasAt(layer,"Label",new Vector3(0,-.28f,-.02f),new Vector2(160,180),.0013f);
+                    labels.Add(TextAt(c.transform,"Layer name","",Vector2.zero,new Vector2(160,180),26));
+                }
             }
-            Canvas note=CanvasAt(network,"Result status",new Vector3(0,.58f,0),new Vector2(1200,100),.0016f);
-            Text networkNote = TextAt(note.transform,"Note","",Vector2.zero,new Vector2(1200,100),26);
+            Canvas note=CanvasAt(network,ending?"Model heading":"Result status",new Vector3(0,ending?.27f:.58f,0),new Vector2(1200,100),.0016f);
+            Text networkNote = TextAt(note.transform,"Note","",Vector2.zero,new Vector2(1200,100),ending?38:26);
             Assign(world,"_network",network);
             if (ending)
             {
-                Assign(world,"_networkNote",networkNote);
+                modelFrame.gameObject.SetActive(false);
+                Assign(world,"_modelFrame",modelFrame);
+                Assign(world,"_recognitionMaterial",AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/EndingRecognition.mat"));
+                Assign(world,"_modelHeading",networkNote);
+                Vector2 accuracySize = new Vector2(500, 90);
+                Canvas accuracyCanvas = CanvasAt(network, "Test accuracy", new Vector3(0, -.25f, -.02f), accuracySize, .0016f);
+                Text accuracy = TextAt(accuracyCanvas.transform, "Value", "", Vector2.zero, accuracySize, 40);
+                accuracy.color = new Color32(0xEA, 0xF6, 0xFF, 0xFF);
+                accuracy.fontStyle = FontStyle.Bold;
+                accuracy.gameObject.SetActive(false);
+                Assign(world,"_testAccuracy",accuracy);
+                Array(world,"_layerCards",cards);
                 Array(world,"_networkLayers",layers);
                 Array(world,"_layerLabels",labels);
             }
@@ -271,26 +324,31 @@ namespace CinematicEditor
             bar.rectTransform.anchoredPosition=new Vector2(0,-35); bar.type=Image.Type.Filled; bar.fillMethod=Image.FillMethod.Horizontal; bar.fillAmount=0;
             bar.sprite=AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             Assign(controls,"_holdBar",bar);
+            if (ending)
+            {
+                Assign(world, "_standingMarker", platform.transform);
+                Assign(world, "_holdHint", hints.transform);
+            }
             Assign(controls,"_failureText",text);
             Assign(controls,"_failureBacking",backing);
             if (ending)
             {
                 Canvas completion = CanvasAt(stage, "Ending Completion Panel", new Vector3(0, 1.6f, 2.15f), new Vector2(720, 370), .0018f);
                 TextAt(completion.transform, "Completion Title", "CNN 공장 · 체험 완료", new Vector2(0, 135), new Vector2(720, 110), 54);
-                Button restart = CreateCinematicButton(completion, "Restart Button", "처음부터 다시 시작", 660);
+                Button restart = CreateArchiveActionButton(completion, "Restart Button", "Button Label", "처음부터 다시 시작", 660, 460, 48, 216f);
                 Assign(controls, "_restartButton", restart);
                 completion.gameObject.SetActive(false);
             }
             else
             {
                 Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, .75f, 2.15f), new Vector2(420, 122), .0018f);
-                Button startButton = CreateCinematicButton(start, "Start Button", "시작", 420, 76);
+                Button startButton = CreateArchiveActionButton(start, "Start Button", "Start Label", "시작", 420, 240, 76, 93f);
                 Assign(controls, "_startButton", startButton);
             }
-            BuildAudio(stage,audio);
+            BuildAudio(stage,audio,ending);
             ConfigureNarrationAudio(audio, !ending);
             factory.gameObject.SetActive(false); network.gameObject.SetActive(false);
-            foreach(Transform t in boxes.Concat(pixels).Concat(eraProps)) {t.gameObject.SetActive(false);}
+            foreach(Transform t in boxes.Concat(pixels)) {t.gameObject.SetActive(false);}
             digit.gameObject.SetActive(false); portal.gameObject.SetActive(false); timeline.gameObject.SetActive(false);
             EditorSceneManager.SaveScene(scene,"Assets/Scenes/"+name+".unity");
         }
@@ -775,61 +833,45 @@ namespace CinematicEditor
         private static Material FactoryMaterial(string name)
             => AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/CNNArchiveOpening/Entrance{name}.mat");
 
-        private static Button CreateCinematicButton(Canvas canvas, string name, string label, float width, int fontSize = 48)
+        private static Button CreateArchiveActionButton(Canvas canvas, string name, string labelName, string caption,
+            float width, float labelWidth, int fontSize, float iconOffset)
         {
             canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-            Image face = ImageAt(canvas.transform, name, new Vector2(width, 122), new Color(.1f, .38f, .37f, 1));
+            var obj = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(OpeningStartButtonGraphic));
+            obj.transform.SetParent(canvas.transform, false);
+            var face = obj.GetComponent<OpeningStartButtonGraphic>();
+            face.rectTransform.sizeDelta = new Vector2(width, 122);
+            var faceData = new SerializedObject(face);
+            faceData.FindProperty("_iconOffset").floatValue = iconOffset;
+            faceData.ApplyModifiedPropertiesWithoutUndo();
             face.raycastTarget = true;
-            Button button = face.gameObject.AddComponent<Button>();
+            var button = obj.AddComponent<Button>();
             button.targetGraphic = face;
             button.navigation = new Navigation { mode = Navigation.Mode.None };
-            TextAt(face.transform, "Button Label", label, Vector2.zero, new Vector2(width - 20, 110), fontSize);
+            ColorBlock colors = button.colors;
+            colors.normalColor = new Color(0.94f, 0.91f, 0.86f);
+            colors.highlightedColor = colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.79f, 0.71f, 0.59f);
+            button.colors = colors;
+            Text label = TextAt(obj.transform, labelName, caption, new Vector2(43, 0), new Vector2(labelWidth, 110), fontSize);
+            label.color = OpeningStartButtonGraphic.LabelColor;
             return button;
         }
 
-        private static void BuildEraProp(Transform root,int era)
-        {
-            // Portrait archive plates keep their aspect ratio and surround the viewer at ±60°.
-            for(int side=-1;side<=1;side+=2)
-            {
-                int index=(era+(side<0?7:1))%8;
-                CinematicText.ArchiveClip clip=_content.EndingSchedule.Montage.Single(entry => entry.PropIndex == index).Clip;
-                string path="Assets/Materials/OpeningEnding/ArchiveMontage"+index+".mat";
-                Material m=AssetDatabase.LoadAssetAtPath<Material>(path);
-                if(m==null){m=new Material(Shader.Find("CNN/ArchivePhoto"));AssetDatabase.CreateAsset(m,path);}
-                m.mainTexture=clip.Still;m.mainTextureScale=clip.UV.size;m.mainTextureOffset=clip.UV.position;m.SetFloat("_Brightness",.3f);
-                Transform plate=Primitive("Peripheral memory",root,new Vector3(side*3.3f,1.9f,.3f),new Vector3(2.4f,3.2f,1),m,PrimitiveType.Quad);
-                plate.localRotation=Quaternion.Euler(0,side*-62,0);
-            }
-            if(era==0) {Envelope(root,"Cheque",new Vector3(0,1.3f,0));}
-            else if(era==1)
-            {
-                for(int i=0;i<24;i++)
-                {
-                    Transform card=Box("Photo paper",root,new Vector3((i%6-2.5f)*.28f,.6f+(i/6)*.2f,.5f),new Vector3(.24f,.16f,.005f),_paper);
-                    Material photo=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/OpeningEnding/ArchiveMontage"+(i%8)+".mat");
-                    if(photo!=null){Primitive("Photograph",root,card.localPosition+new Vector3(0,0,-.006f),new Vector3(.22f,.14f,1),photo,PrimitiveType.Quad);}
-                }
-            }
-            else if(era==2||era==7)
-            {Box("Phone",root,new Vector3(.5f,1.3f,0),new Vector3(.18f,.33f,.025f),_dark);Recognition(root,"Phone lock",new Vector3(.5f,1.3f,-.02f),new Vector2(.13f,.22f),_cyan,"");}
-            else if(era==3)
-            {Box("Barrier pillar",root,new Vector3(1.5f,.6f,.8f),new Vector3(.3f,1.2f,.3f),_paper);Transform arm=Box("Barrier arm",root,new Vector3(.5f,1.4f,.8f),new Vector3(2.1f,.07f,.08f),_amber);arm.localRotation=Quaternion.Euler(0,0,-25);}
-            else if(era==4)
-            {Primitive("Robot vacuum",root,new Vector3(-.6f,.09f,-.3f),new Vector3(.35f,.06f,.35f),_dark,PrimitiveType.Cylinder);}
-            else if(era==5)
-            {Box("Road line",root,new Vector3(-1,.01f,0),new Vector3(.1f,.01f,4),_paper);Box("Road line",root,new Vector3(1,.01f,0),new Vector3(.1f,.01f,4),_paper);}
-            else {Recognition(root,"Radiology frame",new Vector3(0,1.7f,0),new Vector2(.8f,1.1f),_cyan,"");}
-        }
-
-        private static void BuildAudio(Transform stage,CinematicAudioController audio)
+        private static void BuildAudio(Transform stage,CinematicAudioController audio,bool ending)
         {
             Assign(audio,"_screen",Source(stage,"Screen muffled",new Vector3(0,1.8f,3),true,.12f,3000));
             Assign(audio,"_voice",Source(stage,"Narration",new Vector3(0,1.7f,2),false,.75f));
             Assign(audio,"_type",Source(stage,"Typewriter",new Vector3(0,1.3f,2.5f),false,1));
             Assign(audio,"_impact",Source(stage,"Score hit",new Vector3(0,1.7f,2),false,1));
             Assign(audio,"_rewind",Source(stage,"Tape rewind",new Vector3(0,1.7f,3),false,.3f));
-            Assign(audio,"_pad",Source(stage,"Optional score",Vector3.zero,true,.15f));
+            AudioSource score = Source(stage, "Optional score", Vector3.zero, true, .15f);
+            if (ending)
+            {
+                score.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingScore.wav");
+            }
+            Assign(audio, "_pad", score);
             Assign(audio,"_stamp",Source(stage,"Stamp",new Vector3(-1.8f,1.18f,3.3f),false,1));
             Assign(audio,"_beep",Source(stage,"Recognition click",new Vector3(0,1.5f,3),false,1));
         }
@@ -840,16 +882,6 @@ namespace CinematicEditor
             source.spatialBlend=1;source.minDistance=2;source.maxDistance=18;source.rolloffMode=AudioRolloffMode.Logarithmic;source.dopplerLevel=0;
             root.gameObject.AddComponent<AudioLowPassFilter>().cutoffFrequency=cutoff;
             return source;
-        }
-        private static Transform Envelope(Transform parent,string name,Vector3 position)
-        {
-            Transform root=Root(name,parent);root.localPosition=position;
-            Box("Cream envelope",root,Vector3.zero,new Vector3(.4f,.23f,.006f),_paper);
-            for(int i=0;i<2;i++){Transform flap=Box("Fold",root,new Vector3(i==0?-.09f:.09f,.025f,-.005f),new Vector3(.23f,.003f,.002f),_wood);flap.localRotation=Quaternion.Euler(0,0,i==0?-26:26);}
-            Box("Postage",root,new Vector3(.14f,.07f,-.006f),new Vector3(.045f,.05f,.001f),_metal);
-            Canvas c=CanvasAt(root,"Postcode",new Vector3(0,-.045f,-.009f),new Vector2(300,80),.0007f);
-            Text text=TextAt(c.transform,"Handwritten code","12345",Vector2.zero,new Vector2(300,80),36);text.font=AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumPenScript-Regular.ttf");text.color=new Color(.13f,.17f,.2f);
-            return root;
         }
         private static Transform Recognition(Transform parent,string name,Vector3 position,Vector2 size,Material material,string label,int fontSize = 25)
         {

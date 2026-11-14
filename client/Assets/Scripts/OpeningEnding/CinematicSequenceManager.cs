@@ -51,7 +51,7 @@ namespace Cinematic
             Log($"Initializing destination={_destination}");
             _rig = FindFirstObjectByType<XROrigin>();
             _interaction.Bind(_rig, _ending);
-            _presentation.Bind(_content, _model, _ending, _rig.Camera.transform, GetInstanceID());
+            _presentation.Bind(_content, _model, _ending, _rig.Camera, GetInstanceID());
             if (!_ending)
             {
                 SetState(State.WaitingForStart);

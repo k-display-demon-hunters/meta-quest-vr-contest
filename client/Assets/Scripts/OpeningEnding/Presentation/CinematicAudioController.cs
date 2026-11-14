@@ -7,28 +7,75 @@ namespace Cinematic
         [SerializeField] private AudioSource _screen, _voice, _type, _impact, _rewind, _pad;
         [SerializeField] private AudioSource _stamp, _beep;
         private const float OpeningScoreVolume = .38f;
+        private const float EndingScoreVolume = 1f;
+        private const float EndingScoreUnderNarration = .8f;
         private CinematicText _content;
+        private AudioSource _endingScoreContinuation;
+        private float _endingScoreLevel;
+        private bool _endingScoreContinued;
+        private const float ScoreOverlap = 2.4f;
 
         public void Bind(CinematicText content, bool ending)
         {
             _content = content;
-            // Narration (including the ending TTS) belongs to the listener, not a point in the room.
+            // Play narration and music in 2D so their levels do not depend on head position.
             _voice.spatialBlend = 0f;
             _voice.volume = 1f;
             _voice.priority = 0;
-            if (!ending)
-            {
-                _screen.spatialBlend = 0f;
-                _pad.spatialBlend = 0f;
-            }
+            _pad.spatialBlend = 0f;
+            if (!ending) { _screen.spatialBlend = 0f; }
             _screen.clip = content.OpeningCrowd;
             _rewind.clip = content.Rewind;
-            _pad.clip = ending ? content.Pad : content.OpeningScore;
+            if (!ending) { _pad.clip = content.OpeningScore; }
+            else
+            {
+                _endingScoreContinuation = _pad.gameObject.AddComponent<AudioSource>();
+                _endingScoreContinuation.playOnAwake = false;
+                _endingScoreContinuation.spatialBlend = 0f;
+                _endingScoreContinuation.clip = _pad.clip;
+                _endingScoreContinuation.volume = 0f;
+                _endingScoreContinuation.outputAudioMixerGroup = _pad.outputAudioMixerGroup;
+            }
         }
 
         internal void BeginEnding()
         {
+            _pad.loop = false;
+            _endingScoreLevel = EndingScoreVolume;
+            _endingScoreContinued = false;
+            _pad.volume = EndingScoreVolume;
             if (_pad.clip != null) { _pad.Play(); }
+        }
+
+        internal void MixEnding(float gain)
+        {
+            if (_pad.clip == null || gain <= 0f) { return; }
+
+            float target = _voice.isPlaying ? EndingScoreUnderNarration : EndingScoreVolume;
+            _endingScoreLevel = Mathf.MoveTowards(_endingScoreLevel, target, Time.unscaledDeltaTime * 2f);
+            float volume = _endingScoreLevel * gain;
+            if (_endingScoreContinued)
+            {
+                _endingScoreContinuation.volume = volume;
+                return;
+            }
+
+            // Re-enter within the source so its opening fade does not produce a gap.
+            float overlapStart = _pad.clip.length - ScoreOverlap;
+            if (!_pad.isPlaying || _pad.time >= overlapStart)
+            {
+                float offset = _pad.isPlaying ? _pad.time - overlapStart : ScoreOverlap;
+                if (!_endingScoreContinuation.isPlaying)
+                {
+                    _endingScoreContinuation.time = _pad.clip.length * .25f + offset;
+                    _endingScoreContinuation.Play();
+                }
+                float mix = Mathf.Clamp01(offset / ScoreOverlap);
+                _pad.volume = volume * Mathf.Cos(mix * Mathf.PI * .5f);
+                _endingScoreContinuation.volume = volume * Mathf.Sin(mix * Mathf.PI * .5f);
+                _endingScoreContinued = mix >= 1f;
+            }
+            else { _pad.volume = volume; }
         }
 
         public void BeginOpening()
@@ -78,6 +125,7 @@ namespace Cinematic
             Stop(_type);
             Stop(_impact);
             Stop(_pad);
+            Stop(_endingScoreContinuation);
             Stop(_rewind);
             Stop(_beep);
         }

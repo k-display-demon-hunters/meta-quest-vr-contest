@@ -49,11 +49,10 @@ namespace Cinematic
         public string OpeningResearch = "1989 · 얀 르쿤 연구팀의 손글씨 우편번호 인식 연구";
         public OpeningSequenceData OpeningSchedule = new OpeningSequenceData();
         public EndingSequenceData EndingSchedule = new EndingSequenceData();
-        public string Example = "구조 예시 · 설계실 결과 없음";
         public string Provenance = "1989 · 우체국 / 역사적 분위기를 재구성한 이미지";
         public string FactoryTitle = "CNN 공장";
         public string LoadFailure = "장면을 열지 못했습니다. 트리거를 길게 눌러 다시 시도하세요.";
-        public AudioClip Type, Hit, BigHit, Rewind, Stamp, Beep, Pad;
+        public AudioClip Type, Hit, BigHit, Rewind, Stamp, Beep;
 
         internal double GetCaptionOrigin(CaptionAnchor anchor)
         {
@@ -63,9 +62,6 @@ namespace Cinematic
                 case CaptionAnchor.Envelope: return OpeningSchedule.EnvelopeTime;
                 case CaptionAnchor.Pixels: return OpeningSchedule.PixelTime;
                 case CaptionAnchor.Doors: return OpeningSchedule.DoorsTime;
-                case CaptionAnchor.Recognition: return EndingSchedule.RecognitionStart;
-                case CaptionAnchor.Model: return EndingSchedule.ModelStart;
-                case CaptionAnchor.Closing: return EndingSchedule.ModelEnd;
                 default: return 0;
             }
         }

@@ -7,7 +7,6 @@ namespace CNNConvolution
     public enum NarrationCue
     {
         PlaceFilter,
-        FilterPlaced,
         FormulaTerms,
         OutputValue,
         SweepStart,

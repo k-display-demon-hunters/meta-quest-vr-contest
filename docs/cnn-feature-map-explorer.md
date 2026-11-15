@@ -100,7 +100,7 @@
 ### 안내 UI·환경·표시 보조
 
 - `LessonContent`는 학습 설명 데이터, `LessonUIManager`는 상황에 맞는 설명 선택, SubtitlePanel/HintBubbles/CompletionPopup Controller는 실제 표시를 담당한다.
-- `FeatureMapsManager`는 현재 단계에 해당하는 장치의 월드 좌표를 제공한다. 설명 카드는 입력판, 조작 장치, 계산 연출 또는 판정 장치 위로 이동한 뒤 그 위치에서 플레이어를 향한다. 이전·다음 버튼은 같은 카드에 표시한다.
+- `FeatureMapsManager`는 현재 단계에 해당하는 장치의 월드 좌표를 제공한다. 설명 카드는 입력판, 조작 장치, 계산 연출 또는 판정 장치 위로 이동한 뒤 그 위치에서 플레이어를 향한다. 제목과 본문은 카드 안에서 자동으로 크기를 맞춘다. 본문에 줄바꿈이 지정돼 있으면 그 줄 구성을 사용한다. 이전·다음 버튼은 같은 카드에 표시한다.
 - `LessonUI/CorridorDebugController`는 에디터·Development Build의 왼손 위 HUD와 화면 진단을 담당한다. Inspector의 `Lesson UI > Debug > Show Debug`에서 켠다. 씬·라운드 상태 및 포인터·셀·클릭·UI 정보를 값으로 전달받으며 릴리스에서는 진단 표시를 제외한다.
 - `CorridorCameraController`는 공용 XR 카메라 위치를 읽어 복도 안팎을 판정한다. 체험은 카메라 후처리·배경색, XR 눈높이, 전역 안개를 변경하지 않는다. 카메라·환경 설정은 FactoryEnvironment에서 관리하며, 피처맵 전용 Global Volume과 후처리 프로필은 제거했다. 단독 실행에서도 환경 설정을 자동으로 덮어쓰지 않는다.
 - `Presentation/CorridorRenderUtility`는 색·텍스처·빌보드·인스턴싱 표시 보조만 담당한다. 입력이나 런타임 자원 수명을 소유하지 않는다. 각 모듈은 자기 표시 객체의 빌보드 목록을 갖는다.

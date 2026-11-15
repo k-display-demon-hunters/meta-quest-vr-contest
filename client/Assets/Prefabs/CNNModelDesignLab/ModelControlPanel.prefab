@@ -2063,8 +2063,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 34, y: -376}
-  m_SizeDelta: {x: 872, y: 36}
+  m_AnchoredPosition: {x: 34, y: -372}
+  m_SizeDelta: {x: 872, y: 46}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2212
 CanvasRenderer:
@@ -2103,7 +2103,7 @@ MonoBehaviour:
     m_MaxSize: 23
     m_Alignment: 3
     m_AlignByGeometry: 0
-    m_RichText: 0
+    m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
@@ -2166,7 +2166,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
-  m_Color: {r: 0.92, g: 0.95, b: 0.95, a: 1}
+  m_Color: {r: 0.66666667, g: 0.7254902, b: 0.75294118, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2245,7 +2245,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 0}
-  m_Color: {r: 0.92, g: 0.95, b: 0.95, a: 1}
+  m_Color: {r: 0.66666667, g: 0.7254902, b: 0.75294118, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2264,7 +2264,7 @@ MonoBehaviour:
     m_RichText: 0
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
-    m_LineSpacing: 1.22
+    m_LineSpacing: 1.04
   m_Text: ""
 --- !u!1 &2240
 GameObject:
@@ -13783,7 +13783,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "1. 블록 집기\n책상 위 블록을 가리키세요.\n옆면 Grip 버튼을 중지로 누르고\n누른 채 유지하세요."
+  m_Text: "1. 블록 집기\n책상 위 블록을 가리키세요.\n옆면 Grip 버튼을 중지로 누르고 누른 채 유지하세요."
 --- !u!1 &4120
 GameObject:
   m_ObjectHideFlags: 0

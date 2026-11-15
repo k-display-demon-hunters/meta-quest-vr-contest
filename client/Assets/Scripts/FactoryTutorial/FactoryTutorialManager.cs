@@ -9,25 +9,15 @@ namespace FactoryTutorial
 {
     public sealed class FactoryTutorialManager : MonoBehaviour, ILearningExperience
     {
-        private static readonly string[] Titles =
+        private static readonly (string Title, string Body)[] Pages =
         {
-            "수리 준비부터 해볼까요?", "버튼 선택", "이동과 방향 전환", "물체 잡기", "시점 기울기 복원",
-            "나의 미션 도우미", "태블릿 항목 이동", "트리거 + X · 선택", "트리거 + Y · 뒤로", "설정 열기",
-            "이제 준비됐어요!"
-        };
-        private static readonly string[] Instructions =
-        {
-            "컨트롤러와 태블릿 사용법을\n먼저 알아보세요.",
-            "오른손으로 버튼을 가리키고\n검지 버튼(트리거)을 누르세요.",
-            "왼쪽 조이스틱으로 이동해요.\n오른쪽 조이스틱으로 돌아보세요.",
-            "오른손 옆면 버튼(그립)을\n눌러 잡고, 놓아 내려놓으세요.",
-            "오른손 A 버튼으로\n스틱으로 기울인 시점을 복원하세요.",
-            "왼손 X로 태블릿을 켜거나 숨겨요.\n태블릿에서 지도와 진행률을 볼 수 있어요.",
-            "왼손 트리거를 누른 채\n조이스틱으로 항목을 고르세요.",
-            "왼손 트리거를 누른 채 X를 눌러\n선택한 항목을 여세요.",
-            "왼손 트리거를 누른 채 Y를 눌러\n이전 화면으로 돌아가세요.",
-            "왼손 메뉴 버튼으로\n밝기와 음량을 조절하세요.",
-            "오른손 B로 지정 지점에 이동해요.\n아직 이동할 수 없으면 안내가 떠요."
+            ("조작 시작", "오른손 A로 조작 안내를 시작해요.\n버튼은 오른손으로 가리키고\n트리거로 선택해요."),
+            ("이동과 시점", "왼손 스틱으로 이동하고,\n오른손 스틱으로 시점을 돌려요.\n기울어진 시점은 오른손 A로 복원해요."),
+            ("물체 잡기", "오른손으로 물체를 가리켜\n그립을 누른 채 옮기고,\n그립을 놓아 내려놓아요."),
+            ("나의 미션 도우미", "왼손 X로 태블릿을 켜고 숨겨요.\n지도·진행률·양피지를 살펴보고,\n태블릿을 연 채 왼손 메뉴로 설정을 열어요."),
+            ("왼손으로 태블릿 조작", "트리거+스틱: 항목 이동\n트리거+X: 선택 · 트리거+Y: 뒤로\n트리거와 스틱을 놓으면 다시 걸을 수 있어요."),
+            ("체험실로 이동", "태블릿 학습 단계에서 체험실로 이동해요.\n오른손 B는 조건을 채운 지점마다 한 번 써요."),
+            ("CNN 공장 복구 미션", "양피지는 마지막 [학습 완료]까지 읽어요.\n픽셀 관찰·합성곱·특징 맵·모델 제작을 마쳐요.")
         };
         private FactoryTutorialVisualController _visuals;
         [SerializeField] private FactoryTutorialPanelController _panel;
@@ -40,7 +30,6 @@ namespace FactoryTutorial
         private InputAction _startGuide;
         private int _page;
         private bool _finishing;
-        private bool _showingMission;
         private int _advancedFrame = -1;
         private bool _exitAvailable;
 
@@ -112,17 +101,9 @@ namespace FactoryTutorial
                 return;
             }
             _advancedFrame = Time.frameCount;
-            if (_showingMission)
+            if (_page == Pages.Length - 1)
             {
                 Finish();
-                return;
-            }
-            if (_page == Titles.Length - 1)
-            {
-                _showingMission = true;
-                _visuals.SetVisible(false);
-                _panel.ShowBriefing("CNN 공장 복구 미션",
-                    "양피지에서 원리를 배우고,\n세 실습실의 미션을 완료하세요!");
                 return;
             }
             _page++;
@@ -131,8 +112,16 @@ namespace FactoryTutorial
 
         private void Refresh()
         {
-            string caption = _page == 0 ? "조작 배우기" : _page == Titles.Length - 1 ? "미션 시작" : "다음";
-            _panel.ShowPage(_page, Titles.Length, Titles[_page], Instructions[_page], caption);
+            (string title, string body) = Pages[_page];
+            if (_page == Pages.Length - 1)
+            {
+                _visuals.SetVisible(false);
+                _panel.ShowBriefing(title, body);
+                return;
+            }
+
+            string caption = _page == 0 ? "조작 배우기" : _page == Pages.Length - 2 ? "미션 시작" : "다음";
+            _panel.ShowPage(_page, Pages.Length, title, body, caption);
             _visuals.ShowPage(_page);
         }
 

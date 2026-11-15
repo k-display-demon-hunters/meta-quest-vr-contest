@@ -34,7 +34,7 @@ namespace ModelDesignScene.ControlPanel
             string destination = slotIndex >= 0 ? $"{slotIndex + 1}번 칸" : "빈 칸";
             _placementGuideText.text = state switch
             {
-                PlacementGuideState.GrabBlock => "1. 블록 집기\n책상 위 블록을 가리키세요.\n옆면 Grip 버튼을 중지로 누르고\n누른 채 유지하세요.",
+                PlacementGuideState.GrabBlock => "1. 블록 집기\n책상 위 블록을 가리키세요.\n옆면 Grip 버튼을 중지로 누르고 누른 채 유지하세요.",
                 PlacementGuideState.MoveToSlot => $"2. 빈 칸으로 옮기기\nGrip을 누른 채 블록을\n강조된 {destination} 위로 옮기세요.",
                 PlacementGuideState.ReleaseBlock => $"3. 손을 떼어 놓기\n{destination}에 놓을 수 있어요.\nGrip 버튼에서 손을 떼세요.",
                 PlacementGuideState.RetryPlacement => "다시 놓아볼까요?\n빈 칸에 배치되지 않았어요.\n책상에서 다시 집어 옮긴 뒤,\n칸이 노랗게 되면 Grip을 놓으세요.",

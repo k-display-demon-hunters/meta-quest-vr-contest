@@ -44,7 +44,9 @@ namespace CNNConvolution
         {
             _kernel.AttachHighlight(_cellHighlight, index);
             _terms[index].Move(TermStart(index));
-            _terms[index].Show((index == 0 ? "" : "+ ") + value + "×" + weight, WorkbenchColors.Channel(0), 56);
+            string prefix = index == 0 ? "" : "+ ";
+            string factor = weight.StartsWith('-') ? $"({weight})" : weight;
+            _terms[index].Show($"{prefix}{value} × {factor}", WorkbenchColors.Channel(0), 50);
         }
 
         public void MoveTerm(int index, Vector3 position) => _terms[index].Move(position);

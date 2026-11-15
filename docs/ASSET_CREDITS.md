@@ -23,6 +23,8 @@
 
 ROOM #1 내부 아치 문과 ROOM #1-2·#2·#3 출구의 개방 불가 안내판(`ShutterUnavailableSign.prefab`), ROOM #1·#2 입구 바닥 홀로그램(`ShutterFloorHologram.prefab`)은 위 Noto Sans CJK KR Regular를 재사용합니다. 폰트 원본 수정은 없습니다.
 
+같은 폰트를 픽셀 관찰실과 합성곱 실험실 사이 아치의 `합성곱 실험실` 이름표에도 재사용합니다. Codex 보조로 씬의 uGUI Text와 단색 배경을 구성했으며 폰트 원본을 수정하거나 별도 이미지 파일을 생성하지 않았습니다.
+
 FactoryEnvironment의 B 텔레포트 사용 불가 안내는 위 Noto Sans CJK KR Regular를 재사용합니다. 원출처·권리자·라이선스는 위 기록과 같고 폰트 원본 수정은 없습니다.
 
 공용 리그와 안내는 Meta XR Core SDK의 공식 프리팹을 직접 참조합니다. Codex 보조로 생성 인스턴스의 Touch Plus 본체 재질을 같은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat` 공유 참조로 연결했습니다. 모델·텍스처·재질·애니메이션 패키지 원본 수정이나 복제는 없습니다. 이전 추출본과 그 라이선스 사본 폴더는 삭제했습니다. 현재 사용하는 SDK 패키지의 `LICENSE.md`와 `NOTICE.txt` 원본은 유지합니다.

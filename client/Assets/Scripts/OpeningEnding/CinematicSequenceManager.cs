@@ -1,4 +1,5 @@
 using System.Collections;
+using Parchment;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 
@@ -49,6 +50,11 @@ namespace Cinematic
         private IEnumerator Start()
         {
             Log($"Initializing destination={_destination}");
+            if (!_ending)
+            {
+                // Close the previous reader before cinematic controls capture movement state.
+                FindFirstObjectByType<ParchmentManager>().ResetForNewSession();
+            }
             _rig = FindFirstObjectByType<XROrigin>();
             _interaction.Bind(_rig, _ending);
             _presentation.Bind(_content, _model, _ending, _rig.Camera, GetInstanceID());

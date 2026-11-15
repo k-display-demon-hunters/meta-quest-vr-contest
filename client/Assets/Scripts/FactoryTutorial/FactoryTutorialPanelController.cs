@@ -41,7 +41,7 @@ namespace FactoryTutorial
         public void ShowPage(int page, int count, string title, string body, string nextCaption)
         {
             _title.text = title;
-            _step.text = page == 0 ? "A 버튼으로 계속" : $"{page} / {count - 1}";
+            _step.text = page == 0 ? "A 버튼으로 계속" : $"{page + 1} / {count}";
             _body.text = body;
             _previous.interactable = page > 0;
             _nextLabel.text = nextCaption;

@@ -56,6 +56,7 @@ namespace FeatureMapCorridor
         {
             _header.text = header;
             _body.text = body;
+            _body.textWrappingMode = body.Contains('\n') ? TextWrappingModes.NoWrap : TextWrappingModes.Normal;
             bool showButtons = previous || next != null;
             _header.rectTransform.sizeDelta = _headerSize + (emphasizeHeading ? new Vector2(0, 22) : Vector2.zero);
             _header.fontSizeMax = _headerFontSizeMax + (emphasizeHeading ? 20 : 0);
@@ -65,7 +66,7 @@ namespace FeatureMapCorridor
             if (emphasizeHeading)
             {
                 _header.rectTransform.anchoredPosition = new Vector2(0, showButtons ? 155 : 115);
-                _body.rectTransform.anchoredPosition = new Vector2(0, showButtons ? 24 : -20);
+                _body.rectTransform.anchoredPosition = Vector2.zero;
             }
             else if (separateHeader)
             {

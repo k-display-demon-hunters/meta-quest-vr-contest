@@ -162,7 +162,7 @@ namespace FeatureMapCorridor
             switch (context.Step)
             {
                 case LessonStep.FilterIntro: return LessonContent.FilterIntro(data.Layer, data.Map, data.Digit);
-                case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Map, data.Count, data.Size);
+                case LessonStep.FilterOpened: return LessonContent.FilterOpen(data.Layer, data.Count, data.Size);
                 case LessonStep.Scan: return LessonContent.Scan(data.Layer);
                 case LessonStep.Explain: return LessonContent.Explain(data.Layer, data.Digit);
                 case LessonStep.Merge: return LessonContent.Merge(data.Layer, data.Map, data.Digit, data.Count, context.Winner);

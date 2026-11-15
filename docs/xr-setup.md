@@ -164,7 +164,7 @@ Android의 활성 OpenXR 설정과 공용 리그에는 다음 값을 적용한�
 
 생성한 Touch Plus 모델의 본체 재질은 SDK의 `MetaQuestTouchPlusMATphong_left.mat` / `MetaQuestTouchPlusMATphong_right.mat`을 공유 참조한다. 공식 프리팹의 `MetaQuestTouchPlusLeft_Material` / `MetaQuestTouchPlusRight_Material` 슬롯만 교체하며 배터리 재질은 유지한다. 이 `.mat`들은 `Meta/Lit` 셰이더와 SDK 텍스처 GUID를 사용한다. 프리팹에 포함된 재질 FBX의 이전 `Assets/Oculus/VR/Textures` 경로에 의존하지 않는다. 모델·Animator·애니메이션 클립과 SDK 패키지 원본은 수정하지 않는다.
 
-중복 제거를 통과한 공용 리그가 `Meta XR Runtime` 자식을 활성화한다. 이 자식의 `OVRManager`가 Meta 입력의 수명을 관리한다. OpenXR/XRI는 손 추적·이동·잡기·UI 입력을 처리한다. 공용 생성 메서드는 공식 `OVRControllerHelper`를 반환하며, 예전 기본 도형 컨트롤러와 이를 숨기던 코드는 제거했다. `Scripts/FactoryTutorial/TouchPlusHandController`는 튜토리얼의 확대 모델에만 추가한다. 튜토리얼의 `SetCue()` 호출을 받아 Touch Plus 모델에 표시를 붙이고 기존 Unity XR 입력으로 수행 여부를 확인한다. 오프닝은 이 컴포넌트를 참조하지 않으며 기존 별도 손 안내 표식을 사용한다. 에디터에서 XR 장치가 없을 때는 정적인 Touch Plus 모델을 표시한다.
+중복 제거를 통과한 공용 리그가 `Meta XR Runtime` 자식을 활성화한다. 이 자식의 `OVRManager`가 Meta 입력의 수명을 관리한다. OpenXR/XRI는 손 추적·이동·잡기·UI 입력을 처리한다. 공용 생성 메서드는 공식 `OVRControllerHelper`를 반환하며, 예전 기본 도형 컨트롤러와 이를 숨기던 코드는 제거했다. `Scripts/FactoryTutorial/TouchPlusHandController`는 튜토리얼의 확대 모델에만 추가한다. `SetCues()`는 페이지에서 안내하는 버튼과 스틱에 표식을 붙인다. 기존 Unity XR 입력에 따라 각 표식의 색을 바꾼다. 오프닝은 이 컴포넌트를 참조하지 않으며 기존 별도 손 안내 표식을 사용한다. 에디터에서 XR 장치가 없을 때는 정적인 Touch Plus 모델을 표시한다.
 
 과거 SDK 제거 시 분리했던 표시용 에셋 12개는 패키지 원본으로 전환하고, 이전 추출본과 라이선스 사본 폴더는 삭제했다. 현재 사용하는 SDK 패키지에 포함된 원본 라이선스·고지는 유지한다. 이번 전환은 소스·직렬화 참조를 검토했으며, Quest 3S에서 재질·왼손 애니메이션·튜토리얼 강조·Reality 진입 및 복귀의 실행 확인이 남아 있다.
 

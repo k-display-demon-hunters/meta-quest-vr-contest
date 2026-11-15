@@ -69,8 +69,10 @@ namespace ModelDesignScene.ControlPanel
             _nextIssue.gameObject.SetActive(showIssueNavigation);
             _previousIssue.interactable = showIssueNavigation && _issueIndex > 0;
             _nextIssue.interactable = showIssueNavigation && _issueIndex + 1 < _issues.Count;
-            _issueCount.text = showProblem ? "모델 구성 확인 필요"
-                : _isDragging ? "배치 중" : _hasValidationResult ? "모델 구성 확인 완료" : "학습 시작을 눌러 구성을 확인하세요";
+            _issueCount.text = showProblem ? "<size=30><color=#FFB24A>모델 구성 확인 필요</color></size>"
+                : _isDragging ? "배치 중"
+                : _hasValidationResult ? "모델 구성 확인 완료"
+                : "<size=28><color=#EBF2F2>학습 시작을 눌러 구성을 확인하세요</color></size>";
             _statusAccent.color = showProblem ? _problemColor : _hasValidationResult ? _readyColor : _placingColor;
             if (!showProblem) { return; }
 
@@ -135,7 +137,7 @@ namespace ModelDesignScene.ControlPanel
                     break;
                 case "Spatial layers cannot follow Dense or Flatten.":
                     title = "Conv·Pooling의 위치를 바꾸세요";
-                    reason = "CONV·POOLING은 가로·세로 형태가 필요해요. FLATTEN 뒤에서는 숫자가 한 줄로 펼쳐져 있어요.";
+                    reason = "CONV·POOLING은 가로·세로 형태가 필요해요.\nFLATTEN 뒤에서는 숫자가 한 줄로 펼쳐져 있어요.";
                     action = "이 CONV·POOLING을 잡아 첫 FLATTEN 앞의 빈 슬롯으로 옮기세요.";
                     break;
                 case "Invalid Conv2D shape or placement.":

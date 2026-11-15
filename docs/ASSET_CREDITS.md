@@ -279,3 +279,7 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 - 학습 자료: 기존 `mnist-color-data/MnistTraining.bytes`의 실제 컬러 RGB 숫자 1·2·3 360장(324장 학습·36장 검증), 별도 평가는 `MnistTest.bytes`의 90장. [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [CVDF 배포](https://github.com/cvdfoundation/mnist). 위 MNIST 항목의 Yann LeCun·Corinna Cortes / CC BY-SA 3.0 출처·권리 표기를 따른다. 기존 색·무늬 합성 자료를 16×16으로 축소하고 /255 정규화했다. R 분류 모델은 그중 R만 사용한다. 원본 마스크 재취득·색 재합성·방향 목표 필터는 사용하지 않았다.
 - `CNNFeatureMapLab/ExecutionData/Digit1ExecutionData.cs`~`Digit3ExecutionData.cs`의 기존 입력 픽셀은 그대로 보존했다. 피처맵·출력 틀과 `mnist-color-data/learned-filters/preview.png`는 Codex 보조 TensorFlow 숫자 분류 학습, NumPy 순전파·C# 내보내기, Pillow 확대 시각화로 다시 계산했다. 학습된 가중치를 그대로 사용했으며 생성형 이미지 AI는 쓰지 않았다. 기존 입력은 위 **16×16 컬러 숫자 입력** 기록을 따르며 별도 권리자는 미확인이다. 학습 자료 라이선스를 근거로 기존 직접 제작 입력에 새 라이선스를 부여하지 않는다.
 - 모델·가중치의 선택 방법, 원본 float32 보존, 기존 출력 판정 방식과 표시 한계는 [제작 기록](../mnist-color-data/learned-filters/README.md)에 정리한다. 기존 배포용 라이선스 고지는 보존한다.
+
+## ROOM #3 AR 진입·완료 안내 폰트 재사용 (2026-11-15)
+
+- **Noto Sans CJK KR Regular 2.004**. `client/Assets/Prefabs/CNNModelDesignLab/ModelControlPanel.prefab`의 AR 진입 안내 카드, 방문·복귀 완료 조건, 진입·재입장 버튼과 완료 문구에 기존 `Fonts/NotoSansCJKkr-Regular.otf`를 재사용한다. 원출처는 위 Noto CJK 공식 배포본, 제작자·저작권자는 © 2014–2021 Adobe, 라이선스는 SIL OFL 1.1이다. Codex AI 보조로 UI 문구·배치·크기·색을 변경했으며 폰트 원본 수정·복제 없이 기존 라이선스 고지를 유지했다.

@@ -53,6 +53,7 @@ namespace ModelDesignScene.ControlPanel
         [SerializeField] private ModelAssemblyController _assembly;
         [SerializeField] private Text _exampleReason;
         [SerializeField] private Text _realityReason;
+        [SerializeField] private ModelRealityEntryGuideController _realityGuide;
         [SerializeField] private ModelTrainingMetricsController _metrics;
         [SerializeField] private ModelInferenceResultsController _inference;
 
@@ -81,6 +82,7 @@ namespace ModelDesignScene.ControlPanel
         private bool _hasTrainedModel;
         private bool _showingTrainingResult;
         private bool _highlightReality;
+        private bool _experienceCompleted;
         private ModelExecutionState _state;
 
         internal event Action OnExampleRequested;
@@ -144,6 +146,7 @@ namespace ModelDesignScene.ControlPanel
                 SetSecondaryStyle(_realityBorder, _realityLabel, available);
             }
             RefreshSecondaryReasons();
+            RefreshRealityGuide();
             if (_activeError == ErrorCard.Reality) { _errorActionButton.interactable = available; }
         }
 
@@ -159,6 +162,7 @@ namespace ModelDesignScene.ControlPanel
 
             RefreshStartButton();
             RefreshTabStyles();
+            RefreshRealityGuide();
         }
 
         internal void SetSamples(IReadOnlyList<DatasetSample> samples)
@@ -182,6 +186,7 @@ namespace ModelDesignScene.ControlPanel
             }
             RefreshSecondaryReasons();
             RefreshStartButton();
+            RefreshRealityGuide();
             if (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy))
             {
                 ShowValidationPage();
@@ -190,6 +195,7 @@ namespace ModelDesignScene.ControlPanel
 
         internal void ResetTraining()
         {
+            _experienceCompleted = false;
             _metrics.ResetTraining();
             DismissError();
             _inference.ResetTraining();
@@ -198,6 +204,7 @@ namespace ModelDesignScene.ControlPanel
 
         internal void ResetSessionUI()
         {
+            _experienceCompleted = false;
             _metrics.ResetTraining();
             _inference.ResetTraining();
             _inference.ResetSession();
@@ -278,7 +285,7 @@ namespace ModelDesignScene.ControlPanel
                     ShowErrorCard(ErrorCard.Cancelling);
                     break;
                 case ModelExecutionState.Completed:
-                    _stateText.text = "학습 완료";
+                    _stateText.text = _experienceCompleted ? "체험 완료" : "학습 완료";
                     break;
                 case ModelExecutionState.Inferring:
                     _executionError = ErrorCard.SampleInference;
@@ -312,6 +319,7 @@ namespace ModelDesignScene.ControlPanel
             RefreshTabStyles();
             _inference.SetAvailability(hasTrainedModel, canInfer && !_showingTrainingResult);
             RefreshStartButton();
+            RefreshRealityGuide();
         }
 
         internal void ShowError(string message)
@@ -328,6 +336,16 @@ namespace ModelDesignScene.ControlPanel
         }
 
         internal void ShowRealityEntryFailure() => ShowErrorCard(ErrorCard.Reality);
+
+        internal void ShowExperienceCompleted()
+        {
+            DismissError();
+            _experienceCompleted = true;
+            _stateText.text = "체험 완료";
+            _statusAccent.color = ReadyGreen;
+            SetTrainingResultPresentation(false, false);
+            RefreshSecondaryReasons();
+        }
 
         private void ShowSampleFailure()
         {
@@ -373,6 +391,7 @@ namespace ModelDesignScene.ControlPanel
             RectTransform close = (RectTransform)_dismissErrorButton.transform;
             close.anchoredPosition = new Vector2(action.Length > 0 ? 276f : 28f, close.anchoredPosition.y);
             _errorPanel.SetActive(true);
+            RefreshRealityGuide();
         }
 
         internal void ShowCancelled()
@@ -457,6 +476,7 @@ namespace ModelDesignScene.ControlPanel
         {
             _activeError = ErrorCard.None;
             _errorPanel.SetActive(false);
+            RefreshRealityGuide();
         }
 
         private void HandleErrorAction()
@@ -518,10 +538,16 @@ namespace ModelDesignScene.ControlPanel
 
         private void RefreshSecondaryReasons()
         {
+            _realityLabel.text = _experienceCompleted ? "AR 룸 다시 입장" : "AR 룸 입장";
             _exampleReason.text = _exampleButton.interactable ? "" : _isDragging ? "블록을 놓은 뒤 사용"
                 : _state is ModelExecutionState.StartingTraining or ModelExecutionState.Training
                     or ModelExecutionState.CancellingTraining ? "학습 중에는 쓸 수 없어요" : "";
-            _realityReason.text = !_realityButton.interactable && !_hasTrainedModel ? "학습 후 사용" : "";
+            _realityReason.text = !_hasTrainedModel ? "학습을 마치면 입장할 수 있습니다"
+                : _isDragging ? "잡고 있는 블록을 먼저 놓아 주세요"
+                : _showingTrainingResult ? "학습 결과 확인 후 입장"
+                : _isBusy ? "작업이 끝나면 입장할 수 있습니다"
+                : _realityButton.interactable ? "현실 숫자 촬영 · 0~3" : "";
+            _realityReason.color = _realityButton.interactable && _highlightReality ? ActionText : TextMuted;
             _exampleReason.gameObject.SetActive(_exampleReason.text.Length > 0);
             _realityReason.gameObject.SetActive(_realityReason.text.Length > 0);
             SetSecondaryLabelPosition(_exampleLabel, _exampleReason.gameObject.activeSelf);
@@ -536,7 +562,22 @@ namespace ModelDesignScene.ControlPanel
 
         private void RefreshHeader()
         {
-            _headerTitle.text = "숫자를 읽는 CNN 만들기";
+            _headerTitle.text = _experienceCompleted && !_isBusy && !_hasIssues
+                && _activeError == ErrorCard.None ? "체험 완료 · 수고하셨습니다"
+                : _highlightReality && _hasTrainedModel && !_isBusy
+                && !_showingTrainingResult && _activeError == ErrorCard.None && !_hasIssues
+                ? "학습 완료 · AR 룸으로!" : "숫자를 읽는 CNN 만들기";
+        }
+
+        private void RefreshRealityGuide()
+        {
+            // The existing availability includes scene transitions; a held block is the only
+            // unavailable state that keeps the invitation visible with a release instruction.
+            bool visible = (_highlightReality || _experienceCompleted) && _hasTrainedModel && !_isBusy
+                && !_showingTrainingResult && _activeError == ErrorCard.None
+                && (_realityButton.interactable || _isDragging);
+            _realityGuide.Show(visible, _realityButton.interactable, _experienceCompleted);
+            RefreshHeader();
         }
 
         private void OnDestroy()

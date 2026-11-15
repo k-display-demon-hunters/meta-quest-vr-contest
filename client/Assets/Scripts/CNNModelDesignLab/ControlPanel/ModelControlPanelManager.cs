@@ -103,6 +103,8 @@ namespace ModelDesignScene.ControlPanel
 
         public void ShowRealityEntryFailure() => _controller.ShowRealityEntryFailure();
 
+        public void ShowExperienceCompleted() => _controller.ShowExperienceCompleted();
+
         public void ShowCancelled()
         {
             _controller.ShowCancelled();

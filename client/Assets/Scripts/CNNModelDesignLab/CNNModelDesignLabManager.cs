@@ -31,19 +31,30 @@ namespace ModelDesignScene
         [SerializeField] private Cinematic.CinematicModelResult _cinematicResult;
 
         private ModelRealitySessionController _reality;
-        private bool CanEnterReality => CanExit && _execution.HasTrainedModel && !_builder.IsDragging
+        private bool CanEnterReality => isActiveAndEnabled && _trainingCompleted && !_execution.IsBusy
+            && _execution.HasTrainedModel && !_builder.IsDragging
             && !_reality.IsOpen && !_reality.IsTransitioning;
         private bool CanPlayPlacementExample => _initialized && isActiveAndEnabled && !_execution.IsBusy
             && !IsShowingTrainingResult
             && !_reality.IsOpen && !_reality.IsTransitioning && _builder.CanPlayPlacementExample;
-        public System.Threading.Tasks.Task EnterRealityAsync()
+        public async System.Threading.Tasks.Task EnterRealityAsync()
         {
             if (!CanEnterReality)
                 throw new System.InvalidOperationException("Finish training and release the block before entering Reality.");
             _settings.Close();
             _builder.CancelPlacementExample();
             _builder.CancelTrainingFlow();
-            return _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
+            System.Threading.Tasks.Task entry = _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
+            PublishProgressionState();
+            try
+            {
+                await entry;
+                if (this != null && _reality.IsOpen && !_realityCompleted) { SetProgress(0.95f); }
+            }
+            finally
+            {
+                if (this != null) { PublishProgressionState(); }
+            }
         }
         public System.Threading.Tasks.Task ExitRealityAsync() => _reality.ExitAsync();
         public System.Threading.Tasks.Task<InferenceResult> InferRealityAsync(float[] input, string requestId)
@@ -57,6 +68,7 @@ namespace ModelDesignScene
         private bool _hasValidationResult;
         private bool _initialized;
         private bool _trainingCompleted;
+        private bool _realityCompleted;
         private bool _progressionAvailable;
         public System.Collections.IEnumerator EndSession()
         {
@@ -64,7 +76,11 @@ namespace ModelDesignScene
             _hologramTraining = false;
             _hologram.Clear();
             _builder.CancelTrainingFlow();
+            _trainingCompleted = false;
+            _realityCompleted = false;
             _execution.CloseSession();
+            SetProgress(0f);
+            PublishProgressionState();
             yield break;
         }
 
@@ -82,7 +98,8 @@ namespace ModelDesignScene
         }
         private bool _modelUIIsDirty;
 
-        public bool CanExit => isActiveAndEnabled && _trainingCompleted && !_execution.IsBusy;
+        public bool CanExit => isActiveAndEnabled && _trainingCompleted && _realityCompleted
+            && !_execution.IsBusy && !_reality.IsOpen && !_reality.IsTransitioning;
 
         private void Awake()
         {
@@ -92,6 +109,7 @@ namespace ModelDesignScene
 
         private void OnEnable()
         {
+            _reality.Exited += HandleRealityExited;
             _modelUIIsDirty = true;
             _builder.OnPlacementGuideChanged += HandlePlacementGuideChanged;
             _controlPanel.OnExampleRequested += HandleExampleRequested;
@@ -295,7 +313,7 @@ namespace ModelDesignScene
         {
             RunPresentation(() => _controlPanel.ShowProgress(progress));
             RunPresentation(() => _builder.ShowEpochFlow(progress.Epoch));
-            SetProgress(progress.Epochs > 0 ? 0.95f * progress.Epoch / progress.Epochs : 0f);
+            SetProgress(progress.Epochs > 0 ? 0.9f * progress.Epoch / progress.Epochs : 0f);
         }
         private void HandleTrainingCancelled() => _controlPanel.ShowCancelled();
         private void HandleInferenceCompleted(InferenceResult result)
@@ -321,7 +339,17 @@ namespace ModelDesignScene
             _hologram.Clear();
             _builder.CancelTrainingFlow();
             _trainingCompleted = true;
-            _controlPanel.SetTrainingResultPresentation(false, true);
+            _controlPanel.SetTrainingResultPresentation(false, !_realityCompleted);
+            if (_realityCompleted) { _controlPanel.ShowExperienceCompleted(); }
+            SetProgress(_realityCompleted ? 1f : 0.9f);
+            PublishProgressionState();
+        }
+
+        private void HandleRealityExited()
+        {
+            if (!_trainingCompleted) { return; }
+            _realityCompleted = true;
+            _controlPanel.ShowExperienceCompleted();
             SetProgress(1f);
             PublishProgressionState();
         }
@@ -388,6 +416,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _reality.Exited -= HandleRealityExited;
             _builder.OnPlacementGuideChanged -= HandlePlacementGuideChanged;
             _trainingResultEndsAt = null;
             _hologramTraining = false;
@@ -395,6 +424,7 @@ namespace ModelDesignScene
             _controlPanel.OnExampleRequested -= HandleExampleRequested;
             _controlPanel.OnRealityRequested -= HandleRealityRequested;
             _trainingCompleted = false;
+            _realityCompleted = false;
             SetProgress(0f);
             PublishProgressionState();
             _hasValidationResult = false;

@@ -9,10 +9,10 @@ namespace CNNConvolution
     {
         public const int MapColumns = PictureSampler.Columns - 2;
         public const int MapRows = PictureSampler.Rows - 2;
-        // Fitted nonnegative denoising weights, quantized to 0.01 and summing to one.
-        // Only R contributes; the existing zero-bias calculation and 0..255 range are preserved.
+        // An unmodified float32 kernel from digit-label classification training.
+        // Only R contributes; zero bias, pre-ReLU sum. Values need not lie in 0..255.
         // Reproduction: mnist-color-data/learned-filters/fit_and_export.py
-        private static readonly float[] RedWeights = new[] { 0.00f, 0.12f, 0.04f, 0.14f, 0.42f, 0.13f, 0.04f, 0.11f, 0.00f };
+        private static readonly float[] RedWeights = new[] { 0.128474906f, 0.555713832f, -0.165758774f, 0.62021178f, 0.274825811f, -0.777432978f, 0.205255404f, -0.356443763f, -0.506978214f };
 
         private readonly Color32[] _pixels;
 

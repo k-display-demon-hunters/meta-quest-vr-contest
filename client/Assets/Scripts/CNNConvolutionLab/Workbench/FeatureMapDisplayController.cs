@@ -44,7 +44,8 @@ namespace CNNConvolution
             HideCurrent();
         }
 
-        // Outputs of this filter lie between 0 and 255, the same range as a pixel value.
+        // Keep the existing 0..255 display scale; the RGBA32 texture clips out-of-range sums.
+        // The numeric readout retains the raw signed convolution result.
         public void Record(int row, int column, float value)
         {
             float brightness = value / 255f;

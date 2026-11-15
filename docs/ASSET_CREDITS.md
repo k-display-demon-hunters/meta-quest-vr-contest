@@ -257,7 +257,7 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 
 | 에셋명 | 사용 위치 | 출처·제작 방법 | 제작자·권리자·라이선스 | 수정 여부 |
 | --- | --- | --- | --- | --- |
-| `ConvolutionNarration_*.wav` 10개 | `Audio/CNNConvolutionLab/`, CNNConvolutionLab의 단계별 안내 음성 | Claude Code AI 보조. Windows System.Speech의 Microsoft Heami Desktop(ko-KR), 말하기 속도 +2로 프로젝트 안내 문구를 22.05 kHz 16-bit 모노 WAV로 합성. 문구는 [픽셀 관찰과 ROOM 1-2 체험](pixel-inspection.md)의 안내 음성 표에 기록 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 신규 합성. 앞뒤 무음만 절단(앞 0.12초, 뒤 0.25초 유지). 2026-11-14 체험 간소화에 맞춰 같은 방법으로 6개를 다시 합성하거나 새로 합성하고, 빠진 단계의 음성은 삭제. 2026-11-15 그림 기반 체험으로 바꾸며 같은 방법으로 10개 전부를 ‘~입니다’ 어체 문구로 다시 합성(5개는 새 이름)하고, 빠진 단계의 음성 7개는 삭제 |
+| `ConvolutionNarration_*.wav` 9개 | `Audio/CNNConvolutionLab/`, CNNConvolutionLab의 단계별 안내 음성 | Claude Code AI 보조. Windows System.Speech의 Microsoft Heami Desktop(ko-KR), 말하기 속도 +2로 프로젝트 안내 문구를 22.05 kHz 16-bit 모노 WAV로 합성. 문구는 [픽셀 관찰과 ROOM 1-2 체험](pixel-inspection.md)의 안내 음성 표에 기록 | 음성 엔진 Microsoft, 생성 파일의 권리 및 배포 조건 미확인, 별도 공개 라이선스 지정 없음 | 앞 0.12초, 뒤 0.25초의 무음을 남기고 절단. 2026-11-14 체험 간소화에 맞춰 6개 합성 및 빠진 단계의 음성 삭제. 2026-11-15 그림 기반 체험에 맞춰 10개 합성(5개는 새 이름) 및 이전 단계 음성 7개 삭제. 이후 Codex 보조로 필터 배치 완료 음성을 삭제하고 `ConvolutionNarration_NextStage.wav`에서 다음 방 예고 문장을 절단 |
 
 같은 변경에서 받침대 명판, 상단 설명판, 오른쪽 목표·조작 안내 글을 제거했다. CNNConvolutionLab에서 Pretendard Regular는 자막·버튼·계산 숫자에, Noto Sans CJK KR Regular는 필터 손잡이 배치 안내에 계속 사용한다. 두 폰트의 원본과 배포용 라이선스 고지는 그대로다.
 
@@ -265,7 +265,7 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 
 | 에셋 | 사용 위치 | 생성 도구·제작 방법 | 제작자·권리자 / 라이선스 | 수정 |
 | --- | --- | --- | --- | --- |
-| Observation0–2.wav | `client/Assets/Audio/CNNScreenLab/`, 돋보기 조작·RGB 펼침·이동 비교 안내 | Codex 보조로 작성한 한국어 대사를 Windows System.Speech / Microsoft Heami Desktop으로 WAV 합성 | 음성 엔진 Microsoft. 생성 파일 권리·배포 조건 미확인, 별도 공개 라이선스 부여 없음 | 새 합성, 후처리 없음 |
+| Observation0–2.wav | `client/Assets/Audio/CNNScreenLab/`, 돋보기 조작·픽셀과 RGB·RGB 값 안내 | Codex 보조로 작성한 한국어 대사를 Windows System.Speech / Microsoft Heami Desktop으로 WAV 합성 | 음성 엔진 Microsoft. 생성 파일 권리·배포 조건 미확인, 별도 공개 라이선스 부여 없음 | 2026-11-15 Codex 보조로 클립마다 끝의 조작 안내 한 문장씩 절단. 남은 PCM과 Unity GUID 유지 |
 
 
 ## 공장 조명 재베이크 (2026-11-14)

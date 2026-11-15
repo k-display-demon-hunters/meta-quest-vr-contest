@@ -395,7 +395,6 @@ MonoBehaviour:
   _voice: {fileID: 730000003}
   _clips:
   - {fileID: 8300000, guid: 49512663c8bb4993a53f76614f743b07, type: 3}
-  - {fileID: 8300000, guid: 5c26978d7e2f44a78abda200fc4b0ea4, type: 3}
   - {fileID: 8300000, guid: 060441a1c15d40f28566a681fcef7fa3, type: 3}
   - {fileID: 8300000, guid: cd3270da7abe41d084d7817f0b181781, type: 3}
   - {fileID: 8300000, guid: 9ff50d62145545d2ac1ac7b78ef11fba, type: 3}

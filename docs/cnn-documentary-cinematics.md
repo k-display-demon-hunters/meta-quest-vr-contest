@@ -158,3 +158,7 @@ Presentation/CinematicTransitionVisualController는 프리팹에 저장된 기�
 `EndingVisualController`가 `EndingArchiveTrail`을 생성·보관하고 파괴 시 전용 재질을 해제한다. `EndingSequence`는 잔상 내부 객체를 받지 않고 시각 진입점의 준비·사진 설정·시간 갱신 메서드를 호출한다. 모델 카드와 인식 프레임은 각 담당이 표시 상태를 소유하고, 카메라 배경 복원은 `EndingQuietController`가 담당한다. `EndingYearRoll`은 씬에 미리 연결되어 있다.
 
 씬 생성 도구도 동일한 고정 요소와 직렬화 참조를 저장한다. 이번 책임 분리와 씬 배치는 정적으로 검토했으며 Unity 실행·컴파일·빌드 및 Quest 성능·시각 검증은 수행하지 않았다.
+
+## 오프닝 시작 대기 화면 (2026-11-15)
+
+시작 버튼은 무대 기준 높이 1.0m, 전방 2.15m에 배치한다(기존 씬의 1.45m에서 0.45m 하향). 버튼 위에는 `CNN 원리 탐구 및 모델 설계`와 `XR(VR/AR) 콘텐츠`를 두 줄, 가운데 정렬, 흰색 Pretendard SemiBold 96pt로 표시한다. 제목은 버튼과 동일한 시작 패널에 있어 재생 시작 시 함께 숨겨진다. 씬과 CinematicSceneBuilder의 배치를 일치시켰다. 사용자 승인으로 Unity에서 오프닝 씬을 열고 Play 진입을 시도했으나 화면 캡처 작업이 중단되어 실제 배치 확인은 완료하지 못했다. 별도 테스트와 빌드는 수행하지 않았다.

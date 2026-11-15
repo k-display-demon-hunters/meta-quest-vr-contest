@@ -354,7 +354,11 @@ namespace CinematicEditor
             }
             else
             {
-                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, .75f, 2.15f), new Vector2(420, 122), .0018f);
+                Canvas start = CanvasAt(stage, "Opening Start Panel", new Vector3(0, 1f, 2.15f), new Vector2(1600, 700), .0018f);
+                Text title = TextAt(start.transform, "Experience Title", "CNN 원리 탐구 및 모델 설계\nXR(VR/AR) 콘텐츠",
+                    new Vector2(0, 290), new Vector2(1600, 250), 96);
+                title.color = Color.white;
+                title.lineSpacing = 1.15f;
                 Button startButton = CreateArchiveActionButton(start, "Start Button", "Start Label", "시작", 420, 240, 76, 93f);
                 Assign(controls, "_startButton", startButton);
             }

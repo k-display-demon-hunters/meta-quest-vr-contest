@@ -26,6 +26,8 @@ namespace ModelDesignScene.ControlPanel
         private static readonly Color TextInactive = new Color32(130, 146, 154, 255);
         private static readonly Color SlotText = new Color32(8, 12, 18, 255);
 
+        internal bool IsPlacementGuideVisible => _placementGuide.activeInHierarchy;
+
         internal int PlacedBlockCount { get; private set; }
 
         internal void ShowPlacementGuide(PlacementGuideState state, int slotIndex)

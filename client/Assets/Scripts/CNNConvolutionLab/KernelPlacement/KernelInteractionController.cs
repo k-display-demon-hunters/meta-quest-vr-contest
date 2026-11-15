@@ -65,8 +65,9 @@ namespace CNNConvolution
             _kernel.SetGrabEnabled(false);
             _ui.ShowSkip(false);
             _ui.Caption = "배치 완료 · 필터가 그림의 가로세로 세 칸을 덮었습니다.";
-            _narration.Stop();
+            _narration.Play(NarrationCue.FilterPlaced);
             yield return _playback.Wait(0.45f);
+            yield return _narration.WaitUntilDone();
             Cancel();
             _kernel.SetTitleVisible(false);
         }

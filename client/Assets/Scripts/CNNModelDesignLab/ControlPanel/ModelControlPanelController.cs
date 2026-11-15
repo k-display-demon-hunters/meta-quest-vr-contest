@@ -131,6 +131,10 @@ namespace ModelDesignScene.ControlPanel
             OnRealityRequested?.Invoke();
         }
 
+        internal bool CanUseRealityButton => _realityButton.isActiveAndEnabled && _realityButton.IsInteractable();
+        internal bool IsValidationIssueVisible => _validation.IsIssueVisible;
+        internal bool IsPlacementGuideVisible => _assembly.IsPlacementGuideVisible;
+
         internal void SetRealityAvailable(bool available)
         {
             _realityButton.interactable = available;

@@ -29,6 +29,8 @@ namespace ModelDesignScene.ControlPanel
         private bool _isDragging;
         private bool _hasValidationResult;
 
+        internal bool IsIssueVisible => _diagnosticDetails.activeInHierarchy && _issues.Count > 0;
+
         private void Awake()
         {
             _previousIssue.onClick.AddListener(HandlePreviousIssue);

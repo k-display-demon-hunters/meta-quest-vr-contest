@@ -24,6 +24,11 @@ namespace FeatureMapCorridor
         private bool _roundActive;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
+        internal event Action InputChannelsExpanded
+        {
+            add => _display.InputChannelsExpanded += value;
+            remove => _display.InputChannelsExpanded -= value;
+        }
         internal void ShowInputChannels(bool expanded) => _display.ShowInputChannels(expanded);
         internal event Action<MapId> OperationSelected;
         internal event Action FilterExpanded;

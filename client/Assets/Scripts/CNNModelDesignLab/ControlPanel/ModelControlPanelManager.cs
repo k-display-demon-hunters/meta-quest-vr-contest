@@ -44,6 +44,10 @@ namespace ModelDesignScene.ControlPanel
             remove => _controller.OnRealityRequested -= value;
         }
 
+        internal bool CanUseRealityButton => _controller.CanUseRealityButton;
+        internal bool IsValidationIssueVisible => _controller.IsValidationIssueVisible;
+        internal bool IsPlacementGuideVisible => _controller.IsPlacementGuideVisible;
+
         public void SetRealityAvailable(bool available) => _controller.SetRealityAvailable(available);
 
         internal void SetTrainingResultPresentation(bool showing, bool highlightReality) =>

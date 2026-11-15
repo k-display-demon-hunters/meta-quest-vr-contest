@@ -87,7 +87,7 @@ namespace Cinematic
             float yearsElapsed = 37 * (1 - Mathf.Pow(1 - rewind, 1.55f));
             _year.text = (2026 - Mathf.FloorToInt(yearsElapsed)).ToString();
             _timeline.localPosition = new Vector3(Mathf.Lerp(0, 12, rewind), 1f, 3.3f);
-            _year.transform.parent.localPosition = new Vector3(0, 1.25f, 2.9f);
+            _year.transform.parent.localPosition = new Vector3(0, 1.45f, 2.9f);
         }
 
         internal void ShowLocation(bool visible, float elapsed, string location, string research)

@@ -66,6 +66,9 @@ namespace ModelDesignScene.ControlPanel
 
         internal void ShowAssemblyOutputSizes(IReadOnlyList<string> sizes) => _controller.ShowAssemblyOutputSizes(sizes);
 
+        public void ShowPlacementGuide(PlacementGuideState state, int slotIndex) =>
+            _controller.ShowPlacementGuide(state, slotIndex);
+
         public void ResetTraining()
         {
             _controller.ResetTraining();

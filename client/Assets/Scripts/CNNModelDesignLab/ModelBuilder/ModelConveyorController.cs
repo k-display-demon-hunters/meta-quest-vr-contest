@@ -33,6 +33,7 @@ namespace ModelDesignScene.ModelBuilder
         private int _previewSlot = -1;
 
         internal IReadOnlyList<SlotSettingsController> SettingsControls => _settingsControls;
+        internal int AvailablePlacementSlot => _previewSlot >= 0 && _slots[_previewSlot] == null ? _previewSlot : -1;
 
         internal void Initialize(ConveyorSlots slots)
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ModelDesignScene.Model;
 using UnityEngine;
 
@@ -11,9 +12,17 @@ namespace ModelDesignScene.ModelBuilder
         public bool IsDragging => _controller.IsDragging;
 
         public bool CanPlayPlacementExample => _controller.CanPlayPlacementExample;
-        public void PlayPlacementExample() => _controller.PlayPlacementExample();
+        public bool PlayPlacementExample(Func<IReadOnlyList<LayerDefinition>, bool> isValid) =>
+            _controller.PlayPlacementExample(isValid);
         public void CancelPlacementExample() => _controller.CancelPlacementExample();
-        public void CancelEntryGuide() => _controller.CancelEntryGuide();
+        public void SetPlacementGuideAvailable(bool available) => _controller.SetPlacementGuideAvailable(available);
+        public PlacementGuideState PlacementGuideState => _controller.PlacementGuideState;
+        public int PlacementGuideSlot => _controller.PlacementGuideSlot;
+        public event Action OnPlacementGuideChanged
+        {
+            add => _controller.OnPlacementGuideChanged += value;
+            remove => _controller.OnPlacementGuideChanged -= value;
+        }
         internal void PlayHologramFlow((Vector3 Center, Vector2 Extents, bool Trainable)[] frames,
             bool training, float readyAt) => _controller.PlayHologramFlow(frames, training, readyAt);
         public void ShowEpochFlow(int epoch) => _controller.ShowEpochFlow(epoch);

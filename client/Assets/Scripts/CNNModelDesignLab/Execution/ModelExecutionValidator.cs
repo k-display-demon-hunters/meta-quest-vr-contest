@@ -28,7 +28,7 @@ namespace ModelDesignScene.Execution
             return true;
         }
 
-        private static bool TryValidateDefinition(ModelExecutionDefinition definition,
+        internal static bool TryValidateDefinition(ModelExecutionDefinition definition,
             int?[] slotIndices, out ValidationIssue issue)
         {
             try

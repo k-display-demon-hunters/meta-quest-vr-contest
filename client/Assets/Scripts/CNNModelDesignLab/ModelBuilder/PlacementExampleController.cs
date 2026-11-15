@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -20,10 +19,10 @@ namespace ModelDesignScene.ModelBuilder
 
         internal bool IsPlaying => _animation != null;
 
-        internal void Play(IReadOnlyList<(ModelBlockController Block, Renderer Pad)> displays, IReadOnlyList<int> emptySlots,
+        internal void Play((ModelBlockController Block, Renderer Pad) display, int slotIndex,
             ModelConveyorController conveyor)
         {
-            _animation = StartCoroutine(Animate(displays, emptySlots, conveyor));
+            _animation = StartCoroutine(Animate(display, slotIndex, conveyor));
         }
 
         internal void Cancel()
@@ -35,27 +34,16 @@ namespace ModelDesignScene.ModelBuilder
             Clear();
         }
 
-        private IEnumerator Animate(IReadOnlyList<(ModelBlockController Block, Renderer Pad)> displays, IReadOnlyList<int> emptySlots,
+        private IEnumerator Animate((ModelBlockController Block, Renderer Pad) display, int slotIndex,
             ModelConveyorController conveyor)
         {
             _outline = new ModelBlockOutline(transform, "Placement example outline", _outlineMaterial);
-            var selected = displays[0];
-            foreach (var display in displays)
-            {
-                _outline.Show(display.Pad);
-                if (display.Block.ExampleMesh.bounds.size.x > selected.Block.ExampleMesh.bounds.size.x)
-                {
-                    selected = display;
-                }
-                yield return new WaitForSecondsRealtime(0.24f);
-            }
-
-            _outline.Show(selected.Pad);
+            _outline.Show(display.Pad);
             yield return new WaitForSecondsRealtime(0.42f);
 
-            CreateGhost(selected.Block);
+            CreateGhost(display.Block);
             Transform ghost = _ghost.transform;
-            Vector3 start = selected.Block.transform.position;
+            Vector3 start = display.Block.transform.position;
             Vector3 lifted = start + transform.up * 0.48f - transform.forward * 0.20f;
             for (float elapsed = 0f; elapsed < 0.48f; elapsed += Time.unscaledDeltaTime)
             {
@@ -64,16 +52,10 @@ namespace ModelDesignScene.ModelBuilder
             }
             ghost.position = lifted;
 
-            int chosenSlot = emptySlots[Random.Range(0, emptySlots.Count)];
-            foreach (int slot in emptySlots)
-            {
-                OutlineSlot(conveyor, slot);
-                yield return new WaitForSecondsRealtime(0.15f);
-            }
-            OutlineSlot(conveyor, chosenSlot);
+            OutlineSlot(conveyor, slotIndex);
             yield return new WaitForSecondsRealtime(0.36f);
 
-            Pose destination = conveyor.GetSlotPose(chosenSlot);
+            Pose destination = conveyor.GetSlotPose(slotIndex);
             Quaternion rotation = ghost.rotation;
             Vector3 scale = ghost.localScale;
             for (float elapsed = 0f; elapsed < 1.15f; elapsed += Time.unscaledDeltaTime)

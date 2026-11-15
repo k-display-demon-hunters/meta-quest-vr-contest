@@ -93,11 +93,13 @@ namespace ModelDesignScene
         private void OnEnable()
         {
             _modelUIIsDirty = true;
+            _builder.OnPlacementGuideChanged += HandlePlacementGuideChanged;
             _controlPanel.OnExampleRequested += HandleExampleRequested;
             _controlPanel.OnRealityRequested += HandleRealityRequested;
             if (_initialized)
             {
                 _builder.BeginInteraction();
+                HandlePlacementGuideChanged();
             }
         }
 
@@ -138,11 +140,18 @@ namespace ModelDesignScene
             {
                 _controlPanel.SetRealityAvailable(CanEnterReality);
                 _controlPanel.SetExampleAvailable(CanPlayPlacementExample);
+                _builder.SetPlacementGuideAvailable(!_execution.IsBusy && !IsShowingTrainingResult
+                    && !_reality.IsOpen && !_reality.IsTransitioning && _validationIssues.Count == 0);
             }
             if (_initialized && _modelUIIsDirty)
             {
                 RefreshModelUI();
             }
+        }
+
+        private void HandlePlacementGuideChanged()
+        {
+            _controlPanel.ShowPlacementGuide(_builder.PlacementGuideState, _builder.PlacementGuideSlot);
         }
 
         private void HandleBuilderChanged()
@@ -167,11 +176,19 @@ namespace ModelDesignScene
 
         private void HandleExampleRequested()
         {
-            if (CanPlayPlacementExample)
+            if (!CanPlayPlacementExample) { return; }
+            _settings.Close();
+            if (_builder.PlayPlacementExample(
+                slots => _execution.TryValidateConfiguration(slots, _model.Output, out _))) { return; }
+            if (_execution.TryValidateConfiguration(_model.Layers, _model.Output, out ValidationIssue issue))
             {
-                _builder.CancelEntryGuide();
-                _settings.Close();
-                _builder.PlayPlacementExample();
+                _validationIssues = System.Array.Empty<ValidationIssue>();
+                _hasValidationResult = true;
+                _controlPanel.ShowModelValidation(_validationIssues, _model.Layers, false, true, true);
+            }
+            else
+            {
+                HandleValidationFailed(new[] { issue });
             }
         }
 
@@ -181,7 +198,7 @@ namespace ModelDesignScene
             {
                 return;
             }
-            _builder.CancelEntryGuide();
+            _builder.SetPlacementGuideAvailable(false);
             _settings.Close();
             _builder.CancelPlacementExample();
             await _execution.StartTrainingAsync(_model);
@@ -342,6 +359,7 @@ namespace ModelDesignScene
 
         private void HandleModelChanged()
         {
+            _builder.CancelPlacementExample();
             _validationIssues = System.Array.Empty<ValidationIssue>();
             _hasValidationResult = false;
             _modelUIIsDirty = true;
@@ -370,6 +388,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _builder.OnPlacementGuideChanged -= HandlePlacementGuideChanged;
             _trainingResultEndsAt = null;
             _hologramTraining = false;
             _hologram.Clear();

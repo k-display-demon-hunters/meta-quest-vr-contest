@@ -21,8 +21,16 @@ namespace ModelDesignScene.ModelBuilder
         private ModelBlockController _grabbedBlock;
         private bool _initialized;
         private bool _interactionEnabled;
+        private bool _placementGuideAvailable;
 
         internal bool IsDragging => _grabbedBlock != null;
+        internal PlacementGuideState PlacementGuideState => _entryGuide.State;
+        internal int PlacementGuideSlot => _entryGuide.TargetSlotIndex;
+        internal event System.Action OnPlacementGuideChanged
+        {
+            add => _entryGuide.OnChanged += value;
+            remove => _entryGuide.OnChanged -= value;
+        }
 
         internal bool CanPlayPlacementExample
         {
@@ -37,19 +45,70 @@ namespace ModelDesignScene.ModelBuilder
             }
         }
 
-        internal void PlayPlacementExample()
+        internal bool PlayPlacementExample(System.Func<IReadOnlyList<LayerDefinition>, bool> isValid)
         {
-            if (!CanPlayPlacementExample) { return; }
-            List<int> emptySlots = new List<int>();
-            for (int index = 0; index < _slots.Count; index++)
+            if (!CanPlayPlacementExample) { return false; }
+            (LayerType Type, int SlotIndex)? placement = FindPlacementExample(isValid);
+            if (!placement.HasValue) { return false; }
+            _entryGuide.Hide();
+            var display = System.Array.Find(_supply.GetExampleDisplays(),
+                candidate => candidate.Block.Layer.Type == placement.Value.Type);
+            _placementExample.Play(display, placement.Value.SlotIndex, _conveyor);
+            return true;
+        }
+
+        private (LayerType Type, int SlotIndex)? FindPlacementExample(
+            System.Func<IReadOnlyList<LayerDefinition>, bool> isValid)
+        {
+            LayerDefinition[] candidate = new LayerDefinition[_model.Layers.Count];
+            bool hasConv = false;
+            bool hasFlatten = false;
+            for (int slot = 0; slot < candidate.Length; slot++)
             {
-                if (_slots[index] == null) { emptySlots.Add(index); }
+                LayerDefinition layer = _model.Layers[slot];
+                candidate[slot] = layer;
+                hasConv |= layer?.Type == LayerType.Conv2D;
+                hasFlatten |= layer?.Type == LayerType.Flatten;
             }
-            _placementExample.Play(_supply.GetExampleDisplays(), emptySlots, _conveyor);
+            if (hasConv && hasFlatten) { return null; }
+
+            LayerType nextType = hasConv ? LayerType.Flatten : LayerType.Conv2D;
+            LayerDefinition nextLayer = LayerDefinition.CreateDefault(nextType);
+            LayerDefinition followingFlatten = !hasConv && !hasFlatten
+                ? LayerDefinition.CreateDefault(LayerType.Flatten) : null;
+            for (int slot = 0; slot < candidate.Length; slot++)
+            {
+                if (candidate[slot] != null) { continue; }
+                candidate[slot] = nextLayer;
+                bool valid = false;
+                if (followingFlatten == null)
+                {
+                    valid = isValid(candidate);
+                }
+                else
+                {
+                    // CONV만 시연해도 이후 FLATTEN까지 놓을 수 있는 위치를 고른다.
+                    for (int flattenSlot = 0; flattenSlot < candidate.Length; flattenSlot++)
+                    {
+                        if (candidate[flattenSlot] != null) { continue; }
+                        candidate[flattenSlot] = followingFlatten;
+                        valid = isValid(candidate);
+                        candidate[flattenSlot] = null;
+                        if (valid) { break; }
+                    }
+                }
+                candidate[slot] = null;
+                if (valid) { return (nextType, slot); }
+            }
+            return null;
         }
 
         internal void CancelPlacementExample() => _placementExample.Cancel();
-        internal void CancelEntryGuide() => _entryGuide.CancelForInteraction();
+        internal void SetPlacementGuideAvailable(bool available)
+        {
+            _placementGuideAvailable = available;
+            if (!available) { _entryGuide.Hide(); }
+        }
 
         internal void PlayHologramFlow((Vector3 Center, Vector2 Extents, bool Trainable)[] frames,
             bool training, float readyAt)
@@ -86,6 +145,7 @@ namespace ModelDesignScene.ModelBuilder
             _supply.OnBlockCreated += RegisterBlock;
             _supply.Initialize(LayerDefinition.CreateDefault);
             _conveyor.Initialize(_slots);
+            _entryGuide.Initialize();
             foreach (SlotSettingsController control in _conveyor.SettingsControls)
             {
                 control.OnSettingsRequested += HandleSettingsRequested;
@@ -98,7 +158,8 @@ namespace ModelDesignScene.ModelBuilder
             if (_initialized && _interactionEnabled)
             {
                 _conveyor.PreviewPlacement(_grabbedBlock);
-                _entryGuide.UpdateAvailability(CanPlayPlacementExample);
+                _entryGuide.UpdateGuide(_placementGuideAvailable && !_placementExample.IsPlaying,
+                    IsDragging, _conveyor.AvailablePlacementSlot);
             }
         }
 
@@ -114,7 +175,7 @@ namespace ModelDesignScene.ModelBuilder
         internal void EndInteraction()
         {
             _interactionEnabled = false;
-            _entryGuide.UpdateAvailability(false);
+            _entryGuide.Hide();
             _placementExample.Cancel();
             _trainingFlow.Cancel();
             if (!_initialized)
@@ -296,7 +357,6 @@ namespace ModelDesignScene.ModelBuilder
             {
                 return;
             }
-            CancelEntryGuide();
             _placementExample.Cancel();
             if (block.IsPalette)
             {
@@ -305,6 +365,7 @@ namespace ModelDesignScene.ModelBuilder
             RemoveFromConveyor(block);
             block.SetPose(block.transform.position, _conveyor.GetSlotPose(0).rotation);
             _grabbedBlock = block;
+            _entryGuide.BlockGrabbed();
             _manager.NotifyChanged();
         }
 
@@ -323,11 +384,13 @@ namespace ModelDesignScene.ModelBuilder
                 _model.PlaceLayer(slot, block.Layer);
                 block.transform.localScale = Vector3.one;
                 _conveyor.AlignBlock(slot, block);
+                _entryGuide.BlockReleased(true);
                 _manager.NotifyChanged();
             }
             else
             {
                 DeleteBlock(block);
+                _entryGuide.BlockReleased(false);
             }
         }
 

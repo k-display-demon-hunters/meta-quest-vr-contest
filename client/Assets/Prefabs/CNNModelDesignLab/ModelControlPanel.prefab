@@ -465,7 +465,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "ROOM 03 · 신경망 조립"
+  m_Text: "CNN 모델 제작실"
 --- !u!1 &2030
 GameObject:
   m_ObjectHideFlags: 0

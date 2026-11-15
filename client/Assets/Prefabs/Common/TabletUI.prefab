@@ -1470,7 +1470,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.1
-  m_Text: "픽셀 관찰"
+  m_Text: "픽셀 관찰실"
 --- !u!222 &100153
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1745,7 +1745,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.1
-  m_Text: "특징 맵"
+  m_Text: "특징 탐구실"
 --- !u!222 &100203
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2020,7 +2020,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.1
-  m_Text: "모델 제작"
+  m_Text: "CNN 모델 제작실"
 --- !u!222 &100228
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -9355,7 +9355,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.1
-  m_Text: "합성곱"
+  m_Text: "합성곱 실험실"
 --- !u!222 &900153
 CanvasRenderer:
   m_ObjectHideFlags: 0

@@ -2,6 +2,8 @@
 
 [CNNModelDesignLab.unity](../client/Assets/Scenes/CNNModelDesignLab.unity)는 8개 슬롯에 블록을 배치해 모델을 구성하고, 내장 MNIST로 학습·평가·추론한다. 조작은 [공통 조작법](xr-simulator.md), 수학·데이터 형식·학습 설정은 [기기 내 CNN 학습](CNN_TRAINING.md)을 참고한다. 현재 씬은 Python 서버나 JSON·WebSocket 프로토콜을 사용하지 않는다.
 
+조립·학습·예측을 조작하는 `ModelControlPanel.prefab`의 상단 제목은 **CNN 모델 제작실**이다. ROOM 번호 없이 방 이름만 표시하며 패널의 기존 배치와 동작은 유지한다.
+
 ## 모듈과 책임
 
 런타임 루트는 `client/Assets/Scripts/CNNModelDesignLab/`다. `CNNModelDesignLabManager`는 편집 모델과 체험 완료 상태를 소유하고, 아래 다섯 모듈의 진입점을 연결한다.

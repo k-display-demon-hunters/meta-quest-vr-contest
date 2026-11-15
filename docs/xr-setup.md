@@ -70,6 +70,8 @@ UI 입력 환경의 소유자는 공용 `XRPlayerRig`다. EventSystem과 XRUIInp
 
 고정 버튼·캡션·카드·빈 목록 안내는 `Prefabs/Common/TabletUI.prefab`에 배치되어 있고 `XRPlayerRig.prefab`의 TabletManager가 해당 프리팹을 참조한다. `TabletUIBuilder`는 MonoBehaviour로 직렬화된 화면 참조를 연결하고 표면 스프라이트·앱 표시를 설정한다. 실행 중 화면 계층을 코드로 재작성하지 않는다. 기존 Runtime UI Preview와 Background는 리그에서 비활성화했다.
 
+학습 카드의 표시 제목은 픽셀 관찰실·합성곱 실험실·특징 탐구실·CNN 모델 제작실이다. 공용 학습 카탈로그도 튜토리얼실을 포함한 같은 방 이름을 사용한다. 카드의 순서·단계 ID·이동 동작·글자 크기는 유지한다. 주변 지도는 중앙 칸막이를 기준으로 픽셀 관찰실과 합성곱 실험실의 현재 위치 이름을 구분한다. 표시용 지도 영역의 분리는 [공장 지도](factory-environment.md#지도양피지)를 따른다.
+
 | 파일·클래스 | 역할 |
 | --- | --- |
 | TabletManager | 태블릿 모듈 진입점. SetAvailable로 표시와 입력 활성화를 관리하고, 앱·설정·종료 확인창, 학습 스냅샷 표시와 이동 요청, 공용 양피지 열람 연결을 조율한다. |

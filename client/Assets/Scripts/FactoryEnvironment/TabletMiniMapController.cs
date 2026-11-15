@@ -7,6 +7,8 @@ namespace FactoryEnvironment
 {
     public sealed class TabletMiniMapController : MonoBehaviour
     {
+        [SerializeField] private Transform _inspectionDivider;
+
         private TabletManager _tablet;
         private TabletMapData _mapData;
 
@@ -56,8 +58,20 @@ namespace FactoryEnvironment
                 Rect footprint = Rect.MinMaxRect(colliderBounds.min.x, colliderBounds.min.z, colliderBounds.max.x, colliderBounds.max.z);
                 if (collider.name.EndsWith("structural slab", System.StringComparison.Ordinal))
                 {
-                    floors.Add(new TabletMapData.Floor(footprint, FloorName(collider.name)));
-                    bounds = floors.Count == 1 ? footprint : Union(bounds, footprint);
+                    bounds = floors.Count == 0 ? footprint : Union(bounds, footprint);
+                    if (collider.name == "Inspection floor structural slab")
+                    {
+                        // The two rooms share one physical floor; split only the map at the partition.
+                        float dividerX = _inspectionDivider.position.x;
+                        floors.Add(new TabletMapData.Floor(
+                            Rect.MinMaxRect(footprint.xMin, footprint.yMin, dividerX, footprint.yMax), "합성곱 실험실"));
+                        floors.Add(new TabletMapData.Floor(
+                            Rect.MinMaxRect(dividerX, footprint.yMin, footprint.xMax, footprint.yMax), "픽셀 관찰실"));
+                    }
+                    else
+                    {
+                        floors.Add(new TabletMapData.Floor(footprint, FloorName(collider.name)));
+                    }
                 }
                 else if (collider.name.Contains("concrete") && colliderBounds.size.y >= 1f && colliderBounds.min.y < 0.6f)
                 {
@@ -81,11 +95,17 @@ namespace FactoryEnvironment
         {
             if (objectName.StartsWith("Entrance", System.StringComparison.Ordinal)) { return "공장 입구"; }
             if (objectName.StartsWith("Rear", System.StringComparison.Ordinal)) { return "공장 출구"; }
-            if (objectName.StartsWith("Tutorial to", System.StringComparison.Ordinal)) { return "연결 통로"; }
-            if (objectName.StartsWith("Tutorial", System.StringComparison.Ordinal)) { return "튜토리얼"; }
-            if (objectName.StartsWith("Inspection", System.StringComparison.Ordinal)) { return "ROOM #1 · 픽셀 관찰·합성곱"; }
-            if (objectName.StartsWith("Feature", System.StringComparison.Ordinal)) { return "ROOM #2 · Feature Map Lab"; }
-            if (objectName.StartsWith("Assembly", System.StringComparison.Ordinal)) { return "ROOM #3 · Model Design Lab"; }
+            if (objectName == "Tutorial floor structural slab") { return "튜토리얼실"; }
+            if (objectName == "Feature floor structural slab") { return "특징 탐구실"; }
+            if (objectName == "Assembly floor structural slab") { return "CNN 모델 제작실"; }
+            if (objectName == "FrontCourtToTutorialRoom floor structural slab"
+                || objectName == "TutorialRoomToInspectionRoom floor structural slab"
+                || objectName == "InspectionRoomToFeatureMapRoom floor structural slab"
+                || objectName == "FeatureMapRoomToModelDesignRoom floor structural slab"
+                || objectName == "ModelDesignRoomToRearCourt floor structural slab")
+            {
+                return "연결 통로";
+            }
             if (objectName.StartsWith("Corridor ", System.StringComparison.Ordinal))
             {
                 return "복도 " + objectName["Corridor ".Length];

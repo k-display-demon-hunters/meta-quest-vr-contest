@@ -2,6 +2,8 @@
 
 [FactoryEnvironment.unity](../client/Assets/Scenes/FactoryEnvironment.unity)는 정문 앞마당, 튜토리얼실, 세 체험실, 연결 복도와 후문 하역 공간으로 구성한다. 중앙 복도를 공유하던 이전 구조를 순차적으로 통과하는 방 구조로 교체했다. 공장을 직접 실행하면 정문 앞에서 시작한다.
 
+유저에게 표시하는 방 이름은 **튜토리얼실 → 픽셀 관찰실 → 합성곱 실험실 → 특징 탐구실 → CNN 모델 제작실**이다. 각각 기존 Tutorial, ScreenLab, ConvolutionLab, FeatureMap, ModelDesign 단계에 대응한다. 이 문서의 ROOM #1-1·#1-2·#2·#3 표기와 씬·클래스·변수·오브젝트 이름, 단계 ID는 내부 구분으로 유지한다. 공장 간판은 ROOM 번호나 영문 방 이름 없이 새 이름만 표시하며 중복 부제목은 비운다. 튜토리얼 출구와 기존 ROOM #1 입구는 픽셀 관찰실을 가리키고, 두 체험 사이 아치의 픽셀 관찰실 쪽에는 합성곱 실험실 이름표를 배치한다. 이름표는 기존 Noto Sans CJK KR 폰트와 단색 uGUI 배경을 사용한다. 기존 간판·태블릿 카드·제작 패널의 글자 크기와 배치는 유지한다.
+
 현재 구역에 따른 학습 단계와 태블릿 이동은 FactoryEnvironmentManager가 조율한다. 셔터 통행 조건은 FactoryShuttersManager가, 누적 학습 진행률·완료 기록과 태블릿 상태는 Core의 LearningSessionManager가 담당한다. FactorySceneLoadController는 FactoryAreaController의 AreaChanged만 구독해 이전·현재·다음 씬을 로드·언로드한다. 활성화 시 직접 처리나 자동 재시도는 하지 않는다. 로드된 체험은 하나의 목록으로 관리하며 결과를 로컬 C# 이벤트로 알린다. 세션은 로더에 로딩 명령을 보내지 않는다. 세 컴포넌트는 공장 씬과 함께 종료된다. 후문 구역 진입 시 CNNArchiveEnding을 Single로 로드하고, 일반 학습 콘텐츠는 Additive로 로드한다.
 
 플레이어 입력 없이 배경 연출을 담당하는 `FactoryLightFaultController`, `FactoryFanController`는 `Scripts/FactoryEnvironment/Decorations/`에 둔다. 네임스페이스는 `FactoryEnvironment`이며 각 Controller가 담당 장식의 동작을 갱신한다.
@@ -444,6 +446,8 @@ ContentUnloading은 모든 구독자의 정리 코루틴을 기다린다. 세션
 ## 지도·양피지
 
 미니맵 형상은 TabletMiniMapController가 Start에서 최초 생성하고 TabletManager.SetMapData에 직접 전달한다. 재활성화 시에는 OnEnable에서 기존 지도 데이터가 있으면 다시 생성해 전달하고, OnDisable에서는 자신이 전달한 데이터를 ClearMapData로 해제한다. 이름이 structural slab으로 끝나는 바닥 Collider와 concrete를 포함하는 벽 Collider의 XZ 영역, 실제 Pickup 위치를 읽는다. 지도 컴포넌트는 공장 진행과 독립적으로 동작하며 FactoryEnvironmentManager와 LearningSessionManager는 지도 연결에 관여하지 않는다. 셔터 상태를 동적으로 지도에 그리는 기능은 없다.
+
+픽셀 관찰실과 합성곱 실험실은 실제 바닥 Collider 하나를 공유한다. 지도에서는 씬에 연결한 `_inspectionDivider`(기존 중앙 칸막이)의 월드 X 좌표를 기준으로 바닥 사각형을 둘로 나눈다. 동쪽은 픽셀 관찰실, 서쪽은 합성곱 실험실로 현재 위치를 표시하며 실제 바닥·충돌 영역·학습 구역은 바꾸지 않는다. 다른 방도 새 표시 이름을 사용하고, 방 이름을 포함한 연결 통로 오브젝트는 방으로 분류하지 않고 연결 통로로 표시한다.
 
 ## 씬·에셋 관리
 

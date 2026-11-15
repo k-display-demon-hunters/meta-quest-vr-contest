@@ -36,7 +36,7 @@ namespace CNNConvolution
             for (int index = 0; index < 9; index++)
             {
                 bool slow = index < SlowTerms;
-                _display.ShowTerm(index, convolution.Input(0, row, column, index), convolution.WeightLabel(0));
+                _display.ShowTerm(index, convolution.Input(0, row, column, index), convolution.WeightLabel(0, index));
                 yield return _playback.Wait(slow ? 0.5f : 0.1f);
                 Vector3 start = _display.TermStart(index);
                 Vector3 end = _display.TermSlot(index);

@@ -4,11 +4,11 @@ namespace FeatureMapCorridor
     {
         private static readonly float[][] DisplayScales =
         {
-            new[] { 0.651678503f, 0.756486475f },
-            new[] { 0.651678503f, 0.756486475f },
-            new[] { 0.811211824f, 1.33722138f, 0.559480667f, 0.814889729f }
+            new[] { 0.903345346f, 1.01814961f },
+            new[] { 0.903345346f, 1.01814961f },
+            new[] { 1.37112117f, 2.08633494f, 0.912301838f, 1.30153561f }
         };
 
-        private static readonly float[] OutputScales = { 0.0806156173f, 0.0835515559f, 0.0590282455f };
+        private static readonly float[] OutputScales = new[] { 0.0385355838f, 0.0356834419f, 0.0313424431f };
     }
 }

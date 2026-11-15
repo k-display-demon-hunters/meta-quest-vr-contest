@@ -77,6 +77,14 @@ namespace ModelDesignScene.Execution
             return ModelExecutionDefinitionBuilder.Matches(model, SubmittedModel);
         }
 
+        public bool TryValidateConfiguration(IReadOnlyList<LayerDefinition> slotLayers,
+            LayerDefinition output, out ValidationIssue issue)
+        {
+            ModelExecutionDefinition definition = ModelExecutionDefinitionBuilder.Build(
+                slotLayers, output, out int?[] slotIndices);
+            return ModelExecutionValidator.TryValidateDefinition(definition, slotIndices, out issue);
+        }
+
         public Task StartTrainingAsync(ModelDefinition model)
         {
             if (!isActiveAndEnabled || !_controller.isActiveAndEnabled || IsBusy)

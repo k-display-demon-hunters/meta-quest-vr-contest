@@ -21,7 +21,7 @@ MonoBehaviour:
   - Anchor: 1
     Start: 1.1
     End: 5.55
-    Text: "최초의 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."
+    Text: "초기 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."
     Voice: {fileID: 8300000, guid: 9994ff6ad9f646969af05d3a915fdde5, type: 3}
   - Anchor: 2
     Start: 0.25

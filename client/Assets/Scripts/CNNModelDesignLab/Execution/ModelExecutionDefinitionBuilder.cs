@@ -9,18 +9,24 @@ namespace ModelDesignScene.Execution
     {
         internal static ModelExecutionDefinition Build(ModelDefinition model, out int?[] slotIndices)
         {
+            return Build(model.Layers, model.Output, out slotIndices);
+        }
+
+        internal static ModelExecutionDefinition Build(IReadOnlyList<LayerDefinition> slotLayers,
+            LayerDefinition output, out int?[] slotIndices)
+        {
             List<CnnLayerDefinition> layers = new List<CnnLayerDefinition>();
             List<int?> slots = new List<int?>();
-            for (int slot = 0; slot < ModelDefinition.SlotCount; slot++)
+            for (int slot = 0; slot < slotLayers.Count; slot++)
             {
-                LayerDefinition layer = model.Layers[slot];
+                LayerDefinition layer = slotLayers[slot];
                 if (layer != null)
                 {
                     layers.Add(CopyLayer(layer));
                     slots.Add(slot);
                 }
             }
-            layers.Add(CopyLayer(model.Output));
+            layers.Add(CopyLayer(output));
             slots.Add(null);
             slotIndices = slots.ToArray();
             return new ModelExecutionDefinition(LayerLimits.InputHeight, LayerLimits.InputWidth,

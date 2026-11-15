@@ -151,6 +151,7 @@ namespace ModelDesignScene.ControlPanel
         {
             _showingTrainingResult = showing;
             _highlightReality = highlightReality;
+            RefreshPlacementGuideVisibility();
             _validationTab.interactable = !showing;
             _trainingTab.interactable = !showing;
             _predictionTab.interactable = !showing;
@@ -174,7 +175,11 @@ namespace ModelDesignScene.ControlPanel
             _assembly.ShowAssembly(slotLayers, isDragging);
             RefreshHeader();
             _validation.ShowValidation(issues, slotLayers, isDragging, hasValidationResult);
-            if (_state == ModelExecutionState.Idle) { ShowAssemblyStatus(); }
+            RefreshPlacementGuideVisibility();
+            if (!_isBusy && (_state == ModelExecutionState.Idle || _hasIssues || wasInvalid))
+            {
+                ShowAssemblyStatus();
+            }
             RefreshSecondaryReasons();
             RefreshStartButton();
             if (focus || (_hasIssues && !isDragging && !wasInvalid && !_isBusy))
@@ -199,6 +204,7 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = false;
             _isDragging = false;
             _hasIssues = false;
+            _assembly.ShowPlacementGuide(PlacementGuideState.Hidden, -1);
             _assembly.ShowAssembly(Array.Empty<LayerDefinition>(), false);
             _assembly.ShowOutputSizes(Array.Empty<string>());
             _state = ModelExecutionState.Idle;
@@ -253,6 +259,7 @@ namespace ModelDesignScene.ControlPanel
             _isBusy = state == ModelExecutionState.StartingTraining
                 || state == ModelExecutionState.Training || state == ModelExecutionState.CancellingTraining
                 || state == ModelExecutionState.Inferring;
+            RefreshPlacementGuideVisibility();
             if (_activeError == ErrorCard.Cancelling && state != ModelExecutionState.CancellingTraining)
             {
                 HideErrorCard();
@@ -300,6 +307,7 @@ namespace ModelDesignScene.ControlPanel
                     _ => TextMuted
                 };
             }
+            if (!_isBusy && _hasIssues) { ShowAssemblyStatus(); }
             RefreshSecondaryReasons();
             RefreshTabStyles();
             _inference.SetAvailability(hasTrainedModel, canInfer && !_showingTrainingResult);
@@ -489,11 +497,23 @@ namespace ModelDesignScene.ControlPanel
             _assembly.ShowOutputSizes(sizes);
         }
 
+        internal void ShowPlacementGuide(PlacementGuideState state, int slotIndex)
+        {
+            _assembly.ShowPlacementGuide(state, slotIndex);
+            RefreshPlacementGuideVisibility();
+        }
+
+        private void RefreshPlacementGuideVisibility()
+        {
+            _assembly.SetPlacementGuideAvailable(!_hasIssues && !_isBusy && !_showingTrainingResult);
+        }
+
         private void ShowAssemblyStatus()
         {
             int placedBlockCount = _assembly.PlacedBlockCount;
-            _stateText.text = _isDragging || placedBlockCount > 0 ? $"조립 중 · 블록 {placedBlockCount}개" : "조립 대기";
-            _statusAccent.color = _isDragging || placedBlockCount > 0 ? Amber : TextMuted;
+            _stateText.text = !_isDragging && _hasIssues ? "구성 수정 필요"
+                : _isDragging || placedBlockCount > 0 ? $"조립 중 · 블록 {placedBlockCount}개" : "조립 대기";
+            _statusAccent.color = _hasIssues || _isDragging || placedBlockCount > 0 ? Amber : TextMuted;
         }
 
         private void RefreshSecondaryReasons()

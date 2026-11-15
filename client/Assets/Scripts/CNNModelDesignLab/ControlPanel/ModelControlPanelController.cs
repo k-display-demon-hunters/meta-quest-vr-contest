@@ -492,8 +492,9 @@ namespace ModelDesignScene.ControlPanel
         private void ShowAssemblyStatus()
         {
             int placedBlockCount = _assembly.PlacedBlockCount;
-            _stateText.text = _isDragging || placedBlockCount > 0 ? $"조립 중 · 블록 {placedBlockCount}개" : "조립 대기";
-            _statusAccent.color = _isDragging || placedBlockCount > 0 ? Amber : TextMuted;
+            _stateText.text = !_isDragging && _hasIssues ? "구성 수정 필요"
+                : _isDragging || placedBlockCount > 0 ? $"조립 중 · 블록 {placedBlockCount}개" : "조립 대기";
+            _statusAccent.color = _hasIssues || _isDragging || placedBlockCount > 0 ? Amber : TextMuted;
         }
 
         private void RefreshSecondaryReasons()

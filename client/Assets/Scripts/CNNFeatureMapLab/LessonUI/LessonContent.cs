@@ -39,7 +39,7 @@ namespace FeatureMapCorridor
             return layer switch
             {
                 1 => prompt,
-                2 => $"2×2마다 가장 밝은 칸을 남겨요.\n{prompt}",
+                2 => $"최댓값 풀링은 2×2 영역마다 가장 큰 값을 남겨요.\n{prompt}",
                 _ => $"{PoolingSource}\n{prompt}"
             };
         }
@@ -50,7 +50,7 @@ namespace FeatureMapCorridor
             {
                 LessonStep.PoolingWindow => "강조된 영역에서 가장\n밝은 칸을 찾아보세요.",
                 LessonStep.PoolingMaximum => "강한 반응이 작은 결과판으로\n옮겨져 남아요.",
-                _ => "작아져도 특징은 남아요.\n입력과 결과를 비교해 보세요."
+                _ => "세부 정보를 줄이고 핵심적인 특징을 남겨요.\n크기가 작아져 이후 계산량도 줄어들어요.\n입력과 결과를 비교해 보세요."
             };
         }
 
@@ -60,9 +60,9 @@ namespace FeatureMapCorridor
         internal static string FilterOpen(int layer, int map, int count, int size)
         {
             if (layer == 1)
-                return "필터 세 장이\n같은 색의 RGB 입력에 연결돼요.";
+                return "필터 하나를 R·G·B 채널별로 펼쳤어요.\n각 부분은 같은 색의 입력 채널에 적용돼요.";
             if (layer == 3)
-                return map < 2 ? "풀링 결과마다\n3×3 필터를 하나씩 적용해요."
+                return map < 2 ? "필터 하나를 두 입력 채널에 맞춰 펼쳤어요.\n각 부분은 해당 풀링 결과에 적용돼요."
                     : "Pooling 결과 두 장의 특징을 합쳐 새로운 특징을 찾아요.";
             string why = $"마지막 Conv의 피처맵이 {count}장";
             return $"{why}이라서 필터도 <b>{size}×{size} 판 {count}장</b>이에요.\n<color=#8FA3B8>필터를 두 번 누르면 다시 겹쳐져요</color>";
@@ -70,7 +70,7 @@ namespace FeatureMapCorridor
 
         internal static string Scan(int layer) => layer switch
         {
-            1 => "세 필터가 같은 위치를 훑고, 계산값을 더해 피처맵 한 칸을 채워요.",
+            1 => "필터가 RGB 입력의 같은 위치를 훑으며,\n채널별로 입력값과 가중치를 곱해 더해요.",
             4 => "판마다 맡은 피처맵 위에 통째로 겹쳐져요.",
             _ => "필터가 훑으며 찾은 특징이\n결과판에 나타나요."
         };

@@ -68,7 +68,7 @@ namespace ModelDesignScene.ModelBuilder
             _forwardLabel = MakeLabel(training ? "순전파 · 예측 계산" : "순전파 · 예측");
             if (training)
             {
-                _backwardLabel = MakeLabel("역전파 · 가중치 수정");
+                _backwardLabel = MakeLabel("역전파 → 가중치 수정");
                 _epochTrail = MakeLine(5, false);
             }
             _visuals.SetActive(false);

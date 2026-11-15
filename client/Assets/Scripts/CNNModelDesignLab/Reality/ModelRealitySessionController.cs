@@ -17,6 +17,7 @@ namespace RealityLab
 
         public bool IsOpen => _realityScene.IsValid() && _realityScene.isLoaded;
         public bool IsTransitioning => _transitioning;
+        public event Action Exited;
         public async Task EnterAsync(Scene source, Camera camera,
             Func<float[], string, Task<InferenceResult>> inferAsync)
         {
@@ -62,9 +63,12 @@ namespace RealityLab
         public async Task ExitAsync()
         {
             if (_transitioning) { throw new InvalidOperationException("Wait for the current transition."); }
+            bool wasOpen = IsOpen;
             _transitioning = true;
             try { await UnloadAsync(); }
             finally { _transitioning = false; }
+            // Failed entry cleanup and closing an unopened scene are not a completed visit.
+            if (wasOpen) { Exited?.Invoke(); }
         }
         private async Task UnloadAsync()
         {

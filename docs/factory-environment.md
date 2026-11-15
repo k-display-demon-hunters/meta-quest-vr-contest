@@ -320,7 +320,7 @@ ROOM #1과 ROOM #2 입구의 바닥 투사 안내는 `ShutterFloorHologram.prefa
 | ScreenLab | 선택 영역의 RGB 전개·설명을 확인하고 관찰 마치기를 누른 활성 상태 |
 | ConvolutionLab | RGB 합성곱, 출력 위치 퀴즈와 아홉 출력의 결과 확인 후 체험 마치기를 누른 활성 상태 |
 | FeatureMap | 초기화 완료·마지막 단계·입력 수정 1회 이상 또는 건너뛰기·잡은 대상 없음 |
-| ModelDesign | 정상 학습 결과 5초 표시 완료·작업 종료·활성 상태 |
+| ModelDesign | 정상 학습 결과 5초 표시 완료·AR 룸 입장 후 모델방으로 정상 복귀·작업 종료·AR 종료 및 전환 완료·활성 상태 |
 
 튜토리얼을 포함한 다섯 체험 모두 ILearningExperience를 구현한다. Progress·ProgressChanged와 EndSession은 Core 세션이 기록·종료 처리에 사용하고, CanExit·ExitAvailabilityChanged는 세션이 구독해 공장에 전달하며 문 개방 판단에 사용한다. LearningProgress는 체험별 최대 도달 진행률을 보관하며 1에 도달하면 완료를 기록한다. LearningProgressSnapshot은 LearningStageCatalog.Stages 전체의 동일 비중 평균을 계산하며 재방문·초기화로 감소하지 않는다. 튜토리얼은 최종 미션 확인 후 입력을 복원하고 ProgressChanged(1), ExitAvailabilityChanged(true)를 순서대로 알린다. 튜토리얼만 완료하면 전체 진행률은 20%, 다섯 체험을 모두 완료하면 100%다.
 

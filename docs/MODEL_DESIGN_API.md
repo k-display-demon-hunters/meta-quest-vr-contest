@@ -51,6 +51,12 @@ EventSystem과 XRUIInputModule은 공용 `XRPlayerRig.prefab`의 자식으로 �
 
 점유된 슬롯 판 앞쪽의 `설정 변경` 버튼을 오른손 레이로 가리키고 Trigger를 누른다. Builder 내부에서 잡기 여부와 오른손 레이 적중을 확인한다. 선택한 슬롯의 `Popup Anchor` 위치를 Settings 모듈에 전달하며, 팝업은 하나만 열린다. 값 변경은 `LayerDefinition.SetFilters/SetKernelSize/SetPoolSize/SetUnits/SetActivation`을 사용한다. 삭제 요청은 씬 Manager를 거쳐 Builder에 돌아오므로 Settings가 실제 블록이나 컨베이어를 직접 조작하지 않는다.
 
+설정 팝업 기준점은 `SlotSettingsControl.prefab`의 로컬 `(0, 0.44, -0.65)`이며, 격자·벡터 블록의 기존 높이 보정 `+0.5`를 유지한다. 이전 Z=-0.12에서 사용자 쪽으로 0.53만큼 옮겼으며 공장 배율에서는 약 0.51m 앞이다. 블록 이름표와 같은 깊이에 놓이지 않고, Conv의 채널·커널 표시가 커져도 현재 출력 모형과 잡기 Collider보다 앞에 놓인다.
+
+`BlockSettingsPopup.prefab`은 크기 560×620의 UI 배경을 완전 불투명으로 표시한다. 그 뒤 1.5 UI 단위에 같은 크기의 Unity 기본 Quad를 저장하고, 기존 `ModelControlPanelBackground`의 불투명·깊이 기록 URP Unlit 재질을 참조한다. 창 영역 뒤의 블록·이름표·콘솔 글자는 이 가림판의 깊이에 가려진다. 팝업 Canvas의 정렬 순서는 10이며 기존 배경 Image의 raycast를 유지해 창 안의 빈 영역에서도 뒤쪽 UI를 누르지 않는다. 가림판에는 Collider를 추가하지 않는다. 팝업을 닫으면 가림판도 함께 숨겨진다.
+
+2026-11-15 설정창 가림 수정은 프리팹의 위치·재질·크기·참조와 기존 Conv 표시 깊이를 정적으로 확인했다. 사용자가 삭제 버튼의 정상 동작을 확인했다. 에이전트는 추가 컴파일·자동 테스트·빌드를 수행하지 않았으며, 설정창 가림의 실제 HMD 렌더링은 별도로 검증하지 않았다.
+
 ### 단계별 출력과 연결
 
 Input → Conv → Pooling → Flatten → Dense → Output을 하나의 흐름으로 표시한다. Input은 28×28×3, Conv는 valid·stride 1 출력, Pooling은 valid·stride=풀 크기의 출력을 표시한다. Input은 R·G·B 세 채널의 28×28 격자를 모두 표시한다. 세 평면은 X=-0.04/0/0.04, Z=-0.12/0/0.12에 두고 하나의 메시를 공유한다. 가운데 G 판과 전체 RGB 스택의 중심을 슬롯 행에 맞췄다. Conv·Pooling은 출력 채널마다 H×W 구체 격자를 한 장씩 만들고, 앞뒤와 좌우로 조금씩 어긋나게 놓는다. 구체 간격은 0.025로 동일하고 이름표에는 전체 출력 크기를 표시한다. Conv 필터 모형과 Pooling의 빈 창은 블록마다 하나씩, 맨 앞 출력 판의 좌측 상단에서 앞쪽으로 떨어져 떠 있다. 모형은 출력 격자 간격 0.025의 1.3배로 확대하며, 설정한 커널·풀 크기에 따라 모형의 실제 가로·세로 길이가 바뀐다. Conv 모형의 깊이는 입력 채널을 나타낸다. 색상은 구조 구분용이며 실제 추론값·가중치·최댓값 강조는 없다.

@@ -274,8 +274,8 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 
 엔딩 잔상 사진판의 `EndingHistory1989/1998/2016/2019/2026.mat`은 위에 기록된 기존 엔딩 이미지 원본을 참조한다. Codex 보조로 씬 배치와 재질 크롭을 설정했으며 이미지 파일은 새로 생성하지 않았다. 원출처·권리·라이선스는 해당 기존 이미지 기록을 따른다.
 
-## ROOM 1-2·2 필터 적합과 파생 피처맵 (2026-11-15)
+## ROOM 1-2·2 분류 학습 필터와 파생 피처맵 (2026-11-15)
 
-- 학습 자료: 기존 컬러 MNIST training 부분집합의 1·2·3 원본 인덱스 360개에 해당하는 MNIST 마스크. [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [CVDF 배포](https://github.com/cvdfoundation/mnist). 위 MNIST 항목의 Yann LeCun·Corinna Cortes / CC BY-SA 3.0 출처·권리 표기를 따른다. 원본을 16×16으로 축소하고 기존 복도의 주황·청록 평균색과 합성 잡음으로 학습 입력을 만들었다. 원본 아카이브와 새 입력 이미지 사본은 저장하지 않았다.
-- `CNNFeatureMapLab/ExecutionData/Digit1ExecutionData.cs`~`Digit3ExecutionData.cs`의 기존 입력 픽셀은 그대로 보존했다. 이 입력의 피처맵·출력 틀과 `mnist-color-data/learned-filters/preview.png`는 Codex 보조 Python/NumPy 회귀·Pillow 시각화로 다시 계산했다. 생성형 이미지 AI 미사용. 기존 입력은 위 **16×16 컬러 숫자 입력** 기록을 따르며 별도 권리자는 미확인이다. 학습 자료 라이선스를 근거로 기존 직접 제작 입력에 새 라이선스를 부여하지 않는다.
-- 수치 적합 방식·교육용 목표·양자화·적용 위치는 [제작 기록](../mnist-color-data/learned-filters/README.md)에 정리한다. 기존 라이선스 고지는 보존한다.
+- 학습 자료: 기존 `mnist-color-data/MnistTraining.bytes`의 실제 컬러 RGB 숫자 1·2·3 360장(324장 학습·36장 검증), 별도 평가는 `MnistTest.bytes`의 90장. [MNIST 원출처](http://yann.lecun.com/exdb/mnist/), [CVDF 배포](https://github.com/cvdfoundation/mnist). 위 MNIST 항목의 Yann LeCun·Corinna Cortes / CC BY-SA 3.0 출처·권리 표기를 따른다. 기존 색·무늬 합성 자료를 16×16으로 축소하고 /255 정규화했다. R 분류 모델은 그중 R만 사용한다. 원본 마스크 재취득·색 재합성·방향 목표 필터는 사용하지 않았다.
+- `CNNFeatureMapLab/ExecutionData/Digit1ExecutionData.cs`~`Digit3ExecutionData.cs`의 기존 입력 픽셀은 그대로 보존했다. 피처맵·출력 틀과 `mnist-color-data/learned-filters/preview.png`는 Codex 보조 TensorFlow 숫자 분류 학습, NumPy 순전파·C# 내보내기, Pillow 확대 시각화로 다시 계산했다. 학습된 가중치를 그대로 사용했으며 생성형 이미지 AI는 쓰지 않았다. 기존 입력은 위 **16×16 컬러 숫자 입력** 기록을 따르며 별도 권리자는 미확인이다. 학습 자료 라이선스를 근거로 기존 직접 제작 입력에 새 라이선스를 부여하지 않는다.
+- 모델·가중치의 선택 방법, 원본 float32 보존, 기존 출력 판정 방식과 표시 한계는 [제작 기록](../mnist-color-data/learned-filters/README.md)에 정리한다. 기존 배포용 라이선스 고지는 보존한다.

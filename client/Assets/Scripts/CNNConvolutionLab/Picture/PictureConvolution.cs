@@ -1,3 +1,4 @@
+using System.Globalization;
 using UnityEngine;
 
 namespace CNNConvolution
@@ -8,10 +9,10 @@ namespace CNNConvolution
     {
         public const int MapColumns = PictureSampler.Columns - 2;
         public const int MapRows = PictureSampler.Rows - 2;
-        // Demonstration filter: every cell of the red layer weighs one ninth and the other layers weigh
-        // nothing, so an output is the mean red value under the filter and can never be negative.
-        private static readonly float[] LayerWeights = { 1f / 9f, 0f, 0f };
-        private static readonly string[] LayerWeightLabels = { "1/9", "0", "0" };
+        // Fitted nonnegative denoising weights, quantized to 0.01 and summing to one.
+        // Only R contributes; the existing zero-bias calculation and 0..255 range are preserved.
+        // Reproduction: mnist-color-data/learned-filters/fit_and_export.py
+        private static readonly float[] RedWeights = new[] { 0.00f, 0.12f, 0.04f, 0.14f, 0.42f, 0.13f, 0.04f, 0.11f, 0.00f };
 
         private readonly Color32[] _pixels;
 
@@ -20,7 +21,8 @@ namespace CNNConvolution
             _pixels = pixels;
         }
 
-        public string WeightLabel(int channel) => LayerWeightLabels[channel];
+        public string WeightLabel(int channel, int index) =>
+            (channel == 0 ? RedWeights[index] : 0f).ToString("0.##", CultureInfo.InvariantCulture);
 
         // Value of the pixel under filter cell `index` (0..8, row by row) when the filter's top-left cell
         // is at (row, column).
@@ -33,12 +35,9 @@ namespace CNNConvolution
         public float Output(int row, int column)
         {
             float sum = 0f;
-            for (int channel = 0; channel < LayerWeights.Length; channel++)
+            for (int index = 0; index < RedWeights.Length; index++)
             {
-                for (int index = 0; index < 9; index++)
-                {
-                    sum += Input(channel, row, column, index) * LayerWeights[channel];
-                }
+                sum += Input(0, row, column, index) * RedWeights[index];
             }
             return sum;
         }

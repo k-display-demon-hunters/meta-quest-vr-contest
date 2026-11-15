@@ -114,7 +114,10 @@ namespace CNNConvolution
 
         public void SetWeights(PictureConvolution convolution)
         {
-            foreach (Text weight in _weights) { weight.text = convolution.WeightLabel(0); }
+            for (int index = 0; index < _weights.Length; index++)
+            {
+                _weights[index].text = convolution.WeightLabel(0, index);
+            }
         }
 
         public void ResetToHome()

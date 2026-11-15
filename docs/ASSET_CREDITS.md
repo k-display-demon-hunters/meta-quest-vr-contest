@@ -286,6 +286,10 @@ ROOM 1-2 선반 레일의 국소 산화에는 `OxidizedSteel_*`를, 휴게실 �
 
 - **Noto Sans CJK KR Regular 2.004**. `client/Assets/Prefabs/CNNModelDesignLab/ModelControlPanel.prefab`의 AR 진입 안내 카드, 방문·복귀 완료 조건, 진입·재입장 버튼과 완료 문구에 기존 `Fonts/NotoSansCJKkr-Regular.otf`를 재사용한다. 원출처는 위 Noto CJK 공식 배포본, 제작자·저작권자는 © 2014–2021 Adobe, 라이선스는 SIL OFL 1.1이다. Codex AI 보조로 UI 문구·배치·크기·색을 변경했으며 폰트 원본 수정·복제 없이 기존 라이선스 고지를 유지했다.
 
+## 오프닝 시작 제목 폰트 재사용 (2026-11-15)
+
+- **Pretendard SemiBold**: `client/Assets/Scenes/CNNArchiveOpening.unity`의 체험 제목에 기존 `Fonts/Pretendard/Pretendard-SemiBold.otf`를 재사용한다. 원출처·제작자·저작권자·SIL OFL 1.1은 위 Pretendard 기록을 따른다. Codex AI 보조로 텍스트·크기·색상·배치를 설정했으며 폰트 원본 수정·복제 없이 기존 배포 라이선스 고지를 유지했다.
+
 ## 사용자 제공 한국어 안내 WAV 교체
 
 사용자가 제공한 한국어 TTS 원본 43개를 장면과 재생 시점에 맞춰 배치했다. 파일명과 Unity 참조를 정리했으며 PCM 데이터를 편집하거나 재합성하지 않았다. 원본은 44.1 kHz, 16-bit, 모노 WAV다. 합성 도구, 음성 모델, 제작자, 권리자 및 배포 조건은 미확인이다. 이전 음원 항목은 변경 이력이다.

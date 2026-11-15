@@ -164,7 +164,7 @@ MonoBehaviour:
     Outro:
       Start: 0.3
       End: 7.2
-      Text: "CNN은 지금 이 시간에도 세상을 읽고 있습니다."
+      Text: "CNN의 특징 추출과\n이미지 분류 과정을 살펴보았습니다."
       Voice: {fileID: 8300000, guid: f18693a54ae44256ac6698054e547953, type: 3}
 
   Provenance: "1989 \xB7 \uC6B0\uCCB4\uAD6D / \uC5ED\uC0AC\uC801 \uBD84\uC704\uAE30\uB97C

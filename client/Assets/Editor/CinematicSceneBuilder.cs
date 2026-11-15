@@ -86,7 +86,7 @@ namespace CinematicEditor
             }
 
             _content.EndingSchedule.Intro = Line(.15, 3.15, "오늘, 여러분은 숫자를 읽는 CNN을 만들었습니다.");
-            _content.EndingSchedule.Outro = Line(.3, 7.2, "CNN은 지금 이 시간에도 세상을 읽고 있습니다.");
+            _content.EndingSchedule.Outro = Line(.3, 7.2, "CNN의 특징 추출과\n이미지 분류 과정을 살펴보았습니다.");
 
             _content.EndingSchedule.Intro.Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationIntro.wav");
             _content.Ending[2].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationFace.wav");

@@ -825,6 +825,14 @@ MonoBehaviour:
   _dataset: {fileID: 61005}
   _hologram: {fileID: 62003}
   _cinematicResult: {fileID: 11400000, guid: 94c5e542fc41204449d556dac80949c1, type: 2}
+  _narration:
+    _entry: {fileID: 8300000, guid: 23303466a4bf4da382f83abfe8e91484, type: 3}
+    _reality: {fileID: 8300000, guid: daba92d027f641b2b6b05d6671fdf5a6, type: 3}
+    _missingFlatten: {fileID: 8300000, guid: b86eec62efbb4b3e9b1f74f2c62681ad, type: 3}
+    _extraFlatten: {fileID: 8300000, guid: 9a5cac1728da4dd08530451b09dd1744, type: 3}
+    _spatialAfterFlatten: {fileID: 8300000, guid: bbdee4fd158b43e4afdaa5b079f5036b, type: 3}
+    _invalidKernel: {fileID: 8300000, guid: 854aaea189f04c3685c49627ab5a39d7, type: 3}
+    _invalidPooling: {fileID: 8300000, guid: a2a406d9cfa74b4099e9245ad460220c, type: 3}
 --- !u!1001 &30000
 PrefabInstance:
   m_ObjectHideFlags: 0

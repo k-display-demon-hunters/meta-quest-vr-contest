@@ -147,3 +147,7 @@ Dataset 모듈은 RGB CMNT v2의 평가 데이터 120장으로 미리보기 텍�
 모델방에서 학습을 끝내면 제어 패널의 **AR 룸 입장** 버튼으로 AR에 진입할 수 있다. 결과 표시가 끝나면 상단 제목, 오른쪽 안내 카드, 호박색 화살표·바깥 테두리가 다음 행동을 안내한다. 버튼을 가리키면 청록색과 오른손 Trigger 안내로 바뀌고, 블록을 들고 있으면 먼저 놓으라고 표시한다. 학습 현황 하단에는 AR에 들어갔다가 **모델방으로 돌아가기**를 눌러야 체험이 완료된다는 문구를 표시한다. `ModelRealityEntryGuideController`는 ControlPanel 내부 표시만 담당하며 카드·화살표·테두리·체크는 기존 `ModelControlPanel.prefab`에 저장한다. 복귀 완료 후 초록색 체크와 완료 문구를 표시하고 재입장 버튼은 유지한다.
 
 `RealityLab.ModelRealitySessionController`가 `CNNRealityLab`을 Additive로 로드하고 기존 카메라를 연결한다. 정상 복귀 때만 `Exited`를 알리고 모델방 Manager가 완료 상태를 갱신한다. AR은 모델방에 유지한 학습 모델을 사용한다. `ModelExecutionManager.InferExternalAsync`는 정규화된 RGB 배열과 `reality:` 요청 ID를 기존 학습 엔진에 전달한다. 모델방의 내장 샘플 UI는 AR 결과를 건너뛴다. [CNNRealityLab 구현](cnn-reality-lab.md)
+
+## 한국어 안내 음성
+
+`CNNModelDesignLabManager`가 `ModelDesignNarration`에 첫 블록 집기 안내와 AR 입장 가능 시점을 전달한다. AR 클립은 학습 결과 표시가 끝나고 제어 패널의 버튼을 사용할 수 있을 때 재생한다. 구성 오류 음성은 학습 시작 요청에 대한 `OnValidationFailed`에서 첫 오류 카드가 표시될 때 재생한다. 모델 배치 변경, 오류 카드 숨김, 재학습 시작, AR 진입 및 세션 종료 시 해당 음성을 정리한다. 음원 7개는 `Assets/Audio/CNNModelDesignLab`에 있다.

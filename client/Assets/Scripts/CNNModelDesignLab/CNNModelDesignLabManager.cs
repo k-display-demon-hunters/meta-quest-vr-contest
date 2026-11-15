@@ -23,6 +23,7 @@ namespace ModelDesignScene
         [SerializeField] private ModelControlPanelManager _controlPanel;
         [SerializeField] private ModelDatasetManager _dataset;
         [SerializeField] private CnnHologramController _hologram;
+        [SerializeField] private ModelDesignNarration _narration;
 
         private bool _hologramTraining;
         private float? _trainingResultEndsAt;
@@ -44,6 +45,7 @@ namespace ModelDesignScene
             _settings.Close();
             _builder.CancelPlacementExample();
             _builder.CancelTrainingFlow();
+            _narration.Stop();
             System.Threading.Tasks.Task entry = _reality.EnterAsync(gameObject.scene, Camera.main, InferRealityAsync);
             PublishProgressionState();
             try
@@ -72,6 +74,7 @@ namespace ModelDesignScene
         private bool _progressionAvailable;
         public System.Collections.IEnumerator EndSession()
         {
+            _narration.Stop();
             _trainingResultEndsAt = null;
             _hologramTraining = false;
             _hologram.Clear();
@@ -103,6 +106,7 @@ namespace ModelDesignScene
 
         private void Awake()
         {
+            _narration.Initialize(gameObject);
             _model = new ModelDefinition();
             _reality = gameObject.AddComponent<ModelRealitySessionController>();
         }
@@ -133,7 +137,7 @@ namespace ModelDesignScene
             _execution.OnTrainingCancelled += HandleTrainingCancelled;
             _execution.OnInferenceCompleted += HandleInferenceCompleted;
             _execution.OnError += HandleExecutionError;
-            _execution.OnValidationFailed += HandleValidationFailed;
+            _execution.OnValidationFailed += HandleTrainingValidationFailed;
             _controlPanel.OnInferenceRequested += HandleInferenceRequested;
             _controlPanel.OnStartRequested += HandleTrainingStartRequested;
             _controlPanel.OnStopRequested += HandleTrainingStopRequested;
@@ -157,6 +161,8 @@ namespace ModelDesignScene
             if (_initialized)
             {
                 _controlPanel.SetRealityAvailable(CanEnterReality);
+                if (_controlPanel.CanUseRealityButton) { _narration.SpeakReality(); }
+                if (!_controlPanel.IsValidationIssueVisible) { _narration.StopError(); }
                 _controlPanel.SetExampleAvailable(CanPlayPlacementExample);
                 _builder.SetPlacementGuideAvailable(!_execution.IsBusy && !IsShowingTrainingResult
                     && !_reality.IsOpen && !_reality.IsTransitioning && _validationIssues.Count == 0);
@@ -169,7 +175,12 @@ namespace ModelDesignScene
 
         private void HandlePlacementGuideChanged()
         {
-            _controlPanel.ShowPlacementGuide(_builder.PlacementGuideState, _builder.PlacementGuideSlot);
+            PlacementGuideState state = _builder.PlacementGuideState;
+            _controlPanel.ShowPlacementGuide(state, _builder.PlacementGuideSlot);
+            if (state == PlacementGuideState.GrabBlock && _controlPanel.IsPlacementGuideVisible)
+            {
+                _narration.SpeakEntry();
+            }
         }
 
         private void HandleBuilderChanged()
@@ -216,6 +227,7 @@ namespace ModelDesignScene
             {
                 return;
             }
+            _narration.Stop();
             _builder.SetPlacementGuideAvailable(false);
             _settings.Close();
             _builder.CancelPlacementExample();
@@ -387,10 +399,20 @@ namespace ModelDesignScene
 
         private void HandleModelChanged()
         {
+            _narration.StopError();
             _builder.CancelPlacementExample();
             _validationIssues = System.Array.Empty<ValidationIssue>();
             _hasValidationResult = false;
             _modelUIIsDirty = true;
+        }
+
+        private void HandleTrainingValidationFailed(IReadOnlyList<ValidationIssue> issues)
+        {
+            HandleValidationFailed(issues);
+            if (issues.Count > 0 && _controlPanel.IsValidationIssueVisible)
+            {
+                _narration.SpeakValidationIssue(issues[0].Message);
+            }
         }
 
         private void HandleValidationFailed(IReadOnlyList<ValidationIssue> issues)
@@ -416,6 +438,7 @@ namespace ModelDesignScene
 
         private void OnDisable()
         {
+            _narration.Stop();
             _reality.Exited -= HandleRealityExited;
             _builder.OnPlacementGuideChanged -= HandlePlacementGuideChanged;
             _trainingResultEndsAt = null;
@@ -459,7 +482,7 @@ namespace ModelDesignScene
                     _execution.OnTrainingCancelled -= HandleTrainingCancelled;
                     _execution.OnInferenceCompleted -= HandleInferenceCompleted;
                     _execution.OnError -= HandleExecutionError;
-                    _execution.OnValidationFailed -= HandleValidationFailed;
+                    _execution.OnValidationFailed -= HandleTrainingValidationFailed;
                 }
                 if (_controlPanel != null)
                 {

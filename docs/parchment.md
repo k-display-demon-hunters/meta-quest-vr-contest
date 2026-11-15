@@ -21,7 +21,9 @@ ScreenLab과 ConvolutionLab은 독립된 학습 단계다. 첫 공간은 픽셀 
 
 Core/Parchment의 Pickup은 씬에 저장된 위치·방향을 유지하며 활성/비활성 등록과 XRI 입력을 전달한다. Manager가 3m 거리와 중복 수집·열람을 확인하고 원본을 잠시 숨긴 뒤 공용 Reader를 연다. 마지막 페이지의 [학습 완료]를 눌렀을 때 수집을 기록하고 `Collected(documentId)`를 알린다. 완료 전에 닫으면 미수집 상태로 원본을 다시 표시한다. 이미 수집한 문서의 재열람은 보유 상태를 유지한다.
 
-수집 상태는 기존 공용 `ParchmentManager`의 영속 메모리에 유지한다. 공장 씬 종료 시 폐기되는 학습 진행 기록과는 별개다. 디스크에 저장하지 않는다. `ParchmentInventoryItem`은 문서 ID로 학습 카탈로그의 배분을 역조회해 `Stage`와 `LocationText`를 제공하므로 Pickup이 사라져도 위치 안내를 유지한다. 입장 문서는 해당 체험 입구 앞, 문서 0은 “픽셀 관찰 체험 입구 앞”, 문서 1은 “특징 맵 체험 입구 앞”으로 표시한다. 같은 문서를 여러 단계가 요구하면 카탈로그 순서에서 첫 소속 단계로 안내한다.
+수집·열람 완료 기록은 공용 `ParchmentManager`의 영속 메모리에 유지하며 디스크에 저장하지 않는다. 같은 체험 중 방 이동·AR 왕복·엔딩 진입에서는 기록을 유지한다. `CNNArchiveOpening`이 실제로 로드되어 시작할 때 `CinematicSequenceManager`가 `ResetForNewSession()`을 호출한다. 이 메서드는 기존 `Close()`로 열람창·펼침 대기 코루틴·이동 차단을 정리한 뒤 수집과 열람 완료 기록을 모두 비운다. 호출은 오프닝의 이동·입력 설정 전에 수행한다. 오프닝 로드에 실패하면 초기화하지 않는다. 공장 씬 종료 시 폐기되는 학습 진행 기록과는 별개다.
+
+오프닝에서 공장에 다시 진입하면 새 Pickup이 미수집 상태로 등록되고, 태블릿은 `OnEnable`의 기존 목록 갱신으로 수집 개수 0을 표시한다. 문과 B 텔레포트는 각각 초기화된 `HasCollectedAll`과 `HasRead`를 조회한다. `ParchmentInventoryItem`은 문서 ID로 학습 카탈로그의 배분을 역조회해 `Stage`와 `LocationText`를 제공하므로 Pickup이 사라져도 위치 안내를 유지한다. 입장 문서는 해당 체험 입구 앞, 문서 0은 “픽셀 관찰 체험 입구 앞”, 문서 1은 “특징 맵 체험 입구 앞”으로 표시한다. 같은 문서를 여러 단계가 요구하면 카탈로그 순서에서 첫 소속 단계로 안내한다.
 
 태블릿 양피지 앱은 `HasCollected`로 수집 여부를 조회해 보유한 문서의 제목·주제만 목록에 표시하고, 현재 XR 카메라와 시작 위치를 전달해 재열람을 요청한다. Manager가 이동 차단과 열람창 수명을 관리한다. 현장에서 처음 여는 문서는 학습 완료 후 태블릿 재열람 목록에 추가된다. 태블릿 단계 이동으로 자동 지급된 문서는 현장 열람 없이도 재열람할 수 있다.
 
@@ -52,11 +54,13 @@ Core/Parchment의 Pickup은 씬에 저장된 위치·방향을 유지하며 활�
 
 ## 태블릿 재열람과 편집 도구
 
-Pickup과 태블릿은 `client/Assets/Prefabs/Common/ParchmentReader.prefab`을 공유한다. TabletManager는 공용 ParchmentManager의 Opened·Closed·Collected 이벤트를 연결·해제한다. 열람 중 태블릿 입력을 중단하고 닫으면 이전 조작 상태와 포커스를 복원하며 다음 프레임부터 입력을 받는다. 수집 상태는 태블릿 비활성화나 씬 이동으로 초기화하지 않는다. 양피지 페이지는 오른손 UI 레이와 Trigger로 조작한다.
+Pickup과 태블릿은 `client/Assets/Prefabs/Common/ParchmentReader.prefab`을 공유한다. TabletManager는 공용 ParchmentManager의 Opened·Closed·Collected 이벤트를 연결·해제한다. 열람 중 태블릿 입력을 중단하고 닫으면 이전 조작 상태와 포커스를 복원하며 다음 프레임부터 입력을 받는다. 수집·열람 기록은 태블릿 비활성화나 같은 체험 중 씬 이동에서는 유지하고 새 오프닝 진입 때 초기화한다. 양피지 페이지는 오른손 UI 레이와 Trigger로 조작한다.
 
 ParchmentSceneSetup의 Refresh Learning Parchment Labels 메뉴는 열린 씬의 기존 Pickup 라벨을 문서 데이터에 맞춘다. 이전 공간 좌표로 씬을 열고 전체 재생성하던 메뉴는 제거했다. 위치 변경은 씬 Transform에서 수행한다. Pickup/Visual 스크립트는 Core/Parchment에 있고 기존 GUID를 유지한다.
 
 이번 ScreenLab·ConvolutionLab 독립 체험 분리와 문서 배분은 소스 기준으로 정리했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
+
+2026-11-15 오프닝 진입 시 수집·열람 기록 초기화와 열람창 정리, 공장 Pickup 재등록·태블릿 목록 갱신·출입 조건 조회 경로를 정적으로 확인했다. Unity 실행·컴파일·테스트·빌드는 수행하지 않았다.
 
 ## 말린 양피지와 펼침 연출
 

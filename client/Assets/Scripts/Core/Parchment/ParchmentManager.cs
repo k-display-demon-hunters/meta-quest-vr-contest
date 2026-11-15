@@ -48,6 +48,14 @@ namespace Parchment
         }
 
         private void OnDisable() => Close();
+
+        public void ResetForNewSession()
+        {
+            Close();
+            Array.Clear(_collected, 0, _collected.Length);
+            Array.Clear(_read, 0, _read.Length);
+        }
+
         // Acquisition is committed only by the reader's final-page completion, not by the initial click.
         public bool HasCollected(int index) => index >= 0 && index < _collected.Length && _collected[index];
         public bool HasRead(int index) => _read[index];

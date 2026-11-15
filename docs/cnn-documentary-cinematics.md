@@ -158,3 +158,7 @@ Presentation/CinematicTransitionVisualController는 프리팹에 저장된 기�
 `EndingVisualController`가 `EndingArchiveTrail`을 생성·보관하고 파괴 시 전용 재질을 해제한다. `EndingSequence`는 잔상 내부 객체를 받지 않고 시각 진입점의 준비·사진 설정·시간 갱신 메서드를 호출한다. 모델 카드와 인식 프레임은 각 담당이 표시 상태를 소유하고, 카메라 배경 복원은 `EndingQuietController`가 담당한다. `EndingYearRoll`은 씬에 미리 연결되어 있다.
 
 씬 생성 도구도 동일한 고정 요소와 직렬화 참조를 저장한다. 이번 책임 분리와 씬 배치는 정적으로 검토했으며 Unity 실행·컴파일·빌드 및 Quest 성능·시각 검증은 수행하지 않았다.
+
+## 제공 음원 교체
+
+오프닝 6개와 엔딩 7개 음원을 사용자 제공 WAV로 교체했다. 자막의 시작·종료와 일부 장면 길이는 새 클립에 맞춘다. 엔딩 첫 모델 화면과 1989·1998·2016·2019 컷의 길이를 늘리고, 2026 비교 화면의 길이는 기존 값을 사용한다.

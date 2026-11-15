@@ -14,28 +14,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Cinematic.CinematicText
   Opening:
   - Anchor: 0
-    Start: 0.5
-    End: 3.1
+    Start: 0.50
+    End: 3.35
     Text: "기계는 세상을 어떻게 볼까요?"
     Voice: {fileID: 8300000, guid: 4b38b14883df49b0ae352e3391734f77, type: 3}
   - Anchor: 1
-    Start: 1.1
-    End: 5.55
+    Start: 1.10
+    End: 5.70
     Text: "초기 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다."
     Voice: {fileID: 8300000, guid: 9994ff6ad9f646969af05d3a915fdde5, type: 3}
   - Anchor: 2
     Start: 0.25
-    End: 3.98
+    End: 4.35
     Text: "사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다."
     Voice: {fileID: 8300000, guid: 79d8cdf088ce4a759352f3ab93461574, type: 3}
   - Anchor: 3
     Start: 0.05
-    End: 3.9
+    End: 3.90
     Text: "그러나 기계가 보는 건\n밝고 어두운 점들입니다."
     Voice: {fileID: 8300000, guid: d4cd21470a064f8f91fce68305739db7, type: 3}
   - Anchor: 3
     Start: 4.25
-    End: 8.55
+    End: 8.65
     Text: "기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?"
     Voice: {fileID: 8300000, guid: 827be9a2740c48fea07eb409fc6fa5d1, type: 3}
   - Anchor: 4
@@ -45,28 +45,28 @@ MonoBehaviour:
     Voice: {fileID: 8300000, guid: 2ddb076224ab47a1b210e73db78a4f91, type: 3}
   Ending:
   - Anchor: 0
-    Start: 0.2
-    End: 3.16
+    Start: 0.20
+    End: 3.91
     Text: "초기 CNN은 봉투 위\n우편번호를 읽었습니다."
     Voice: {fileID: 8300000, guid: e53253f3a94f4eaab65d9da483242970, type: 3}
   - Anchor: 0
-    Start: 3.24
-    End: 5.96
+    Start: 3.99
+    End: 6.96
     Text: "이후 수표에 적힌 금액을 읽고,"
     Voice: {fileID: 8300000, guid: de8f53af6d194ce7bd8c7f277f54ba73, type: 3}
   - Anchor: 0
-    Start: 6.04
-    End: 8.66
+    Start: 7.04
+    End: 10.31
     Text: "사진 속에서 사람의 얼굴을 찾아내고"
     Voice: {fileID: 8300000, guid: f65b803b8b1647509f322bbadb0e74c0, type: 3}
   - Anchor: 0
-    Start: 8.74
-    End: 12.56
+    Start: 10.39
+    End: 14.26
     Text: "카메라로 낯선 간판의 글자를 읽어 번역하고"
     Voice: {fileID: 8300000, guid: e7bcf0cf326b489ab027f415a8be24e7, type: 3}
   - Anchor: 0
-    Start: 12.78
-    End: 17.6
+    Start: 14.52
+    End: 19.46
     Text: "저해상도 영상을 더 선명하게 만듭니다"
     Voice: {fileID: 8300000, guid: a13f0385cc984490bd1ba6a16b775f98, type: 3}
   PostOffice:
@@ -89,13 +89,13 @@ MonoBehaviour:
   OpeningSchedule:
     QuestionDuration: 3.5
     RewindDuration: 3.5
-    PostOfficeDuration: 5.6
+    PostOfficeDuration: 5.75
     WindowZoomDuration: 1.4
     StampDuration: 2.8
     StampContactOffset: 1.4
-    EnvelopeDuration: 4
+    EnvelopeDuration: 4.4
     DigitDuration: 1.2
-    PixelDuration: 8.6
+    PixelDuration: 8.7
     PixelOrbitOffset: 2.2
     PixelGatherOffset: 7.8
     FactoryRevealDuration: 0.4
@@ -111,7 +111,7 @@ MonoBehaviour:
       Year: "1989"
       Label: "봉투의 손글씨 우편번호"
       Focus: {serializedVersion: 2, x: 0.33, y: 0.40, width: 0.34, height: 0.14}
-      Duration: 3.2
+      Duration: 3.95
     - Clip:
         Id: END_1998_CHEQUE
         Video: {fileID: 0}
@@ -121,7 +121,7 @@ MonoBehaviour:
       Year: "1998"
       Label: "은행 수표의 손글씨 금액"
       Focus: {serializedVersion: 2, x: 0.67, y: 0.25, width: 0.2, height: 0.08}
-      Duration: 2.8
+      Duration: 3.05
     - Clip:
         Id: END_2016_FACE
         Video: {fileID: 0}
@@ -131,7 +131,7 @@ MonoBehaviour:
       Year: "2016"
       Label: "사진 속 얼굴 감지"
       Focus: {serializedVersion: 2, x: 0.37, y: 0.22, width: 0.25, height: 0.56}
-      Duration: 2.7
+      Duration: 3.35
     - Clip:
         Id: END_2019_TEXT
         Video: {fileID: 0}
@@ -141,7 +141,7 @@ MonoBehaviour:
       Year: "2019"
       Label: "카메라로 글자를 읽어 번역"
       Focus: {serializedVersion: 2, x: 0.36, y: 0.40, width: 0.28, height: 0.17}
-      Duration: 3.9
+      Duration: 3.95
     - Clip:
         Id: END_2026_UPSCALE
         Video: {fileID: 0}
@@ -151,19 +151,19 @@ MonoBehaviour:
       Year: "2026"
       Label: "AI 업스케일링"
       Focus: {serializedVersion: 2, x: 0.397, y: 0.394, width: 0.174, height: 0.242}
-      Duration: 5.2
+      Duration: 5.20
       ShowUpscaleComparison: 1
-    IntroDuration: 3.2
+    IntroDuration: 4.05
     OutroDuration: 7.6
     QuietDuration: 1.5
     Intro:
       Start: 0.15
-      End: 3.15
+      End: 3.95
       Text: "오늘, 여러분은 숫자를 읽는 CNN을 만들었습니다."
       Voice: {fileID: 8300000, guid: 3051ae7ce8554bdfa1c40b627d859695, type: 3}
     Outro:
-      Start: 0.3
-      End: 7.2
+      Start: 0.30
+      End: 7.20
       Text: "CNN은 지금 이 시간에도 세상을 읽고 있습니다."
       Voice: {fileID: 8300000, guid: f18693a54ae44256ac6698054e547953, type: 3}
 

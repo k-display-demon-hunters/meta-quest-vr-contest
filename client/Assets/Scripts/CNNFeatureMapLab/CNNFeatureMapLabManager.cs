@@ -11,6 +11,7 @@ namespace FeatureMapCorridor
         [SerializeField] private FeatureMapsManager _featureMaps;
         [SerializeField] private LessonUIManager _lessonUI;
         [SerializeField] private CorridorEnvironmentManager _environment;
+        [SerializeField] private FeatureMapNarration _narration;
         private readonly LessonState _state = new LessonState();
         private FeatureMapSnapshot _snapshot;
         private static readonly MapId[] RequiredRounds =
@@ -31,6 +32,7 @@ namespace FeatureMapCorridor
         public event Action<bool> ExitAvailabilityChanged;
         private void Awake()
         {
+            _narration.Initialize(gameObject);
             _snapshot = _executionData.GetSnapshot(_state.Digit);
             _featureMaps.Initialize(_snapshot);
             _featureMaps.ShowFirstFilterKernels(
@@ -49,6 +51,7 @@ namespace FeatureMapCorridor
         {
             _featureMaps.DigitSelected += DigitSelected;
             _featureMaps.InputPictureSelected += InputPictureSelected;
+            _featureMaps.InputChannelsExpanded += HandleInputChannelsExpanded;
             _featureMaps.OperationSelected += OperationSelected;
             _featureMaps.FilterExpanded += OnFilterExpanded;
             _featureMaps.PresentationReady += RenderLesson;
@@ -71,6 +74,11 @@ namespace FeatureMapCorridor
             }
             _featureMaps.Tick(now);
             StartOutput();
+            bool inPooling = _state.Phase == LessonPhase.AwaitRound ? RequiredRound.Layer == 2 : IsPooling;
+            bool answerVisible = _state.ActiveRound.Layer == 4 && !_state.ShowingOutputDetails &&
+                (_state.Phase == LessonPhase.Recap ||
+                 (_state.Phase == LessonPhase.Round && _state.Step == LessonStep.RevealAnswer));
+            _narration.Tick(inPooling, answerVisible);
             _lessonUI.Tick(now);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _lessonUI.ShowDebug(_state.Phase+" / "+_state.Step, _featureMaps.HoverName, "", _featureMaps.LastClick);
@@ -84,6 +92,11 @@ namespace FeatureMapCorridor
             if (visible)
             {
                 RenderLesson();
+                if (_state.Phase == LessonPhase.AwaitInput) { _narration.Speak(FeatureMapVoice.Entry); }
+            }
+            else
+            {
+                _narration.Stop();
             }
         }
 
@@ -140,6 +153,14 @@ namespace FeatureMapCorridor
             }
         }
 
+        private void HandleInputChannelsExpanded()
+        {
+            if (_state.Phase == LessonPhase.AwaitRound && RequiredRound.Layer == 1)
+            {
+                _narration.Speak(FeatureMapVoice.RgbStairs);
+            }
+        }
+
         private void AwaitRound()
         {
             MapId round = RequiredRound;
@@ -158,6 +179,12 @@ namespace FeatureMapCorridor
 
             Highlight(round.Layer);
             _state.Phase = LessonPhase.AwaitRound;
+            _narration.SetSection(round.Layer == 1 ? 0 : round.Layer);
+            if (round.Map == 0 && _environment.Visible)
+            {
+                if (round.Layer == 2) { _narration.BeginPooling(); }
+                if (round.Layer == 3) { _narration.Speak(FeatureMapVoice.SecondStairs); }
+            }
             if (AwaitingOutput)
             {
                 _lessonUI.SetVisible(false);
@@ -207,6 +234,7 @@ namespace FeatureMapCorridor
         private void BeginRound(MapId round, bool mandatory, LessonStep step, bool animateFilterOpening = false)
         {
             _state.Phase = LessonPhase.Round;
+            _narration.SetSection(round.Layer == 1 ? 0 : round.Layer);
             _featureMaps.ShowOperations(default, _state.RevealedMaps);
             _state.ActiveRound = round;
             _state.MandatoryRound = mandatory;
@@ -214,6 +242,11 @@ namespace FeatureMapCorridor
             Highlight(round.Layer, _state.ShowingOutputDetails);
             PrepareActiveRound();
             ShowCurrentStep(animateFilterOpening);
+            if (animateFilterOpening && mandatory && round.Map == 0)
+            {
+                if (round.Layer == 1) { _narration.Speak(FeatureMapVoice.FirstFilter); }
+                if (round.Layer == 3) { _narration.Speak(FeatureMapVoice.SecondFilter); }
+            }
         }
 
         private void PrepareActiveRound()
@@ -275,6 +308,7 @@ namespace FeatureMapCorridor
                 return;
             }
             RenderLesson();
+            if (OffersAdditionalFilters) { _narration.Speak(FeatureMapVoice.AdditionalFilters); }
         }
 
         private void CompleteRequiredRound() => SetProgress((_state.RequiredRoundIndex + 1f) / RequiredRounds.Length);
@@ -292,6 +326,7 @@ namespace FeatureMapCorridor
 
         private void Finish()
         {
+            _narration.Stop();
             _state.Phase = LessonPhase.Complete;
             Highlight(-1);
             RenderLesson();
@@ -311,6 +346,10 @@ namespace FeatureMapCorridor
                 return;
             }
             _navigationFrame = Time.frameCount;
+            if (request == RoundRequest.Previous)
+            {
+                _narration.Stop();
+            }
             switch (_state.Phase)
             {
                 case LessonPhase.Recap when OffersAdditionalFilters:
@@ -370,6 +409,14 @@ namespace FeatureMapCorridor
                 case RoundOutcome.Move:
                     _state.Step = transition.Step;
                     ShowCurrentStep(request == RoundRequest.FilterExpanded);
+                    if (request == RoundRequest.Next && _state.ActiveRound.Layer == 4 && !_state.ShowingOutputDetails)
+                    {
+                        if (_state.Step == LessonStep.FillProbabilities) { _narration.Speak(FeatureMapVoice.Probabilities); }
+                        if (_state.Step == LessonStep.RevealAnswer)
+                        {
+                            _narration.SpeakAnswer(_featureMaps.DescribeRound(_state.ActiveRound, _state.Step, false).Winner);
+                        }
+                    }
                     break;
                 case RoundOutcome.BeforeFirstStep when _state.ShowingOutputDetails:
                 case RoundOutcome.ShowRecap when _state.ShowingOutputDetails:
@@ -480,16 +527,19 @@ namespace FeatureMapCorridor
 #endif
         public IEnumerator EndSession()
         {
+            _narration.Stop();
             yield break;
         }
 
         private void OnDisable()
         {
+            _narration.Stop();
             _featureMaps.Disable();
             _lessonUI.Disable();
             _environment.Disable();
             _featureMaps.DigitSelected -= DigitSelected;
             _featureMaps.InputPictureSelected -= InputPictureSelected;
+            _featureMaps.InputChannelsExpanded -= HandleInputChannelsExpanded;
             _featureMaps.OperationSelected -= OperationSelected;
             _featureMaps.FilterExpanded -= OnFilterExpanded;
             _featureMaps.PresentationReady -= RenderLesson;

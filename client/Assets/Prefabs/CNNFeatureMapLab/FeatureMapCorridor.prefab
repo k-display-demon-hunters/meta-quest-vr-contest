@@ -66,6 +66,20 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   _executionData: {fileID: 7729399349456396138}
+  _narration:
+    _clips:
+    - {fileID: 8300000, guid: 084e536df3974876b54ebd9600cf1571, type: 3}
+    - {fileID: 8300000, guid: bfc19b650c1546329e71e74fd8cd6712, type: 3}
+    - {fileID: 8300000, guid: 98903834cd7e4b7ca8124a15d40bfa8a, type: 3}
+    - {fileID: 8300000, guid: bfc19b650c1546329e71e74fd8cd6712, type: 3}
+    - {fileID: 8300000, guid: 94c261b7a2144a1e8cf1fc04005e61d5, type: 3}
+    - {fileID: 8300000, guid: bfc19b650c1546329e71e74fd8cd6712, type: 3}
+    - {fileID: 8300000, guid: a87c8af85287447ba7522f1a48a2e3f7, type: 3}
+    - {fileID: 8300000, guid: 3ddf64f1fac64fceaf131552b216a8dc, type: 3}
+    - {fileID: 8300000, guid: 327fa4df66da43f091214401b5568dee, type: 3}
+    - {fileID: 8300000, guid: 0e7b4bb9278a47b2b4d8cff33cb249e4, type: 3}
+    - {fileID: 8300000, guid: 672cacd86db441dc83c16ddac8bf005a, type: 3}
+    - {fileID: 8300000, guid: 43920b18c90b4da198f1631911d69923, type: 3}
   _featureMaps:
     _visuals:
       _korean: {fileID: 11400000, guid: e1344357adb2e204ca6a2d99089a4b9d, type: 2}

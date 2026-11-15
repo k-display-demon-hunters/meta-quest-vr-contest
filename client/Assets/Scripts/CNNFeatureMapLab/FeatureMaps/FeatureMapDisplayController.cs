@@ -26,6 +26,11 @@ namespace FeatureMapCorridor
         private CorridorRenderUtility _visuals;
         internal event Action<int> DigitSelected;
         internal event Action InputPictureSelected;
+        internal event Action InputChannelsExpanded
+        {
+            add => _input.InputChannelsExpanded += value;
+            remove => _input.InputChannelsExpanded -= value;
+        }
         internal Pose InputLessonPanelPose => LessonPanelAbove(_input.Picture);
         internal Pose OutputLessonPanelPose => _output.LessonPanelPose;
         internal void ShowInputChannels(bool expanded) => _input.SetExpanded(expanded);

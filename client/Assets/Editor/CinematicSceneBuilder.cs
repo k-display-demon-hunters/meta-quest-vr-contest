@@ -59,24 +59,28 @@ namespace CinematicEditor
         }
         private static void FillContent()
         {
+            _content.OpeningSchedule.PostOfficeDuration = 5.75;
+            _content.OpeningSchedule.EnvelopeDuration = 4.4;
+            _content.OpeningSchedule.PixelDuration = 8.7;
+            _content.EndingSchedule.IntroDuration = 4.05;
             _content.Opening = new[] {
-                Line(0.5,3.1,"기계는 세상을 어떻게 볼까요?"),
-                Line(1.1,5.55,"초기 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다.", CinematicText.CaptionAnchor.PostOffice),
-                Line(.25,3.98,"사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다.", CinematicText.CaptionAnchor.Envelope),
-                Line(.05,3.9,"그러나 기계가 보는 건\n밝고 어두운 점들입니다.", CinematicText.CaptionAnchor.Pixels),
-                Line(4.25,8.55,"기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?", CinematicText.CaptionAnchor.Pixels),
-                Line(.05,3.65,"{C:공장 안에서} 그 답을 직접 찾아보세요.", CinematicText.CaptionAnchor.Doors) };
+                Line(0.50, 3.35, "기계는 세상을 어떻게 볼까요?"),
+                Line(1.10, 5.70, "초기 CNN이 읽은 것은\n봉투에 손으로 쓴 우편번호입니다.", CinematicText.CaptionAnchor.PostOffice),
+                Line(0.25, 4.35, "사람의 눈은 봉투에 적힌 우편번호를\n한눈에 읽습니다.", CinematicText.CaptionAnchor.Envelope),
+                Line(0.05, 3.90, "그러나 기계가 보는 건\n밝고 어두운 점들입니다.", CinematicText.CaptionAnchor.Pixels),
+                Line(4.25, 8.65, "기계는 이 점들 속에서 어떻게\n숫자를 알아낼 수 있을까요?", CinematicText.CaptionAnchor.Pixels),
+                Line(0.05, 3.65, "{C:공장 안에서} 그 답을 직접 찾아보세요.", CinematicText.CaptionAnchor.Doors) };
             for (int i = 0; i < _content.Opening.Length; i++)
                 _content.Opening[i].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/OpeningEnding/OpeningNarration{i + 1:D2}.wav");
             _content.OpeningCrowd = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningCrowd.mp3");
             _content.OpeningScore = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/OpeningScore.wav");
             _content.Ending = new[]
             {
-                Line(0.2, 3.16, "초기 CNN은 봉투 위\n우편번호를 읽었습니다."),
-                Line(3.24, 5.96, "이후 수표에 적힌 금액을 읽고,"),
-                Line(6.04, 8.66, "사진 속에서 사람의 얼굴을 찾아내고"),
-                Line(8.74, 12.56, "카메라로 낯선 간판의 글자를 읽어 번역하고"),
-                Line(12.78, 17.6, "저해상도 영상을 더 선명하게 만듭니다")
+                Line(0.20, 3.91, "초기 CNN은 봉투 위\n우편번호를 읽었습니다."),
+                Line(3.99, 6.96, "이후 수표에 적힌 금액을 읽고,"),
+                Line(7.04, 10.31, "사진 속에서 사람의 얼굴을 찾아내고"),
+                Line(10.39, 14.26, "카메라로 낯선 간판의 글자를 읽어 번역하고"),
+                Line(14.52, 19.46, "저해상도 영상을 더 선명하게 만듭니다")
             };
 
             for (int i = 0; i < 2; i++)
@@ -85,8 +89,8 @@ namespace CinematicEditor
                     $"Assets/Audio/OpeningEnding/EndingNarration{i + 1:D2}.wav");
             }
 
-            _content.EndingSchedule.Intro = Line(.15, 3.15, "오늘, 여러분은 숫자를 읽는 CNN을 만들었습니다.");
-            _content.EndingSchedule.Outro = Line(.3, 7.2, "CNN은 지금 이 시간에도 세상을 읽고 있습니다.");
+            _content.EndingSchedule.Intro = Line(0.15, 3.95, "오늘, 여러분은 숫자를 읽는 CNN을 만들었습니다.");
+            _content.EndingSchedule.Outro = Line(0.30, 7.20, "CNN은 지금 이 시간에도 세상을 읽고 있습니다.");
 
             _content.EndingSchedule.Intro.Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationIntro.wav");
             _content.Ending[2].Voice = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/OpeningEnding/EndingNarrationFace.wav");
@@ -105,10 +109,10 @@ namespace CinematicEditor
             upscale.ShowUpscaleComparison = true;
             _content.EndingSchedule.Montage = new[]
             {
-                EndingCut("1989", "ZIP", "봉투의 손글씨 우편번호", newMontage, new Rect(0,.5f,1,.5f), new Rect(.33f,.40f,.34f,.14f), 3.2),
-                EndingCut("1998", "CHEQUE", "은행 수표의 손글씨 금액", cheque, new Rect(0,.5f,.25f,.5f), new Rect(.67f,.25f,.2f,.08f), 2.8),
-                EndingCut("2016", "FACE", "사진 속 얼굴 감지", face, new Rect(0,0,1,1), new Rect(.37f,.22f,.25f,.56f), 2.7),
-                EndingCut("2019", "TEXT", "카메라로 글자를 읽어 번역", newMontage, new Rect(0,0,1,.5f), new Rect(.36f,.40f,.28f,.17f), 3.9),
+                EndingCut("1989", "ZIP", "봉투의 손글씨 우편번호", newMontage, new Rect(0,.5f,1,.5f), new Rect(.33f,.40f,.34f,.14f), 3.95),
+                EndingCut("1998", "CHEQUE", "은행 수표의 손글씨 금액", cheque, new Rect(0,.5f,.25f,.5f), new Rect(.67f,.25f,.2f,.08f), 3.05),
+                EndingCut("2016", "FACE", "사진 속 얼굴 감지", face, new Rect(0,0,1,1), new Rect(.37f,.22f,.25f,.56f), 3.35),
+                EndingCut("2019", "TEXT", "카메라로 글자를 읽어 번역", newMontage, new Rect(0,0,1,.5f), new Rect(.36f,.40f,.28f,.17f), 3.95),
                 upscale
             };
             _content.Type=Audio("Type"); _content.Hit=Audio("Hit"); _content.BigHit=Audio("BigHit");

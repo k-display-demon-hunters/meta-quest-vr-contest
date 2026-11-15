@@ -81,6 +81,8 @@ namespace FeatureMapCorridor
             _channels[i].Badge((marked ? FeatureMapLabels.Marks[i]+" " : "")+FeatureMapLabels.InputChannels[i], CorridorTheme.Rgb[i]);
         }
 
+        internal event Action InputChannelsExpanded;
+
         internal void SetExpanded(bool expanded)
         {
             if (_expanded == expanded)
@@ -167,6 +169,10 @@ namespace FeatureMapCorridor
             }
             float time = Mathf.Clamp01((now - _started) / _moveDuration);
             UpdateChannelPositions(time);
+            if (!_moving && _expanded && !_atCalculation)
+            {
+                InputChannelsExpanded?.Invoke();
+            }
         }
 
         private void UpdateChannelPositions(float time)
